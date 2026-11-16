@@ -43,6 +43,8 @@ export function AddOrderModal({
   onCreateOrder,
   isCreating,
 }: AddOrderModalProps) {
+  const today = new Date();
+  const minDeliveryDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const [selectedTab, setSelectedTab] = useState<"products" | "cart">("products");
   const [productSearch, setProductSearch] = useState("");
 
@@ -97,6 +99,7 @@ export function AddOrderModal({
           <label className="mt-3 block text-xs font-semibold text-navy mb-2">Prepared Delivery Date</label>
           <input
             type="date"
+            min={minDeliveryDate}
             value={preparedDeliveryDate}
             onChange={(e) => onPreparedDeliveryDateChange(e.target.value)}
             className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"

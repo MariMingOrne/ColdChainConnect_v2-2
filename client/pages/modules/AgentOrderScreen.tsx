@@ -51,6 +51,8 @@ export function AgentOrderScreen({
   onCreateOrder,
   onRollbackOrder,
 }: AgentOrderScreenProps) {
+  const today = new Date();
+  const minDeliveryDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const [view, setView] = useState<"new" | "pending">("new");
   const [tab, setTab] = useState<"products" | "items">("products");
   const totalQty = orderItems.reduce((sum, item) => sum + item.qty_ordered, 0);
@@ -109,6 +111,7 @@ export function AgentOrderScreen({
                 <label className="block text-xs font-semibold text-navy mb-2">Prepared Delivery Date</label>
                 <input
                   type="date"
+                  min={minDeliveryDate}
                   value={preparedDeliveryDate}
                   onChange={(e) => onPreparedDeliveryDateChange(e.target.value)}
                   className="w-full px-3 py-2.5 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"

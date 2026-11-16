@@ -36,17 +36,25 @@ export function Preparation() {
 
   const fetchAll = async () => {
     try {
-      const [oRes, pRes, bRes, cRes] = await Promise.all([
+      const responses = await Promise.all([
         fetch("/api/bookings", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/pallets", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/inventory-batches", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/customers", { headers: { Authorization: `Bearer ${token}` } }),
       ]);
+      const failedIndex = responses.findIndex((response) => !response.ok);
+      if (failedIndex !== -1) {
+        const resource = ["orders", "pallets", "inventory", "customers"][failedIndex];
+        throw new Error(`Could not load ${resource} (HTTP ${responses[failedIndex].status}).`);
+      }
 
-      if (oRes.ok) setOrders(await oRes.json());
-      if (pRes.ok) setPallets(await pRes.json());
-      if (bRes.ok) setBatches(await bRes.json());
-      if (cRes.ok) setCustomers(await cRes.json());
+      const [ordersData, palletsData, batchesData, customersData] = await Promise.all(
+        responses.map((response) => response.json())
+      );
+      setOrders(ordersData);
+      setPallets(palletsData);
+      setBatches(batchesData);
+      setCustomers(customersData);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error loading data");
@@ -150,7 +158,7 @@ export function Preparation() {
     try {
       const orderPallets = pallets.filter((p) => p.order_id === orderId && p.status === "draft");
       for (const pallet of orderPallets) {
-        await fetch(`/api/pallets/${pallet.id}`, {
+        const response = await fetch(`/api/pallets/${pallet.id}/status`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -158,6 +166,7 @@ export function Preparation() {
           },
           body: JSON.stringify({ status: "prepared" }),
         });
+        if (!response.ok) throw new Error("Failed to mark pallet as prepared.");
       }
       handleRefresh();
     } catch (err) {
@@ -169,7 +178,7 @@ export function Preparation() {
     try {
       const orderPallets = pallets.filter((p) => p.order_id === orderId && p.status === "prepared");
       for (const pallet of orderPallets) {
-        await fetch(`/api/pallets/${pallet.id}`, {
+        const response = await fetch(`/api/pallets/${pallet.id}/status`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -177,6 +186,7 @@ export function Preparation() {
           },
           body: JSON.stringify({ status: "draft" }),
         });
+        if (!response.ok) throw new Error("Failed to undo pallet preparation.");
       }
       handleRefresh();
     } catch (err) {
