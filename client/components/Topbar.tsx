@@ -1,9 +1,11 @@
-import { useEffect, useRef, useState } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronLeft, Menu, Search, Truck, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { NotificationPanel } from "./NotificationPanel";
 import { useNotifications } from "@/hooks/useNotifications";
+import { useGlobalSearchData } from "@/hooks/useGlobalSearchData";
+import { EMPTY_SEARCH_DATA, searchAll, type SearchHit } from "@/lib/globalSearch";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,10 +21,22 @@ interface TopbarProps {
 
 export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(() => searchParams.get("q") ?? "");
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [hoveredSuggestionId, setHoveredSuggestionId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const { data: searchData = EMPTY_SEARCH_DATA, isFetching: isFetchingSearch } = useGlobalSearchData(
+    isSearchFocused && Boolean(searchTerm.trim())
+  );
+  const suggestions = useMemo(
+    () => searchAll(searchData, searchTerm)
+      .flatMap((group) => group.hits.map((hit) => ({ ...hit, group: group.label })))
+      .slice(0, 8),
+    [searchData, searchTerm]
+  );
   const role = useAuth((state) => state.user?.role);
   const {
     notifications,
@@ -47,11 +61,42 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
     return () => window.removeEventListener("keydown", handleShortcut);
   }, [role]);
 
+  useEffect(() => {
+    setSearchTerm(searchParams.get("q") ?? "");
+  }, [searchParams]);
+
+  const handleSearchTermChange = (value: string) => {
+    setSearchTerm(value);
+    setHoveredSuggestionId(null);
+    if (location.pathname === "/search") {
+      const nextParams = new URLSearchParams(searchParams);
+      if (value.trim()) nextParams.set("q", value);
+      else nextParams.delete("q");
+      nextParams.delete("highlight");
+      setSearchParams(nextParams, { replace: true });
+    }
+  };
+
+  const updateHoveredSuggestion = (hitId: string | null) => {
+    setHoveredSuggestionId(hitId);
+    if (location.pathname !== "/search") return;
+    const nextParams = new URLSearchParams(searchParams);
+    if (hitId) nextParams.set("highlight", hitId);
+    else nextParams.delete("highlight");
+    setSearchParams(nextParams, { replace: true });
+  };
+
   const handleSearch = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const query = searchTerm.trim();
     if (!query) return;
+    setIsSearchFocused(false);
     navigate(`/search?q=${encodeURIComponent(query)}`);
+  };
+
+  const handleSuggestionSelect = (hit: SearchHit) => {
+    setIsSearchFocused(false);
+    navigate(hit.path);
   };
 
   return (
@@ -93,7 +138,16 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
       </div>
 
         {role !== "agent" && (
-          <form onSubmit={handleSearch} className="relative order-last w-full sm:order-none sm:w-auto sm:flex-1 sm:max-w-md">
+          <form
+            onSubmit={handleSearch}
+            onBlur={(event) => {
+              if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                setIsSearchFocused(false);
+                updateHoveredSuggestion(null);
+              }
+            }}
+            className="relative order-last w-full sm:order-none sm:w-auto sm:flex-1 sm:max-w-md"
+          >
             <input
               ref={searchInputRef}
               type="text"
@@ -101,7 +155,8 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
               title="Press Ctrl+K or Command+K to search"
               placeholder="Search products, customers, orders…"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onFocus={() => setIsSearchFocused(true)}
+              onChange={(event) => handleSearchTermChange(event.target.value)}
               className="w-full pl-4 pr-11 xl:pr-28 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
             />
             <kbd className="absolute right-10 top-1/2 hidden -translate-y-1/2 rounded border border-white/20 px-1.5 py-0.5 text-[10px] font-medium text-white/65 xl:block">Ctrl / ⌘ K</kbd>
@@ -112,6 +167,43 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
             >
               <Search className="w-4 h-4" />
             </button>
+            {isSearchFocused && searchTerm.trim() && (
+              <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[min(70vh,420px)] overflow-y-auto rounded-lg border border-border bg-white p-1.5 text-navy shadow-xl">
+                {isFetchingSearch && searchData === EMPTY_SEARCH_DATA ? (
+                  <p className="px-3 py-3 text-sm text-navy/60">Searching…</p>
+                ) : suggestions.length ? (
+                  <>
+                    {suggestions.map((hit) => (
+                      <button
+                        key={`${hit.group}-${hit.id}`}
+                        type="button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onMouseEnter={() => updateHoveredSuggestion(hit.id)}
+                        onMouseLeave={() => updateHoveredSuggestion(null)}
+                        onFocus={() => updateHoveredSuggestion(hit.id)}
+                        onClick={() => handleSuggestionSelect(hit)}
+                        className={`w-full rounded-md border-l-2 px-3 py-2 text-left transition-colors ${hoveredSuggestionId === hit.id ? "border-accent-2 bg-accent-2/10" : "border-transparent hover:bg-off-white focus-visible:bg-off-white"}`}
+                      >
+                        <span className="flex items-center justify-between gap-3">
+                          <span className="truncate text-sm font-semibold">{hit.title}</span>
+                          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-navy/50">{hit.group}</span>
+                        </span>
+                        {hit.subtitle && <span className="block truncate text-xs text-navy/60">{hit.subtitle}</span>}
+                      </button>
+                    ))}
+                    <button
+                      type="submit"
+                      onMouseDown={(event) => event.preventDefault()}
+                      className="mt-1 w-full rounded-md border-t border-border px-3 py-2 text-left text-xs font-semibold text-accent-2 hover:bg-off-white"
+                    >
+                      See all results for “{searchTerm.trim()}”
+                    </button>
+                  </>
+                ) : (
+                  <p className="px-3 py-3 text-sm text-navy/60">No matching results.</p>
+                )}
+              </div>
+            )}
           </form>
         )}
 
