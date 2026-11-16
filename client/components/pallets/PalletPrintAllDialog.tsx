@@ -6,7 +6,7 @@ import type { PalletEntry } from "./PalletTable";
 
 function barcodeDataUrl(value: string) {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  JsBarcode(svg, value, { format: "CODE128", displayValue: false, margin: 0, height: 36, width: 1.4 });
+  JsBarcode(svg, value, { format: "CODE128", displayValue: false, margin: 20, height: 64, width: 2 });
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(new XMLSerializer().serializeToString(svg))}`;
 }
 
@@ -45,7 +45,7 @@ export function PalletPrintAllDialog({ entries, date, onClose }: {
                 <article key={pallet.id} className="rounded-lg border border-border p-3 text-center">
                   <p className="text-xs font-semibold text-navy">{customer?.store_name ?? "Unknown customer"}</p>
                   <p className="mt-1 break-all font-mono text-[10px] text-muted">{pallet.id}</p>
-                  <img src={barcodes[pallet.id]} alt={`Barcode for pallet ${pallet.id}`} className="mx-auto mt-2 h-10 w-full object-contain" />
+                  <img src={barcodes[pallet.id]} alt={`Barcode for pallet ${pallet.id}`} className="mx-auto mt-2 h-12 w-full object-contain" />
                 </article>
               ))}
             </div>
@@ -61,7 +61,7 @@ export function PalletPrintAllDialog({ entries, date, onClose }: {
                 <article key={pallet.id} className="bulk-pallet-label flex flex-col items-center justify-center gap-1 rounded border border-black p-3 text-center">
                   <p className="text-xs font-bold">{customer?.store_name ?? "Unknown customer"} · {units} units</p>
                   <p className="break-all font-mono text-[9px]">{pallet.id}</p>
-                  <img src={barcodes[pallet.id]} alt={`Barcode for pallet ${pallet.id}`} className="h-10 w-full object-contain" />
+                  <img src={barcodes[pallet.id]} alt={`Barcode for pallet ${pallet.id}`} className="h-14 w-full object-contain" />
                 </article>
               );
             })}
