@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
-import { SwitchCamera } from "lucide-react";
+import { Folder, SwitchCamera } from "lucide-react";
 
 interface AgentBarcodeScannerProps {
   onClose: () => void;
@@ -11,9 +11,11 @@ export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScanner
   const videoRef = useRef<HTMLVideoElement>(null);
   const [manualCode, setManualCode] = useState("");
   const [scanError, setScanError] = useState("");
+  const [isDecodingImage, setIsDecodingImage] = useState(false);
   const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
 
   useEffect(() => {
+    if (isDecodingImage) return;
     const reader = new BrowserMultiFormatReader();
     let active = true;
     let stopScanner: (() => void) | undefined;
@@ -23,7 +25,7 @@ export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScanner
         { video: { facingMode: { ideal: facingMode } } },
         videoRef.current,
         (result, _error, controls) => {
-          if (!active || !result) return;
+          if (!active || isDecodingImage || !result) return;
           active = false;
           controls.stop();
           onDetected(result.getText());
@@ -42,7 +44,30 @@ export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScanner
       active = false;
       stopScanner?.();
     };
-  }, [facingMode, onDetected]);
+  }, [facingMode, isDecodingImage, onDetected]);
+
+  const handleImageSelect = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.currentTarget.files?.[0];
+    event.currentTarget.value = "";
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setScanError("Choose an image file to scan.");
+      return;
+    }
+
+    setScanError("");
+    setIsDecodingImage(true);
+    const imageUrl = URL.createObjectURL(file);
+    try {
+      const result = await new BrowserMultiFormatReader().decodeFromImageUrl(imageUrl);
+      onDetected(result.getText());
+    } catch {
+      setScanError("No barcode found in that image. Try another image or enter the code manually.");
+    } finally {
+      URL.revokeObjectURL(imageUrl);
+      setIsDecodingImage(false);
+    }
+  };
 
   const submitManualCode = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -61,6 +86,7 @@ export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScanner
               setScanError("");
               setFacingMode((current) => current === "environment" ? "user" : "environment");
             }}
+            disabled={isDecodingImage}
             aria-label={`Switch to ${facingMode === "environment" ? "front" : "rear"} camera`}
             className="flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold text-white"
           >
@@ -78,10 +104,10 @@ export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScanner
           <div className="pointer-events-none absolute inset-[15%] rounded-xl border-2 border-white/90 shadow-[0_0_0_999px_rgba(0,0,0,0.25)]" />
         </div>
         <p className="max-w-md text-center text-sm text-white/80">
-          Point the {facingMode === "environment" ? "rear" : "front"} camera at a pallet or order barcode.
+          {isDecodingImage ? "Scanning selected image…" : `Point the ${facingMode === "environment" ? "rear" : "front"} camera at a pallet or order barcode.`}
         </p>
         {scanError && <p role="alert" className="max-w-md text-center text-sm text-red-300">{scanError}</p>}
-        <form onSubmit={submitManualCode} className="flex w-full max-w-md gap-2">
+        <form onSubmit={submitManualCode} className="flex w-full max-w-md items-center gap-2">
           <input
             value={manualCode}
             onChange={(event) => setManualCode(event.target.value)}
@@ -89,6 +115,23 @@ export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScanner
             placeholder="Enter barcode or order code"
             className="min-w-0 flex-1 rounded-lg border border-white/30 bg-white px-3 py-2 text-sm text-navy placeholder:text-muted"
           />
+          <input
+            type="file"
+            accept="image/*"
+            aria-label="Choose barcode image"
+            disabled={isDecodingImage}
+            onChange={handleImageSelect}
+            className="peer sr-only"
+            id="barcode-image-input"
+          />
+          <label
+            htmlFor="barcode-image-input"
+            title="Choose barcode image"
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/30 peer-focus-visible:ring-2 peer-focus-visible:ring-accent-2 ${isDecodingImage ? "pointer-events-none opacity-50" : "cursor-pointer hover:bg-white/10"}`}
+          >
+            <Folder size={18} aria-hidden="true" />
+            <span className="sr-only">Choose barcode image</span>
+          </label>
           <button type="submit" disabled={!manualCode.trim()} className="rounded-lg bg-accent-2 px-4 py-2 text-sm font-semibold disabled:opacity-50">
             Search
           </button>
