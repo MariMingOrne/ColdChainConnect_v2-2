@@ -5,6 +5,12 @@ interface OrderItem {
   qty_ordered: number;
 }
 
+function getProductImageUrl(imageFilename?: string) {
+  if (!imageFilename) return "/placeholder.svg";
+  if (imageFilename.startsWith("http")) return imageFilename;
+  return `/uploads/${imageFilename}`;
+}
+
 interface AgentProductPickerProps {
   products: Product[];
   productStock: Record<string, number>;
@@ -29,8 +35,18 @@ export function AgentProductPicker({
         const isAdded = itemIdx !== -1;
 
         return (
-          <li key={product.id} className="flex items-center justify-between gap-3 py-3">
-            <div className="min-w-0">
+          <li key={product.id} className="flex items-center gap-3 py-3">
+            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border bg-off-white">
+              <img
+                src={getProductImageUrl(product.image_filename)}
+                alt={product.name}
+                className="h-full w-full object-cover"
+                onError={(event) => {
+                  event.currentTarget.src = "/placeholder.svg";
+                }}
+              />
+            </div>
+            <div className="min-w-0 flex-1">
               <p className="text-[11px] text-muted">SKU: {product.sku || "—"}</p>
               <p className="text-sm font-semibold text-navy truncate">{product.name}</p>
               <p className="text-sm font-bold text-accent-2">₱{product.price}</p>
