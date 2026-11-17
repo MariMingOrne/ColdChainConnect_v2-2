@@ -3,7 +3,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { Table } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { localScheduleDate } from "@/lib/agentSchedule";
-import { CalendarDays, Clock3, RefreshCw, ChevronLeft, Truck as TruckIcon, ChevronDown, ChevronUp, ArrowLeft } from "lucide-react";
+import { CalendarDays, Clock3, RefreshCw, ChevronLeft, Truck as TruckIcon, ChevronDown, ChevronUp, ArrowLeft, Search } from "lucide-react";
 import { Delivery, DeliveryItem, Truck, Invoice, Customer, Driver, Agent, formatCustomerAddress } from "@shared/api";
 
 // ─── Extended types ────────────────────────────────────────────────────────────
@@ -75,6 +75,10 @@ export function DeliveryDispatch() {
 
   const [selectedTruck,        setSelectedTruck]        = useState<Truck | null>(null);
   const [selectedDelivery,     setSelectedDelivery]     = useState<DeliveryExt | null>(null);
+  const [scheduleSearch, setScheduleSearch] = useState("");
+  const [scheduleFromDateTime, setScheduleFromDateTime] = useState("");
+  const [scheduleDriverFilter, setScheduleDriverFilter] = useState("all");
+  const [scheduleAgentFilter, setScheduleAgentFilter] = useState("all");
   const [showAddTruckModal,    setShowAddTruckModal]    = useState(false);
   const [showEditTruckModal,   setShowEditTruckModal]   = useState(false);
   const [showAddDeliveryModal, setShowAddDeliveryModal] = useState(false);
@@ -118,6 +122,8 @@ export function DeliveryDispatch() {
       const joined: DeliveryExt[] = (deliveriesData as DeliveryExt[]).map((d) => ({
         ...d,
         truck: (trucksData as Truck[]).find((t) => t.id === d.truck_id),
+        driver: d.driver ?? (driversData as Driver[]).find((driver) => driver.id === d.driver_id) ?? null,
+        agent: d.agent ?? (agentsData as Agent[]).find((agent) => agent.id === d.agent_id) ?? null,
         delivery_items: (d.delivery_items ?? []).map((item) => ({
           ...item,
           invoice:  (invoicesData  as Invoice[]).find((inv) => inv.id === item.invoice_id),
@@ -153,12 +159,26 @@ export function DeliveryDispatch() {
   const truckDeliveries = selectedTruck
     ? deliveries.filter((d) => d.truck_id === selectedTruck.id)
     : [];
-  const scheduledDays = truckDeliveries.reduce((groups, delivery) => {
+  const scheduleQuery = scheduleSearch.trim().toLowerCase();
+  const filteredTruckDeliveries = truckDeliveries.filter((delivery) => {
+    const driverId = delivery.driver_id ?? delivery.driver?.id ?? delivery.truck?.driver_id ?? "";
+    const scheduledAt = new Date(`${delivery.scheduled_date ?? localScheduleDate(new Date(delivery.created_at))}T${delivery.scheduled_time ?? "00:00"}`);
+    const matchesSearch = !scheduleQuery || [
+      delivery.id,
+      delivery.agent?.full_name,
+      delivery.driver?.full_name,
+      ...delivery.delivery_items.flatMap((item) => [item.receipt_number, item.customer?.store_name, item.invoice?.receipt_number]),
+    ].some((value) => value?.toLowerCase().includes(scheduleQuery));
+    return matchesSearch &&
+      (!scheduleFromDateTime || scheduledAt >= new Date(scheduleFromDateTime)) &&
+      (scheduleDriverFilter === "all" || driverId === scheduleDriverFilter) &&
+      (scheduleAgentFilter === "all" || (delivery.agent_id ?? delivery.agent?.id) === scheduleAgentFilter);
+  });
+  const sortedScheduleDays = [...filteredTruckDeliveries.reduce((groups, delivery) => {
     const date = delivery.scheduled_date ?? localScheduleDate(new Date(delivery.created_at));
     groups.set(date, [...(groups.get(date) ?? []), delivery]);
     return groups;
-  }, new Map<string, DeliveryExt[]>());
-  const sortedScheduleDays = [...scheduledDays.entries()]
+  }, new Map<string, DeliveryExt[]>()).entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, runs]) => [date, [...runs].sort((a, b) => (a.scheduled_time ?? "").localeCompare(b.scheduled_time ?? ""))] as const);
 
@@ -360,12 +380,28 @@ export function DeliveryDispatch() {
       <div className="space-y-5">
         <div className="flex items-center justify-between gap-3">
           <h2 className="font-rajdhani text-xl font-bold text-navy">Truck Schedule</h2>
-          <span className="text-xs text-muted">{truckDeliveries.length} scheduled run{truckDeliveries.length === 1 ? "" : "s"}</span>
+          <span className="text-xs text-muted">{filteredTruckDeliveries.length} scheduled run{filteredTruckDeliveries.length === 1 ? "" : "s"}</span>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-white p-3">
+          <div className="relative w-full sm:w-64">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+            <input type="search" aria-label="Search truck schedule" placeholder="Search runs, customers, agents…" value={scheduleSearch} onChange={(event) => setScheduleSearch(event.target.value)} className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm text-navy focus:border-accent-2 focus:outline-none" />
+          </div>
+          <input type="datetime-local" aria-label="Scheduled from date and time" title="Show runs scheduled from this date and time" value={scheduleFromDateTime} onChange={(event) => setScheduleFromDateTime(event.target.value)} className="rounded-full border border-border bg-white px-3 py-2 text-sm text-navy" />
+          <select aria-label="Filter by driver" value={scheduleDriverFilter} onChange={(event) => setScheduleDriverFilter(event.target.value)} className="rounded-full border border-border bg-white px-4 py-2 text-sm text-navy">
+            <option value="all">All drivers</option>
+            {drivers.map((driver) => <option key={driver.id} value={driver.id}>{driver.full_name || driver.id.slice(0, 8)}</option>)}
+          </select>
+          <select aria-label="Filter by agent" value={scheduleAgentFilter} onChange={(event) => setScheduleAgentFilter(event.target.value)} className="rounded-full border border-border bg-white px-4 py-2 text-sm text-navy">
+            <option value="all">All agents</option>
+            {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.full_name || agent.user?.username || agent.id.slice(0, 8)}</option>)}
+          </select>
         </div>
 
         {sortedScheduleDays.length === 0 ? (
           <div className="bg-white rounded-xl border border-border p-6 text-center text-sm text-muted">
-            No deliveries scheduled for this truck.
+            {truckDeliveries.length === 0 ? "No deliveries scheduled for this truck." : "No runs match your search or filters."}
           </div>
         ) : (
           sortedScheduleDays.map(([date, dayDeliveries]) => (
