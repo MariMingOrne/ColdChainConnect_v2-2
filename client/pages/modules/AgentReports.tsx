@@ -4,6 +4,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { RefreshCw, RotateCcw, CheckCircle, XCircle } from "lucide-react";
 import { AgentReturn, Invoice, Customer, Product } from "@shared/api";
 import { LogReturnForm } from "./LogReturnForm";
+import { Table } from "@/components/ui/table";
 
 function authHeaders(token: string) {
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
@@ -241,7 +242,7 @@ export function AgentReports() {
           <LoadingSpinner className="min-h-32" />
         ) : (
           <div className="overflow-x-auto">
-            <table className="data-table w-full text-xs md:text-sm">
+            <Table className="w-full text-xs md:text-sm">
               <thead>
                 <tr>
                   {["Date", "Order", "Customer", "Product", "Qty", "Type", "Reason", "Status", "Actions"].map((h) => (
@@ -325,7 +326,7 @@ export function AgentReports() {
                   })
                 )}
               </tbody>
-            </table>
+            </Table>
           </div>
         )}
       </div>

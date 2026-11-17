@@ -3,6 +3,9 @@ import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { RefreshCw } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Driver } from "@shared/api";
 import { DriverScheduleModal } from "@/components/driver/DriverScheduleModal";
 
@@ -89,7 +92,7 @@ function DriverModal({
   ) => (
     <div>
       <label className="block text-xs font-semibold text-navy mb-1">{label}</label>
-      <input
+      <Input
         type={type}
         value={formData[key] as string}
         onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
@@ -115,15 +118,18 @@ function DriverModal({
 
           <div>
             <label className="block text-xs font-semibold text-navy mb-1">Employment Type</label>
-            <select
-              value={formData.employment_type}
-              onChange={(e) => setFormData({ ...formData, employment_type: e.target.value as any })}
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
+            <Select
+              value={formData.employment_type || undefined}
+              onValueChange={(employment_type) => setFormData({ ...formData, employment_type: employment_type as DriverForm["employment_type"] })}
             >
-              <option value="">Select employment type…</option>
-              <option value="full_time">Full Time</option>
-              <option value="part_time">Part Time</option>
-            </select>
+              <SelectTrigger aria-label="Employment type">
+                <SelectValue placeholder="Select employment type…" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="full_time">Full Time</SelectItem>
+                <SelectItem value="part_time">Part Time</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="border-t border-border pt-4 space-y-4">
@@ -141,7 +147,7 @@ function DriverModal({
           </div>
 
           <div className="flex items-center gap-3">
-            <input
+            <Input
               type="checkbox"
               id="is_active"
               checked={formData.is_active}
@@ -152,13 +158,9 @@ function DriverModal({
           </div>
         </div>
 
-        <div className="sticky bottom-0 bg-off-white px-6 py-4 flex justify-end gap-2 border-t border-border rounded-b-2xl">
-          <button onClick={onClose} className="px-4 py-2 border border-border rounded-lg font-semibold text-sm hover:bg-white">
-            Cancel
-          </button>
-          <button onClick={onSave} className="px-4 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90">
-            Save Driver
-          </button>
+        <div className="sticky bottom-0 flex justify-end gap-2 rounded-b-2xl border-t border-border bg-off-white px-6 py-4">
+          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button type="button" variant="accent" onClick={onSave}>Save Driver</Button>
         </div>
       </div>
     </div>

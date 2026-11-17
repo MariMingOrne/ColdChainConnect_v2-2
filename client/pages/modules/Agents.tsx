@@ -3,6 +3,8 @@ import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { RefreshCw, Eye, EyeOff } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Agent } from "@shared/api";
 
 interface AgentForm {
@@ -96,7 +98,7 @@ function AgentModal({
   ) => (
     <div>
       <label className="block text-xs font-semibold text-navy mb-1">{label}</label>
-      <input
+      <Input
         type={type}
         value={formData[key] as string}
         onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
@@ -125,7 +127,7 @@ function AgentModal({
                 Password{isEdit && <span className="text-muted font-normal ml-1">(leave blank to keep current)</span>}
               </label>
               <div className="relative">
-                <input
+                <Input
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
@@ -152,7 +154,7 @@ function AgentModal({
           {field("Address", "address", "e.g., 123 Main St, Makati")}
 
           <div className="flex items-center gap-3">
-            <input
+            <Input
               type="checkbox"
               id="is_active"
               checked={formData.is_active}
@@ -170,14 +172,9 @@ function AgentModal({
                   {mfaEnabled ? "Enabled" : "Not set up"}
                 </span>
                 {mfaEnabled && (
-                  <button
-                    type="button"
-                    onClick={onResetMfa}
-                    disabled={isResettingMfa}
-                    className="px-3 py-1.5 text-xs font-semibold border border-red/30 bg-red/10 text-red rounded-lg hover:bg-red/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
+                  <Button type="button" variant="danger" size="sm" onClick={onResetMfa} disabled={isResettingMfa}>
                     {isResettingMfa ? "Resetting…" : "Reset MFA"}
-                  </button>
+                  </Button>
                 )}
               </div>
               {mfaMessage && <p className="text-xs text-muted">{mfaMessage}</p>}
@@ -185,13 +182,9 @@ function AgentModal({
           )}
         </div>
 
-        <div className="sticky bottom-0 bg-off-white px-6 py-4 flex justify-end gap-2 border-t border-border rounded-b-2xl">
-          <button onClick={onClose} className="px-4 py-2 border border-border rounded-lg font-semibold text-sm hover:bg-white">
-            Cancel
-          </button>
-          <button onClick={onSave} className="px-4 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90">
-            Save Agent
-          </button>
+        <div className="sticky bottom-0 flex justify-end gap-2 rounded-b-2xl border-t border-border bg-off-white px-6 py-4">
+          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button type="button" variant="accent" onClick={onSave}>Save Agent</Button>
         </div>
       </div>
     </div>

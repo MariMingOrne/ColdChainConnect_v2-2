@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import {
   Table,
@@ -376,7 +377,7 @@ export function Invoicing() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
             <div className="flex items-center gap-2 rounded-full border border-border bg-white px-4">
               <Calendar size={16} className="text-muted" />
-              <input type="date" value={customDateStart} onChange={(e) => setCustomDateStart(e.target.value)}
+              <Input type="date" value={customDateStart} onChange={(e) => setCustomDateStart(e.target.value)}
                 className="flex-1 bg-transparent border-none py-2 text-sm text-navy outline-none" />
             </div>
           </div>
@@ -384,7 +385,7 @@ export function Invoicing() {
             <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
             <div className="flex items-center gap-2 rounded-full border border-border bg-white px-4">
               <Calendar size={16} className="text-muted" />
-              <input type="date" value={customDateEnd} onChange={(e) => setCustomDateEnd(e.target.value)}
+              <Input type="date" value={customDateEnd} onChange={(e) => setCustomDateEnd(e.target.value)}
                 className="flex-1 bg-transparent border-none py-2 text-sm text-navy outline-none" />
             </div>
           </div>

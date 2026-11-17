@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -292,7 +293,7 @@ export function Preparation() {
             </label>
             <div className="flex items-center rounded-full border border-border bg-white px-4 gap-2">
               <Calendar size={16} className="text-muted" />
-              <input
+              <Input
                 type="date"
                 value={customDateStart}
                 onChange={(e) => setCustomDateStart(e.target.value)}
@@ -306,7 +307,7 @@ export function Preparation() {
             </label>
             <div className="flex items-center rounded-full border border-border bg-white px-4 gap-2">
               <Calendar size={16} className="text-muted" />
-              <input
+              <Input
                 type="date"
                 value={customDateEnd}
                 onChange={(e) => setCustomDateEnd(e.target.value)}
@@ -984,7 +985,7 @@ function CreatePalletModal({
                                           </span>
                                         </p>
                                       </div>
-                                      <input
+                                      <Input
                                         type="number"
                                         min="0"
                                         max={Math.min(

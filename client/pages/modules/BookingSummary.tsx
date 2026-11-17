@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -422,20 +424,13 @@ export function BookingSummary() {
           <p className="page-subtitle">Review, approve, and reject customer orders</p>
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="btn-primary"
-          >
+          <Button type="button" onClick={() => setShowAddModal(true)}>
             <Plus size={16} /> Add Order
-          </button>
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="btn-ghost"
-          >
+          </Button>
+          <Button type="button" variant="ghost" onClick={handleRefresh} disabled={isRefreshing}>
             <RefreshCw size={15} className={isRefreshing ? "animate-spin" : ""} />
             <span className="hidden sm:inline">Refresh</span>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -496,7 +491,7 @@ export function BookingSummary() {
             </label>
             <div className="flex items-center rounded-full border border-border bg-white px-4 gap-2">
               <Calendar size={16} className="text-muted" />
-              <input
+              <Input
                 type="date"
                 value={customDateStart}
                 onChange={(e) => setCustomDateStart(e.target.value)}
@@ -510,7 +505,7 @@ export function BookingSummary() {
             </label>
             <div className="flex items-center rounded-full border border-border bg-white px-4 gap-2">
               <Calendar size={16} className="text-muted" />
-              <input
+              <Input
                 type="date"
                 value={customDateEnd}
                 onChange={(e) => setCustomDateEnd(e.target.value)}

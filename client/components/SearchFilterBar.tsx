@@ -1,4 +1,13 @@
 import { Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SearchFilterBarProps {
   searchTerm: string;
@@ -20,39 +29,41 @@ export function SearchFilterBar({
 }: SearchFilterBarProps) {
   return (
     <div className="flex min-w-0 flex-1 flex-col items-stretch gap-3 sm:flex-row">
-      <div className="relative flex min-w-0 flex-1 items-center rounded-full border border-border bg-white px-4">
+      <div className="group relative flex min-w-0 flex-1 items-center gap-2 rounded-full border border-border bg-white px-4 focus-within:border-accent-2 focus-within:ring-2 focus-within:ring-accent-2/20">
         <Search size={16} className="shrink-0 text-muted" aria-hidden="true" />
-        <input
-          type="text"
+        <Input
+          type="search"
           placeholder={placeholder}
           value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="min-w-0 flex-1 bg-transparent py-2 pl-2 text-sm text-navy outline-none placeholder:text-muted"
+          onChange={(event) => onSearchChange(event.target.value)}
+          className="h-auto min-w-0 flex-1 border-0 bg-transparent px-0 py-2 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         {searchTerm && (
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="icon"
             aria-label="Clear search"
             onClick={() => onSearchChange("")}
-            className="text-muted transition-colors hover:text-navy"
+            className="h-8 w-8 shrink-0 border-0 bg-transparent p-0 shadow-none hover:bg-off-white"
           >
             <X className="h-4 w-4" />
-          </button>
+          </Button>
         )}
       </div>
       {filters.map((filter) => (
-        <select
-          key={filter.name}
-          value={filter.value}
-          onChange={(e) => filter.onChange(e.target.value)}
-          className="rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-navy transition-colors focus:border-accent-2 focus:outline-none"
-        >
-          {filter.options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+        <Select key={filter.name} value={filter.value} onValueChange={filter.onChange}>
+          <SelectTrigger aria-label={filter.name} className="h-10 w-full rounded-full px-4 text-sm font-semibold sm:w-auto">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {filter.options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       ))}
     </div>
   );

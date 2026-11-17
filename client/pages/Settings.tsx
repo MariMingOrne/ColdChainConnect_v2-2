@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Table } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 
 interface AuditEntry {
@@ -467,7 +468,7 @@ export function Settings() {
 
               {/* Audit Log Table */}
               <div className="data-table-frame overflow-x-auto scrollbar-visible">
-                <table className="data-table w-full text-sm">
+                <Table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border">
                       <th className="text-left py-3 px-3 font-semibold text-navy">
@@ -527,7 +528,7 @@ export function Settings() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </Table>
               </div>
 
               {/* Pagination */}

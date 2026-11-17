@@ -3,6 +3,9 @@ import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useInventoryContext } from "../../context/InventoryContext";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { Table } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Product } from "@shared/api";
 import { Download, Upload, RefreshCw } from "lucide-react";
 import { ActionButtons } from "@/components/ActionButtons";
@@ -105,7 +108,7 @@ function ProductModal({
         <div className="p-6 space-y-4">
           <div>
             <label className="block text-xs font-semibold text-navy mb-1">Product Name *</label>
-            <input
+            <Input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -116,7 +119,7 @@ function ProductModal({
 
           <div>
             <label className="block text-xs font-semibold text-navy mb-1">SKU Code</label>
-            <input
+            <Input
               type="text"
               value={formData.sku || ""}
               onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
@@ -127,7 +130,7 @@ function ProductModal({
 
           <div>
             <label className="block text-xs font-semibold text-navy mb-1">Unit Price (₱) *</label>
-            <input
+            <Input
               type="number"
               step="0.01"
               min="0"
@@ -141,7 +144,7 @@ function ProductModal({
           <div>
             <label className="block text-xs font-semibold text-navy mb-2">Product Image</label>
             <div className="flex items-center gap-3">
-              <input
+              <Input
                 type="file"
                 accept="image/*"
                 onChange={handleImageUpload}
@@ -157,7 +160,7 @@ function ProductModal({
 
           <div>
             <label className="block text-xs font-semibold text-navy mb-1">Manufacturer</label>
-            <input
+            <Input
               type="text"
               value={formData.manufacturer || ""}
               onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
@@ -168,7 +171,7 @@ function ProductModal({
 
           <div>
             <label className="block text-xs font-semibold text-navy mb-1">Reorder Level</label>
-            <input
+            <Input
               type="number"
               min="0"
               value={formData.reorder_point || ""}
@@ -180,7 +183,7 @@ function ProductModal({
           </div>
 
           <div className="flex items-center gap-3">
-            <input
+            <Input
               type="checkbox"
               id="is_discontinued"
               checked={formData.is_discontinued}
@@ -194,18 +197,8 @@ function ProductModal({
         </div>
 
         <div className="sticky bottom-0 bg-off-white px-6 py-4 flex justify-end gap-2 border-t border-border rounded-b-2xl">
-          <button
-            onClick={onClose}
-            className="px-4 py-2 border border-border rounded-lg font-semibold text-sm hover:bg-white"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onSave}
-            className="px-4 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90"
-          >
-            Save Product
-          </button>
+          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button type="button" variant="accent" onClick={onSave}>Save Product</Button>
         </div>
       </div>
     </div>
@@ -517,7 +510,7 @@ export function Pricing({ onBack }: PricingProps) {
       {/* Table */}
       <div className="data-table-frame overflow-hidden">
         <div className="overflow-x-auto scrollbar-visible text-xs md:text-sm">
-          <table className="data-table w-full">
+          <Table className="w-full">
             <thead>
               <tr>
                 <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
@@ -611,7 +604,7 @@ export function Pricing({ onBack }: PricingProps) {
                 ))
               )}
             </tbody>
-          </table>
+          </Table>
         </div>
 
         {/* Pagination - Always Display */}

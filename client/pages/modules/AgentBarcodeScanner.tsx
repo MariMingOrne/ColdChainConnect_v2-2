@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { Folder, SwitchCamera } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface AgentBarcodeScannerProps {
   onClose: () => void;
@@ -108,14 +110,14 @@ export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScanner
         </p>
         {scanError && <p role="alert" className="max-w-md text-center text-sm text-red-300">{scanError}</p>}
         <form onSubmit={submitManualCode} className="flex w-full max-w-md items-center gap-2">
-          <input
+          <Input
             value={manualCode}
             onChange={(event) => setManualCode(event.target.value)}
             aria-label="Enter barcode manually"
             placeholder="Enter barcode or order code"
             className="min-w-0 flex-1 rounded-lg border border-white/30 bg-white px-3 py-2 text-sm text-navy placeholder:text-muted"
           />
-          <input
+          <Input
             type="file"
             accept="image/*"
             aria-label="Choose barcode image"
@@ -132,9 +134,9 @@ export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScanner
             <Folder size={18} aria-hidden="true" />
             <span className="sr-only">Choose barcode image</span>
           </label>
-          <button type="submit" disabled={!manualCode.trim()} className="rounded-lg bg-accent-2 px-4 py-2 text-sm font-semibold disabled:opacity-50">
+          <Button type="submit" variant="accent" disabled={!manualCode.trim()}>
             Search
-          </button>
+          </Button>
         </form>
       </div>
     </div>

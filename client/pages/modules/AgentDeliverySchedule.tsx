@@ -5,6 +5,8 @@ import { CalendarDays, Clock3, History, RefreshCw, Search, Truck as TruckIcon, U
 import type { AgentScheduleDelivery, AgentScheduleResponse, AgentScheduleStop } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { optimizeRouteOrder } from "@/lib/routeOrder";
 import { localScheduleDate, statusClasses } from "@/lib/agentSchedule";
 import { DeliveryRouteMap, type MapFocus } from "@/components/DeliveryRouteMap";
@@ -219,7 +221,7 @@ export function AgentDeliverySchedule() {
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(150px,auto)_minmax(130px,auto)]">
           <label className="flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-muted focus-within:border-accent-2">
             <Search size={16} aria-hidden="true" />
-            <input
+            <Input
               type="search"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -230,7 +232,7 @@ export function AgentDeliverySchedule() {
           </label>
           <label className="flex flex-col justify-center rounded-lg border border-border px-3 py-1 text-[10px] font-semibold text-muted focus-within:border-accent-2">
             {view === "today" ? "Schedule date" : "History date"}
-            <input
+            <Input
               type="date"
               value={view === "today" ? scheduleDate : historyDate}
               onChange={(event) => view === "today" ? setScheduleDate(event.target.value || today) : setHistoryDate(event.target.value)}
@@ -240,7 +242,7 @@ export function AgentDeliverySchedule() {
           </label>
           <label className="flex flex-col justify-center rounded-lg border border-border px-3 py-1 text-[10px] font-semibold text-muted focus-within:border-accent-2">
             <span className="flex items-center gap-1"><Clock3 size={12} /> From time</span>
-            <input
+            <Input
               type="time"
               value={view === "today" ? scheduleTime : historyTime}
               onChange={(event) => view === "today" ? setScheduleTime(event.target.value) : setHistoryTime(event.target.value)}
@@ -388,7 +390,7 @@ function DeliveryPaymentPrompt({ stop, mode, isConfirming, onClose, onConfirm }:
         {!isRecordingPayment && (
           <div className="mt-4 grid grid-cols-3 gap-2">
             {([ ["paid", "Paid"], ["partial", "Partial"], ["unpaid", "Not paid"] ] as const).map(([value, label]) => (
-              <button key={value} type="button" onClick={() => { setPaymentStatus(value); setPaymentAmount(value === "paid" ? amountDue.toFixed(2) : value === "partial" ? "" : "0.00"); }} className={`min-h-12 rounded-lg border-2 px-2 text-sm font-semibold ${paymentStatus === value ? value === "unpaid" ? "border-accent-2 bg-blue-50 text-accent-2" : "border-green bg-green/10 text-green" : "border-border text-navy"}`}>{label}</button>
+              <Button key={value} type="button" variant={paymentStatus === value ? value === "unpaid" ? "accent" : "success" : "outline"} className="min-h-12 h-auto px-2 text-sm" onClick={() => { setPaymentStatus(value); setPaymentAmount(value === "paid" ? amountDue.toFixed(2) : value === "partial" ? "" : "0.00"); }}>{label}</Button>
             ))}
           </div>
         )}
@@ -399,25 +401,30 @@ function DeliveryPaymentPrompt({ stop, mode, isConfirming, onClose, onConfirm }:
             )}
             <label className="block text-xs font-semibold text-navy">
               Amount collected (₱)
-              <input type="number" min="0.01" max={amountDue} step="0.01" value={paymentAmount} onChange={(event) => { const value = event.target.value; setPaymentAmount(value); if (!isRecordingPayment) setPaymentStatus(Number(value) >= amountDue ? "paid" : "partial"); }} className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm font-normal" />
+              <Input type="number" min="0.01" max={amountDue} step="0.01" value={paymentAmount} onChange={(event) => { const value = event.target.value; setPaymentAmount(value); if (!isRecordingPayment) setPaymentStatus(Number(value) >= amountDue ? "paid" : "partial"); }} className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm font-normal" />
             </label>
             <label className="block text-xs font-semibold text-navy">
               Payment method
-              <select value={paymentMethod} onChange={(event) => setPaymentMethod(event.target.value)} className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm font-normal">
-                {paymentMethods.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-              </select>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger aria-label="Payment method" className="mt-1 font-normal">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {paymentMethods.map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </label>
             <label className="block text-xs font-semibold text-navy">
               Reference / receipt number (optional)
-              <input value={paymentReference} onChange={(event) => setPaymentReference(event.target.value)} className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm font-normal" />
+              <Input value={paymentReference} onChange={(event) => setPaymentReference(event.target.value)} className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm font-normal" />
             </label>
           </div>
         ) : (
           <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">The outstanding balance will be recorded in Accounts Receivable.</p>
         )}
         <div className="mt-5 flex gap-2 border-t border-border pt-4">
-          <button type="button" onClick={onClose} disabled={isConfirming} className="min-h-11 flex-1 rounded-lg border border-border px-4 text-sm font-semibold text-navy disabled:opacity-50">Cancel</button>
-          <button type="button" onClick={() => void onConfirm(paymentStatus === "paid", paymentStatus === "unpaid" ? 0 : Number(paymentAmount), paymentStatus === "unpaid" ? undefined : paymentMethod, paymentStatus === "unpaid" ? undefined : paymentReference)} disabled={isConfirming || (paymentStatus !== "unpaid" && (!Number.isFinite(Number(paymentAmount)) || Number(paymentAmount) <= 0 || Number(paymentAmount) > amountDue || (!isRecordingPayment && paymentStatus === "partial" && Number(paymentAmount) >= amountDue)))} className="min-h-11 flex-1 rounded-lg bg-green px-4 text-sm font-bold text-white disabled:opacity-50">{isConfirming ? "Saving…" : isRecordingPayment ? "Save payment" : "Confirm delivery"}</button>
+          <Button type="button" variant="ghost" onClick={onClose} disabled={isConfirming} className="min-h-11 h-auto flex-1">Cancel</Button>
+          <Button type="button" variant="success" onClick={() => void onConfirm(paymentStatus === "paid", paymentStatus === "unpaid" ? 0 : Number(paymentAmount), paymentStatus === "unpaid" ? undefined : paymentMethod, paymentStatus === "unpaid" ? undefined : paymentReference)} disabled={isConfirming || (paymentStatus !== "unpaid" && (!Number.isFinite(Number(paymentAmount)) || Number(paymentAmount) <= 0 || Number(paymentAmount) > amountDue || (!isRecordingPayment && paymentStatus === "partial" && Number(paymentAmount) >= amountDue)))} className="min-h-11 h-auto flex-1">{isConfirming ? "Saving…" : isRecordingPayment ? "Save payment" : "Confirm delivery"}</Button>
         </div>
       </section>
     </div>

@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { Table } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
 import type {
@@ -102,7 +103,7 @@ function ReportDataTable({ rows }: { rows: ReportRow[] }) {
 
   return (
     <div className="data-table-frame overflow-x-auto">
-      <table className="data-table w-full min-w-[640px] text-sm">
+      <Table className="w-full min-w-[640px] text-sm">
         <caption className="sr-only">Raw report data</caption>
         <thead>
           <tr className="border-b border-border bg-off-white">
@@ -124,7 +125,7 @@ function ReportDataTable({ rows }: { rows: ReportRow[] }) {
             </tr>
           ))}
         </tbody>
-      </table>
+      </Table>
     </div>
   );
 }

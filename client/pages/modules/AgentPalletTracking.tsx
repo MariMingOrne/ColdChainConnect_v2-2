@@ -4,6 +4,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ChevronDown, ChevronUp, Package, RefreshCw, Search } from "lucide-react";
 import { Booking, Pallet, Product } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
+import { Input } from "@/components/ui/input";
 
 interface TrackingPallet extends Pallet {
   order?: Booking;
@@ -213,7 +214,7 @@ export function AgentPalletTracking() {
 
       <label className="flex min-h-12 items-center gap-2 rounded-xl border border-border bg-white px-3 text-muted focus-within:border-accent-2">
         <Search size={17} />
-        <input
+        <Input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search pallet, order, or customer"

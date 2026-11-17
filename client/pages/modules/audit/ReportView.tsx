@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Table as TableIcon } from "lucide-react";
+import { Table } from "@/components/ui/table";
 
 export interface ReportColumn<T> {
   header: string;
@@ -69,7 +70,7 @@ export function ReportView<T>({ title, subtitle, chart, rows, columns }: ReportV
 
       {showTable && (
         <div className="data-table-frame overflow-x-auto">
-          <table className="data-table w-full text-sm">
+          <Table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-off-white">
                 {columns.map((column) => (
@@ -90,7 +91,7 @@ export function ReportView<T>({ title, subtitle, chart, rows, columns }: ReportV
                 </tr>
               ))}
             </tbody>
-          </table>
+          </Table>
         </div>
       )}
     </Card>

@@ -3,6 +3,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { RefreshCw } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Customer, Truck, Invoice } from "@shared/api";
+import { Table } from "@/components/ui/table";
 
 interface Receipt {
   id: string;
@@ -174,7 +175,7 @@ export function DeliveryHistory() {
           <p className="px-6 py-8 text-sm text-muted">Loading…</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="data-table w-full text-xs md:text-sm">
+            <Table className="w-full text-xs md:text-sm">
               <thead>
                 <tr>
                   {["Receipt #", "Customer", "Truck", "Confirmed At", "Notes", "Action"].map((h) => (
@@ -218,7 +219,7 @@ export function DeliveryHistory() {
                   ))
                 )}
               </tbody>
-            </table>
+            </Table>
           </div>
         )}
 

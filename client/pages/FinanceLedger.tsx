@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { Table } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { TrendingUp, TrendingDown, DollarSign, AlertCircle } from "lucide-react";
 
@@ -707,7 +708,7 @@ export function FinanceLedger() {
 
             <Card className="overflow-hidden rounded-xl shadow-sm">
               <div className="overflow-x-auto scrollbar-visible">
-                <table className="data-table w-full text-sm">
+                <Table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-navy-mid">
                       <th className="text-left py-3 px-4 font-semibold text-white">
@@ -765,7 +766,7 @@ export function FinanceLedger() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </Table>
               </div>
             </Card>
           </div>
@@ -781,7 +782,7 @@ export function FinanceLedger() {
 
             <Card className="overflow-hidden rounded-xl shadow-sm">
               <div className="overflow-x-auto scrollbar-visible">
-                <table className="data-table w-full text-sm">
+                <Table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-navy-mid">
                       <th className="text-left py-3 px-4 font-semibold text-white">
@@ -853,7 +854,7 @@ export function FinanceLedger() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </Table>
               </div>
             </Card>
           </div>
@@ -869,7 +870,7 @@ export function FinanceLedger() {
 
             <Card className="overflow-hidden rounded-xl shadow-sm">
               <div className="overflow-x-auto scrollbar-visible">
-                <table className="data-table w-full text-sm">
+                <Table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-navy-mid">
                       <th className="text-left py-3 px-4 font-semibold text-white">
@@ -941,7 +942,7 @@ export function FinanceLedger() {
                       </tr>
                     ))}
                   </tbody>
-                </table>
+                </Table>
               </div>
             </Card>
           </div>
