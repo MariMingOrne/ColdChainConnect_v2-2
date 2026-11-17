@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useInventoryContext } from "../context/InventoryContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ChevronLeft, Download } from "lucide-react";
+import { Download } from "lucide-react";
 import { ActionButtons } from "@/components/ActionButtons";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
@@ -312,14 +312,9 @@ export function Inventory() {
     <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-2 hover:bg-off-white rounded-lg transition-colors">
-            <ChevronLeft className="w-6 h-6 text-navy" />
-          </button>
-          <div>
-            <h1 className="font-rajdhani text-3xl font-bold text-navy letter-spacing-tight">Inventory Management</h1>
-            <p className="text-xs text-muted mt-1">Track, manage, and monitor all frozen goods SKUs</p>
-          </div>
+        <div>
+          <h1 className="font-rajdhani text-3xl font-bold text-navy letter-spacing-tight">Inventory Management</h1>
+          <p className="text-xs text-muted mt-1">Track, manage, and monitor all frozen goods SKUs</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
           <button onClick={() => navigate("/information-management/products")} className="px-4 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-colors">👁 Show All Products</button>
