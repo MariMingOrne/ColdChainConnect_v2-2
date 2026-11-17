@@ -162,6 +162,7 @@ export function DeliveryHistory() {
         searchTerm={search}
         onSearchChange={(value) => { setSearch(value); setPage(1); }}
         placeholder="Search by receipt #, customer, truck, or invoice…"
+        className="!justify-start"
         filters={[
           {
             name: "customerFilter",
