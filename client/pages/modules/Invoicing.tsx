@@ -341,6 +341,7 @@ export function Invoicing() {
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         placeholder="Search by invoice ID, booking ID, or customer…"
+        className="!justify-start"
         filters={[
           {
             name: "statusFilter", value: statusFilter,
