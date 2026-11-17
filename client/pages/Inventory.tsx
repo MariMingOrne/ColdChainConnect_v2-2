@@ -659,11 +659,13 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
   const [showArchived, setShowArchived] = useState(false);
   const [batchQuery, setBatchQuery] = useState("");
   const [createdSince, setCreatedSince] = useState("");
+  const [productFilter, setProductFilter] = useState("");
 
   const activeBatches = batches.filter((b) => {
     if (b.isArchived || b.id === "batch-all") return false;
     if (batchQuery.trim() && !b.name.toLowerCase().includes(batchQuery.trim().toLowerCase())) return false;
     if (createdSince && new Date(b.created_at) < new Date(createdSince)) return false;
+    if (productFilter && !b.pallets.some((p: any) => p.items.some((item: any) => item.productId === productFilter))) return false;
     return true;
   });
   const archivedBatches = batches.filter((b) => b.isArchived);
@@ -734,8 +736,18 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                       title="Show batches created on or after this date and time"
                       className="rounded-lg border border-border px-3 py-2 text-sm text-navy"
                     />
-                    {(batchQuery || createdSince) && (
-                      <button onClick={() => { setBatchQuery(""); setCreatedSince(""); }} className="px-3 py-2 text-sm font-semibold text-navy border border-border rounded-lg hover:bg-off-white">
+                    <select
+                      value={productFilter}
+                      onChange={(e) => setProductFilter(e.target.value)}
+                      className="rounded-lg border border-border px-3 py-2 text-sm text-navy bg-white"
+                    >
+                      <option value="">All products</option>
+                      {products.map((product) => (
+                        <option key={product.id} value={product.id}>{product.description}</option>
+                      ))}
+                    </select>
+                    {(batchQuery || createdSince || productFilter) && (
+                      <button onClick={() => { setBatchQuery(""); setCreatedSince(""); setProductFilter(""); }} className="px-3 py-2 text-sm font-semibold text-navy border border-border rounded-lg hover:bg-off-white">
                         Clear
                       </button>
                     )}
