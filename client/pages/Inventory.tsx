@@ -62,6 +62,7 @@ export function Inventory() {
   const [newBatchName, setNewBatchName] = useState("");
   const [startBatchCreation, setStartBatchCreation] = useState(false);
   const [batchSearch, setBatchSearch] = useState("");
+  const [stockFilter, setStockFilter] = useState("all");
   const [batchCreatedSince, setBatchCreatedSince] = useState("");
   const [inventorySort, setInventorySort] = useState<SortState<"name" | "cost" | "stock" | "reorder" | "expiry">>(null);
   const [showExcelImport, setShowExcelImport] = useState(false);
@@ -178,8 +179,8 @@ export function Inventory() {
   const batchProducts = getBatchProducts();
 
   const filteredBatchProducts = batchProducts.filter((p) =>
-    p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.description.toLowerCase().includes(searchQuery.toLowerCase())
+    (p.sku.toLowerCase().includes(searchQuery.toLowerCase()) || p.description.toLowerCase().includes(searchQuery.toLowerCase())) &&
+    (stockFilter === "all" || (stockFilter === "low" ? p.batchQuantity <= p.reorderPoint : p.batchQuantity > p.reorderPoint))
   );
 
   const sortedBatchProducts = [...filteredBatchProducts].sort((a, b) => {
@@ -374,28 +375,6 @@ export function Inventory() {
 
       {/* Batch & Pallet Selector Card */}
       <div className="bg-white rounded-2xl border border-border p-6 space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div className="flex flex-col sm:flex-row gap-2 w-full md:max-w-xl">
-            <div className="w-full md:max-w-sm">
-              <SearchFilterBar
-                searchTerm={batchSearch}
-                onSearchChange={setBatchSearch}
-                placeholder="Find a batch or pallet…"
-              />
-            </div>
-            <input
-              type="datetime-local"
-              value={batchCreatedSince}
-              onChange={(e) => setBatchCreatedSince(e.target.value)}
-              title="Show batches created on or after this date and time"
-              className="rounded-lg border border-border px-3 py-2 text-sm text-navy"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button onClick={() => setIsBatchModalOpen(true)} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white w-fit">⚙ Manage Batches</button>
-          </div>
-        </div>
-
         <div>
           <label className="block text-xs font-semibold text-navy mb-2">Batch</label>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-visible">
@@ -422,18 +401,29 @@ export function Inventory() {
             </div>
           </div>
         )}
+        <div className="flex flex-col gap-3 border-t border-border pt-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="w-full sm:w-72">
+              <SearchFilterBar searchTerm={batchSearch} onSearchChange={setBatchSearch} placeholder="Find a batch or pallet…" />
+            </div>
+            <input type="datetime-local" value={batchCreatedSince} onChange={(e) => setBatchCreatedSince(e.target.value)} title="Show batches created on or after this date and time" className="rounded-lg border border-border px-3 py-2 text-sm text-navy" />
+          </div>
+          <button onClick={() => setIsBatchModalOpen(true)} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white w-fit">⚙ Manage Batches</button>
+        </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-end gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="relative w-full sm:w-72">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-          <input
-            type="text"
-            placeholder="Search by SKU or name…"
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-            className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
-          />
+          <input type="text" placeholder="Search by SKU or name…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none" />
+        </div>
+        <div className="flex items-center gap-2">
+          <label htmlFor="inventory-stock-filter" className="text-sm font-semibold text-navy">Stock</label>
+          <select id="inventory-stock-filter" value={stockFilter} onChange={(e) => { setStockFilter(e.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-white px-4 py-2 text-sm text-navy">
+            <option value="all">All stock</option>
+            <option value="low">Reorder needed</option>
+            <option value="available">Above reorder level</option>
+          </select>
         </div>
       </div>
 
@@ -476,12 +466,14 @@ export function Inventory() {
                   return (
                     <tr key={uniqueKey} className={`border-b border-border transition-colors ${highlightColor.bg} ${highlightColor.hover}`}>
                       {/* Name */}
-                      <td className="px-3 py-3 text-navy font-semibold max-w-[200px] truncate flex items-center gap-2">
-                        {expiryStatus && <span title={expiryStatus.status}>{expiryStatus.icon}</span>}
-                        {product.description}
+                      <td className="px-3 py-3 text-navy font-semibold max-w-[200px] truncate">
+                        <div className="flex items-center gap-2 truncate">
+                          {expiryStatus && <span title={expiryStatus.status}>{expiryStatus.icon}</span>}
+                          <span className="truncate">{product.description}</span>
+                        </div>
                       </td>
                       {/* Cost Per Item */}
-                      <td className="px-3 py-3 text-navy whitespace-nowrap">₱{product.unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</td>
+                      <td className="px-3 py-3 text-right text-navy whitespace-nowrap">₱{product.unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</td>
                       {/* Stock Qty */}
                       <td className="px-3 py-3 whitespace-nowrap text-center">
                         <span className={`inline-block px-2 py-1 rounded text-xs font-bold text-white ${
@@ -494,13 +486,13 @@ export function Inventory() {
                       </td>
                       {/* Reorder Level — read-only display in All Products view */}
                       {selectedBatchId === "batch-all" && (
-                        <td className="px-3 py-3 text-navy whitespace-nowrap font-semibold">
+                        <td className="px-3 py-3 text-right text-navy whitespace-nowrap font-semibold">
                           {product.reorderPoint.toLocaleString()}
                         </td>
                       )}
                       {/* Expiry Date — display in batch view */}
                       {selectedBatchId !== "batch-all" && (
-                        <td className="px-3 py-3 text-navy whitespace-nowrap text-sm">
+                        <td className="px-3 py-3 text-left text-navy whitespace-nowrap text-sm">
                           {product.batchExpiryDate ? parseIsoDate(product.batchExpiryDate).toLocaleDateString("en-PH") : "N/A"}
                         </td>
                       )}
