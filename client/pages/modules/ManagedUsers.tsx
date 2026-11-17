@@ -101,21 +101,22 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
   };
 
   const Icon = role === "admin" ? ShieldCheck : Users;
-  const title = role === "admin" ? "Admin Management" : "Staff Management";
+  const roleLabel = role === "admin" ? "Admin" : "Accounting";
+  const title = role === "admin" ? "Admin Management" : "Accounting Management";
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden px-4 py-4 md:px-6 md:py-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><h1 className="font-rajdhani text-3xl font-bold tracking-tight text-navy">{title}</h1><p className="mt-1 text-xs text-muted">Manage {role} accounts</p></div>
+        <div><h1 className="font-rajdhani text-3xl font-bold tracking-tight text-navy">{title}</h1><p className="mt-1 text-xs text-muted">Manage {roleLabel.toLowerCase()} accounts</p></div>
         <div className="flex flex-wrap items-center gap-2">
           {currentUser?.role === "admin" && <button type="button" onClick={onCreateAccount} className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Create Accounts</button>}
         </div>
       </div>
       {error && <p className="rounded-lg border border-red/30 bg-red/10 px-4 py-3 text-sm text-red">{error}</p>}
-      <SearchFilterBar searchTerm={search} onSearchChange={(value) => { setSearch(value); setCurrentPage(1); }} placeholder={`Search ${role} accounts by username…`} className="!flex-none" filters={[{ name: "MFA Status", value: mfaFilter, onChange: (value) => { setMfaFilter(value); setCurrentPage(1); }, options: [{ label: "All MFA Status", value: "all" }, { label: "Enabled", value: "enabled" }, { label: "Not set up", value: "not-enabled" }] }]} />
+      <SearchFilterBar searchTerm={search} onSearchChange={(value) => { setSearch(value); setCurrentPage(1); }} placeholder={`Search ${roleLabel.toLowerCase()} accounts by username…`} className="!flex-none" filters={[{ name: "MFA Status", value: mfaFilter, onChange: (value) => { setMfaFilter(value); setCurrentPage(1); }, options: [{ label: "All MFA Status", value: "all" }, { label: "Enabled", value: "enabled" }, { label: "Not set up", value: "not-enabled" }] }]} />
       {saveMessage && <p role="status" className="text-sm text-navy">{saveMessage}</p>}
       {isLoading ? <div className="flex flex-1 items-center justify-center"><LoadingSpinner /></div> : paginatedUsers.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center text-center text-sm text-muted">No {role} accounts match your search.</div>
+        <div className="flex flex-1 items-center justify-center text-center text-sm text-muted">No {roleLabel.toLowerCase()} accounts match your search.</div>
       ) : (
         <div className="grid flex-1 content-start grid-cols-1 gap-3 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {paginatedUsers.map((account) => (
@@ -123,7 +124,7 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy-mid"><span className="font-rajdhani text-sm font-bold text-white">{account.username.slice(0, 2).toUpperCase()}</span></div>
                 <div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold text-navy">{account.username}</div><div className="truncate text-xs text-muted">@{account.username}</div></div>
-                <span className="shrink-0 rounded px-2 py-0.5 text-xs font-bold capitalize badge-green">{account.role}</span>
+                <span className="shrink-0 rounded px-2 py-0.5 text-xs font-bold badge-green">{account.role === "staff" ? "Accounting" : "Admin"}</span>
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-border pt-2 text-xs">
                 <div><span className="block text-muted">MFA enrollment</span><span className="font-medium text-navy">{account.mfa_enabled ? "Set up" : "Not set up"}</span></div>

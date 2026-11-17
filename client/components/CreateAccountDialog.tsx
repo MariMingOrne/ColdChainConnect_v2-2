@@ -15,7 +15,7 @@ const typeLabels: Record<AccountType, string> = {
   agent: "Agent",
   driver: "Driver",
   admin: "Admin",
-  staff: "Staff",
+  staff: "Accounting",
 };
 
 interface CreateAccountDialogProps {
@@ -125,7 +125,7 @@ export function CreateAccountDialog({ onClose }: CreateAccountDialogProps) {
             <TabsTrigger value="agent">Agent</TabsTrigger>
             <TabsTrigger value="driver">Driver</TabsTrigger>
             <TabsTrigger value="admin">Admin</TabsTrigger>
-            <TabsTrigger value="staff">Staff</TabsTrigger>
+            <TabsTrigger value="staff">Accounting</TabsTrigger>
           </TabsList>
         </Tabs>
 
