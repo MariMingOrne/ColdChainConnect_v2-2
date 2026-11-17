@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ArrowLeft } from "lucide-react";
+import { modulePermissionKeys, type ModulePermission } from "@shared/api";
 import {
   AccountForm,
   AccountType,
@@ -24,12 +25,14 @@ interface CreateAccountDialogProps {
 export function CreateAccountDialog({ onClose }: CreateAccountDialogProps) {
   const token = useAuth((state) => state.token);
   const [accountType, setAccountType] = useState<AccountType>("agent");
+  const [modulePermissions, setModulePermissions] = useState<ModulePermission[]>([]);
   const [form, setForm] = useState<AccountForm>(emptyAccountForm);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleClose = () => {
     setForm(emptyAccountForm());
+    setModulePermissions([]);
     setError(null);
     onClose();
   };
@@ -74,7 +77,7 @@ export function CreateAccountDialog({ onClose }: CreateAccountDialogProps) {
     return fetch("/api/users", {
       method: "POST",
       headers,
-      body: JSON.stringify({ username: form.username, password: form.password, role: accountType }),
+      body: JSON.stringify({ username: form.username, password: form.password, role: accountType, ...(accountType === "staff" ? { module_permissions: modulePermissions } : {}) }),
     });
   };
 
@@ -127,7 +130,7 @@ export function CreateAccountDialog({ onClose }: CreateAccountDialogProps) {
         </Tabs>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <CreateAccountFields accountType={accountType} form={form} onChange={setForm} />
+          <CreateAccountFields accountType={accountType} form={form} onChange={setForm} modulePermissions={modulePermissions} onModulePermissionsChange={setModulePermissions} />
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 

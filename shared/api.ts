@@ -69,6 +69,7 @@ export interface CreateAccountRequest {
   username: string;
   password: string;
   role: "admin" | "agent" | "staff";
+  module_permissions?: ModulePermission[];
 }
 
 export interface CreateAccountResponse {

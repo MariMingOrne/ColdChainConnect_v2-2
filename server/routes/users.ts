@@ -5,7 +5,7 @@ import { db } from "../db";
 import { users } from "../db/schema";
 import { hashPassword } from "../auth";
 import { modulePermissionKeys } from "../../shared/api";
-import type { CreateAccountRequest, CreateAccountResponse } from "../../shared/api";
+import type { CreateAccountRequest, CreateAccountResponse, ModulePermission } from "../../shared/api";
 import type { AuthRequest } from "../middleware/auth";
 
 const ROLES: CreateAccountRequest["role"][] = ["admin", "agent", "staff"];
@@ -41,6 +41,11 @@ export const handleCreateAccount: RequestHandler = async (req, res) => {
   const username = typeof body.username === "string" ? body.username.trim() : "";
   const password = typeof body.password === "string" ? body.password : "";
   const role = body.role;
+  const requestedPermissions = (req.body as { module_permissions?: unknown }).module_permissions;
+  if (role === "staff" && requestedPermissions !== undefined && (!Array.isArray(requestedPermissions) || !requestedPermissions.every((key) => typeof key === "string" && modulePermissionKeys.includes(key as (typeof modulePermissionKeys)[number])))) {
+    return res.status(400).json({ error: "Invalid module permissions" });
+  }
+  const staffPermissions = role === "staff" ? (requestedPermissions as ModulePermission[] | undefined) ?? [] : modulePermissionKeys.slice();
 
   if (!username || !password || !role) {
     return res.status(400).json({ error: "Username, password, and role required" });
@@ -69,7 +74,7 @@ export const handleCreateAccount: RequestHandler = async (req, res) => {
       username,
       password_hash: await hashPassword(password),
       role,
-      module_permissions: role === "staff" ? [] : modulePermissionKeys.slice(),
+      module_permissions: staffPermissions,
     });
 
     const created: CreateAccountResponse = { id, username, role };
