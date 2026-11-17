@@ -7,8 +7,8 @@ import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Product } from "@shared/api";
-import { ArrowLeft, Download, Upload, RefreshCw, Search } from "lucide-react";
-import { ActionButtons } from "@/components/ActionButtons";
+import { ArrowLeft, Download, Upload, RefreshCw, Search, MoreHorizontal } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
 import { RecordDetailsDialog, type RecordDetails } from "@/components/RecordDetailsDialog";
@@ -311,7 +311,7 @@ export function Pricing({ onBack }: PricingProps) {
   const [productSort, setProductSort] = useState<SortState<"image" | "name" | "price" | "reorder" | "weight" | "status">>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [showDeleteButtons, setShowDeleteButtons] = useState(false);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const [productDetails, setProductDetails] = useState<RecordDetails | null>(null);
   const [previewImageFilename, setPreviewImageFilename] = useState<string | null>(null);
@@ -474,8 +474,23 @@ export function Pricing({ onBack }: PricingProps) {
         headers: { Authorization: `Bearer ${token}` },
       });
       setProducts(products.filter((p) => p.id !== id));
+      setSelectedProductIds((ids) => ids.filter((selectedId) => selectedId !== id));
     } catch {
       alert("Failed to delete product");
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!confirm(`Delete ${selectedProductIds.length} selected products?`)) return;
+    try {
+      await Promise.all(selectedProductIds.map((id) => fetch(`/api/products/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      })));
+      setProducts((current) => current.filter((product) => !selectedProductIds.includes(product.id)));
+      setSelectedProductIds([]);
+    } catch {
+      alert("Failed to delete selected products");
     }
   };
 
@@ -572,18 +587,15 @@ export function Pricing({ onBack }: PricingProps) {
         />
       </div>
 
-      {/* Search + Add + Delete Toggle */}
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <button
-          onClick={() => setShowDeleteButtons(!showDeleteButtons)}
-          className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-            showDeleteButtons
-              ? "bg-red text-white hover:opacity-90"
-              : "border border-border bg-white text-navy hover:bg-off-white"
-          }`}
-        >
-          {showDeleteButtons ? "🔓 Delete Enabled" : "🔒 Enable Delete"}
-        </button>
+        {selectedProductIds.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild><button className="inline-flex items-center gap-2 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white"><MoreHorizontal size={16} /> Actions ({selectedProductIds.length})</button></DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="bg-white text-navy">
+              <DropdownMenuItem className="text-red focus:text-red" onClick={() => void handleDeleteSelected()}>Delete selected products</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
         <div className="relative w-full sm:w-72">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input
@@ -605,6 +617,7 @@ export function Pricing({ onBack }: PricingProps) {
           <Table className="w-full">
             <thead>
               <tr>
+                <th className="px-3 py-3"><input aria-label="Select all products on this page" type="checkbox" checked={paginatedProducts.length > 0 && paginatedProducts.every((product) => selectedProductIds.includes(product.id))} onChange={(event) => setSelectedProductIds(event.target.checked ? Array.from(new Set([...selectedProductIds, ...paginatedProducts.map((product) => product.id)])) : selectedProductIds.filter((id) => !paginatedProducts.some((product) => product.id === id)))} /></th>
                 <SortableHeader label="Image" sortKey="image" sort={productSort} onSort={setProductSort} />
                 <SortableHeader label="Product Name" sortKey="name" sort={productSort} onSort={setProductSort} />
                 <SortableHeader label="Unit Price" sortKey="price" sort={productSort} onSort={setProductSort} />
@@ -619,16 +632,14 @@ export function Pricing({ onBack }: PricingProps) {
             <tbody>
               {paginatedProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-3 py-6 text-center text-muted">
+                  <td colSpan={8} className="px-3 py-6 text-center text-muted">
                     {products.length === 0 ? "No products found" : "No results matching your search"}
                   </td>
                 </tr>
               ) : (
                 paginatedProducts.map((product) => (
-                  <tr
-                    key={product.id}
-                    className="border-b border-border hover:bg-off-white/50 transition-colors"
-                  >
+                  <tr key={product.id} className="border-b border-border hover:bg-off-white/50 transition-colors">
+                    <td className="px-3 py-3"><input aria-label={`Select ${product.name}`} type="checkbox" checked={selectedProductIds.includes(product.id)} onChange={(event) => setSelectedProductIds(event.target.checked ? [...selectedProductIds, product.id] : selectedProductIds.filter((id) => id !== product.id))} /></td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       {product.image_filename ? (
                         <div className="w-10 h-10 bg-off-white rounded-lg overflow-hidden border border-border flex items-center justify-center cursor-pointer hover:border-accent-2 hover:shadow-md transition-all duration-200 hover:scale-110" onClick={() => setPreviewImageFilename(product.image_filename)}>
@@ -679,13 +690,15 @@ export function Pricing({ onBack }: PricingProps) {
                         {product.is_discontinued ? "Discontinued" : "Active"}
                       </span>
                     </td>
-                    <td style={{ width: '120px' }} className="sticky right-0 z-10 px-3 py-3 bg-white border-l border-border shadow-left">
-                      <ActionButtons
-                        onView={() => setViewingProduct(product)}
-                        onEdit={() => openEditModal(product)}
-                        onDelete={() => handleDelete(product.id)}
-                        showDelete={showDeleteButtons}
-                      />
+                    <td className="sticky right-0 z-10 px-3 py-3 bg-white border-l border-border shadow-left">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><button aria-label={`Actions for ${product.name}`} className="rounded-md p-2 hover:bg-off-white"><MoreHorizontal size={18} /></button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-white text-navy">
+                          <DropdownMenuItem onClick={() => setViewingProduct(product)}>View</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openEditModal(product)}>Edit</DropdownMenuItem>
+                          <DropdownMenuItem className="text-red focus:text-red" onClick={() => void handleDelete(product.id)}>Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
                   </tr>
                 ))

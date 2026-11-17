@@ -284,7 +284,6 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [viewingAgent, setViewingAgent] = useState<Agent | null>(null);
-  const [showDeleteButtons, setShowDeleteButtons] = useState(false);
   const [isResettingMfa, setIsResettingMfa] = useState(false);
   const [mfaMessage, setMfaMessage] = useState<string | null>(null);
   const { token } = useAuth();
@@ -508,9 +507,6 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Create Accounts</button>
-          <button onClick={() => setShowDeleteButtons(!showDeleteButtons)} className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${showDeleteButtons ? "bg-red text-white" : "border border-border bg-white text-navy hover:bg-off-white"}`}>
-            {showDeleteButtons ? "Disable Delete" : "Enable Delete"}
-          </button>
         </div>
       </div>
 
@@ -540,7 +536,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
             <AgentCard
               key={agent.id}
               agent={agent}
-              showDelete={showDeleteButtons}
+              showDelete
               onView={() => setViewingAgent(agent)}
               onEdit={() => openEditModal(agent)}
               onDelete={() => handleDelete(agent.id)}

@@ -12,15 +12,25 @@ const ROLES: CreateAccountRequest["role"][] = ["admin", "agent", "staff"];
 
 export const handleListManagedAccounts: RequestHandler = async (req: AuthRequest, res) => {
   if (req.user?.role === "staff") {
-    const accounts = await db.select({ id: users.id, username: users.username, role: users.role, created_at: users.created_at, mfa_enabled: users.mfa_enabled, module_permissions: users.module_permissions }).from(users).where(eq(users.id, req.user.userId));
+    const accounts = await db.select({ id: users.id, username: users.username, role: users.role, created_at: users.created_at, mfa_enabled: users.mfa_enabled, mfa_required: users.mfa_required, module_permissions: users.module_permissions }).from(users).where(eq(users.id, req.user.userId));
     return res.json(accounts);
   }
   const accounts = await db
-    .select({ id: users.id, username: users.username, role: users.role, created_at: users.created_at, mfa_enabled: users.mfa_enabled, module_permissions: users.module_permissions })
+    .select({ id: users.id, username: users.username, role: users.role, created_at: users.created_at, mfa_enabled: users.mfa_enabled, mfa_required: users.mfa_required, module_permissions: users.module_permissions })
     .from(users)
     .where(inArray(users.role, ["admin", "staff"]))
     .orderBy(asc(users.username));
   res.json(accounts);
+};
+
+export const handleUpdateMfaRequirement: RequestHandler = async (req, res) => {
+  const { userId } = req.params;
+  const required = (req.body as { mfa_required?: unknown }).mfa_required;
+  if (typeof required !== "boolean") return res.status(400).json({ error: "mfa_required must be a boolean" });
+
+  const [updated] = await db.update(users).set({ mfa_required: required }).where(eq(users.id, userId)).returning({ id: users.id, mfa_required: users.mfa_required });
+  if (!updated) return res.status(404).json({ error: "Account not found" });
+  res.json(updated);
 };
 
 export const handleUpdateStaffPermissions: RequestHandler = async (req, res) => {

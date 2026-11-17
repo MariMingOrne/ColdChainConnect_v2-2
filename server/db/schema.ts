@@ -47,6 +47,7 @@ export const users = pgTable("users", {
   password_hash: text("password_hash").notNull(),
   mfa_secret: text("mfa_secret"),
   mfa_enabled: boolean("mfa_enabled").default(false).notNull(),
+  mfa_required: boolean("mfa_required").default(true).notNull(),
   role: userRoleEnum("role").default("agent").notNull(),
   module_permissions: jsonb("module_permissions").$type<string[]>().default([]).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),

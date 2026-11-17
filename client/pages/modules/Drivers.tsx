@@ -264,7 +264,6 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
   const [viewingDriver, setViewingDriver] = useState<Driver | null>(null);
   const [schedulingDriver, setSchedulingDriver] = useState<Driver | null>(null);
-  const [showDeleteButtons, setShowDeleteButtons] = useState(false);
   const { token } = useAuth();
 
   const emptyForm = (): DriverForm => ({
@@ -439,9 +438,6 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Create Accounts</button>
-          <button onClick={() => setShowDeleteButtons(!showDeleteButtons)} className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${showDeleteButtons ? "bg-red text-white" : "border border-border bg-white text-navy hover:bg-off-white"}`}>
-            {showDeleteButtons ? "Disable Delete" : "Enable Delete"}
-          </button>
         </div>
       </div>
 
@@ -469,7 +465,7 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
             <DriverCard
               key={driver.id}
               driver={driver}
-              showDelete={showDeleteButtons}
+              showDelete
               onView={() => setViewingDriver(driver)}
               onEdit={() => openEditModal(driver)}
               onSchedule={() => setSchedulingDriver(driver)}

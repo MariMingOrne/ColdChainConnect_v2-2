@@ -355,7 +355,6 @@ export function Customers({ onBack }: CustomersProps) {
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
-  const [showDeleteButtons, setShowDeleteButtons] = useState(false);
   const [viewingCustomer, setViewingCustomer] = useState<Customer | null>(null);
   const [showExcelImport, setShowExcelImport] = useState(false);
   const [truckDistricts, setTruckDistricts] = useState<string[]>([]);
@@ -694,16 +693,6 @@ export function Customers({ onBack }: CustomersProps) {
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => setShowDeleteButtons(!showDeleteButtons)}
-            className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-              showDeleteButtons
-                ? "bg-red text-white hover:opacity-90"
-                : "border border-border bg-white text-navy hover:bg-off-white"
-            }`}
-          >
-            {showDeleteButtons ? "🔓 Delete Enabled" : "🔒 Enable Delete"}
-          </button>
           <select
             aria-label="District"
             value={districtFilter}
@@ -782,7 +771,7 @@ export function Customers({ onBack }: CustomersProps) {
                         onView={() => setViewingCustomer(customer)}
                         onEdit={() => openEditModal(customer)}
                         onDelete={() => handleDelete(customer.id)}
-                        showDelete={showDeleteButtons}
+                        showDelete
                       />
                     </TableCell>
                   </TableRow>

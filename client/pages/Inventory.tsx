@@ -73,7 +73,6 @@ export function Inventory() {
     manufacturer: "", isDiscontinued: false,
   });
 
-  const [showDeleteButtons, setShowDeleteButtons] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("action") !== "receive") return;
@@ -364,7 +363,6 @@ export function Inventory() {
           <p className="page-subtitle">Track, manage, and monitor all frozen goods SKUs</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => navigate("/information-management/products")} className="px-4 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-colors">👁 Show All Products</button>
           <button onClick={() => { setNewBatchName(""); setStartBatchCreation(true); setIsBatchModalOpen(true); }} className="px-4 py-2 bg-green text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-colors">➕ Add Items</button>
           <button onClick={() => setShowExcelImport(true)} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors">⬇ Import Excel</button>
           <button onClick={() => void handleInventoryExport()} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors"><Download size={15} className="mr-1 inline" />Export Excel</button>
@@ -426,18 +424,7 @@ export function Inventory() {
         )}
       </div>
 
-      {/* Search + Delete Toggle */}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <button
-          onClick={() => setShowDeleteButtons(!showDeleteButtons)}
-          className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-            showDeleteButtons
-              ? "bg-red text-white hover:opacity-90"
-              : "border border-border bg-white text-navy hover:bg-off-white"
-          }`}
-        >
-          {showDeleteButtons ? "🔓 Delete Enabled" : "🔒 Enable Delete"}
-        </button>
+      <div className="flex flex-wrap items-center justify-end gap-3">
         <div className="relative w-full sm:w-72">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input
@@ -524,7 +511,7 @@ export function Inventory() {
                             onView={() => setExtraInfoProduct(product)}
                             onEdit={undefined}
                             onDelete={() => handleDelete(product.id)}
-                            showDelete={showDeleteButtons}
+                            showDelete
                           />
                         </div>
                       </td>

@@ -12,6 +12,7 @@ type ManagedUser = {
   role: "admin" | "staff";
   created_at: string;
   mfa_enabled: boolean;
+  mfa_required: boolean;
   module_permissions: ModulePermission[];
 };
 
@@ -22,6 +23,7 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [mfaSavingId, setMfaSavingId] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [mfaFilter, setMfaFilter] = useState("all");
@@ -51,6 +53,25 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
   ), [users, search, mfaFilter]);
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const updateMfaRequirement = async (account: ManagedUser, required: boolean) => {
+    setMfaSavingId(account.id);
+    setSaveMessage(null);
+    try {
+      const response = await fetch(`/api/users/${account.id}/mfa-required`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ mfa_required: required }),
+      });
+      if (!response.ok) throw new Error("Could not update MFA requirement");
+      setUsers((current) => current.map((user) => user.id === account.id ? { ...user, mfa_required: required } : user));
+      setSaveMessage(`MFA requirement ${required ? "enabled" : "disabled"} for ${account.username}.`);
+    } catch (cause) {
+      setSaveMessage(cause instanceof Error ? cause.message : "Could not update MFA requirement");
+    } finally {
+      setMfaSavingId(null);
+    }
+  };
 
   const togglePermission = (userId: string, permission: ModulePermission) => {
     setUsers((current) => current.map((account) => account.id !== userId ? account : {
@@ -105,9 +126,15 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
                 <span className="shrink-0 rounded px-2 py-0.5 text-xs font-bold capitalize badge-green">{account.role}</span>
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-border pt-2 text-xs">
-                <div><span className="block text-muted">MFA</span><span className="font-medium text-navy">{account.mfa_enabled ? "Enabled" : "Not set up"}</span></div>
+                <div><span className="block text-muted">MFA enrollment</span><span className="font-medium text-navy">{account.mfa_enabled ? "Set up" : "Not set up"}</span></div>
                 <div><span className="block text-muted">Created</span><span className="font-medium text-navy">{new Date(account.created_at).toLocaleDateString()}</span></div>
               </div>
+              {currentUser?.role === "admin" && (
+                <label className="flex items-center justify-between gap-3 border-t border-border pt-2 text-xs font-semibold text-navy">
+                  <span>Require MFA at sign-in</span>
+                  <input type="checkbox" checked={account.mfa_required} disabled={mfaSavingId === account.id} onChange={(event) => void updateMfaRequirement(account, event.target.checked)} className="h-4 w-4 accent-navy" />
+                </label>
+              )}
               {account.role === "staff" && currentUser?.role === "admin" && (
                 <div className="border-t border-border pt-2">
                   <h2 className="mb-2 text-xs font-bold text-navy">Module access</h2>
