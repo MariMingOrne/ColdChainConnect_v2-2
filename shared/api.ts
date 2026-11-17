@@ -84,6 +84,7 @@ export interface User {
   username: string;
   role: "admin" | "agent" | "driver" | "staff";
   mfa_enabled: boolean;
+  mfa_required: boolean;
   created_at: string;
   updated_at: string;
   agent?: Pick<Agent, "full_name"> | null;
@@ -343,7 +344,7 @@ export interface Driver {
   employment_type?: "full_time" | "part_time";
   is_active: boolean;
   user_id?: string | null;
-  user?: { id: string; username: string; mfa_enabled: boolean } | null;
+  user?: { id: string; username: string; mfa_enabled: boolean; mfa_required: boolean } | null;
   created_at: string;
   updated_at: string;
 }

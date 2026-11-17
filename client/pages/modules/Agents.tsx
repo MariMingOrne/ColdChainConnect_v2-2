@@ -211,12 +211,18 @@ function AgentCard({
   onView,
   onEdit,
   onDelete,
+  canManageMfa,
+  isSavingMfa,
+  onMfaRequirementChange,
 }: {
   agent: Agent;
   showDelete: boolean;
   onView: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  canManageMfa: boolean;
+  isSavingMfa: boolean;
+  onMfaRequirementChange: (required: boolean) => void;
 }) {
   const initials = (agent.full_name || agent.user?.username || "?")
     .split(" ")
@@ -261,6 +267,13 @@ function AgentCard({
         </div>
       </div>
 
+      {canManageMfa && agent.user && (
+        <label className="flex items-center justify-between gap-3 border-t border-border pt-2 text-xs font-semibold text-navy">
+          <span>Require MFA at sign-in</span>
+          <input type="checkbox" checked={agent.user.mfa_required} disabled={isSavingMfa} onChange={(event) => onMfaRequirementChange(event.target.checked)} className="h-4 w-4 accent-navy" />
+        </label>
+      )}
+
       <div className="flex gap-2 pt-1 border-t border-border">
         <button onClick={onView} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-off-white text-navy transition-colors">View</button>
         <button onClick={onEdit} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-off-white text-navy transition-colors">Edit</button>
@@ -286,7 +299,8 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
   const [viewingAgent, setViewingAgent] = useState<Agent | null>(null);
   const [isResettingMfa, setIsResettingMfa] = useState(false);
   const [mfaMessage, setMfaMessage] = useState<string | null>(null);
-  const { token } = useAuth();
+  const [mfaSavingAgentId, setMfaSavingAgentId] = useState<string | null>(null);
+  const { token, user: currentUser } = useAuth();
 
   const emptyForm = (): AgentForm => ({
     full_name: "",
@@ -424,6 +438,24 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
     }
   };
 
+  const updateAgentMfaRequirement = async (agent: Agent, required: boolean) => {
+    if (!agent.user_id) return;
+    setMfaSavingAgentId(agent.id);
+    try {
+      const response = await fetch(`/api/users/${agent.user_id}/mfa-required`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ mfa_required: required }),
+      });
+      if (!response.ok) throw new Error("Failed to update MFA requirement");
+      setAgents((current) => current.map((item) => item.id === agent.id && item.user ? { ...item, user: { ...item.user, mfa_required: required } } : item));
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Failed to update MFA requirement");
+    } finally {
+      setMfaSavingAgentId(null);
+    }
+  };
+
   const handleResetMfa = async () => {
     if (!editingAgent?.user_id) return;
     const username = editingAgent.user?.username;
@@ -537,6 +569,9 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
               key={agent.id}
               agent={agent}
               showDelete
+              canManageMfa={currentUser?.role === "admin"}
+              isSavingMfa={mfaSavingAgentId === agent.id}
+              onMfaRequirementChange={(required) => void updateAgentMfaRequirement(agent, required)}
               onView={() => setViewingAgent(agent)}
               onEdit={() => openEditModal(agent)}
               onDelete={() => handleDelete(agent.id)}
