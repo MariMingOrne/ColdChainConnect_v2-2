@@ -258,6 +258,7 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
@@ -301,9 +302,10 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
 
   const filteredDrivers = drivers.filter(
     (d) =>
-      (d.full_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      ((d.full_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (d.contact_info?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (d.license?.toLowerCase().includes(searchQuery.toLowerCase()))
+      (d.license?.toLowerCase().includes(searchQuery.toLowerCase()))) &&
+      (statusFilter === "all" || (statusFilter === "active" ? d.is_active : !d.is_active))
   );
 
   const totalPages = Math.ceil(filteredDrivers.length / itemsPerPage);
@@ -453,6 +455,8 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
         searchTerm={searchQuery}
         onSearchChange={(value) => { setSearchQuery(value); setCurrentPage(1); }}
         placeholder="Search by name, contact, license…"
+        className="!flex-none"
+        filters={[{ name: "Status", value: statusFilter, onChange: (value) => { setStatusFilter(value); setCurrentPage(1); }, options: [{ label: "All Status", value: "all" }, { label: "Active", value: "active" }, { label: "Inactive", value: "inactive" }] }]}
       />
 
       {paginatedDrivers.length === 0 ? (

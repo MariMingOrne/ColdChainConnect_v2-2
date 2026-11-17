@@ -24,6 +24,7 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
   const [savingId, setSavingId] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [mfaFilter, setMfaFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
@@ -44,7 +45,10 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
 
   useEffect(() => { void fetchAccounts(); }, [role, token]);
 
-  const filteredUsers = useMemo(() => users.filter((account) => account.username.toLowerCase().includes(search.toLowerCase())), [users, search]);
+  const filteredUsers = useMemo(() => users.filter((account) =>
+    account.username.toLowerCase().includes(search.toLowerCase()) &&
+    (mfaFilter === "all" || (mfaFilter === "enabled" ? account.mfa_enabled : !account.mfa_enabled))
+  ), [users, search, mfaFilter]);
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
   const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -87,7 +91,7 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
         </div>
       </div>
       {error && <p className="rounded-lg border border-red/30 bg-red/10 px-4 py-3 text-sm text-red">{error}</p>}
-      <SearchFilterBar searchTerm={search} onSearchChange={(value) => { setSearch(value); setCurrentPage(1); }} placeholder={`Search ${role} accounts by username…`} />
+      <SearchFilterBar searchTerm={search} onSearchChange={(value) => { setSearch(value); setCurrentPage(1); }} placeholder={`Search ${role} accounts by username…`} className="!flex-none" filters={[{ name: "MFA Status", value: mfaFilter, onChange: (value) => { setMfaFilter(value); setCurrentPage(1); }, options: [{ label: "All MFA Status", value: "all" }, { label: "Enabled", value: "enabled" }, { label: "Not set up", value: "not-enabled" }] }]} />
       {saveMessage && <p role="status" className="text-sm text-navy">{saveMessage}</p>}
       {isLoading ? <div className="flex flex-1 items-center justify-center"><LoadingSpinner /></div> : paginatedUsers.length === 0 ? (
         <div className="flex flex-1 items-center justify-center text-center text-sm text-muted">No {role} accounts match your search.</div>

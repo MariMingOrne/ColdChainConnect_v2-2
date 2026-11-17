@@ -13,6 +13,7 @@ interface SearchFilterBarProps {
   searchTerm: string;
   onSearchChange: (value: string) => void;
   placeholder?: string;
+  className?: string;
   filters?: {
     name: string;
     value: string;
@@ -26,9 +27,10 @@ export function SearchFilterBar({
   onSearchChange,
   placeholder = "Search…",
   filters = [],
+  className = "",
 }: SearchFilterBarProps) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+    <div className={`flex min-w-0 flex-1 flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between ${className}`}>
       {filters.length > 0 && (
         <div className="flex flex-wrap items-center gap-3">
           {filters.map((filter) => (

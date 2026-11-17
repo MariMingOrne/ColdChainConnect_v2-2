@@ -279,6 +279,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
@@ -324,10 +325,11 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
 
   const filteredAgents = agents.filter(
     (a) =>
-      (a.full_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      ((a.full_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (a.user?.username?.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (a.email?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (a.contact_info?.toLowerCase().includes(searchQuery.toLowerCase()))
+      (a.contact_info?.toLowerCase().includes(searchQuery.toLowerCase()))) &&
+      (statusFilter === "all" || (statusFilter === "active" ? a.is_active : !a.is_active))
   );
 
   const totalPages = Math.ceil(filteredAgents.length / itemsPerPage);
@@ -523,6 +525,8 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
         searchTerm={searchQuery}
         onSearchChange={(value) => { setSearchQuery(value); setCurrentPage(1); }}
         placeholder="Search by name, username, email, contact…"
+        className="!flex-none"
+        filters={[{ name: "Status", value: statusFilter, onChange: (value) => { setStatusFilter(value); setCurrentPage(1); }, options: [{ label: "All Status", value: "all" }, { label: "Active", value: "active" }, { label: "Inactive", value: "inactive" }] }]}
       />
 
       {/* Cards grid */}
