@@ -312,6 +312,8 @@ export function Pricing({ onBack }: PricingProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [productStatusFilter, setProductStatusFilter] = useState("all");
+  const [manufacturerFilter, setManufacturerFilter] = useState("all");
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const [productDetails, setProductDetails] = useState<RecordDetails | null>(null);
   const [previewImageFilename, setPreviewImageFilename] = useState<string | null>(null);
@@ -396,8 +398,11 @@ export function Pricing({ onBack }: PricingProps) {
     }
   }, [token]);
 
-  const filteredProducts = products.filter((p) =>
-    p.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  const manufacturers = Array.from(new Set(products.map((product) => product.manufacturer).filter((manufacturer): manufacturer is string => Boolean(manufacturer)))).sort();
+  const filteredProducts = products.filter((product) =>
+    (product.name?.toLowerCase().includes(searchQuery.toLowerCase()) || product.sku?.toLowerCase().includes(searchQuery.toLowerCase())) &&
+    (productStatusFilter === "all" || (productStatusFilter === "active" ? !product.is_discontinued : product.is_discontinued)) &&
+    (manufacturerFilter === "all" || product.manufacturer === manufacturerFilter)
   );
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
@@ -596,18 +601,20 @@ export function Pricing({ onBack }: PricingProps) {
             </DropdownMenuContent>
           </DropdownMenu>
         )}
-        <div className="relative w-full sm:w-72">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-          <input
-            type="text"
-            placeholder="Search by product name…"
-            value={searchQuery}
-            onChange={(e) => {
-              setSearchQuery(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
-          />
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <div className="relative w-full sm:w-72">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+            <input type="text" placeholder="Search by product name or SKU…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none" />
+          </div>
+          <select aria-label="Filter products by status" value={productStatusFilter} onChange={(event) => { setProductStatusFilter(event.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-white px-4 py-2 text-sm text-navy">
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="discontinued">Discontinued</option>
+          </select>
+          <select aria-label="Filter products by manufacturer" value={manufacturerFilter} onChange={(event) => { setManufacturerFilter(event.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-white px-4 py-2 text-sm text-navy">
+            <option value="all">All manufacturers</option>
+            {manufacturers.map((manufacturer) => <option key={manufacturer} value={manufacturer}>{manufacturer}</option>)}
+          </select>
         </div>
       </div>
 

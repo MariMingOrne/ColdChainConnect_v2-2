@@ -63,6 +63,7 @@ export function Inventory() {
   const [startBatchCreation, setStartBatchCreation] = useState(false);
   const [batchSearch, setBatchSearch] = useState("");
   const [stockFilter, setStockFilter] = useState("all");
+  const [expiryFilter, setExpiryFilter] = useState("all");
   const [batchCreatedSince, setBatchCreatedSince] = useState("");
   const [inventorySort, setInventorySort] = useState<SortState<"name" | "cost" | "stock" | "reorder" | "expiry">>(null);
   const [showExcelImport, setShowExcelImport] = useState(false);
@@ -180,7 +181,8 @@ export function Inventory() {
 
   const filteredBatchProducts = batchProducts.filter((p) =>
     (p.sku.toLowerCase().includes(searchQuery.toLowerCase()) || p.description.toLowerCase().includes(searchQuery.toLowerCase())) &&
-    (stockFilter === "all" || (stockFilter === "low" ? p.batchQuantity <= p.reorderPoint : p.batchQuantity > p.reorderPoint))
+    (stockFilter === "all" || (stockFilter === "low" ? p.batchQuantity <= p.reorderPoint : p.batchQuantity > p.reorderPoint)) &&
+    (expiryFilter === "all" || (expiryFilter === "has-expiry" ? Boolean(p.batchExpiryDate) : !p.batchExpiryDate))
   );
 
   const sortedBatchProducts = [...filteredBatchProducts].sort((a, b) => {
@@ -417,12 +419,16 @@ export function Inventory() {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input type="text" placeholder="Search by SKU or name…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none" />
         </div>
-        <div className="flex items-center gap-2">
-          <label htmlFor="inventory-stock-filter" className="text-sm font-semibold text-navy">Stock</label>
-          <select id="inventory-stock-filter" value={stockFilter} onChange={(e) => { setStockFilter(e.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-white px-4 py-2 text-sm text-navy">
+        <div className="flex flex-wrap items-center gap-2">
+          <select aria-label="Filter inventory by stock level" value={stockFilter} onChange={(e) => { setStockFilter(e.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-white px-4 py-2 text-sm text-navy">
             <option value="all">All stock</option>
             <option value="low">Reorder needed</option>
             <option value="available">Above reorder level</option>
+          </select>
+          <select aria-label="Filter inventory by expiry date" value={expiryFilter} onChange={(e) => { setExpiryFilter(e.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-white px-4 py-2 text-sm text-navy">
+            <option value="all">All expiry dates</option>
+            <option value="has-expiry">Has expiry date</option>
+            <option value="no-expiry">No expiry date</option>
           </select>
         </div>
       </div>
