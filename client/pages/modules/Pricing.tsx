@@ -523,20 +523,13 @@ export function Pricing({ onBack }: PricingProps) {
   }
 
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="font-rajdhani text-3xl font-bold text-navy letter-spacing-tight">
-              Products
-            </h1>
-            <p className="text-xs text-muted mt-1">
-              Manage your products
-            </p>
-          </div>
+    <div className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto scrollbar-visible">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="page-title">Products</h1>
+          <p className="page-subtitle">Manage your products</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
@@ -545,6 +538,12 @@ export function Pricing({ onBack }: PricingProps) {
           >
             <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
             Refresh
+          </button>
+          <button
+            onClick={openAddModal}
+            className="px-4 py-2 bg-navy text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+          >
+            ➕ Add Product
           </button>
           <button onClick={() => setShowExcelImport(true)} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors">
             ⬇ Import Excel
@@ -581,12 +580,6 @@ export function Pricing({ onBack }: PricingProps) {
           }}
           placeholder="Search by product name…"
         />
-        <button
-          onClick={openAddModal}
-          className="px-4 py-2 bg-navy text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 w-fit"
-        >
-          ➕ Add Product
-        </button>
         <button
           onClick={() => setShowDeleteButtons(!showDeleteButtons)}
           className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${

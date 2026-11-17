@@ -357,15 +357,15 @@ export function Inventory() {
   );
 
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+    <div className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto scrollbar-visible">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-rajdhani text-3xl font-bold text-navy letter-spacing-tight">Inventory Management</h1>
-          <p className="text-xs text-muted mt-1">Track, manage, and monitor all frozen goods SKUs</p>
+          <h1 className="page-title">Inventory Management</h1>
+          <p className="page-subtitle">Track, manage, and monitor all frozen goods SKUs</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button onClick={() => navigate("/information-management/products")} className="px-4 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-colors">👁 Show All Products</button>
+          <button onClick={() => { setNewBatchName(""); setStartBatchCreation(true); setIsBatchModalOpen(true); }} className="px-4 py-2 bg-green text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-colors">➕ Add Items</button>
           <button onClick={() => setShowExcelImport(true)} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors">⬇ Import Excel</button>
           <button onClick={() => void handleInventoryExport()} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors"><Download size={15} className="mr-1 inline" />Export Excel</button>
         </div>
@@ -395,9 +395,6 @@ export function Inventory() {
           </div>
           <div className="flex gap-2">
             <button onClick={() => setIsBatchModalOpen(true)} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white w-fit">⚙ Manage Batches</button>
-            <button onClick={() => { setNewBatchName(""); setStartBatchCreation(true); setIsBatchModalOpen(true); }} className="px-4 py-2 bg-green text-white rounded-lg font-semibold text-sm hover:opacity-90 w-fit">
-              ➕ Add Items
-            </button>
           </div>
         </div>
 

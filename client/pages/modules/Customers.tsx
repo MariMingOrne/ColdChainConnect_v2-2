@@ -643,18 +643,14 @@ export function Customers({ onBack }: CustomersProps) {
   }
 
   return (
-    <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-rajdhani text-3xl font-bold tracking-tight text-navy">
-            Customer Management
-          </h1>
-          <p className="mt-1 text-xs text-muted">
-            Manage customer stores, contacts, and discount settings
-          </p>
+          <h1 className="page-title">Customer Management</h1>
+          <p className="page-subtitle">Manage customer stores, contacts, and discount settings</p>
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
@@ -663,6 +659,9 @@ export function Customers({ onBack }: CustomersProps) {
           >
             <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
             Refresh
+          </button>
+          <button onClick={openAddModal} className="flex items-center gap-2 rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90">
+            ➕ Add Customer
           </button>
           <button onClick={() => setShowExcelImport(true)} className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-navy transition-colors hover:bg-off-white">
             ⬇ Import Excel
@@ -716,13 +715,6 @@ export function Customers({ onBack }: CustomersProps) {
             <option key={district} value={district}>{district}</option>
           ))}
         </select>
-
-        <button
-          onClick={openAddModal}
-          className="flex w-fit items-center gap-2 rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-        >
-          ➕ Add Customer
-        </button>
 
         <button
           onClick={() => setShowDeleteButtons(!showDeleteButtons)}
