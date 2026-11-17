@@ -2,10 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Customer, Truck, formatCustomerAddress, totalDiscountRate } from "@shared/api";
-import { ArrowLeft, Download, RefreshCw } from "lucide-react";
+import { ArrowLeft, Download, RefreshCw, Search } from "lucide-react";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
-import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -693,39 +692,46 @@ export function Customers({ onBack }: CustomersProps) {
         />
       </div>
 
-      <div className="flex flex-col gap-3 md:flex-row">
-        <SearchFilterBar
-          searchTerm={searchQuery}
-          onSearchChange={(value) => {
-            setSearchQuery(value);
-            setCurrentPage(1);
-          }}
-          placeholder="Search by store, location, or contact person…"
-        />
-        <select
-          value={districtFilter}
-          onChange={(event) => {
-            setDistrictFilter(event.target.value);
-            setCurrentPage(1);
-          }}
-          className="rounded-lg border border-border bg-white px-3 py-2 text-sm text-navy"
-        >
-          <option value="">All districts</option>
-          {customerDistricts.map((district) => (
-            <option key={district} value={district}>{district}</option>
-          ))}
-        </select>
-
-        <button
-          onClick={() => setShowDeleteButtons(!showDeleteButtons)}
-          className={`w-fit rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-            showDeleteButtons
-              ? "bg-red text-white hover:opacity-90"
-              : "border border-border bg-white text-navy hover:bg-off-white"
-          }`}
-        >
-          {showDeleteButtons ? "🔓 Delete Enabled" : "🔒 Enable Delete"}
-        </button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            onClick={() => setShowDeleteButtons(!showDeleteButtons)}
+            className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
+              showDeleteButtons
+                ? "bg-red text-white hover:opacity-90"
+                : "border border-border bg-white text-navy hover:bg-off-white"
+            }`}
+          >
+            {showDeleteButtons ? "🔓 Delete Enabled" : "🔒 Enable Delete"}
+          </button>
+          <select
+            aria-label="District"
+            value={districtFilter}
+            onChange={(event) => {
+              setDistrictFilter(event.target.value);
+              setCurrentPage(1);
+            }}
+            className="rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-navy focus:border-accent-2 focus:outline-none"
+          >
+            <option value="">All districts</option>
+            {customerDistricts.map((district) => (
+              <option key={district} value={district}>{district}</option>
+            ))}
+          </select>
+        </div>
+        <div className="relative w-full sm:w-72">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <input
+            type="text"
+            placeholder="Search by store, location, or contact person…"
+            value={searchQuery}
+            onChange={(event) => {
+              setSearchQuery(event.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
+          />
+        </div>
       </div>
 
       <div className="data-table-frame overflow-hidden">
