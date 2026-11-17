@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { ChevronLeft, Search, Truck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -29,6 +29,7 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [hoveredSuggestionId, setHoveredSuggestionId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const headerRef = useRef<HTMLElement>(null);
   const { data: searchData = EMPTY_SEARCH_DATA, isFetching: isFetchingSearch } = useGlobalSearchData(
     isSearchFocused && Boolean(searchTerm.trim())
   );
@@ -50,6 +51,27 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
     markAllAsRead,
     dismiss,
   } = useNotifications();
+
+  useLayoutEffect(() => {
+    const header = headerRef.current;
+    if (!header) return;
+
+    const updateHeaderHeight = () => {
+      document.documentElement.style.setProperty(
+        "--app-header-height",
+        `${header.getBoundingClientRect().height}px`,
+      );
+    };
+
+    updateHeaderHeight();
+    const observer = new ResizeObserver(updateHeaderHeight);
+    observer.observe(header);
+
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty("--app-header-height");
+    };
+  }, []);
 
   useEffect(() => {
     const handleShortcut = (event: KeyboardEvent) => {
@@ -101,7 +123,7 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
   };
 
   return (
-    <header className="bg-navy px-4 md:px-8 py-3 sm:py-4 flex flex-wrap items-center flex-shrink-0 sticky top-0 z-10 shadow-sm gap-2 sm:gap-4 md:gap-6 animate-slide-down">
+    <header ref={headerRef} className="bg-navy px-4 md:px-8 py-3 sm:py-4 flex flex-wrap items-center flex-shrink-0 sticky top-0 z-10 shadow-sm gap-2 sm:gap-4 md:gap-6 animate-slide-down">
       <div className={`flex items-center gap-4 min-w-0 ${role === "agent" ? "flex-1" : "flex-1 sm:flex-none"}`}>
         {/* Left Section - Logo & Back Button */}
         <div className="flex items-center gap-3 flex-shrink-0">
