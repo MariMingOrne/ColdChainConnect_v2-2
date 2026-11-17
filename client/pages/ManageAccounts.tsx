@@ -4,6 +4,7 @@ import { UserPlus } from "lucide-react";
 import { CreateAccountDialog } from "@/components/CreateAccountDialog";
 import { Agents } from "./modules/Agents";
 import { Drivers } from "./modules/Drivers";
+import { ManagedUsers } from "./modules/ManagedUsers";
 
 export function ManageAccounts() {
   const location = useLocation();
@@ -18,6 +19,8 @@ export function ManageAccounts() {
           <Routes>
             <Route path="/agents" element={<Agents />} />
             <Route path="/drivers" element={<Drivers />} />
+            <Route path="/admin" element={<ManagedUsers role="admin" />} />
+            <Route path="/staff" element={<ManagedUsers role="staff" />} />
             <Route path="/" element={<Agents />} />
           </Routes>
         </div>

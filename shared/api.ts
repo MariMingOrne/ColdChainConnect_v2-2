@@ -20,7 +20,7 @@ export interface LoginResponse {
   user: {
     id: string;
     username: string;
-    role: "admin" | "agent" | "driver";
+    role: "admin" | "agent" | "driver" | "staff";
   };
 }
 
@@ -47,20 +47,20 @@ export interface LogoutResponse {
 export interface CreateAccountRequest {
   username: string;
   password: string;
-  role: "admin" | "agent";
+  role: "admin" | "agent" | "staff";
 }
 
 export interface CreateAccountResponse {
   id: string;
   username: string;
-  role: "admin" | "agent";
+  role: "admin" | "agent" | "staff";
 }
 
 // User types
 export interface User {
   id: string;
   username: string;
-  role: "admin" | "agent" | "driver";
+  role: "admin" | "agent" | "driver" | "staff";
   mfa_enabled: boolean;
   created_at: string;
   updated_at: string;

@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export type AccountType = "agent" | "driver" | "admin";
+export type AccountType = "agent" | "driver" | "admin" | "staff";
 
 export interface AccountForm {
   username: string;
@@ -67,7 +67,7 @@ export function CreateAccountFields({ accountType, form, onChange }: CreateAccou
     </>
   );
 
-  if (accountType === "admin") {
+  if (accountType === "admin" || accountType === "staff") {
     return <div className="space-y-4">{credentials}</div>;
   }
 

@@ -14,6 +14,7 @@ const typeLabels: Record<AccountType, string> = {
   agent: "Agent",
   driver: "Driver",
   admin: "Admin",
+  staff: "Staff",
 };
 
 interface CreateAccountDialogProps {
@@ -73,7 +74,7 @@ export function CreateAccountDialog({ onClose }: CreateAccountDialogProps) {
     return fetch("/api/users", {
       method: "POST",
       headers,
-      body: JSON.stringify({ username: form.username, password: form.password, role: "admin" }),
+      body: JSON.stringify({ username: form.username, password: form.password, role: accountType }),
     });
   };
 
@@ -117,10 +118,11 @@ export function CreateAccountDialog({ onClose }: CreateAccountDialogProps) {
             setError(null);
           }}
         >
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="agent">Agent</TabsTrigger>
             <TabsTrigger value="driver">Driver</TabsTrigger>
             <TabsTrigger value="admin">Admin</TabsTrigger>
+            <TabsTrigger value="staff">Staff</TabsTrigger>
           </TabsList>
         </Tabs>
 

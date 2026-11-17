@@ -10,7 +10,7 @@ import {
 export interface AuthUser {
   id: string;
   username: string;
-  role: "admin" | "agent" | "driver";
+  role: "admin" | "agent" | "driver" | "staff";
 }
 
 interface AuthStore {

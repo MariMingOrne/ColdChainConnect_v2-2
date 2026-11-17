@@ -44,6 +44,8 @@ const hubModulesByPath: Record<string, Array<{ path: string; label: string; icon
   "/manage-accounts": [
     { path: "/agents", label: "Agents", icon: Users },
     { path: "/drivers", label: "Drivers", icon: Truck },
+    { path: "/admin", label: "Admins", icon: Users },
+    { path: "/staff", label: "Staff", icon: Users },
   ],
 };
 

@@ -15,7 +15,7 @@ import {
 import { relations } from "drizzle-orm";
 
 // Enums
-export const userRoleEnum = pgEnum("user_role", ["admin", "agent", "driver"]);
+export const userRoleEnum = pgEnum("user_role", ["admin", "agent", "driver", "staff"]);
 export const bookingStatusEnum = pgEnum("booking_status", [
   "pending",
   "approved",

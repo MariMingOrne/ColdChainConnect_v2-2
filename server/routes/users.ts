@@ -1,12 +1,21 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { users } from "../db/schema";
 import { hashPassword } from "../auth";
 import { CreateAccountRequest, CreateAccountResponse } from "@shared/api";
 
-const ROLES: CreateAccountRequest["role"][] = ["admin", "agent"];
+const ROLES: CreateAccountRequest["role"][] = ["admin", "agent", "staff"];
+
+export const handleListManagedAccounts: RequestHandler = async (_req, res) => {
+  const accounts = await db
+    .select({ id: users.id, username: users.username, role: users.role, created_at: users.created_at, mfa_enabled: users.mfa_enabled })
+    .from(users)
+    .where(inArray(users.role, ["admin", "staff"]))
+    .orderBy(asc(users.username));
+  res.json(accounts);
+};
 
 export const handleCreateAccount: RequestHandler = async (req, res) => {
   const body = req.body as Partial<CreateAccountRequest>;
@@ -19,7 +28,7 @@ export const handleCreateAccount: RequestHandler = async (req, res) => {
   }
 
   if (!ROLES.includes(role)) {
-    return res.status(400).json({ error: "Role must be admin or agent" });
+    return res.status(400).json({ error: "Role must be admin, agent, or staff" });
   }
 
   if (password.trim().length < 4) {

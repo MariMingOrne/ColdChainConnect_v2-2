@@ -34,7 +34,7 @@ export function authMiddleware(
   next();
 }
 
-export function requireRole(...roles: Array<"admin" | "agent" | "driver">) {
+export function requireRole(...roles: Array<"admin" | "agent" | "driver" | "staff">) {
   return (req: AuthRequest, res: Response, next: NextFunction) => {
     if (!req.user) {
       return res.status(401).json({ error: "Not authenticated" });
