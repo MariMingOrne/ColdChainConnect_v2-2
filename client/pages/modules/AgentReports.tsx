@@ -225,23 +225,23 @@ export function AgentReports() {
         </div>
       </div>
 
-      <div className="flex gap-1 bg-off-white rounded-lg p-1 w-fit">
+      <div className="inline-flex w-fit rounded-full border border-border bg-white p-1">
         {(["all", "pending", "accepted", "rejected"] as const).map((s) => (
           <button key={s} onClick={() => setStatusFilter(s)}
-            className={`px-3 py-1.5 rounded text-xs font-semibold capitalize transition-all ${
-              statusFilter === s ? "bg-white text-navy shadow-sm" : "text-muted hover:text-navy"
+            className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold capitalize transition ${
+              statusFilter === s ? "bg-navy text-white" : "text-muted hover:text-navy"
             }`}>
             {s}
           </button>
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl border border-border overflow-hidden">
+      <div className="data-table-frame overflow-hidden">
         {loading ? (
           <LoadingSpinner className="min-h-32" />
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-xs md:text-sm">
+            <table className="data-table w-full text-xs md:text-sm">
               <thead>
                 <tr>
                   {["Date", "Order", "Customer", "Product", "Qty", "Type", "Reason", "Status", "Actions"].map((h) => (

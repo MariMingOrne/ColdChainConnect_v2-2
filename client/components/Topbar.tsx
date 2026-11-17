@@ -152,14 +152,12 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
               ref={searchInputRef}
               type="text"
               aria-keyshortcuts="Control+K Meta+K"
-              title="Press Ctrl+K or Command+K to search"
               placeholder="Search products, customers, orders…"
               value={searchTerm}
               onFocus={() => setIsSearchFocused(true)}
               onChange={(event) => handleSearchTermChange(event.target.value)}
-              className="w-full pl-4 pr-11 xl:pr-28 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
+              className="w-full pl-4 pr-11 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
             />
-            <kbd className="absolute right-10 top-1/2 hidden -translate-y-1/2 rounded border border-white/20 px-1.5 py-0.5 text-[10px] font-medium text-white/65 xl:block">Ctrl / ⌘ K</kbd>
             <button
               type="submit"
               aria-label="Search"

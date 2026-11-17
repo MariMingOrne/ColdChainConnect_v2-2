@@ -676,9 +676,9 @@ export function Customers({ onBack }: CustomersProps) {
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-white">
+      <div className="data-table-frame overflow-hidden">
         <div className="overflow-x-auto text-xs md:text-sm">
-          <table className="w-full">
+          <table className="data-table w-full">
             <thead>
               <tr>
                 <th className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap">

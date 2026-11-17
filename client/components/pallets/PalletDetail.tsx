@@ -122,7 +122,7 @@ export function PalletDetail({
       </Card>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="overflow-hidden bg-white lg:col-span-2">
+        <Card className="overflow-hidden rounded-xl bg-white shadow-sm lg:col-span-2">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-off-white text-xs uppercase tracking-wide text-muted">

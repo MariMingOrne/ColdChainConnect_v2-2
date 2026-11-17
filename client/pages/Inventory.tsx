@@ -5,6 +5,7 @@ import { ChevronLeft, Download } from "lucide-react";
 import { ActionButtons } from "@/components/ActionButtons";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
+import { SearchFilterBar } from "@/components/SearchFilterBar";
 
 interface InventoryProduct {
   id: string;
@@ -330,11 +331,12 @@ export function Inventory() {
       {/* Batch & Pallet Selector Card */}
       <div className="bg-white rounded-2xl border border-border p-6 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div className="flex items-center bg-off-white border border-border rounded-lg px-3 gap-2 w-full md:max-w-sm">
-            <span className="text-muted">🔍</span>
-            <input type="text" placeholder="Find a batch or pallet…" value={batchSearch}
-              onChange={(e) => setBatchSearch(e.target.value)}
-              className="flex-1 bg-transparent border-none text-navy placeholder-muted py-2 outline-none text-sm" />
+          <div className="w-full md:max-w-sm">
+            <SearchFilterBar
+              searchTerm={batchSearch}
+              onSearchChange={setBatchSearch}
+              placeholder="Find a batch or pallet…"
+            />
           </div>
           <div className="flex gap-2">
             <button onClick={() => setIsBatchModalOpen(true)} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white w-fit">⚙ Manage Batches</button>
@@ -374,12 +376,11 @@ export function Inventory() {
 
       {/* Search + Delete Toggle */}
       <div className="flex flex-col md:flex-row gap-3 items-stretch">
-        <div className="flex items-center bg-navy-mid border border-border rounded-lg px-3 gap-2 flex-1">
-          <span className="text-muted">🔍</span>
-          <input type="text" placeholder="Search by SKU or name…" value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-            className="flex-1 bg-transparent border-none text-white placeholder-muted py-2 outline-none text-sm" />
-        </div>
+        <SearchFilterBar
+          searchTerm={searchQuery}
+          onSearchChange={(value) => { setSearchQuery(value); setCurrentPage(1); }}
+          placeholder="Search by SKU or name…"
+        />
         <button
           onClick={() => setShowDeleteButtons(!showDeleteButtons)}
           className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
@@ -401,9 +402,9 @@ export function Inventory() {
       </div>
 
       {/* Inventory Table */}
-      <div className="bg-white rounded-2xl border border-border overflow-hidden">
+      <div className="data-table-frame overflow-hidden">
         <div className="overflow-x-auto scrollbar-visible text-xs">
-          <table className="w-full">
+          <table className="data-table w-full">
             <thead>
               <tr>
                 {["Name", "Cost Per Item", "Stock Qty"].map((col) => (

@@ -10,8 +10,7 @@ interface AuditLogTableProps {
   onView: (log: AuditLog) => void;
 }
 
-const HEAD_CLASS =
-  "bg-navy-mid text-muted font-barlow-cond text-xs font-bold uppercase tracking-wider px-3 py-3 border-b border-border whitespace-nowrap";
+const HEAD_CLASS = "whitespace-nowrap";
 
 export function AuditLogTable({ logs, onView }: AuditLogTableProps) {
   const [query, setQuery] = useState("");
@@ -82,9 +81,9 @@ export function AuditLogTable({ logs, onView }: AuditLogTableProps) {
         ]}
       />
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-white">
+      <div className="data-table-frame overflow-hidden">
         <div className="overflow-x-auto text-xs md:text-sm">
-          <table className="w-full">
+          <table className="data-table w-full">
             <thead>
               <tr>
                 <th className={`${HEAD_CLASS} text-left`}>Timestamp</th>

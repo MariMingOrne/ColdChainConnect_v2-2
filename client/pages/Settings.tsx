@@ -466,8 +466,8 @@ export function Settings() {
               </div>
 
               {/* Audit Log Table */}
-              <div className="overflow-x-auto scrollbar-visible">
-                <table className="w-full text-sm">
+              <div className="data-table-frame overflow-x-auto scrollbar-visible">
+                <table className="data-table w-full text-sm">
                   <thead>
                     <tr className="border-b border-border">
                       <th className="text-left py-3 px-3 font-semibold text-navy">

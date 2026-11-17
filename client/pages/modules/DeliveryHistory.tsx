@@ -169,12 +169,12 @@ export function DeliveryHistory() {
       />
 
       {/* Table */}
-      <div className="bg-white rounded-2xl border border-border overflow-hidden">
+      <div className="data-table-frame overflow-hidden">
         {loading ? (
           <p className="px-6 py-8 text-sm text-muted">Loading…</p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-xs md:text-sm">
+            <table className="data-table w-full text-xs md:text-sm">
               <thead>
                 <tr>
                   {["Receipt #", "Customer", "Truck", "Confirmed At", "Notes", "Action"].map((h) => (

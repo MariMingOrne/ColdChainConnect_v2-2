@@ -19,22 +19,24 @@ export function SearchFilterBar({
   filters = [],
 }: SearchFilterBarProps) {
   return (
-    <div className="flex-1 flex flex-col sm:flex-row gap-3 items-stretch">
-      <div className="flex-1 flex items-center bg-navy-mid border border-border rounded-lg px-3 gap-2">
-        <span className="text-muted">🔍</span>
+    <div className="flex min-w-0 flex-1 flex-col items-stretch gap-3 sm:flex-row">
+      <div className="relative flex min-w-0 flex-1 items-center rounded-full border border-border bg-white px-4">
+        <Search size={16} className="shrink-0 text-muted" aria-hidden="true" />
         <input
           type="text"
           placeholder={placeholder}
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="flex-1 bg-transparent border-none text-white placeholder-muted py-2 outline-none text-sm"
+          className="min-w-0 flex-1 bg-transparent py-2 pl-2 text-sm text-navy outline-none placeholder:text-muted"
         />
         {searchTerm && (
           <button
+            type="button"
+            aria-label="Clear search"
             onClick={() => onSearchChange("")}
-            className="text-muted hover:text-white transition-colors"
+            className="text-muted transition-colors hover:text-navy"
           >
-            <X className="w-4 h-4" />
+            <X className="h-4 w-4" />
           </button>
         )}
       </div>
@@ -43,13 +45,7 @@ export function SearchFilterBar({
           key={filter.name}
           value={filter.value}
           onChange={(e) => filter.onChange(e.target.value)}
-          className="px-3 py-2 bg-navy-mid border border-border rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all appearance-none cursor-pointer"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='white' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "right 8px center",
-            paddingRight: "28px",
-          }}
+          className="rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-navy transition-colors focus:border-accent-2 focus:outline-none"
         >
           {filter.options.map((opt) => (
             <option key={opt.value} value={opt.value}>

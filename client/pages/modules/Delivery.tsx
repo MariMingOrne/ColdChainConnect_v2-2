@@ -500,8 +500,8 @@ export function DeliveryDispatch() {
                     </div>
 
                     {/* Desktop: table */}
-                    <div className="hidden md:block overflow-x-auto">
-                      <table className="w-full text-xs">
+                    <div className="data-table-frame hidden md:block overflow-x-auto">
+                      <table className="data-table w-full text-xs">
                         <thead>
                           <tr>
                             {["Invoice", "Customer", "Status", "Receipt #", "Confirmed At", "Action"].map((h) => (

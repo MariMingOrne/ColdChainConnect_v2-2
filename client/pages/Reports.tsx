@@ -15,11 +15,11 @@ import {
   ChartNoAxesCombined,
   Download,
   FileBarChart,
-  Search,
   TriangleAlert,
   Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { useToast } from "@/hooks/use-toast";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
 import type {
@@ -101,8 +101,8 @@ function ReportDataTable({ rows }: { rows: ReportRow[] }) {
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border">
-      <table className="w-full min-w-[640px] text-sm">
+    <div className="data-table-frame overflow-x-auto">
+      <table className="data-table w-full min-w-[640px] text-sm">
         <caption className="sr-only">Raw report data</caption>
         <thead>
           <tr className="border-b border-border bg-off-white">
@@ -355,11 +355,13 @@ export function Reports() {
                   <h3 className="text-lg font-bold text-navy">{tableTitles[activeTab]}</h3>
                   <p className="mt-1 text-xs text-gray-500">Underlying figures for the chart · {filteredRows.length} of {rows.length} rows</p>
                 </div>
-                <label className="relative block w-full sm:w-72">
-                  <span className="sr-only">Search report rows</span>
-                  <Search size={16} aria-hidden="true" className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                  <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Filter these report rows…" className="w-full rounded-lg border border-border bg-white py-2 pl-9 pr-3 text-sm text-navy outline-none focus:border-accent-2 focus:ring-2 focus:ring-accent-2/20" />
-                </label>
+                <div className="w-full sm:w-72">
+                  <SearchFilterBar
+                    searchTerm={search}
+                    onSearchChange={setSearch}
+                    placeholder="Filter these report rows…"
+                  />
+                </div>
               </div>
               <div className="mt-4"><ReportDataTable rows={filteredRows} /></div>
             </section>

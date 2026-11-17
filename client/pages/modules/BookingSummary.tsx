@@ -494,13 +494,13 @@ export function BookingSummary() {
             <label className="block text-sm font-medium text-navy mb-1">
               Start Date
             </label>
-            <div className="flex items-center bg-navy-mid border border-border rounded-lg px-3 gap-2">
+            <div className="flex items-center rounded-full border border-border bg-white px-4 gap-2">
               <Calendar size={16} className="text-muted" />
               <input
                 type="date"
                 value={customDateStart}
                 onChange={(e) => setCustomDateStart(e.target.value)}
-                className="flex-1 bg-transparent border-none text-white py-2 outline-none text-sm"
+                className="flex-1 bg-transparent border-none text-navy py-2 outline-none text-sm"
               />
             </div>
           </div>
@@ -508,13 +508,13 @@ export function BookingSummary() {
             <label className="block text-sm font-medium text-navy mb-1">
               End Date
             </label>
-            <div className="flex items-center bg-navy-mid border border-border rounded-lg px-3 gap-2">
+            <div className="flex items-center rounded-full border border-border bg-white px-4 gap-2">
               <Calendar size={16} className="text-muted" />
               <input
                 type="date"
                 value={customDateEnd}
                 onChange={(e) => setCustomDateEnd(e.target.value)}
-                className="flex-1 bg-transparent border-none text-white py-2 outline-none text-sm"
+                className="flex-1 bg-transparent border-none text-navy py-2 outline-none text-sm"
               />
             </div>
           </div>
@@ -522,7 +522,7 @@ export function BookingSummary() {
       )}
 
       {/* Table */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden rounded-xl shadow-sm">
         <Table>
           <TableHeader>
             <TableRow className="whitespace-nowrap">
