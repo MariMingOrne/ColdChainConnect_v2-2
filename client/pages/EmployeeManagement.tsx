@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Info, Trash2, Plus } from "lucide-react";
+import { ArrowLeft, Info, Trash2, Plus } from "lucide-react";
 
 interface Employee {
   id: string;
@@ -217,6 +217,8 @@ export function EmployeeManagement() {
 
   return (
     <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto space-y-6">
+      {!showModal && !showAddForm && (
+      <>
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -325,21 +327,22 @@ export function EmployeeManagement() {
         </div>
       )}
 
+      </>
+      )}
+
       {/* View/Edit Modal */}
       {showModal && selectedEmployee && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-96 overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-rajdhani text-xl font-bold text-navy">
-                Employee Details
-              </h2>
-              <button
-                onClick={() => setShowModal(false)}
-                className="p-1 hover:bg-off-white rounded transition-colors"
-              >
-                <X size={20} />
-              </button>
+        <div className="flex-1 space-y-6">
+          <div className="page-header">
+            <div>
+              <h1 className="page-title">Employee Details</h1>
             </div>
+            <button onClick={() => setShowModal(false)} className="btn-ghost">
+              <ArrowLeft size={15} />
+              Back
+            </button>
+          </div>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
 
             <div className="space-y-3 text-sm">
               <div>
@@ -455,19 +458,17 @@ export function EmployeeManagement() {
 
       {/* Add Employee Modal */}
       {showAddForm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-96 overflow-y-auto">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-rajdhani text-xl font-bold text-navy">
-                Add Employee
-              </h2>
-              <button
-                onClick={() => setShowAddForm(false)}
-                className="p-1 hover:bg-off-white rounded transition-colors"
-              >
-                <X size={20} />
-              </button>
+        <div className="flex-1 space-y-6">
+          <div className="page-header">
+            <div>
+              <h1 className="page-title">Add Employee</h1>
             </div>
+            <button onClick={() => setShowAddForm(false)} className="btn-ghost">
+              <ArrowLeft size={15} />
+              Back
+            </button>
+          </div>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
 
             <div className="space-y-3 text-sm">
               <input

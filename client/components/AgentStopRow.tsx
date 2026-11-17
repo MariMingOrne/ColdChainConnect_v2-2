@@ -1,26 +1,21 @@
-import { useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronRight, MapPin, PackageCheck } from "lucide-react";
 import type { AgentScheduleStop } from "@shared/api";
 import { formatCustomerAddress } from "@shared/api";
-import { AgentStopDetailDialog } from "@/components/AgentStopDetailDialog";
 import { palletTotals, statusClasses } from "@/lib/agentSchedule";
 
 interface AgentStopRowProps {
   index: number;
   stop: AgentScheduleStop;
-  showMapAction: boolean;
   isConfirming: boolean;
-  onShowOnMap: (stopId: string) => void;
+  onOpenDetails: () => void;
   onConfirmPayment: () => void;
   onRecordPayment: () => void;
 }
 
-export function AgentStopRow({ index, stop, showMapAction, isConfirming, onShowOnMap, onConfirmPayment, onRecordPayment }: AgentStopRowProps) {
-  const [detailsOpen, setDetailsOpen] = useState(false);
+export function AgentStopRow({ index, stop, isConfirming, onOpenDetails, onConfirmPayment, onRecordPayment }: AgentStopRowProps) {
   const customer = stop.destination_customer;
   const address = customer ? formatCustomerAddress(customer) : "Address unavailable";
-  const hasMapLocation = customer?.latitude != null && customer.longitude != null;
   const invoiceLabel = stop.invoice?.receipt_number ?? stop.invoice_id.slice(0, 8);
   const totals = palletTotals(stop.pallets);
   const allShipped = stop.pallets.length > 0 && stop.pallets.every((pallet) => pallet.status === "shipped");
@@ -29,7 +24,7 @@ export function AgentStopRow({ index, stop, showMapAction, isConfirming, onShowO
     <li className="p-4">
       <button
         type="button"
-        onClick={() => setDetailsOpen(true)}
+        onClick={onOpenDetails}
         className="flex w-full min-w-0 items-start gap-3 text-left sm:gap-4"
       >
         <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-navy text-sm font-bold text-white">{index + 1}</span>
@@ -97,18 +92,6 @@ export function AgentStopRow({ index, stop, showMapAction, isConfirming, onShowO
           <p className="text-xs text-muted">Delivery confirmation is available once all pallets are shipped.</p>
         )}
       </div>
-
-      <AgentStopDetailDialog
-        stop={stop}
-        open={detailsOpen}
-        onOpenChange={setDetailsOpen}
-        onShowOnMap={showMapAction && hasMapLocation
-          ? () => {
-              setDetailsOpen(false);
-              onShowOnMap(stop.id);
-            }
-          : undefined}
-      />
     </li>
   );
 }

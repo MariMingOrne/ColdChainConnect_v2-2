@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, X, ChevronDown, ChevronUp } from "lucide-react";
+import { ArrowLeft, Plus, X, ChevronDown, ChevronUp } from "lucide-react";
 import { InventoryBatch, InventoryBatchItem } from "@shared/api";
 import { useAuth } from "../hooks/useAuth";
 
@@ -124,6 +124,8 @@ export function InventoryBatchesTab() {
 
   return (
     <div className="flex-1 flex flex-col gap-6">
+      {!showCreateModal && (
+      <>
       {error && (
         <Card className="p-4 bg-red-50 border-red-200">
           <p className="text-red-700">{error}</p>
@@ -247,21 +249,23 @@ export function InventoryBatchesTab() {
         </Table>
       </Card>
 
+      </>
+      )}
+
       {/* Create Batch Modal */}
       {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl border border-border max-w-lg w-full max-h-[90vh] flex flex-col">
-            <div className="bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-              <h2 className="font-rajdhani text-lg font-bold text-white">Create New Batch</h2>
-              <button
-                onClick={() => setShowCreateModal(false)}
-                className="text-white hover:opacity-70 text-2xl"
-              >
-                ×
-              </button>
+        <div className="flex-1 flex flex-col gap-6">
+          <div className="page-header">
+            <div>
+              <h1 className="page-title">Create New Batch</h1>
             </div>
-
-            <div className="p-6 space-y-4 overflow-y-auto flex-1">
+            <button onClick={() => setShowCreateModal(false)} className="btn-ghost">
+              <ArrowLeft size={15} />
+              Back
+            </button>
+          </div>
+          <div className="bg-white rounded-2xl border border-border flex flex-col">
+            <div className="p-6 space-y-4 flex-1">
               <div>
                 <label className="block text-xs font-semibold text-navy mb-1">
                   Batch Name *

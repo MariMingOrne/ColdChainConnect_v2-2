@@ -28,8 +28,26 @@ export function SearchFilterBar({
   filters = [],
 }: SearchFilterBarProps) {
   return (
-    <div className="flex min-w-0 flex-1 flex-col items-stretch gap-3 sm:flex-row">
-      <div className="group relative flex min-w-0 flex-1 items-center gap-2 rounded-full border border-border bg-white px-4 focus-within:border-accent-2 focus-within:ring-2 focus-within:ring-accent-2/20">
+    <div className="flex min-w-0 flex-1 flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+      {filters.length > 0 && (
+        <div className="flex flex-wrap items-center gap-3">
+          {filters.map((filter) => (
+            <Select key={filter.name} value={filter.value} onValueChange={filter.onChange}>
+              <SelectTrigger aria-label={filter.name} className="h-10 w-full rounded-full border-border bg-white px-4 text-sm font-semibold text-navy sm:w-auto">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {filter.options.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          ))}
+        </div>
+      )}
+      <div className="group relative flex w-full items-center gap-2 rounded-full border border-border bg-white px-4 focus-within:border-accent-2 focus-within:ring-2 focus-within:ring-accent-2/20 sm:w-72">
         <Search size={16} className="shrink-0 text-muted" aria-hidden="true" />
         <Input
           type="search"
@@ -51,20 +69,6 @@ export function SearchFilterBar({
           </Button>
         )}
       </div>
-      {filters.map((filter) => (
-        <Select key={filter.name} value={filter.value} onValueChange={filter.onChange}>
-          <SelectTrigger aria-label={filter.name} className="h-10 w-full rounded-full px-4 text-sm font-semibold sm:w-auto">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {filter.options.map((option) => (
-              <SelectItem key={option.value} value={option.value}>
-                {option.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ))}
     </div>
   );
 }

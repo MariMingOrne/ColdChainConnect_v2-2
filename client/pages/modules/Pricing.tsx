@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useInventoryContext } from "../../context/InventoryContext";
-import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
 import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Product } from "@shared/api";
-import { Download, Upload, RefreshCw } from "lucide-react";
+import { ArrowLeft, Download, Upload, RefreshCw, Search } from "lucide-react";
 import { ActionButtons } from "@/components/ActionButtons";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
@@ -26,6 +26,7 @@ interface ProductForm {
   manufacturer?: string;
   is_discontinued: boolean;
   reorder_point?: number;
+  weight?: number;
 }
 
 const productExcelColumns: ExcelColumn[] = [
@@ -59,7 +60,7 @@ function StatsBox({
   );
 }
 
-function ProductModal({
+function ProductPage({
   title,
   formData,
   setFormData,
@@ -98,12 +99,17 @@ function ProductModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-          <h2 className="font-rajdhani text-lg font-bold text-white">{title}</h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl">×</button>
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">{title}</h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <div className="bg-white rounded-2xl border border-border max-w-lg w-full">
 
         <div className="p-6 space-y-4">
           <div>
@@ -182,6 +188,19 @@ function ProductModal({
             <p className="text-xs text-muted mt-1">Stock level at which inventory shows as needing reorder.</p>
           </div>
 
+          <div>
+            <label className="block text-xs font-semibold text-navy mb-1">Weight (kg)</label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.weight ?? ""}
+              onChange={(e) => setFormData({ ...formData, weight: e.target.value === "" ? undefined : Number(e.target.value) })}
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
+              placeholder="e.g., 25"
+            />
+          </div>
+
           <div className="flex items-center gap-3">
             <Input
               type="checkbox"
@@ -205,14 +224,19 @@ function ProductModal({
   );
 }
 
-function ViewProductModal({ product, onClose }: { product: Product; onClose: () => void }) {
+function ViewProductPage({ product, onClose }: { product: Product; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-lg w-full">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-          <h2 className="font-rajdhani text-lg font-bold text-white">Product Details</h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl">×</button>
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Product Details</h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <div className="bg-white rounded-2xl border border-border max-w-lg w-full">
 
         <div className="p-6 space-y-4">
           {product.image_filename && (
@@ -258,6 +282,25 @@ function ViewProductModal({ product, onClose }: { product: Product; onClose: () 
   );
 }
 
+function ImagePreviewPage({ filename, onClose }: { filename: string; onClose: () => void }) {
+  return (
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Image Preview</h1>
+        </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <div className="flex items-center justify-center rounded-2xl border border-border bg-white p-6">
+        <img src={`/uploads/${filename}`} alt="Preview" className="max-w-full max-h-[60vh] object-contain" />
+      </div>
+    </div>
+  );
+}
+
 export function Pricing({ onBack }: PricingProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -265,6 +308,7 @@ export function Pricing({ onBack }: PricingProps) {
   // Shared with Inventory via context
   const { searchQuery, setSearchQuery } = useInventoryContext();
   const [currentPage, setCurrentPage] = useState(1);
+  const [productSort, setProductSort] = useState<SortState<"name" | "price" | "status">>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showDeleteButtons, setShowDeleteButtons] = useState(false);
@@ -280,6 +324,7 @@ export function Pricing({ onBack }: PricingProps) {
     manufacturer: "",
     is_discontinued: false,
     reorder_point: 0,
+    weight: undefined,
   });
   const { token } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -338,6 +383,7 @@ export function Pricing({ onBack }: PricingProps) {
       sku: product.sku ?? "",
       price: Number(product.price),
       reorder_point: product.reorder_point ?? 0,
+      weight: product.weight != null ? Number(product.weight) : undefined,
       manufacturer: product.manufacturer ?? "",
       is_discontinued: product.is_discontinued ?? false,
       batch_tracking_enabled: product.batch_tracking_enabled,
@@ -354,15 +400,25 @@ export function Pricing({ onBack }: PricingProps) {
     p.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (!productSort) return 0;
+    const direction = productSort.direction === "asc" ? 1 : -1;
+    const value = (p: Product) =>
+      productSort.key === "name" ? p.name
+      : productSort.key === "price" ? Number(p.price)
+      : p.is_discontinued ? "Discontinued" : "Active";
+    return compareValues(value(a), value(b)) * direction;
+  });
+
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const paginatedProducts = filteredProducts.slice(
+  const paginatedProducts = sortedProducts.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
   const openAddModal = () => {
     setEditingProduct(null);
-    setFormData({ name: "", sku: "", price: "", image_filename: "", manufacturer: "", is_discontinued: false, reorder_point: 0 });
+    setFormData({ name: "", sku: "", price: "", image_filename: "", manufacturer: "", is_discontinued: false, reorder_point: 0, weight: undefined });
     setIsModalOpen(true);
   };
 
@@ -376,6 +432,7 @@ export function Pricing({ onBack }: PricingProps) {
       manufacturer: (product as any).manufacturer ?? "",
       is_discontinued: (product as any).is_discontinued ?? false,
       reorder_point: (product as any).reorder_point ?? 0,
+      weight: product.weight != null ? Number(product.weight) : undefined,
     });
     setIsModalOpen(true);
   };
@@ -430,21 +487,48 @@ export function Pricing({ onBack }: PricingProps) {
     );
   }
 
+  if (isModalOpen) {
+    return (
+      <ProductPage
+        title={editingProduct ? "Edit Product" : "Add New Product"}
+        formData={formData}
+        setFormData={setFormData}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+      />
+    );
+  }
+
+  if (viewingProduct) {
+    return <ViewProductPage product={viewingProduct} onClose={() => setViewingProduct(null)} />;
+  }
+  if (productDetails) {
+    return <RecordDetailsDialog details={productDetails} onClose={() => setProductDetails(null)} />;
+  }
+  if (showExcelImport) {
+    return (
+      <ExcelImportDialog
+        title="Products"
+        columns={productExcelColumns}
+        validateRow={validateProductImportRow}
+        onImport={importProductRows}
+        onClose={() => setShowExcelImport(false)}
+      />
+    );
+  }
+
+  if (previewImageFilename) {
+    return <ImagePreviewPage filename={previewImageFilename} onClose={() => setPreviewImageFilename(null)} />;
+  }
+
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="font-rajdhani text-3xl font-bold text-navy letter-spacing-tight">
-              Products
-            </h1>
-            <p className="text-xs text-muted mt-1">
-              Manage your products
-            </p>
-          </div>
+    <div className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto scrollbar-visible">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="page-title">Products</h1>
+          <p className="page-subtitle">Manage your products</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
@@ -453,6 +537,12 @@ export function Pricing({ onBack }: PricingProps) {
           >
             <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
             Refresh
+          </button>
+          <button
+            onClick={openAddModal}
+            className="px-4 py-2 bg-navy text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+          >
+            ➕ Add Product
           </button>
           <button onClick={() => setShowExcelImport(true)} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors">
             ⬇ Import Excel
@@ -480,31 +570,30 @@ export function Pricing({ onBack }: PricingProps) {
       </div>
 
       {/* Search + Add + Delete Toggle */}
-      <div className="flex flex-col md:flex-row gap-3 items-stretch">
-        <SearchFilterBar
-          searchTerm={searchQuery}
-          onSearchChange={(value) => {
-            setSearchQuery(value);
-            setCurrentPage(1);
-          }}
-          placeholder="Search by product name…"
-        />
-        <button
-          onClick={openAddModal}
-          className="px-4 py-2 bg-navy text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 w-fit"
-        >
-          ➕ Add Product
-        </button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <button
           onClick={() => setShowDeleteButtons(!showDeleteButtons)}
-          className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
+          className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
             showDeleteButtons
               ? "bg-red text-white hover:opacity-90"
-              : "bg-white border border-border text-navy hover:bg-off-white"
+              : "border border-border bg-white text-navy hover:bg-off-white"
           }`}
         >
           {showDeleteButtons ? "🔓 Delete Enabled" : "🔒 Enable Delete"}
         </button>
+        <div className="relative w-full sm:w-72">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <input
+            type="text"
+            placeholder="Search by product name…"
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
+          />
+        </div>
       </div>
 
       {/* Table */}
@@ -516,18 +605,15 @@ export function Pricing({ onBack }: PricingProps) {
                 <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
                   Image
                 </th>
-                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                  Product Name
-                </th>
-                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                  Unit Price
-                </th>
+                <SortableHeader label="Product Name" sortKey="name" sort={productSort} onSort={setProductSort} />
+                <SortableHeader label="Unit Price" sortKey="price" sort={productSort} onSort={setProductSort} />
                 <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
                   Reorder Level
                 </th>
-                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap hidden md:table-cell">
-                  Status
+                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
+                  Weight
                 </th>
+                <SortableHeader label="Status" sortKey="status" sort={productSort} onSort={setProductSort} className="hidden md:table-cell" />
                 <th style={{ width: '120px' }} className="sticky right-0 z-10 bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-center border-b border-border whitespace-nowrap shadow-left">
                   Actions
                 </th>
@@ -567,6 +653,7 @@ export function Pricing({ onBack }: PricingProps) {
                               { label: "SKU", value: product.sku || "—" },
                               { label: "Unit Price", value: `₱${parseFloat(product.price ?? "0").toLocaleString("en-PH", { minimumFractionDigits: 2 })}` },
                               { label: "Reorder Level", value: product.reorder_point?.toLocaleString() || "—" },
+                              { label: "Weight", value: product.weight != null ? `${Number(product.weight).toLocaleString()} kg` : "—" },
                               { label: "Status", value: product.is_discontinued ? "Discontinued" : "Active" },
                               { label: "Manufacturer", value: product.manufacturer || "—" },
                               { label: "Batch Tracking", value: product.batch_tracking_enabled ? "Enabled" : "Disabled" },
@@ -586,6 +673,9 @@ export function Pricing({ onBack }: PricingProps) {
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap font-semibold text-navy">
                       {product.reorder_point?.toLocaleString() || "—"}
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap text-navy">
+                      {product.weight != null ? `${Number(product.weight).toLocaleString()} kg` : "—"}
                     </td>
                     <td className="px-3 py-3 hidden md:table-cell">
                       <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${product.is_discontinued ? "bg-red text-white" : "bg-green text-white"}`}>
@@ -634,48 +724,6 @@ export function Pricing({ onBack }: PricingProps) {
         </div>
       </div>
 
-      <RecordDetailsDialog details={productDetails} onClose={() => setProductDetails(null)} />
-
-      {/* View Modal */}
-      {viewingProduct && (
-        <ViewProductModal product={viewingProduct} onClose={() => setViewingProduct(null)} />
-      )}
-
-      {/* Modal */}
-      {isModalOpen && (
-        <ProductModal
-          title={editingProduct ? "Edit Product" : "Add New Product"}
-          formData={formData}
-          setFormData={setFormData}
-          onClose={() => setIsModalOpen(false)}
-          onSave={handleSave}
-        />
-      )}
-
-      {/* Image Preview Modal */}
-      {showExcelImport && (
-        <ExcelImportDialog
-          title="Products"
-          columns={productExcelColumns}
-          validateRow={validateProductImportRow}
-          onImport={importProductRows}
-          onClose={() => setShowExcelImport(false)}
-        />
-      )}
-
-      {previewImageFilename && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setPreviewImageFilename(null)}>
-          <div className="bg-white rounded-2xl border border-border max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 bg-navy-mid border-b border-border">
-              <h2 className="font-rajdhani text-lg font-bold text-white">Image Preview</h2>
-              <button onClick={() => setPreviewImageFilename(null)} className="text-white hover:opacity-70 text-2xl">×</button>
-            </div>
-            <div className="flex items-center justify-center p-6">
-              <img src={`/uploads/${previewImageFilename}`} alt="Preview" className="max-w-full max-h-[60vh] object-contain" />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

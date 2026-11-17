@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent } from "react";
-import { AlertTriangle, FileSpreadsheet, Upload, X } from "lucide-react";
+import { AlertTriangle, ArrowLeft, FileSpreadsheet, Upload } from "lucide-react";
 import { ExcelColumn, ExcelRow, readExcelRows } from "@/lib/excel";
 import { Table } from "@/components/ui/table";
 
@@ -57,15 +57,14 @@ export function ExcelImportDialog({ title, columns, validateRow, onImport, onClo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && !isImporting && onClose()}>
-      <section role="dialog" aria-modal="true" aria-labelledby="excel-import-title" className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-white">
-        <header className="flex items-center justify-between border-b border-border bg-navy-mid px-5 py-4 text-white">
-          <div>
-            <h2 id="excel-import-title" className="font-rajdhani text-lg font-bold">Import {title}</h2>
-            <p className="mt-1 text-xs text-white/70">Choose an .xlsx file with the exported column headers.</p>
-          </div>
-          <button type="button" onClick={onClose} disabled={isImporting} aria-label="Close import" className="text-2xl leading-none hover:opacity-70 disabled:opacity-50"><X size={22} /></button>
-        </header>
+    <div className="flex min-h-0 flex-1 flex-col gap-6 p-4 md:p-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Import {title}</h1>
+          <p className="page-subtitle">Choose an .xlsx file with the exported column headers.</p>
+        </div>
+        <button type="button" onClick={onClose} disabled={isImporting} className="btn-ghost disabled:opacity-50"><ArrowLeft size={15} />Back</button>
+      </div>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">
           <div>
@@ -107,7 +106,6 @@ export function ExcelImportDialog({ title, columns, validateRow, onImport, onClo
             <Upload size={16} />{importedCount !== null ? "Done" : isImporting ? "Importing…" : `Import ${validCount} rows`}
           </button>
         </footer>
-      </section>
     </div>
   );
 }

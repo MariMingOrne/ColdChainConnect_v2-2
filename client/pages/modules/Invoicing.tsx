@@ -10,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Printer, RefreshCw, Calendar } from "lucide-react";
+import { Printer, RefreshCw, Calendar, ArrowLeft } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Invoice, InvoiceItem, BookingItem } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
@@ -60,23 +60,26 @@ function ReceiptModal({ invoice, onClose }: ReceiptModalProps) {
     n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-3xl w-full max-h-[95vh] overflow-y-auto">
-
-        {/* Modal toolbar – hidden on print */}
-        <div className="bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl no-print">
-          <h2 className="font-rajdhani text-lg font-bold text-white">Delivery Receipt</h2>
-          <div className="flex gap-2 items-center">
-            <button
-              onClick={() => window.print()}
-              className="px-4 py-2 bg-accent-2 text-white text-sm font-semibold rounded-lg hover:opacity-80 flex items-center gap-2"
-            >
-              <Printer size={16} /> Print
-            </button>
-            <button onClick={onClose} className="text-white hover:opacity-70 text-2xl leading-none">×</button>
-          </div>
+    <div className="flex-1 flex flex-col gap-6 p-4 md:p-6">
+      <div className="page-header no-print">
+        <div>
+          <h1 className="page-title">Delivery Receipt</h1>
         </div>
+        <div className="flex gap-2 items-center">
+          <button
+            onClick={() => window.print()}
+            className="px-4 py-2 bg-accent-2 text-white text-sm font-semibold rounded-lg hover:opacity-80 flex items-center gap-2"
+          >
+            <Printer size={16} /> Print
+          </button>
+          <button onClick={onClose} className="btn-ghost">
+            <ArrowLeft size={15} />
+            Back
+          </button>
+        </div>
+      </div>
 
+      <div className="max-w-3xl w-full bg-white rounded-2xl border border-border">
         {/* Receipt body */}
         <div id="receipt-print-area" className="p-6 font-sans text-black">
           <style>{`
@@ -297,6 +300,8 @@ export function Invoicing() {
 
   if (isLoading && !isRefreshing) return <LoadingSpinner />;
 
+  if (receiptInvoice) return <ReceiptModal invoice={receiptInvoice} onClose={() => setReceiptInvoice(null)} />;
+
   const filtered = invoices.filter((inv) => {
     const matchSearch =
       inv.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -311,15 +316,15 @@ export function Invoicing() {
 
   return (
     <div className="flex-1 flex flex-col p-6 gap-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="page-header">
         <div>
-          <h1 className="text-3xl font-bold text-navy">Receipts</h1>
-          <p className="text-gray-600">Print and review delivery receipts</p>
+          <h1 className="page-title">Receipts</h1>
+          <p className="page-subtitle">Print and review delivery receipts</p>
         </div>
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-navy hover:bg-off-white disabled:opacity-50 flex items-center gap-2 w-fit"
+          className="btn-ghost"
         >
           <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
           Refresh
@@ -499,9 +504,6 @@ export function Invoicing() {
         </Table>
       </Card>
 
-      {receiptInvoice && (
-        <ReceiptModal invoice={receiptInvoice} onClose={() => setReceiptInvoice(null)} />
-      )}
     </div>
   );
 }

@@ -1,6 +1,4 @@
-import {
-  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle,
-} from "@/components/ui/dialog";
+import { ArrowLeft } from "lucide-react";
 import { AuditLog } from "@shared/api";
 import { describeLog, formatFieldValue, getFieldChanges, parseState } from "./auditDescribe";
 
@@ -37,14 +35,19 @@ export function AuditLogDetailDialog({ log, onClose }: AuditLogDetailDialogProps
   const snapshotLabel = log.action === "delete" ? "Deleted record" : "Saved record";
 
   return (
-    <Dialog open={!!log} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{describeLog(log)}</DialogTitle>
-          <DialogDescription>
+    <div className="flex-1 flex flex-col gap-6 p-4 md:p-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">{describeLog(log)}</h1>
+          <p className="page-subtitle">
             {new Date(log.created_at).toLocaleString()} · {log.action.toUpperCase()} · {log.resource_type.replace(/_/g, " ")}
-          </DialogDescription>
-        </DialogHeader>
+          </p>
+        </div>
+        <button type="button" onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
 
         <div className="grid grid-cols-1 gap-4 rounded-lg border border-border bg-off-white p-4 sm:grid-cols-2">
           <DetailField label="Performed by (user ID)" value={log.user_id} mono />
@@ -92,7 +95,6 @@ export function AuditLogDetailDialog({ log, onClose }: AuditLogDetailDialogProps
             </dl>
           </section>
         )}
-      </DialogContent>
-    </Dialog>
+    </div>
   );
 }

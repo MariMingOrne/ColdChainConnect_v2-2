@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { RefreshCw } from "lucide-react";
+import { ArrowLeft, RefreshCw } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,12 +28,18 @@ interface DriverForm {
 
 function ViewDriverModal({ driver, onClose }: { driver: Driver; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-          <h2 className="font-rajdhani text-lg font-bold text-white">Driver Details</h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl">×</button>
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 space-y-6 max-w-2xl">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Driver Details</h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-border">
 
         <div className="p-6 space-y-4">
           {[
@@ -103,12 +109,18 @@ function DriverModal({
   );
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-          <h2 className="font-rajdhani text-lg font-bold text-white">{title}</h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl">×</button>
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 space-y-6 max-w-2xl">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">{title}</h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-border">
 
         <div className="p-6 space-y-4">
           {field("Full Name *", "full_name", "e.g., Juan Dela Cruz")}
@@ -400,6 +412,27 @@ export function Drivers({ onBack }: DriversProps) {
     );
   }
 
+  if (schedulingDriver) {
+    return <DriverScheduleModal driver={schedulingDriver} onClose={() => setSchedulingDriver(null)} />;
+  }
+
+  if (viewingDriver) {
+    return <ViewDriverModal driver={viewingDriver} onClose={() => setViewingDriver(null)} />;
+  }
+
+  if (isModalOpen) {
+    return (
+      <DriverModal
+        title={editingDriver ? "Edit Driver" : "Add New Driver"}
+        formData={formData}
+        setFormData={setFormData}
+        hasLogin={Boolean(editingDriver?.user)}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+      />
+    );
+  }
+
   return (
     <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -494,24 +527,6 @@ export function Drivers({ onBack }: DriversProps) {
         </div>
       </div>
 
-      {viewingDriver && (
-        <ViewDriverModal driver={viewingDriver} onClose={() => setViewingDriver(null)} />
-      )}
-
-      {schedulingDriver && (
-        <DriverScheduleModal driver={schedulingDriver} onClose={() => setSchedulingDriver(null)} />
-      )}
-
-      {isModalOpen && (
-        <DriverModal
-          title={editingDriver ? "Edit Driver" : "Add New Driver"}
-          formData={formData}
-          setFormData={setFormData}
-          hasLogin={Boolean(editingDriver?.user)}
-          onClose={() => setIsModalOpen(false)}
-          onSave={handleSave}
-        />
-      )}
     </div>
   );
 }

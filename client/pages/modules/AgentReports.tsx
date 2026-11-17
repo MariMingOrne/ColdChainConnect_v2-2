@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { RefreshCw, RotateCcw, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, RefreshCw, RotateCcw, CheckCircle, XCircle } from "lucide-react";
 import { AgentReturn, Invoice, Customer, Product } from "@shared/api";
 import { LogReturnForm } from "./LogReturnForm";
 import { Table } from "@/components/ui/table";
@@ -65,12 +65,17 @@ function CreateReturnModal({
   token: string; onClose: () => void; onCreated: () => void;
 }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl border border-border w-full sm:max-w-lg max-h-[90vh] flex flex-col">
-        <div className="bg-navy-mid px-5 py-4 flex items-center justify-between border-b border-border rounded-t-2xl flex-shrink-0">
-          <h2 className="font-rajdhani text-base font-bold text-white">Log Return</h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl leading-none">×</button>
+    <div className="px-4 md:px-6 lg:px-7 py-4 md:py-6 space-y-5 max-w-xl mx-auto">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Log Return</h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <div className="bg-white rounded-2xl border border-border flex flex-col">
         <LogReturnForm
           invoices={invoices}
           customers={customers}
@@ -174,6 +179,19 @@ export function AgentReports() {
         customers={customers}
         products={products}
         token={token!}
+      />
+    );
+  }
+
+  if (showCreate) {
+    return (
+      <CreateReturnModal
+        invoices={invoices}
+        customers={customers}
+        products={products}
+        token={token!}
+        onClose={() => setShowCreate(false)}
+        onCreated={fetchAll}
       />
     );
   }
@@ -331,16 +349,6 @@ export function AgentReports() {
         )}
       </div>
 
-      {showCreate && (
-        <CreateReturnModal
-          invoices={invoices}
-          customers={customers}
-          products={products}
-          token={token!}
-          onClose={() => setShowCreate(false)}
-          onCreated={fetchAll}
-        />
-      )}
     </div>
   );
 }

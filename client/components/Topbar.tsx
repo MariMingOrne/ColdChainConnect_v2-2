@@ -169,7 +169,7 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
                 updateHoveredSuggestion(null);
               }
             }}
-            className="relative order-last w-full sm:order-none sm:w-auto sm:flex-1 sm:max-w-md"
+            className="relative order-last w-full sm:order-none sm:w-64"
           >
             <input
               ref={searchInputRef}

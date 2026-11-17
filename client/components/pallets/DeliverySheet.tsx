@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import JsBarcode from "jsbarcode";
-import { Printer, X } from "lucide-react";
-import { createPortal } from "react-dom";
+import { ArrowLeft, Printer } from "lucide-react";
 import type { Booking, InventoryBatch, Pallet } from "@shared/api";
 
 interface DeliverySheetProps {
@@ -61,16 +60,18 @@ export function DeliverySheet({ order, pallets, batches, onClose }: DeliveryShee
     : "Not scheduled";
   const storeName = order.customer?.store_name ?? "Customer";
 
-  return createPortal(
-    <div className="delivery-sheet-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="delivery-sheet-dialog flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white">
-        <div className="no-print flex items-center justify-between bg-navy-mid px-6 py-4">
-          <h2 className="font-rajdhani text-lg font-bold text-white">Delivery Sheet</h2>
+  return (
+    <div className="delivery-sheet-overlay flex-1 flex flex-col gap-6 p-4 md:p-6">
+      <div className="delivery-sheet-dialog flex w-full max-w-3xl flex-col gap-4">
+        <div className="no-print page-header">
+          <div>
+            <h1 className="page-title">Delivery Sheet</h1>
+          </div>
           <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={() => setCardMode((mode) => !mode)}
-              className="rounded-lg border border-white/40 px-3 py-2 text-sm font-semibold text-white hover:opacity-80"
+              className="btn-ghost"
             >
               {cardMode ? "Switch to letter" : "Switch to 5×3 card"}
             </button>
@@ -81,13 +82,14 @@ export function DeliverySheet({ order, pallets, batches, onClose }: DeliveryShee
             >
               <Printer size={16} /> Print
             </button>
-            <button type="button" onClick={onClose} aria-label="Close delivery sheet" className="text-white hover:opacity-70">
-              <X size={20} />
+            <button type="button" onClick={onClose} className="btn-ghost">
+              <ArrowLeft size={15} />
+              Back
             </button>
           </div>
         </div>
 
-        <div id="delivery-sheet" className={`overflow-y-auto p-5 font-sans text-black ${cardMode ? "card-mode" : ""}`}>
+        <div id="delivery-sheet" className={`overflow-y-auto rounded-2xl border border-border bg-white p-5 font-sans text-black ${cardMode ? "card-mode" : ""}`}>
           <style>{`
             @media print {
               @page {
@@ -95,10 +97,12 @@ export function DeliverySheet({ order, pallets, batches, onClose }: DeliveryShee
                 margin: ${cardMode ? "0.15in" : "0.35in"};
               }
               html, body { height: auto !important; overflow: visible !important; }
-              body > *:not(.delivery-sheet-overlay) { display: none !important; }
+              body * { visibility: hidden !important; }
+              .delivery-sheet-overlay, .delivery-sheet-overlay * { visibility: visible !important; }
               .delivery-sheet-overlay {
-                position: static !important;
-                inset: auto !important;
+                position: absolute !important;
+                top: 0 !important;
+                left: 0 !important;
                 display: block !important;
                 width: 100% !important;
                 padding: 0 !important;
@@ -186,7 +190,6 @@ export function DeliverySheet({ order, pallets, batches, onClose }: DeliveryShee
           </section>
         </div>
       </div>
-    </div>,
-    document.body,
+    </div>
   );
 }
