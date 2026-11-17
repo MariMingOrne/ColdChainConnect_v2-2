@@ -212,7 +212,7 @@ export function Preparation() {
   };
 
   return (
-    <div className="flex-1 flex flex-col p-6 gap-6">
+    <div className="flex-1 flex flex-col gap-6 px-6 py-6 md:pl-0">
       <div className="page-header">
         <div>
           <h1 className="page-title">Pallet Preparation</h1>

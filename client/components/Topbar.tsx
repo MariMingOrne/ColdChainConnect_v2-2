@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { ChevronLeft, Menu, Search, Truck, Users } from "lucide-react";
+import { ChevronLeft, Search, Truck } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { NotificationPanel } from "./NotificationPanel";
 import { useNotifications } from "@/hooks/useNotifications";
 import { useGlobalSearchData } from "@/hooks/useGlobalSearchData";
+import { AdminMobileNavigation } from "@/components/AdminNavigation";
 import { EMPTY_SEARCH_DATA, searchAll, type SearchHit } from "@/lib/globalSearch";
 import {
   DropdownMenu,
@@ -207,22 +208,7 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
 
       {/* Right Section */}
       <div className="ml-auto flex items-center gap-2 relative">
-        {role === "admin" && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button aria-label="Main navigation" className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 text-white hover:bg-white/20 md:hidden">
-                <Menu size={19} aria-hidden="true" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-navy text-white border-white/20">
-              <DropdownMenuItem onClick={() => navigate("/")} className="focus:bg-white/10 focus:text-white cursor-pointer">Dashboard</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/information-management/inventory")} className="focus:bg-white/10 focus:text-white cursor-pointer">Inventory & Storage</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/booking-dispatch/order-summary")} className="focus:bg-white/10 focus:text-white cursor-pointer">Bookings & Orders</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/booking-dispatch/delivery")} className="focus:bg-white/10 focus:text-white cursor-pointer">Logistics & Fleet</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate("/reports")} className="focus:bg-white/10 focus:text-white cursor-pointer">Reports</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+        {role === "admin" && <AdminMobileNavigation />}
         {/* Notification button */}
         <button
           onClick={() => setShowNotifications(!showNotifications)}
@@ -236,15 +222,6 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
           )}
         </button>
 
-        {role === "admin" && (
-          <button
-            onClick={() => navigate("/manage-accounts")}
-            className="inline-flex h-10 items-center gap-2 rounded-lg border border-white/20 bg-white/10 px-4 text-sm font-semibold text-white transition-all hover:bg-white/20"
-          >
-            <Users size={17} aria-hidden="true" />
-            <span className="hidden sm:inline">Manage Accounts</span>
-          </button>
-        )}
 
         {/* Settings dropdown */}
         <DropdownMenu>
