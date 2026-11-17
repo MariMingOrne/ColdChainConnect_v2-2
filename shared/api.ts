@@ -4,6 +4,26 @@
 
 import { z } from "zod";
 
+export const modulePermissionKeys = [
+  "dashboard",
+  "product-customer",
+  "order-fulfillment",
+  "delivery-operations",
+  "manage-accounts",
+  "reports",
+  "administration",
+] as const;
+export type ModulePermission = (typeof modulePermissionKeys)[number];
+export const modulePermissionLabels: Record<ModulePermission, string> = {
+  dashboard: "Dashboard",
+  "product-customer": "Product & Customer Management",
+  "order-fulfillment": "Order Fulfillment",
+  "delivery-operations": "Delivery & Customer Operations",
+  "manage-accounts": "Manage Accounts",
+  reports: "Reports",
+  administration: "Administration",
+};
+
 // Auth types
 export interface LoginRequest {
   username: string;
@@ -21,6 +41,7 @@ export interface LoginResponse {
     id: string;
     username: string;
     role: "admin" | "agent" | "driver" | "staff";
+    module_permissions?: string[];
   };
 }
 

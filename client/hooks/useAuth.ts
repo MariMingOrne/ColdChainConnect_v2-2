@@ -5,12 +5,14 @@ import {
   MfaChallengeResponse,
   MfaSetupResponse,
   MfaVerifyRequest,
+  ModulePermission,
 } from "@shared/api";
 
 export interface AuthUser {
   id: string;
   username: string;
   role: "admin" | "agent" | "driver" | "staff";
+  module_permissions?: ModulePermission[];
 }
 
 interface AuthStore {
@@ -83,6 +85,7 @@ function completeSignIn(
     id: data.user.id,
     username: data.user.username,
     role: data.user.role,
+    module_permissions: data.user.module_permissions as ModulePermission[] | undefined,
   };
 
   persistAuth(data.token, normalizedUser);

@@ -11,6 +11,7 @@ import {
   foreignKey,
   primaryKey,
   date,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -47,6 +48,7 @@ export const users = pgTable("users", {
   mfa_secret: text("mfa_secret"),
   mfa_enabled: boolean("mfa_enabled").default(false).notNull(),
   role: userRoleEnum("role").default("agent").notNull(),
+  module_permissions: jsonb("module_permissions").$type<string[]>().default([]).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });

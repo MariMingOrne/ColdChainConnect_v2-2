@@ -140,6 +140,7 @@ export const handleMfaVerify: RequestHandler = async (req, res) => {
         id: user.id,
         username: user.username,
         role: user.role,
+        module_permissions: user.module_permissions,
       },
     } as LoginResponse);
   } catch (error) {

@@ -5,7 +5,8 @@ import { createRoot } from "react-dom/client";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import type { ModulePermission } from "@shared/api";
 import { useAuth } from "./hooks/useAuth";
 import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
@@ -57,10 +58,54 @@ const AgentLayout = ({ children, agentMode = false }: { children: React.ReactNod
   );
 };
 
+const staffModulePaths: Record<ModulePermission, string> = {
+  dashboard: "/",
+  "product-customer": "/information-management",
+  "order-fulfillment": "/booking-dispatch",
+  "delivery-operations": "/booking-dispatch/delivery",
+  "manage-accounts": "/manage-accounts/staff",
+  reports: "/reports",
+  administration: "/audit",
+};
+
+function StaffDispatchModule() {
+  const { pathname } = useLocation();
+  const deliveryPaths = ["/booking-dispatch/delivery", "/booking-dispatch/accounts", "/booking-dispatch/delivery-history", "/booking-dispatch/agent-returns"];
+  const permission: ModulePermission = deliveryPaths.some((path) => pathname.startsWith(path)) ? "delivery-operations" : "order-fulfillment";
+  return <StaffModule permission={permission}><AppLayout><BookingDispatch /></AppLayout></StaffModule>;
+}
+
+function StaffModule({ permission, children }: { permission: ModulePermission; children: React.ReactNode }) {
+  const user = useAuth((state) => state.user);
+  const allowed = user?.module_permissions ?? [];
+  if (!allowed.includes(permission)) {
+    const next = Object.keys(staffModulePaths).find((key) => allowed.includes(key as ModulePermission)) as ModulePermission | undefined;
+    return next ? <Navigate to={staffModulePaths[next]} replace /> : <div className="p-8 text-center text-navy">No modules are currently assigned to your account. Contact an administrator.</div>;
+  }
+  return <>{children}</>;
+}
+
 const AppContent = () => {
   const { isAuthenticated, user } = useAuth();
   const isAgent = user?.role === "agent";
   const isDriver = user?.role === "driver";
+  const isStaff = user?.role === "staff";
+
+  if (isAuthenticated && isStaff) {
+    return (
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<StaffModule permission="dashboard"><AppLayout><Dashboard /></AppLayout></StaffModule>} />
+        <Route path="/information-management/*" element={<StaffModule permission="product-customer"><AppLayout><InformationManagement /></AppLayout></StaffModule>} />
+        <Route path="/booking-dispatch/*" element={<StaffDispatchModule />} />
+        <Route path="/manage-accounts/*" element={<StaffModule permission="manage-accounts"><AppLayout><ManageAccounts /></AppLayout></StaffModule>} />
+        <Route path="/audit" element={<StaffModule permission="administration"><AppLayout><AuditLogPage /></AppLayout></StaffModule>} />
+        <Route path="/reports" element={<StaffModule permission="reports"><AppLayout><Reports /></AppLayout></StaffModule>} />
+        <Route path="/search" element={<StaffModule permission="order-fulfillment"><AppLayout><SearchResults /></AppLayout></StaffModule>} />
+        <Route path="*" element={<Navigate to={staffModulePaths["dashboard"]} replace />} />
+      </Routes>
+    );
+  }
 
   // ── Driver: only their delivery schedule is accessible ──────────
   if (isAuthenticated && isDriver) {

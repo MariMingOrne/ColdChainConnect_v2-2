@@ -1,8 +1,13 @@
 import { Request, Response, NextFunction } from "express";
 import { verifyToken, TokenPayload } from "../auth";
+import { db } from "../db";
+import { users } from "../db/schema";
+import { eq } from "drizzle-orm";
+import type { ModulePermission } from "@shared/api";
 
 export interface AuthRequest extends Request {
   user?: TokenPayload;
+  modulePermissions?: string[];
 }
 
 const DRIVER_ALLOWED_PATHS = new Set([
@@ -10,7 +15,7 @@ const DRIVER_ALLOWED_PATHS = new Set([
   "/api/auth/refresh",
 ]);
 
-export function authMiddleware(
+export async function authMiddleware(
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -30,8 +35,23 @@ export function authMiddleware(
     return res.status(403).json({ error: "Insufficient permissions" });
   }
 
+  if (payload.role === "staff") {
+    const [account] = await db.select({ module_permissions: users.module_permissions }).from(users).where(eq(users.id, payload.userId)).limit(1);
+    if (!account) return res.status(401).json({ error: "Invalid account" });
+    req.modulePermissions = account.module_permissions;
+  }
+
   req.user = payload;
   next();
+}
+
+export function requireModuleAccess(module: ModulePermission) {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
+    if (req.user?.role === "staff" && !req.modulePermissions?.includes(module)) {
+      return res.status(403).json({ error: "Module access denied" });
+    }
+    next();
+  };
 }
 
 export function requireRole(...roles: Array<"admin" | "agent" | "driver" | "staff">) {

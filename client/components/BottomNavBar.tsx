@@ -54,6 +54,8 @@ export function BottomNavBar({ onLogout }: BottomNavBarProps) {
   const currentPath = location.pathname;
   const { user, token } = useAuth();
   const isAdmin = user?.role === "admin";
+  const isStaff = user?.role === "staff";
+  const staffCan = (permission: "dashboard" | "product-customer" | "order-fulfillment" | "delivery-operations" | "manage-accounts") => !isStaff || Boolean(user.module_permissions?.includes(permission));
   const [counts, setCounts] = useState({ pendingOrders: 0, activeDeliveries: 0 });
 
   useEffect(() => {
@@ -91,13 +93,16 @@ export function BottomNavBar({ onLogout }: BottomNavBarProps) {
   let currentHub: string | null = null;
   let modulesToShow: Array<{ path: string; label: string; icon: React.ElementType }> = [];
 
-  if (isAdmin && currentPath.startsWith("/information-management")) {
+  if ((isAdmin || isStaff) && currentPath.startsWith("/information-management")) {
     currentHub = "/information-management";
-    modulesToShow = hubModulesByPath["/information-management"] || [];
-  } else if (isAdmin && currentPath.startsWith("/booking-dispatch")) {
+    modulesToShow = (hubModulesByPath["/information-management"] || []).filter(() => staffCan("product-customer"));
+  } else if ((isAdmin || isStaff) && currentPath.startsWith("/booking-dispatch")) {
     currentHub = "/booking-dispatch";
-    modulesToShow = hubModulesByPath["/booking-dispatch"] || [];
-  } else if (isAdmin && currentPath.startsWith("/manage-accounts")) {
+    modulesToShow = (hubModulesByPath["/booking-dispatch"] || []).filter(({ path }) => {
+      const delivery = ["/delivery", "/accounts", "/delivery-history", "/agent-returns"].includes(path);
+      return staffCan(delivery ? "delivery-operations" : "order-fulfillment");
+    });
+  } else if ((isAdmin || isStaff) && currentPath.startsWith("/manage-accounts") && staffCan("manage-accounts")) {
     currentHub = "/manage-accounts";
     modulesToShow = hubModulesByPath["/manage-accounts"] || [];
   }
@@ -133,7 +138,12 @@ export function BottomNavBar({ onLogout }: BottomNavBarProps) {
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-navy border-t border-white/10 z-30 md:hidden">
       <div className="flex overflow-x-auto overflow-y-hidden scrollbar-visible gap-1 scroll-smooth touch-pan-x px-2 py-1 justify-center" style={{ WebkitOverflowScrolling: "touch" }}>
-        {globalNavItems.map(({ path, label, icon: Icon }) => {
+        {globalNavItems.filter(({ path }) => {
+          if (path === "/") return staffCan("dashboard");
+          if (path.startsWith("/information-management")) return staffCan("product-customer");
+          if (path.includes("delivery")) return staffCan("delivery-operations");
+          return staffCan("order-fulfillment");
+        }).map(({ path, label, icon: Icon }) => {
           const isActive = currentPath === path || (path !== "/" && currentPath.startsWith(path));
           return (
             <Link
