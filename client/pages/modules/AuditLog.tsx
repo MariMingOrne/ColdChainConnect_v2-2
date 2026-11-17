@@ -68,6 +68,8 @@ export function AuditLogPage() {
 
   useEffect(() => { if (token) fetchLogs(); }, [token]);
 
+  if (selectedLog) return <AuditLogDetailDialog log={selectedLog} onClose={() => setSelectedLog(null)} />;
+
   return (
     <div className="flex-1 flex flex-col p-6 gap-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -128,7 +130,6 @@ export function AuditLogPage() {
           ) : (
             <AuditLogTable logs={logs} onView={setSelectedLog} />
           )}
-          <AuditLogDetailDialog log={selectedLog} onClose={() => setSelectedLog(null)} />
         </>
       )}
 

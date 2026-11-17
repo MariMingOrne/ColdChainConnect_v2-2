@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Customer, Truck, formatCustomerAddress, totalDiscountRate } from "@shared/api";
-import { Download, RefreshCw } from "lucide-react";
+import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
@@ -79,14 +79,19 @@ function StatsBox({
   );
 }
 
-function ViewCustomerModal({ customer, onClose }: { customer: Customer; onClose: () => void }) {
+function ViewCustomerPage({ customer, onClose }: { customer: Customer; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-lg w-full">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-          <h2 className="font-rajdhani text-lg font-bold text-white">Customer Details</h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl">×</button>
+    <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Customer Details</h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <div className="max-w-lg w-full rounded-2xl border border-border bg-white">
 
         <div className="p-6 space-y-4">
           <div>
@@ -160,14 +165,17 @@ function CustomerModal({
   const updateAddressField = (field: "street_number" | "street_address" | "location" | "state" | "postal_code", value: string) =>
     setFormData({ ...formData, [field]: value, latitude: null, longitude: null });
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-border bg-white">
-        <div className="sticky top-0 flex items-center justify-between rounded-t-2xl border-b border-border bg-navy-mid px-6 py-4">
-          <h2 className="font-rajdhani text-lg font-bold text-white">{title}</h2>
-          <button onClick={onClose} className="text-2xl text-white hover:opacity-70">
-            ×
-          </button>
+    <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">{title}</h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <div className="flex w-full max-w-xl flex-col rounded-2xl border border-border bg-white">
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-6">
           <div>
@@ -590,6 +598,34 @@ export function Customers({ onBack }: CustomersProps) {
     );
   }
 
+  if (isModalOpen) {
+    return (
+      <CustomerModal
+        title={editingCustomer ? "Edit Customer" : "Add New Customer"}
+        formData={formData}
+        setFormData={setFormData}
+        districts={truckDistricts}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+      />
+    );
+  }
+
+  if (viewingCustomer) {
+    return <ViewCustomerPage customer={viewingCustomer} onClose={() => setViewingCustomer(null)} />;
+  }
+  if (showExcelImport) {
+    return (
+      <ExcelImportDialog
+        title="Customers"
+        columns={customerExcelColumns}
+        validateRow={validateCustomerImportRow}
+        onImport={importCustomerRows}
+        onClose={() => setShowExcelImport(false)}
+      />
+    );
+  }
+
   return (
     <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -776,30 +812,6 @@ export function Customers({ onBack }: CustomersProps) {
         Total customers: {filteredCustomers.length}
       </div>
 
-      {showExcelImport && (
-        <ExcelImportDialog
-          title="Customers"
-          columns={customerExcelColumns}
-          validateRow={validateCustomerImportRow}
-          onImport={importCustomerRows}
-          onClose={() => setShowExcelImport(false)}
-        />
-      )}
-
-      {viewingCustomer && (
-        <ViewCustomerModal customer={viewingCustomer} onClose={() => setViewingCustomer(null)} />
-      )}
-
-      {isModalOpen && (
-        <CustomerModal
-          title={editingCustomer ? "Edit Customer" : "Add New Customer"}
-          formData={formData}
-          setFormData={setFormData}
-          districts={truckDistricts}
-          onClose={() => setIsModalOpen(false)}
-          onSave={handleSave}
-        />
-      )}
     </div>
   );
 }

@@ -9,6 +9,8 @@ export function ManageAccounts() {
   const location = useLocation();
   const [showCreateAccount, setShowCreateAccount] = useState(false);
 
+  if (showCreateAccount) return <CreateAccountDialog onClose={() => setShowCreateAccount(false)} />;
+
   return (
     <div className="flex min-w-0 flex-1">
       <div className="flex flex-1 flex-col overflow-auto">
@@ -30,7 +32,6 @@ export function ManageAccounts() {
         <span>Create Accounts</span>
       </button>
 
-      <CreateAccountDialog open={showCreateAccount} onOpenChange={setShowCreateAccount} />
     </div>
   );
 }

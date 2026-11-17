@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ArrowLeft } from "lucide-react";
 
 // Employee interface with all required fields
 interface Employee {
@@ -262,6 +263,27 @@ export function Employees() {
       e.email.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  if (isModalOpen) return (
+    <EmployeeModal
+      formData={formData}
+      setFormData={setFormData}
+      errors={errors}
+      isEditMode={selectedEmployee !== null}
+      onSave={handleSave}
+      onClose={() => {
+        setIsModalOpen(false);
+        resetForm();
+      }}
+    />
+  );
+
+  if (showViewModal && viewData) return (
+    <ViewEmployeeModal
+      employee={viewData}
+      onClose={() => setShowViewModal(false)}
+    />
+  );
+
   return (
     <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
       {/* Header */}
@@ -321,28 +343,6 @@ export function Employees() {
         </div>
       )}
 
-      {/* Employee Modal - REQ-EMP-001: Create/Edit with all fields */}
-      {isModalOpen && (
-        <EmployeeModal
-          formData={formData}
-          setFormData={setFormData}
-          errors={errors}
-          isEditMode={selectedEmployee !== null}
-          onSave={handleSave}
-          onClose={() => {
-            setIsModalOpen(false);
-            resetForm();
-          }}
-        />
-      )}
-
-      {/* View Modal */}
-      {showViewModal && viewData && (
-        <ViewEmployeeModal
-          employee={viewData}
-          onClose={() => setShowViewModal(false)}
-        />
-      )}
     </div>
   );
 }
@@ -458,17 +458,20 @@ function EmployeeModal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-2xl w-full max-h-96 overflow-y-auto">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border">
-          <h2 className="font-rajdhani text-lg font-bold text-white">
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto space-y-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">
             {isEditMode ? "Edit Employee" : "Add New Employee"}
-          </h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl">
-            ×
-          </button>
+          </h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
 
+      <div className="bg-white rounded-2xl border border-border overflow-hidden">
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-3 gap-3">
             {/* First Name */}
@@ -742,17 +745,20 @@ function ViewEmployeeModal({
   onClose: () => void;
 }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-md w-full">
-        <div className="bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border">
-          <h2 className="font-rajdhani text-lg font-bold text-white">
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto space-y-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">
             Employee Details
-          </h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl">
-            ×
-          </button>
+          </h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
 
+      <div className="bg-white rounded-2xl border border-border max-w-md w-full overflow-hidden">
         <div className="p-6 space-y-3">
           <DetailRow label="Employee ID" value={employee.id} />
           <DetailRow

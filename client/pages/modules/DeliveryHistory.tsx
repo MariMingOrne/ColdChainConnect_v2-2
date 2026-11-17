@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ArrowLeft } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Customer, Truck, Invoice } from "@shared/api";
 import { Table } from "@/components/ui/table";
@@ -105,6 +105,8 @@ export function DeliveryHistory() {
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const paginated  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+  if (viewReceipt) return <OriginalReceiptModal receipt={viewReceipt} onClose={() => setViewReceipt(null)} />;
 
   const totalReceipts = receipts.length;
   const todayReceipts = receipts.filter((r) => {
@@ -250,10 +252,6 @@ export function DeliveryHistory() {
         )}
       </div>
 
-      {/* Original Receipt Modal */}
-      {viewReceipt && (
-        <OriginalReceiptModal receipt={viewReceipt} onClose={() => setViewReceipt(null)} />
-      )}
     </div>
   );
 }
@@ -280,22 +278,23 @@ function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt; onClo
   const handlePrint = () => window.print();
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-          <h2 className="font-rajdhani text-lg font-bold text-white">Original Receipt</h2>
-          <div className="flex gap-2">
-            <button
-              onClick={handlePrint}
-              className="px-3 py-1 bg-white/20 text-white rounded text-xs font-semibold hover:bg-white/30"
-            >
-              🖨 Print
-            </button>
-            <button onClick={onClose} className="text-white hover:opacity-70 text-2xl leading-none">×</button>
-          </div>
+    <div className="flex-1 flex flex-col gap-6 p-4 md:p-6">
+      <div className="page-header no-print">
+        <div>
+          <h1 className="page-title">Original Receipt</h1>
         </div>
+        <div className="flex gap-2">
+          <button onClick={handlePrint} className="btn-ghost">
+            🖨 Print
+          </button>
+          <button onClick={onClose} className="btn-ghost">
+            <ArrowLeft size={15} />
+            Back
+          </button>
+        </div>
+      </div>
 
+      <div className="max-w-lg w-full bg-white rounded-2xl border border-border">
         {/* Receipt body */}
         <div className="p-8 space-y-6 font-mono text-sm" id="receipt-print-area">
           {/* Company header */}

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { AgentStopRow } from "@/components/AgentStopRow";
-import { CalendarDays, Clock3, History, RefreshCw, Search, Truck as TruckIcon, UserRound } from "lucide-react";
+import { ArrowLeft, CalendarDays, Clock3, History, RefreshCw, Search, Truck as TruckIcon, UserRound } from "lucide-react";
 import type { AgentScheduleDelivery, AgentScheduleResponse, AgentScheduleStop } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { optimizeRouteOrder } from "@/lib/routeOrder";
 import { localScheduleDate, statusClasses } from "@/lib/agentSchedule";
 import { DeliveryRouteMap, type MapFocus } from "@/components/DeliveryRouteMap";
+import { AgentStopDetailDialog } from "@/components/AgentStopDetailDialog";
 
 function formatScheduleDate(value: string) {
   const [year, month, day] = value.split("-").map(Number);
@@ -73,6 +74,7 @@ export function AgentDeliverySchedule() {
   const [paymentStop, setPaymentStop] = useState<{ delivery: AgentScheduleDelivery; stop: AgentScheduleStop; mode: "confirm" | "payment" } | null>(null);
   const [confirmingStopId, setConfirmingStopId] = useState<string | null>(null);
   const [mapFocus, setMapFocus] = useState<MapFocus | null>(null);
+  const [detailTarget, setDetailTarget] = useState<{ delivery: AgentScheduleDelivery; stop: AgentScheduleStop } | null>(null);
 
   const fetchSchedule = async () => {
     if (!token) return;
@@ -161,6 +163,35 @@ export function AgentDeliverySchedule() {
     setMapFocus({ stopId, requestedAt: Date.now() });
     document.getElementById(`run-map-${deliveryId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
+
+  if (paymentStop) {
+    return (
+      <DeliveryPaymentPrompt
+        stop={paymentStop.stop}
+        mode={paymentStop.mode}
+        isConfirming={confirmingStopId === paymentStop.stop.id}
+        onClose={() => setPaymentStop(null)}
+        onConfirm={confirmDelivery}
+      />
+    );
+  }
+
+  if (detailTarget) {
+    const { delivery, stop } = detailTarget;
+    const hasMapLocation = stop.destination_customer?.latitude != null && stop.destination_customer?.longitude != null;
+    return (
+      <AgentStopDetailDialog
+        stop={stop}
+        onBack={() => setDetailTarget(null)}
+        onShowOnMap={view === "today" && hasMapLocation
+          ? () => {
+              setDetailTarget(null);
+              window.setTimeout(() => showStopOnMap(delivery.id, stop.id), 0);
+            }
+          : undefined}
+      />
+    );
+  }
 
   return (
     <div className="flex-1 flex flex-col gap-5 p-4 pb-24 md:p-6 md:pb-6">
@@ -324,9 +355,8 @@ export function AgentDeliverySchedule() {
                           key={stop.id}
                           index={index}
                           stop={stop}
-                          showMapAction={view === "today"}
                           isConfirming={confirmingStopId === stop.id}
-                          onShowOnMap={(stopId) => showStopOnMap(delivery.id, stopId)}
+                          onOpenDetails={() => setDetailTarget({ delivery, stop })}
                           onConfirmPayment={() => setPaymentStop({ delivery, stop, mode: "confirm" })}
                           onRecordPayment={() => setPaymentStop({ delivery, stop, mode: "payment" })}
                         />
@@ -338,15 +368,6 @@ export function AgentDeliverySchedule() {
             </section>
           ))}
         </div>
-      )}
-      {paymentStop && (
-        <DeliveryPaymentPrompt
-          stop={paymentStop.stop}
-          mode={paymentStop.mode}
-          isConfirming={confirmingStopId === paymentStop.stop.id}
-          onClose={() => setPaymentStop(null)}
-          onConfirm={confirmDelivery}
-        />
       )}
     </div>
   );
@@ -374,9 +395,17 @@ function DeliveryPaymentPrompt({ stop, mode, isConfirming, onClose, onConfirm }:
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center sm:p-4">
-      <section role="dialog" aria-modal="true" aria-labelledby="delivery-payment-title" className="max-h-[90vh] w-full overflow-y-auto rounded-t-2xl bg-white p-5 sm:max-w-lg sm:rounded-2xl">
-        <h2 id="delivery-payment-title" className="font-rajdhani text-xl font-bold text-navy">{isRecordingPayment ? "Record payment" : "Confirm delivery"}</h2>
+    <div className="flex-1 flex flex-col gap-5 p-4 pb-24 md:p-6 md:pb-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">{isRecordingPayment ? "Record payment" : "Confirm delivery"}</h1>
+        </div>
+        <button type="button" onClick={onClose} disabled={isConfirming} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <section className="max-w-lg w-full rounded-2xl bg-white p-5 shadow-sm">
         <p className="mt-2 text-sm text-muted">
           {isRecordingPayment
             ? `Record payment collected from ${stop.destination_customer.store_name}.`

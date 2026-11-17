@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ArrowLeft } from "lucide-react";
 
 export interface RecordDetailField {
   label: string;
@@ -18,26 +18,28 @@ interface RecordDetailsDialogProps {
 }
 
 export function RecordDetailsDialog({ details, onClose }: RecordDetailsDialogProps) {
+  if (!details) return null;
+
   return (
-    <Dialog open={details !== null} onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-        {details && (
-          <>
-            <DialogHeader>
-              <DialogTitle className="text-navy">{details.title}</DialogTitle>
-              {details.subtitle && <DialogDescription>{details.subtitle}</DialogDescription>}
-            </DialogHeader>
-            <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {details.fields.map((field) => (
-                <div key={field.label} className="rounded-lg border border-border bg-off-white/50 px-3 py-2">
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{field.label}</dt>
-                  <dd className="mt-1 break-words text-sm font-semibold text-navy">{field.value ?? "—"}</dd>
-                </div>
-              ))}
-            </dl>
-          </>
-        )}
-      </DialogContent>
-    </Dialog>
+    <div className="flex-1 flex flex-col gap-6 p-4 md:p-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">{details.title}</h1>
+          {details.subtitle && <p className="page-subtitle">{details.subtitle}</p>}
+        </div>
+        <button type="button" onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        {details.fields.map((field) => (
+          <div key={field.label} className="rounded-lg border border-border bg-off-white/50 px-3 py-2">
+            <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{field.label}</dt>
+            <dd className="mt-1 break-words text-sm font-semibold text-navy">{field.value ?? "—"}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
   );
 }

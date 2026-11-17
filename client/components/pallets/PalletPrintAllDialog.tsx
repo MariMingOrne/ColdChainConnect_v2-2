@@ -1,7 +1,6 @@
 import JsBarcode from "jsbarcode";
-import { Printer, X } from "lucide-react";
+import { ArrowLeft, Printer } from "lucide-react";
 import { useMemo } from "react";
-import { createPortal } from "react-dom";
 import type { PalletEntry } from "./PalletTable";
 
 function barcodeDataUrl(value: string) {
@@ -18,25 +17,26 @@ export function PalletPrintAllDialog({ entries, date, onClose }: {
   const formattedDate = new Date(`${date}T00:00:00`).toLocaleDateString();
   const barcodes = useMemo(() => Object.fromEntries(entries.map(({ pallet }) => [pallet.id, barcodeDataUrl(pallet.id)])), [entries]);
 
-  return createPortal(
-    <div className="bulk-pallet-print-overlay fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <section role="dialog" aria-modal="true" aria-labelledby="bulk-pallet-print-title" className="bulk-pallet-print-dialog flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-xl">
-        <div className="no-print flex items-center justify-between bg-navy-mid px-5 py-4 text-white">
+  return (
+    <div className="bulk-pallet-print-overlay flex-1 flex flex-col gap-6 p-4 md:p-6">
+      <section className="bulk-pallet-print-dialog flex w-full max-w-4xl flex-col gap-4">
+        <div className="no-print page-header">
           <div>
-            <h2 id="bulk-pallet-print-title" className="font-rajdhani text-lg font-bold">Print all pallets</h2>
-            <p className="text-xs text-white/75">{formattedDate} · {entries.length} pallet{entries.length === 1 ? "" : "s"}</p>
+            <h1 id="bulk-pallet-print-title" className="page-title">Print all pallets</h1>
+            <p className="page-subtitle">{formattedDate} · {entries.length} pallet{entries.length === 1 ? "" : "s"}</p>
           </div>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => window.print()} disabled={entries.length === 0} className="inline-flex items-center gap-2 rounded-lg bg-accent-2 px-4 py-2 text-sm font-semibold disabled:opacity-50">
+            <button type="button" onClick={() => window.print()} disabled={entries.length === 0} className="inline-flex items-center gap-2 rounded-lg bg-accent-2 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
               <Printer size={16} /> Print all
             </button>
-            <button type="button" onClick={onClose} aria-label="Close print preview" className="rounded p-1 hover:bg-white/10">
-              <X size={20} />
+            <button type="button" onClick={onClose} className="btn-ghost">
+              <ArrowLeft size={15} />
+              Back
             </button>
           </div>
         </div>
 
-        <div className="no-print overflow-y-auto p-5">
+        <div className="no-print rounded-2xl border border-border bg-white p-5">
           {entries.length === 0 ? (
             <p className="py-10 text-center text-sm text-muted">No pallets were created on this date.</p>
           ) : (
@@ -73,8 +73,9 @@ export function PalletPrintAllDialog({ entries, date, onClose }: {
           @media print {
             @page { size: letter; margin: 0.35in; }
             html, body { height: auto !important; overflow: visible !important; }
-            body > *:not(.bulk-pallet-print-overlay) { display: none !important; }
-            .bulk-pallet-print-overlay { position: static !important; display: block !important; width: 100% !important; padding: 0 !important; background: transparent !important; }
+            body * { visibility: hidden !important; }
+            .bulk-pallet-print-overlay, .bulk-pallet-print-overlay * { visibility: visible !important; }
+            .bulk-pallet-print-overlay { position: absolute !important; top: 0 !important; left: 0 !important; display: block !important; width: 100% !important; padding: 0 !important; background: transparent !important; }
             .bulk-pallet-print-dialog { display: block !important; width: 100% !important; max-width: none !important; max-height: none !important; overflow: visible !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
             .bulk-pallet-print-content { display: block !important; }
             .bulk-pallet-print-grid { display: grid !important; grid-template-columns: 1fr; gap: 0.15in; }
@@ -83,7 +84,6 @@ export function PalletPrintAllDialog({ entries, date, onClose }: {
           }
         `}</style>
       </section>
-    </div>,
-    document.body,
+    </div>
   );
 }

@@ -1,15 +1,8 @@
 import { FormEvent, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ArrowLeft } from "lucide-react";
 import {
   AccountForm,
   AccountType,
@@ -24,23 +17,20 @@ const typeLabels: Record<AccountType, string> = {
 };
 
 interface CreateAccountDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  onClose: () => void;
 }
 
-export function CreateAccountDialog({ open, onOpenChange }: CreateAccountDialogProps) {
+export function CreateAccountDialog({ onClose }: CreateAccountDialogProps) {
   const token = useAuth((state) => state.token);
   const [accountType, setAccountType] = useState<AccountType>("agent");
   const [form, setForm] = useState<AccountForm>(emptyAccountForm);
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleOpenChange = (nextOpen: boolean) => {
-    if (!nextOpen) {
-      setForm(emptyAccountForm());
-      setError(null);
-    }
-    onOpenChange(nextOpen);
+  const handleClose = () => {
+    setForm(emptyAccountForm());
+    setError(null);
+    onClose();
   };
 
   const submitAccount = (): Promise<Response> => {
@@ -99,7 +89,7 @@ export function CreateAccountDialog({ open, onOpenChange }: CreateAccountDialogP
         setError(body.error ?? "Could not create account");
         return;
       }
-      handleOpenChange(false);
+      handleClose();
     } catch {
       setError("Could not reach the server");
     } finally {
@@ -108,12 +98,17 @@ export function CreateAccountDialog({ open, onOpenChange }: CreateAccountDialogP
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>Create Account</DialogTitle>
-          <DialogDescription>Only admins can create accounts.</DialogDescription>
-        </DialogHeader>
+    <div className="flex-1 flex flex-col gap-6 p-4 md:p-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Create Account</h1>
+          <p className="page-subtitle">Only admins can create accounts.</p>
+        </div>
+        <button type="button" onClick={handleClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
 
         <Tabs
           value={accountType}
@@ -134,13 +129,12 @@ export function CreateAccountDialog({ open, onOpenChange }: CreateAccountDialogP
 
           {error && <p className="text-sm text-red-600">{error}</p>}
 
-          <DialogFooter>
+          <div className="flex justify-end">
             <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>
               {isSubmitting ? "Creating..." : `Create ${typeLabels[accountType]}`}
             </Button>
-          </DialogFooter>
+          </div>
         </form>
-      </DialogContent>
-    </Dialog>
+    </div>
   );
 }

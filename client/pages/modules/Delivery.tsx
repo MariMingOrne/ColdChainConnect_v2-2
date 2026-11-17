@@ -3,7 +3,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { Table } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { localScheduleDate } from "@/lib/agentSchedule";
-import { CalendarDays, Clock3, RefreshCw, ChevronLeft, Truck as TruckIcon, ChevronDown, ChevronUp } from "lucide-react";
+import { CalendarDays, Clock3, RefreshCw, ChevronLeft, Truck as TruckIcon, ChevronDown, ChevronUp, ArrowLeft } from "lucide-react";
 import { Delivery, DeliveryItem, Truck, Invoice, Customer, Driver, Agent, formatCustomerAddress } from "@shared/api";
 
 // ─── Extended types ────────────────────────────────────────────────────────────
@@ -587,6 +587,70 @@ export function DeliveryDispatch() {
     </div>
   );
 
+  if (showAddTruckModal) return (
+    <AddTruckModal
+      drivers={drivers}
+      token={token!}
+      onClose={() => setShowAddTruckModal(false)}
+      onCreated={async () => { await fetchAll(); setShowAddTruckModal(false); }}
+    />
+  );
+
+  if (showEditTruckModal && selectedTruck) return (
+    <EditTruckModal
+      truck={selectedTruck}
+      token={token!}
+      onClose={() => setShowEditTruckModal(false)}
+      onSaved={async () => { await fetchAll(); setShowEditTruckModal(false); }}
+    />
+  );
+
+  if (showChangeTruckDriverModal && selectedTruck) return (
+    <ChangeTruckDriverModal
+      truck={selectedTruck}
+      drivers={drivers}
+      token={token!}
+      onClose={() => setShowChangeTruckDriverModal(false)}
+      onSave={async (driverId) => {
+        try {
+          const res = await fetch(`/api/trucks/${selectedTruck.id}`, {
+            method: "PATCH",
+            headers: authHeaders(token!),
+            body: JSON.stringify({ driver_id: driverId || null }),
+          });
+          if (!res.ok) throw new Error(await res.text());
+          await fetchAll();
+          setShowChangeTruckDriverModal(false);
+        } catch (err) {
+          alert("Failed to update driver: " + (err instanceof Error ? err.message : String(err)));
+        }
+      }}
+    />
+  );
+
+  if (showAddDeliveryModal && selectedTruck) return (
+    <AddDeliveryModal
+      truck={selectedTruck}
+      eligibleInvoices={eligibleInvoices}
+      customers={customers}
+      agents={agents}
+      drivers={drivers}
+      onClose={() => setShowAddDeliveryModal(false)}
+      onSave={handleCreateDelivery}
+    />
+  );
+
+  if (showPaymentModal && paymentItem) return (
+    <PaymentConfirmationModal
+      item={paymentItem.item}
+      customer={paymentItem.item.customer}
+      invoice={paymentItem.item.invoice}
+      onClose={() => { setShowPaymentModal(false); setPaymentItem(null); }}
+      onConfirm={handleConfirmWithPayment}
+      isConfirming={confirmingItem === paymentItem.item.id}
+    />
+  );
+
   return (
     <div className="flex-1 flex flex-col px-4 md:px-6 py-4 md:py-6 gap-4 min-h-0">
 
@@ -712,70 +776,6 @@ export function DeliveryDispatch() {
         </div>
       </div>
 
-      {/* Modals */}
-      {showAddTruckModal && (
-        <AddTruckModal
-          drivers={drivers}
-          token={token!}
-          onClose={() => setShowAddTruckModal(false)}
-          onCreated={async () => { await fetchAll(); setShowAddTruckModal(false); }}
-        />
-      )}
-
-      {showEditTruckModal && selectedTruck && (
-        <EditTruckModal
-          truck={selectedTruck}
-          token={token!}
-          onClose={() => setShowEditTruckModal(false)}
-          onSaved={async () => { await fetchAll(); setShowEditTruckModal(false); }}
-        />
-      )}
-
-      {showChangeTruckDriverModal && selectedTruck && (
-        <ChangeTruckDriverModal
-          truck={selectedTruck}
-          drivers={drivers}
-          token={token!}
-          onClose={() => setShowChangeTruckDriverModal(false)}
-          onSave={async (driverId) => {
-            try {
-              const res = await fetch(`/api/trucks/${selectedTruck.id}`, {
-                method: "PATCH",
-                headers: authHeaders(token!),
-                body: JSON.stringify({ driver_id: driverId || null }),
-              });
-              if (!res.ok) throw new Error(await res.text());
-              await fetchAll();
-              setShowChangeTruckDriverModal(false);
-            } catch (err) {
-              alert("Failed to update driver: " + (err instanceof Error ? err.message : String(err)));
-            }
-          }}
-        />
-      )}
-
-      {showAddDeliveryModal && selectedTruck && (
-        <AddDeliveryModal
-          truck={selectedTruck}
-          eligibleInvoices={eligibleInvoices}
-          customers={customers}
-          agents={agents}
-          drivers={drivers}
-          onClose={() => setShowAddDeliveryModal(false)}
-          onSave={handleCreateDelivery}
-        />
-      )}
-
-      {showPaymentModal && paymentItem && (
-        <PaymentConfirmationModal
-          item={paymentItem.item}
-          customer={paymentItem.item.customer}
-          invoice={paymentItem.item.invoice}
-          onClose={() => { setShowPaymentModal(false); setPaymentItem(null); }}
-          onConfirm={handleConfirmWithPayment}
-          isConfirming={confirmingItem === paymentItem.item.id}
-        />
-      )}
     </div>
   );
 }
@@ -1240,14 +1240,17 @@ function ModalShell({ title, onClose, children }: {
   title: string; onClose: () => void; children: React.ReactNode;
 }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="bg-white rounded-t-2xl sm:rounded-2xl border border-border w-full sm:max-w-lg max-h-[90vh] flex flex-col">
-        <div className="bg-navy-mid px-5 py-4 flex items-center justify-between border-b border-border rounded-t-2xl flex-shrink-0">
-          <h2 className="font-rajdhani text-base font-bold text-white">{title}</h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl leading-none">×</button>
+    <div className="flex-1 flex flex-col gap-6 p-4 md:p-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">{title}</h1>
         </div>
-        <div className="p-5 overflow-y-auto space-y-4 flex-1">{children}</div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
       </div>
+      <div className="max-w-2xl w-full bg-white rounded-xl border border-border p-5 space-y-4">{children}</div>
     </div>
   );
 }

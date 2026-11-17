@@ -7,7 +7,7 @@ import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Product } from "@shared/api";
-import { Download, Upload, RefreshCw } from "lucide-react";
+import { ArrowLeft, Download, Upload, RefreshCw } from "lucide-react";
 import { ActionButtons } from "@/components/ActionButtons";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
@@ -59,7 +59,7 @@ function StatsBox({
   );
 }
 
-function ProductModal({
+function ProductPage({
   title,
   formData,
   setFormData,
@@ -98,12 +98,17 @@ function ProductModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-          <h2 className="font-rajdhani text-lg font-bold text-white">{title}</h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl">×</button>
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">{title}</h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <div className="bg-white rounded-2xl border border-border max-w-lg w-full">
 
         <div className="p-6 space-y-4">
           <div>
@@ -205,14 +210,19 @@ function ProductModal({
   );
 }
 
-function ViewProductModal({ product, onClose }: { product: Product; onClose: () => void }) {
+function ViewProductPage({ product, onClose }: { product: Product; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-lg w-full">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-          <h2 className="font-rajdhani text-lg font-bold text-white">Product Details</h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl">×</button>
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Product Details</h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <div className="bg-white rounded-2xl border border-border max-w-lg w-full">
 
         <div className="p-6 space-y-4">
           {product.image_filename && (
@@ -253,6 +263,25 @@ function ViewProductModal({ product, onClose }: { product: Product; onClose: () 
             Close
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function ImagePreviewPage({ filename, onClose }: { filename: string; onClose: () => void }) {
+  return (
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Image Preview</h1>
+        </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <div className="flex items-center justify-center rounded-2xl border border-border bg-white p-6">
+        <img src={`/uploads/${filename}`} alt="Preview" className="max-w-full max-h-[60vh] object-contain" />
       </div>
     </div>
   );
@@ -428,6 +457,40 @@ export function Pricing({ onBack }: PricingProps) {
         <LoadingSpinner className="min-h-64" />
       </div>
     );
+  }
+
+  if (isModalOpen) {
+    return (
+      <ProductPage
+        title={editingProduct ? "Edit Product" : "Add New Product"}
+        formData={formData}
+        setFormData={setFormData}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+      />
+    );
+  }
+
+  if (viewingProduct) {
+    return <ViewProductPage product={viewingProduct} onClose={() => setViewingProduct(null)} />;
+  }
+  if (productDetails) {
+    return <RecordDetailsDialog details={productDetails} onClose={() => setProductDetails(null)} />;
+  }
+  if (showExcelImport) {
+    return (
+      <ExcelImportDialog
+        title="Products"
+        columns={productExcelColumns}
+        validateRow={validateProductImportRow}
+        onImport={importProductRows}
+        onClose={() => setShowExcelImport(false)}
+      />
+    );
+  }
+
+  if (previewImageFilename) {
+    return <ImagePreviewPage filename={previewImageFilename} onClose={() => setPreviewImageFilename(null)} />;
   }
 
   return (
@@ -634,48 +697,6 @@ export function Pricing({ onBack }: PricingProps) {
         </div>
       </div>
 
-      <RecordDetailsDialog details={productDetails} onClose={() => setProductDetails(null)} />
-
-      {/* View Modal */}
-      {viewingProduct && (
-        <ViewProductModal product={viewingProduct} onClose={() => setViewingProduct(null)} />
-      )}
-
-      {/* Modal */}
-      {isModalOpen && (
-        <ProductModal
-          title={editingProduct ? "Edit Product" : "Add New Product"}
-          formData={formData}
-          setFormData={setFormData}
-          onClose={() => setIsModalOpen(false)}
-          onSave={handleSave}
-        />
-      )}
-
-      {/* Image Preview Modal */}
-      {showExcelImport && (
-        <ExcelImportDialog
-          title="Products"
-          columns={productExcelColumns}
-          validateRow={validateProductImportRow}
-          onImport={importProductRows}
-          onClose={() => setShowExcelImport(false)}
-        />
-      )}
-
-      {previewImageFilename && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setPreviewImageFilename(null)}>
-          <div className="bg-white rounded-2xl border border-border max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 bg-navy-mid border-b border-border">
-              <h2 className="font-rajdhani text-lg font-bold text-white">Image Preview</h2>
-              <button onClick={() => setPreviewImageFilename(null)} className="text-white hover:opacity-70 text-2xl">×</button>
-            </div>
-            <div className="flex items-center justify-center p-6">
-              <img src={`/uploads/${previewImageFilename}`} alt="Preview" className="max-w-full max-h-[60vh] object-contain" />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

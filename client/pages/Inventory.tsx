@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useInventoryContext } from "../context/InventoryContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Download } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 import { ActionButtons } from "@/components/ActionButtons";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
@@ -308,6 +308,43 @@ export function Inventory() {
     }
   };
 
+  if (extraInfoProduct) return (
+    <ExtraInfoModal
+      product={extraInfoProduct}
+      batches={batches}
+      onClose={() => setExtraInfoProduct(null)}
+      onSelectPallet={(batchId, palletId) => {
+        setSelectedBatchId(batchId);
+        setSelectedPalletId(palletId);
+        setExtraInfoProduct(null);
+      }}
+    />
+  );
+
+  if (isBatchModalOpen) return (
+    <BatchModal
+      batches={batches} selectedBatchId={selectedBatchId}
+      onSelectBatch={(id) => { selectBatch(id); setIsBatchModalOpen(false); }}
+      onDeleteBatch={deleteBatch}
+      onCreateBatch={createNewBatch}
+      onEditBatch={() => {}}
+      onClose={() => { setIsBatchModalOpen(false); setStartBatchCreation(false); }}
+      newBatchName={newBatchName} setNewBatchName={setNewBatchName}
+      products={products} startCreating={startBatchCreation}
+      onRefresh={async () => { await fetchProductsFromApi(); await refreshBatchesFromDB(); }}
+    />
+  );
+
+  if (showExcelImport) return (
+    <ExcelImportDialog
+      title="Inventory Stock"
+      columns={inventoryExcelColumns}
+      validateRow={validateInventoryImportRow}
+      onImport={importInventoryRows}
+      onClose={() => setShowExcelImport(false)}
+    />
+  );
+
   return (
     <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
       {/* Header */}
@@ -510,44 +547,6 @@ export function Inventory() {
         </div>
       </div>
 
-      {showExcelImport && (
-        <ExcelImportDialog
-          title="Inventory Stock"
-          columns={inventoryExcelColumns}
-          validateRow={validateInventoryImportRow}
-          onImport={importInventoryRows}
-          onClose={() => setShowExcelImport(false)}
-        />
-      )}
-
-      {/* Extra Info Popup */}
-      {extraInfoProduct && (
-        <ExtraInfoModal
-          product={extraInfoProduct}
-          batches={batches}
-          onClose={() => setExtraInfoProduct(null)}
-          onSelectPallet={(batchId, palletId) => {
-            setSelectedBatchId(batchId);
-            setSelectedPalletId(palletId);
-            setExtraInfoProduct(null);
-          }}
-        />
-      )}
-
-      {/* Batch Modal */}
-      {isBatchModalOpen && (
-        <BatchModal
-          batches={batches} selectedBatchId={selectedBatchId}
-          onSelectBatch={(id) => { selectBatch(id); setIsBatchModalOpen(false); }}
-          onDeleteBatch={deleteBatch}
-          onCreateBatch={createNewBatch}
-          onEditBatch={() => {}}
-          onClose={() => { setIsBatchModalOpen(false); setStartBatchCreation(false); }}
-          newBatchName={newBatchName} setNewBatchName={setNewBatchName}
-          products={products} startCreating={startBatchCreation}
-          onRefresh={async () => { await fetchProductsFromApi(); await refreshBatchesFromDB(); }}
-        />
-      )}
       </div>
     </div>
   );
@@ -585,15 +584,18 @@ function ExtraInfoModal({ product, batches, onClose, onSelectPallet }: { product
     });
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-2xl w-full max-h-[85vh] overflow-y-auto">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border">
-          <div>
-            <h2 className="font-rajdhani text-lg font-bold text-white">{product.description}</h2>
-            <p className="text-xs text-muted mt-0.5">SKU: {product.sku}</p>
-          </div>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl leading-none">×</button>
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">{product.description}</h1>
+          <p className="page-subtitle">SKU: {product.sku}</p>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <div className="bg-white rounded-2xl border border-border overflow-hidden">
 
         <div className="p-6 space-y-6">
           <div>
@@ -692,14 +694,19 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-3xl w-full max-h-screen overflow-y-auto">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border">
-          <h2 className="font-rajdhani text-lg font-bold text-white">
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">
             {isCreatingBatch ? "Create New Batch" : "Manage Batches"}
-          </h2>
-          <button onClick={() => { setIsCreatingBatch(false); setPallets([]); onClose(); }} className="text-white hover:opacity-70 text-2xl leading-none">×</button>
+          </h1>
         </div>
+        <button onClick={() => { setIsCreatingBatch(false); setPallets([]); onClose(); }} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <div className="bg-white rounded-2xl border border-border overflow-hidden">
         <div className="p-6">
           {!isCreatingBatch ? (
             <>

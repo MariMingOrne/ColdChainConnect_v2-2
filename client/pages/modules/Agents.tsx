@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { RefreshCw, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, RefreshCw, Eye, EyeOff } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,12 +23,18 @@ interface AgentForm {
 
 function ViewAgentModal({ agent, onClose }: { agent: Agent; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-          <h2 className="font-rajdhani text-lg font-bold text-white">Agent Details</h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl">×</button>
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 space-y-6 max-w-2xl">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Agent Details</h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-border">
 
         <div className="p-6 space-y-4">
           {[
@@ -109,12 +115,18 @@ function AgentModal({
   );
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-          <h2 className="font-rajdhani text-lg font-bold text-white">{title}</h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl">×</button>
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 space-y-6 max-w-2xl">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">{title}</h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-border">
 
         <div className="p-6 space-y-4">
           {/* Account Credentials */}
@@ -468,6 +480,27 @@ export function Agents() {
     );
   }
 
+  if (viewingAgent) {
+    return <ViewAgentModal agent={viewingAgent} onClose={() => setViewingAgent(null)} />;
+  }
+
+  if (isModalOpen) {
+    return (
+      <AgentModal
+        title={editingAgent ? "Edit Agent" : "Add New Agent"}
+        isEdit={!!editingAgent}
+        formData={formData}
+        setFormData={setFormData}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+        mfaEnabled={editingAgent?.user?.mfa_enabled ?? false}
+        isResettingMfa={isResettingMfa}
+        mfaMessage={mfaMessage}
+        onResetMfa={handleResetMfa}
+      />
+    );
+  }
+
   return (
     <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
       {/* Header */}
@@ -565,24 +598,6 @@ export function Agents() {
         </div>
       </div>
 
-      {viewingAgent && (
-        <ViewAgentModal agent={viewingAgent} onClose={() => setViewingAgent(null)} />
-      )}
-
-      {isModalOpen && (
-        <AgentModal
-          title={editingAgent ? "Edit Agent" : "Add New Agent"}
-          isEdit={!!editingAgent}
-          formData={formData}
-          setFormData={setFormData}
-          onClose={() => setIsModalOpen(false)}
-          onSave={handleSave}
-          mfaEnabled={editingAgent?.user?.mfa_enabled ?? false}
-          isResettingMfa={isResettingMfa}
-          mfaMessage={mfaMessage}
-          onResetMfa={handleResetMfa}
-        />
-      )}
     </div>
   );
 }
