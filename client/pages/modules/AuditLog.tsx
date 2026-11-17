@@ -6,9 +6,9 @@ import { AuditLog } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { AuditLogTable } from "./audit/AuditLogTable";
 import { AuditLogDetailDialog } from "./audit/AuditLogDetailDialog";
-import { AuditReports } from "./audit/AuditReports";
+import { ActivityReport } from "./audit/ActivityReport";
 
-type PageTab = "activity" | "reports";
+type PageTab = "activity" | "activity-report";
 
 export function AuditLogPage() {
   const [pageTab, setPageTab] = useState<PageTab>("activity");
@@ -102,7 +102,7 @@ export function AuditLogPage() {
       <div className="flex gap-2 border-b border-border pb-0">
         {[
           { id: "activity", label: "Activity Log", icon: "🕐" },
-          { id: "reports", label: "Reports", icon: "📊" },
+          { id: "activity-report", label: "Activity Report", icon: "📊" },
         ].map(tab => (
           <button
             key={tab.id}
@@ -133,7 +133,7 @@ export function AuditLogPage() {
         </>
       )}
 
-      {pageTab === "reports" && <AuditReports logs={logs} />}
+      {pageTab === "activity-report" && <ActivityReport logs={logs} />}
     </div>
   );
 }
