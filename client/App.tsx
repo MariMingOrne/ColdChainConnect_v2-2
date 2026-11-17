@@ -17,26 +17,29 @@ import { Reports } from "./pages/Reports";
 import { SearchResults } from "./pages/SearchResults";
 import { DriverSchedule } from "./pages/DriverSchedule";
 import { Topbar } from "./components/Topbar";
-import { AdminNavigation } from "./components/AdminNavigation";
+import { AdminMobileNavigation, AdminNavigation } from "./components/AdminNavigation";
 import { PostLoginLoadingScreen } from "./components/auth/PostLoginLoadingScreen";
 import { BottomNavBar } from "./components/BottomNavBar";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-/** Full layout: topbar + bottom nav (admin only) */
 const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const { logout, user } = useAuth();
   return (
-    <div className="flex flex-col min-h-screen">
+    <div className="flex min-h-screen flex-col">
       <Topbar userName={user?.username || "User"} onLogout={logout} />
-      <AdminNavigation />
-      <div className="flex flex-1">
-        <div className="flex-1 flex flex-col bg-off-white min-w-0 pb-32 md:pb-0 animate-fade-in">
-          {children}
+      <div className="flex min-h-0 flex-1">
+        <AdminNavigation />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="flex flex-1">
+            <div className="flex min-w-0 flex-1 flex-col bg-off-white pb-32 animate-fade-in md:pb-0">
+              {children}
+            </div>
+          </div>
+          <BottomNavBar onLogout={logout} />
         </div>
       </div>
-      <BottomNavBar onLogout={logout} />
     </div>
   );
 };

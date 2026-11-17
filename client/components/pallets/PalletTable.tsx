@@ -1,5 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import { Customer, Pallet, formatCustomerAddress } from "@shared/api";
+import { Table } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { formatMoney, palletStatusStyles, palletTotal } from "./palletUtils";
 
@@ -29,7 +30,7 @@ export function PalletStatusBadge({ status }: { status: Pallet["status"] }) {
 export function PalletTable({ entries, onSelect }: PalletTableProps) {
   return (
     <div className="overflow-x-auto rounded-xl border border-border bg-white shadow-sm">
-      <table className="w-full text-sm">
+      <Table className="w-full text-sm">
         <thead>
           <tr className="border-b border-border bg-off-white text-left text-xs uppercase tracking-wide text-muted">
             <th className="whitespace-nowrap px-4 py-3 font-semibold">Pallet</th>
@@ -82,7 +83,7 @@ export function PalletTable({ entries, onSelect }: PalletTableProps) {
             );
           })}
         </tbody>
-      </table>
+      </Table>
     </div>
   );
 }

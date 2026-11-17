@@ -5,6 +5,10 @@ import { ChevronLeft, Download } from "lucide-react";
 import { ActionButtons } from "@/components/ActionButtons";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
+import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { Table } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface InventoryProduct {
   id: string;
@@ -330,11 +334,12 @@ export function Inventory() {
       {/* Batch & Pallet Selector Card */}
       <div className="bg-white rounded-2xl border border-border p-6 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div className="flex items-center bg-off-white border border-border rounded-lg px-3 gap-2 w-full md:max-w-sm">
-            <span className="text-muted">🔍</span>
-            <input type="text" placeholder="Find a batch or pallet…" value={batchSearch}
-              onChange={(e) => setBatchSearch(e.target.value)}
-              className="flex-1 bg-transparent border-none text-navy placeholder-muted py-2 outline-none text-sm" />
+          <div className="w-full md:max-w-sm">
+            <SearchFilterBar
+              searchTerm={batchSearch}
+              onSearchChange={setBatchSearch}
+              placeholder="Find a batch or pallet…"
+            />
           </div>
           <div className="flex gap-2">
             <button onClick={() => setIsBatchModalOpen(true)} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white w-fit">⚙ Manage Batches</button>
@@ -374,12 +379,11 @@ export function Inventory() {
 
       {/* Search + Delete Toggle */}
       <div className="flex flex-col md:flex-row gap-3 items-stretch">
-        <div className="flex items-center bg-navy-mid border border-border rounded-lg px-3 gap-2 flex-1">
-          <span className="text-muted">🔍</span>
-          <input type="text" placeholder="Search by SKU or name…" value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-            className="flex-1 bg-transparent border-none text-white placeholder-muted py-2 outline-none text-sm" />
-        </div>
+        <SearchFilterBar
+          searchTerm={searchQuery}
+          onSearchChange={(value) => { setSearchQuery(value); setCurrentPage(1); }}
+          placeholder="Search by SKU or name…"
+        />
         <button
           onClick={() => setShowDeleteButtons(!showDeleteButtons)}
           className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
@@ -401,9 +405,9 @@ export function Inventory() {
       </div>
 
       {/* Inventory Table */}
-      <div className="bg-white rounded-2xl border border-border overflow-hidden">
+      <div className="data-table-frame overflow-hidden">
         <div className="overflow-x-auto scrollbar-visible text-xs">
-          <table className="w-full">
+          <Table className="w-full">
             <thead>
               <tr>
                 {["Name", "Cost Per Item", "Stock Qty"].map((col) => (
@@ -481,7 +485,7 @@ export function Inventory() {
                 })
               )}
             </tbody>
-          </table>
+          </Table>
         </div>
 
         {/* Pagination */}
@@ -867,11 +871,11 @@ function CreateBatchForm({ newBatchName, setNewBatchName, pallets, setPallets, o
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs font-semibold text-navy mb-2">Batch Name *</label>
-          <input type="text" value={newBatchName} onChange={(e) => setNewBatchName(e.target.value)} placeholder="e.g., Morning Delivery, Q1 Restock" className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2" />
+          <Input type="text" value={newBatchName} onChange={(e) => setNewBatchName(e.target.value)} placeholder="e.g., Morning Delivery, Q1 Restock" className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2" />
         </div>
         <div>
           <label className="block text-xs font-semibold text-navy mb-2">Acquisition Date *</label>
-          <input type="date" value={acquisitionDate} onChange={(e) => setAcquisitionDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2" />
+          <Input type="date" value={acquisitionDate} onChange={(e) => setAcquisitionDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2" />
         </div>
       </div>
 
@@ -898,12 +902,12 @@ function CreateBatchForm({ newBatchName, setNewBatchName, pallets, setPallets, o
                     <div className="text-xs font-semibold text-navy">{getName(item.productId)}</div>
                     <div className="text-xs text-muted">{getSku(item.productId)}</div>
                   </div>
-                  <input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(itemIdx, "quantity", parseInt(e.target.value) || 1)} className="w-20 px-2 py-1 border border-border rounded text-sm focus:outline-none focus:border-accent-2" />
-                  <button onClick={() => removeItem(itemIdx)} className="px-2 py-1 bg-red text-white rounded text-xs font-semibold hover:opacity-90">✕</button>
+                  <Input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(itemIdx, "quantity", parseInt(e.target.value) || 1)} className="w-20 px-2 py-1 border border-border rounded text-sm focus:outline-none focus:border-accent-2" />
+                  <Button type="button" variant="destructive" size="sm" onClick={() => removeItem(itemIdx)} aria-label="Remove product">✕</Button>
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-navy mb-1">Expiry Date</label>
-                  <input type="date" value={item.expirationDate || ""} onChange={(e) => updateItem(itemIdx, "expirationDate", e.target.value)} className="w-full px-2 py-1 border border-border rounded text-sm focus:outline-none focus:border-accent-2" />
+                  <Input type="date" value={item.expirationDate || ""} onChange={(e) => updateItem(itemIdx, "expirationDate", e.target.value)} className="w-full px-2 py-1 border border-border rounded text-sm focus:outline-none focus:border-accent-2" />
                 </div>
               </div>
             ))}
@@ -911,11 +915,11 @@ function CreateBatchForm({ newBatchName, setNewBatchName, pallets, setPallets, o
         )}
       </div>
 
-      <div className="flex gap-2 justify-end pt-4 border-t border-border">
-        <button onClick={onCancel} className="px-4 py-2 border border-border rounded-lg font-semibold text-sm hover:bg-off-white">Cancel</button>
-        <button onClick={handleCreate} disabled={!newBatchName.trim() || items.length === 0 || !acquisitionDate} className="px-4 py-2 bg-green text-white rounded-lg font-semibold text-sm hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
+      <div className="flex justify-end gap-2 border-t border-border pt-4">
+        <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
+        <Button type="button" variant="success" onClick={handleCreate} disabled={!newBatchName.trim() || items.length === 0 || !acquisitionDate}>
           ✓ Add Items
-        </button>
+        </Button>
       </div>
     </div>
   );

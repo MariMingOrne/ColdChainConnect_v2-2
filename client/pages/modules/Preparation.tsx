@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -36,17 +37,25 @@ export function Preparation() {
 
   const fetchAll = async () => {
     try {
-      const [oRes, pRes, bRes, cRes] = await Promise.all([
+      const responses = await Promise.all([
         fetch("/api/bookings", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/pallets", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/inventory-batches", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/customers", { headers: { Authorization: `Bearer ${token}` } }),
       ]);
+      const failedIndex = responses.findIndex((response) => !response.ok);
+      if (failedIndex !== -1) {
+        const resource = ["orders", "pallets", "inventory", "customers"][failedIndex];
+        throw new Error(`Could not load ${resource} (HTTP ${responses[failedIndex].status}).`);
+      }
 
-      if (oRes.ok) setOrders(await oRes.json());
-      if (pRes.ok) setPallets(await pRes.json());
-      if (bRes.ok) setBatches(await bRes.json());
-      if (cRes.ok) setCustomers(await cRes.json());
+      const [ordersData, palletsData, batchesData, customersData] = await Promise.all(
+        responses.map((response) => response.json())
+      );
+      setOrders(ordersData);
+      setPallets(palletsData);
+      setBatches(batchesData);
+      setCustomers(customersData);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error loading data");
@@ -150,7 +159,7 @@ export function Preparation() {
     try {
       const orderPallets = pallets.filter((p) => p.order_id === orderId && p.status === "draft");
       for (const pallet of orderPallets) {
-        await fetch(`/api/pallets/${pallet.id}`, {
+        const response = await fetch(`/api/pallets/${pallet.id}/status`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -158,6 +167,7 @@ export function Preparation() {
           },
           body: JSON.stringify({ status: "prepared" }),
         });
+        if (!response.ok) throw new Error("Failed to mark pallet as prepared.");
       }
       handleRefresh();
     } catch (err) {
@@ -169,7 +179,7 @@ export function Preparation() {
     try {
       const orderPallets = pallets.filter((p) => p.order_id === orderId && p.status === "prepared");
       for (const pallet of orderPallets) {
-        await fetch(`/api/pallets/${pallet.id}`, {
+        const response = await fetch(`/api/pallets/${pallet.id}/status`, {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -177,6 +187,7 @@ export function Preparation() {
           },
           body: JSON.stringify({ status: "draft" }),
         });
+        if (!response.ok) throw new Error("Failed to undo pallet preparation.");
       }
       handleRefresh();
     } catch (err) {
@@ -202,7 +213,7 @@ export function Preparation() {
   };
 
   return (
-    <div className="flex-1 flex flex-col p-6 gap-6">
+    <div className="flex-1 flex flex-col gap-6 px-6 pb-6 pt-0 md:pl-0">
       <div className="page-header">
         <div>
           <h1 className="page-title">Pallet Preparation</h1>
@@ -280,13 +291,13 @@ export function Preparation() {
             <label className="block text-sm font-medium text-navy mb-1">
               Start Date
             </label>
-            <div className="flex items-center bg-navy-mid border border-border rounded-lg px-3 gap-2">
+            <div className="flex items-center rounded-full border border-border bg-white px-4 gap-2">
               <Calendar size={16} className="text-muted" />
-              <input
+              <Input
                 type="date"
                 value={customDateStart}
                 onChange={(e) => setCustomDateStart(e.target.value)}
-                className="flex-1 bg-transparent border-none text-white py-2 outline-none text-sm"
+                className="flex-1 bg-transparent border-none text-navy py-2 outline-none text-sm"
               />
             </div>
           </div>
@@ -294,13 +305,13 @@ export function Preparation() {
             <label className="block text-sm font-medium text-navy mb-1">
               End Date
             </label>
-            <div className="flex items-center bg-navy-mid border border-border rounded-lg px-3 gap-2">
+            <div className="flex items-center rounded-full border border-border bg-white px-4 gap-2">
               <Calendar size={16} className="text-muted" />
-              <input
+              <Input
                 type="date"
                 value={customDateEnd}
                 onChange={(e) => setCustomDateEnd(e.target.value)}
-                className="flex-1 bg-transparent border-none text-white py-2 outline-none text-sm"
+                className="flex-1 bg-transparent border-none text-navy py-2 outline-none text-sm"
               />
             </div>
           </div>
@@ -308,7 +319,7 @@ export function Preparation() {
       )}
 
       {/* Orders Table */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden rounded-xl shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
@@ -974,7 +985,7 @@ function CreatePalletModal({
                                           </span>
                                         </p>
                                       </div>
-                                      <input
+                                      <Input
                                         type="number"
                                         min="0"
                                         max={Math.min(

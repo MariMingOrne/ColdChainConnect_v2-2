@@ -10,6 +10,7 @@ import {
   FileText,
   ClipboardList,
   History,
+  RotateCcw,
 } from "lucide-react";
 
 interface BottomNavBarProps {
@@ -18,10 +19,9 @@ interface BottomNavBarProps {
 
 const globalNavItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
-  { path: "/information-management/inventory", label: "Inventory", icon: Package },
+  { path: "/information-management/products", label: "Products", icon: Package },
   { path: "/booking-dispatch/order-summary", label: "Orders", icon: ClipboardList },
-  { path: "/booking-dispatch/delivery", label: "Logistics", icon: Truck },
-  { path: "/reports", label: "Reports", icon: FileText },
+  { path: "/booking-dispatch/delivery", label: "Operations", icon: Truck },
 ];
 
 // Map of hub paths to their sub-modules
@@ -33,18 +33,19 @@ const hubModulesByPath: Record<string, Array<{ path: string; label: string; icon
   ],
   "/booking-dispatch": [
     { path: "/order-summary", label: "Orders", icon: ClipboardList },
+    { path: "/preparation", label: "Pallet Preparation", icon: Package },
     { path: "/inventory", label: "Pallet Tracking", icon: Package },
     { path: "/invoicing", label: "Receipts", icon: FileText },
     { path: "/delivery", label: "Truck Dispatch", icon: Truck },
     { path: "/accounts", label: "Accounts Receivable", icon: Wallet },
     { path: "/delivery-history", label: "Delivery History", icon: History },
+    { path: "/agent-returns", label: "Returns", icon: RotateCcw },
+  ],
+  "/manage-accounts": [
+    { path: "/agents", label: "Agents", icon: Users },
+    { path: "/drivers", label: "Drivers", icon: Truck },
   ],
 };
-
-const hubMainModules = [
-  { path: "/information-management", label: "Information Management", icon: Package },
-  { path: "/booking-dispatch", label: "Booking & Dispatch", icon: ClipboardList },
-];
 
 export function BottomNavBar({ onLogout }: BottomNavBarProps) {
   const location = useLocation();
@@ -94,6 +95,9 @@ export function BottomNavBar({ onLogout }: BottomNavBarProps) {
   } else if (isAdmin && currentPath.startsWith("/booking-dispatch")) {
     currentHub = "/booking-dispatch";
     modulesToShow = hubModulesByPath["/booking-dispatch"] || [];
+  } else if (isAdmin && currentPath.startsWith("/manage-accounts")) {
+    currentHub = "/manage-accounts";
+    modulesToShow = hubModulesByPath["/manage-accounts"] || [];
   }
 
   if (currentHub && modulesToShow.length > 0) {

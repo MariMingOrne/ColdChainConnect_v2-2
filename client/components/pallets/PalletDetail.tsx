@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ArrowLeft, MoreVertical } from "lucide-react";
 import { Booking, Customer, Pallet, formatCustomerAddress, totalDiscountRate } from "@shared/api";
 import { Card } from "@/components/ui/card";
+import { Table } from "@/components/ui/table";
 import { formatMoney, palletItemTotal, palletTotal, palletStatusOptions } from "./palletUtils";
 import { PalletStatusBadge } from "./PalletTable";
 
@@ -122,8 +123,8 @@ export function PalletDetail({
       </Card>
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-        <Card className="overflow-hidden bg-white lg:col-span-2">
-          <table className="w-full text-sm">
+        <Card className="overflow-hidden rounded-xl bg-white shadow-sm lg:col-span-2">
+          <Table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border bg-off-white text-xs uppercase tracking-wide text-muted">
                 <th className="px-4 py-3 text-left font-semibold">Product</th>
@@ -151,7 +152,7 @@ export function PalletDetail({
                 </tr>
               )}
             </tbody>
-          </table>
+          </Table>
         </Card>
 
         <Card className="flex flex-col justify-center gap-4 bg-white p-6">

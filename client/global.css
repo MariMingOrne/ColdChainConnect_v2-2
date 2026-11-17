@@ -35,8 +35,14 @@
     --border: 220 13% 91%;
     
     /* Legacy - for compatibility */
-    --background: 0 0% 97%;
-    --foreground: 10 4% 11%;
+    --background: 0 0% 100%;
+    --foreground: 230 79% 20%;
+    --card: 0 0% 100%;
+    --card-foreground: 230 79% 20%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 230 79% 20%;
+    --muted-foreground: 223 14% 50%;
+    --accent-foreground: 0 0% 100%;
     
     --primary: 230 79% 20%;
     --primary-foreground: 0 0% 98%;
@@ -48,7 +54,7 @@
     --destructive-foreground: 0 0% 98%;
     
     --input: 220 13% 91%;
-    --ring: 230 79% 20%;
+    --ring: 240 87% 35%;
     
     --radius: 0.5rem;
   }
@@ -71,6 +77,12 @@
     --white: 0 0% 100%;
     --off-white: 230 50% 95%;
     --muted: 223 14% 50%;
+    --card: 15 10% 10%;
+    --card-foreground: 0 0% 98%;
+    --popover: 15 10% 10%;
+    --popover-foreground: 0 0% 98%;
+    --muted-foreground: 223 14% 65%;
+    --accent-foreground: 0 0% 100%;
     --border: 230 30% 25%;
   }
 }
@@ -255,6 +267,34 @@
   .stock-ok {
     @apply bg-green/20 text-green;
   }
+}
+
+.data-table-frame {
+  border: 1px solid hsl(var(--border));
+  border-radius: 0.75rem;
+  background: white;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+}
+
+.data-table th,
+.data-table td {
+  padding: 0.75rem 1rem;
+}
+
+.data-table td[colspan] {
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.data-table thead th {
+  background: hsl(var(--off-white));
+  border-bottom: 1px solid hsl(var(--border));
+  color: hsl(var(--muted));
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .hide-scrollbar {

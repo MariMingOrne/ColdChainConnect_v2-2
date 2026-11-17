@@ -1,24 +1,17 @@
 import { useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { UserPlus } from "lucide-react";
-import { HubSidebar } from "@/components/HubSidebar";
 import { CreateAccountDialog } from "@/components/CreateAccountDialog";
 import { Agents } from "./modules/Agents";
 import { Drivers } from "./modules/Drivers";
-
-const modules = [
-  { label: "Agents", path: "/agents" },
-  { label: "Drivers", path: "/drivers" },
-];
 
 export function ManageAccounts() {
   const location = useLocation();
   const [showCreateAccount, setShowCreateAccount] = useState(false);
 
   return (
-    <div className="flex h-full">
-      <HubSidebar modules={modules} basePath="/manage-accounts" />
-      <div className="flex-1 overflow-auto flex flex-col">
+    <div className="flex min-w-0 flex-1">
+      <div className="flex flex-1 flex-col overflow-auto">
         <div key={location.pathname} className="h-full animate-fade-in-up">
           <Routes>
             <Route path="/agents" element={<Agents />} />
