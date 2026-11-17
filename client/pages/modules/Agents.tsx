@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { ArrowLeft, RefreshCw, Eye, EyeOff } from "lucide-react";
+import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -274,7 +274,7 @@ function AgentCard({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export function Agents() {
+export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
   const [agents, setAgents] = useState<Agent[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -284,7 +284,6 @@ export function Agents() {
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [viewingAgent, setViewingAgent] = useState<Agent | null>(null);
   const [showDeleteButtons, setShowDeleteButtons] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isResettingMfa, setIsResettingMfa] = useState(false);
   const [mfaMessage, setMfaMessage] = useState<string | null>(null);
   const { token } = useAuth();
@@ -317,12 +316,6 @@ export function Agents() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchAgents();
-    setIsRefreshing(false);
   };
 
   useEffect(() => {
@@ -472,7 +465,7 @@ export function Agents() {
     }
   };
 
-  if (isLoading && !isRefreshing) {
+  if (isLoading) {
     return (
       <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6">
         <LoadingSpinner className="min-h-64" />
@@ -502,7 +495,7 @@ export function Agents() {
   }
 
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+    <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden px-4 py-4 md:px-6 md:py-5">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -511,14 +504,12 @@ export function Agents() {
           </h1>
           <p className="text-xs text-muted mt-1">Manage agents — account-linked field staff</p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-navy transition-colors hover:bg-off-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 w-fit"
-        >
-          <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-          Refresh
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Create Accounts</button>
+          <button onClick={() => setShowDeleteButtons(!showDeleteButtons)} className={`rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${showDeleteButtons ? "bg-red text-white" : "border border-border bg-white text-navy hover:bg-off-white"}`}>
+            {showDeleteButtons ? "Disable Delete" : "Enable Delete"}
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -528,29 +519,11 @@ export function Agents() {
       )}
 
       {/* Search + Add + Delete Toggle */}
-      <div className="flex flex-col md:flex-row gap-3">
-        <SearchFilterBar
-          searchTerm={searchQuery}
-          onSearchChange={(value) => { setSearchQuery(value); setCurrentPage(1); }}
-          placeholder="Search by name, username, email, contact…"
-        />
-        <button
-          onClick={openAddModal}
-          className="px-4 py-2 bg-navy text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 w-fit"
-        >
-          ➕ Add Agent
-        </button>
-        <button
-          onClick={() => setShowDeleteButtons(!showDeleteButtons)}
-          className={`w-fit px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
-            showDeleteButtons
-              ? "bg-red text-white hover:opacity-90"
-              : "bg-white border border-border text-navy hover:bg-off-white"
-          }`}
-        >
-          {showDeleteButtons ? "🔓 Delete Enabled" : "🔒 Enable Delete"}
-        </button>
-      </div>
+      <SearchFilterBar
+        searchTerm={searchQuery}
+        onSearchChange={(value) => { setSearchQuery(value); setCurrentPage(1); }}
+        placeholder="Search by name, username, email, contact…"
+      />
 
       {/* Cards grid */}
       {paginatedAgents.length === 0 ? (
@@ -558,7 +531,7 @@ export function Agents() {
           {agents.length === 0 ? "No agents found" : "No results matching your search"}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-children">
+        <div className="grid flex-1 content-start grid-cols-1 gap-3 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 stagger-children">
           {paginatedAgents.map((agent) => (
             <AgentCard
               key={agent.id}
@@ -573,7 +546,7 @@ export function Agents() {
       )}
 
       {/* Pagination */}
-      <div className="flex items-center justify-between px-2 py-2">
+      <div className="mt-auto flex items-center justify-between px-2 py-2">
         <div className="text-xs text-muted">
           Page {currentPage} of {Math.max(1, totalPages)} · {filteredAgents.length} agents
         </div>
