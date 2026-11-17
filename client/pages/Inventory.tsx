@@ -657,8 +657,15 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
   const [isCreatingBatch, setIsCreatingBatch] = useState(startCreating);
   const [pallets, setPallets] = useState<any[]>([]);
   const [showArchived, setShowArchived] = useState(false);
+  const [batchQuery, setBatchQuery] = useState("");
+  const [createdSince, setCreatedSince] = useState("");
 
-  const activeBatches = batches.filter((b) => !b.isArchived && b.id !== "batch-all");
+  const activeBatches = batches.filter((b) => {
+    if (b.isArchived || b.id === "batch-all") return false;
+    if (batchQuery.trim() && !b.name.toLowerCase().includes(batchQuery.trim().toLowerCase())) return false;
+    if (createdSince && new Date(b.created_at) < new Date(createdSince)) return false;
+    return true;
+  });
   const archivedBatches = batches.filter((b) => b.isArchived);
 
   const handleArchiveBatch = async (batchId: string) => {
@@ -712,6 +719,27 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
             <>
               {!showArchived ? (
                 <>
+                  <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                    <input
+                      type="search"
+                      value={batchQuery}
+                      onChange={(e) => setBatchQuery(e.target.value)}
+                      placeholder="Search batches by name…"
+                      className="flex-1 rounded-lg border border-border px-3 py-2 text-sm text-navy"
+                    />
+                    <input
+                      type="datetime-local"
+                      value={createdSince}
+                      onChange={(e) => setCreatedSince(e.target.value)}
+                      title="Show batches created on or after this date and time"
+                      className="rounded-lg border border-border px-3 py-2 text-sm text-navy"
+                    />
+                    {(batchQuery || createdSince) && (
+                      <button onClick={() => { setBatchQuery(""); setCreatedSince(""); }} className="px-3 py-2 text-sm font-semibold text-navy border border-border rounded-lg hover:bg-off-white">
+                        Clear
+                      </button>
+                    )}
+                  </div>
                   <div className="space-y-2 mb-6">
                     <h3 className="text-xs font-semibold text-muted uppercase mb-3">Active Batches</h3>
                     <div className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedBatchId === "batch-all" ? "border-accent-2 bg-accent-2/10" : "border-border hover:bg-off-white"}`} onClick={() => onSelectBatch("batch-all")}>
