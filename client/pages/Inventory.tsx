@@ -61,6 +61,7 @@ export function Inventory() {
   const [newBatchName, setNewBatchName] = useState("");
   const [startBatchCreation, setStartBatchCreation] = useState(false);
   const [batchSearch, setBatchSearch] = useState("");
+  const [batchCreatedSince, setBatchCreatedSince] = useState("");
   const [showExcelImport, setShowExcelImport] = useState(false);
 
   const emptyForm = (): InventoryProduct => ({
@@ -131,7 +132,8 @@ export function Inventory() {
   const activeBatches = batches.filter((b) => !b.isArchived && b.id !== "batch-all");
   const batchSearchTerm = batchSearch.trim().toLowerCase();
   const visibleBatches = activeBatches.filter((b) =>
-    !batchSearchTerm || b.name.toLowerCase().includes(batchSearchTerm) || b.pallets.some((p) => p.palletId.toLowerCase().includes(batchSearchTerm))
+    (!batchSearchTerm || b.name.toLowerCase().includes(batchSearchTerm) || b.pallets.some((p) => p.palletId.toLowerCase().includes(batchSearchTerm))) &&
+    (!batchCreatedSince || new Date(b.createdAt) >= new Date(batchCreatedSince))
   );
   const visiblePallets = currentBatch && currentBatch.id !== "batch-all"
     ? currentBatch.pallets.filter((p) => !batchSearchTerm || currentBatch.name.toLowerCase().includes(batchSearchTerm) || p.palletId.toLowerCase().includes(batchSearchTerm))
@@ -366,11 +368,20 @@ export function Inventory() {
       {/* Batch & Pallet Selector Card */}
       <div className="bg-white rounded-2xl border border-border p-6 space-y-4">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div className="w-full md:max-w-sm">
-            <SearchFilterBar
-              searchTerm={batchSearch}
-              onSearchChange={setBatchSearch}
-              placeholder="Find a batch or pallet…"
+          <div className="flex flex-col sm:flex-row gap-2 w-full md:max-w-xl">
+            <div className="w-full md:max-w-sm">
+              <SearchFilterBar
+                searchTerm={batchSearch}
+                onSearchChange={setBatchSearch}
+                placeholder="Find a batch or pallet…"
+              />
+            </div>
+            <input
+              type="datetime-local"
+              value={batchCreatedSince}
+              onChange={(e) => setBatchCreatedSince(e.target.value)}
+              title="Show batches created on or after this date and time"
+              className="rounded-lg border border-border px-3 py-2 text-sm text-navy"
             />
           </div>
           <div className="flex gap-2">
@@ -391,7 +402,7 @@ export function Inventory() {
                 <FilterChip key={batch.id} label={batch.name} meta={`${batch.pallets.length} pallets · ${itemCount} items`} active={selectedBatchId === batch.id} onClick={() => selectBatch(batch.id)} />
               );
             })}
-            {visibleBatches.length === 0 && <span className="text-xs text-muted self-center whitespace-nowrap">No batches match “{batchSearch}”</span>}
+            {visibleBatches.length === 0 && <span className="text-xs text-muted self-center whitespace-nowrap">No batches match the current filters</span>}
           </div>
         </div>
 
@@ -664,7 +675,7 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
   const activeBatches = batches.filter((b) => {
     if (b.isArchived || b.id === "batch-all") return false;
     if (batchQuery.trim() && !b.name.toLowerCase().includes(batchQuery.trim().toLowerCase())) return false;
-    if (createdSince && new Date(b.created_at) < new Date(createdSince)) return false;
+    if (createdSince && new Date(b.createdAt) < new Date(createdSince)) return false;
     if (productFilter && !b.pallets.some((p: any) => p.items.some((item: any) => item.productId === productFilter))) return false;
     return true;
   });
