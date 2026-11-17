@@ -38,15 +38,15 @@ export function SortableHeader<K extends string>({
   return (
     <th
       aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}
-      className={`bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 border-b border-border whitespace-nowrap ${className}`}
+      className={`px-3 py-3 whitespace-nowrap ${className}`}
     >
       <button
         type="button"
         onClick={() => onSort(nextSort(sort, sortKey))}
-        className={`inline-flex w-full items-center gap-1 ${justify} uppercase hover:text-navy`}
+        className={`inline-flex w-full items-center gap-1 ${justify} uppercase text-white hover:opacity-80`}
       >
         {label}
-        <Icon size={12} className={active ? "text-navy" : "opacity-40"} />
+        <Icon size={12} className={active ? "text-gold" : "opacity-60"} />
       </button>
     </th>
   );
