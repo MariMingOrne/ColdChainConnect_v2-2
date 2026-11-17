@@ -42,7 +42,18 @@ export function PalletToolbar({
   onDatePresetChange,
 }: PalletToolbarProps) {
   return (
-    <div className="flex flex-wrap items-center justify-between gap-3">
+    <div className="flex flex-wrap items-center justify-start gap-3">
+      <div className="relative w-full sm:w-72">
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+        <input
+          type="text"
+          placeholder="Search order, pallet, customer…"
+          value={searchQuery}
+          onChange={(e) => onSearchChange(e.target.value)}
+          className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
+        />
+      </div>
+
       <div className="flex flex-wrap items-center gap-3">
         <div className="inline-flex rounded-full border border-border bg-white p-1">
           {statusTabs.map((tab) => (
@@ -86,16 +97,6 @@ export function PalletToolbar({
         </select>
       </div>
 
-      <div className="relative w-full sm:w-72">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-        <input
-          type="text"
-          placeholder="Search order, pallet, customer…"
-          value={searchQuery}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
-        />
-      </div>
     </div>
   );
 }
