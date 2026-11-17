@@ -38,12 +38,12 @@ export function SortableHeader<K extends string>({
   return (
     <th
       aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}
-      className={`px-3 py-3 whitespace-nowrap ${className}`}
+      className={`bg-[#101f5e] px-3 py-3 text-sm font-bold whitespace-nowrap ${className}`}
     >
       <button
         type="button"
         onClick={() => onSort(nextSort(sort, sortKey))}
-        className={`inline-flex w-full items-center gap-1 ${justify} uppercase text-white hover:opacity-80`}
+        className={`inline-flex w-full items-center gap-1 ${justify} font-barlow-cond uppercase text-white hover:opacity-80`}
       >
         {label}
         <Icon size={12} className={active ? "text-gold" : "opacity-60"} />

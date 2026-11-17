@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { ArrowLeft, RefreshCw, RotateCcw, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, RefreshCw, RotateCcw, CheckCircle, XCircle, Search } from "lucide-react";
 import { AgentReturn, Invoice, Customer, Product } from "@shared/api";
 import { LogReturnForm } from "./LogReturnForm";
 import { Table } from "@/components/ui/table";
@@ -105,6 +105,7 @@ export function AgentReports() {
   const [showCreate, setShowCreate] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "accepted" | "rejected">("all");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const fetchAll = useCallback(async () => {
     if (!token) return;
@@ -196,9 +197,14 @@ export function AgentReports() {
     );
   }
 
-  const filtered = returns.filter((r) =>
-    statusFilter === "all" ? true : r.status === statusFilter
-  );
+  const filtered = returns.filter((ret) => {
+    const invoice = invoices.find((entry) => entry.id === ret.invoice_id);
+    const customer = customers.find((entry) => entry.id === ret.customer_id);
+    const query = searchTerm.trim().toLowerCase();
+    const matchesSearch = !query || [ret.id, invoice?.receipt_number, ret.customer_id, customer?.store_name, ret.product_name, ret.reason]
+      .some((value) => value?.toLowerCase().includes(query));
+    return matchesSearch && (statusFilter === "all" || ret.status === statusFilter);
+  });
 
   const pendingCount  = returns.filter((r) => r.status === "pending").length;
   const acceptedCount = returns.filter((r) => r.status === "accepted").length;
@@ -244,15 +250,28 @@ export function AgentReports() {
         </div>
       </div>
 
-      <div className="inline-flex w-fit rounded-full border border-border bg-white p-1">
-        {(["all", "pending", "accepted", "rejected"] as const).map((s) => (
-          <button key={s} onClick={() => setStatusFilter(s)}
-            className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold capitalize transition ${
-              statusFilter === s ? "bg-navy text-white" : "text-muted hover:text-navy"
-            }`}>
-            {s}
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center justify-start gap-3">
+        <div className="relative w-full sm:w-72">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <input
+            type="search"
+            aria-label="Search returns"
+            placeholder="Search order, customer, product…"
+            value={searchTerm}
+            onChange={(event) => setSearchTerm(event.target.value)}
+            className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
+          />
+        </div>
+        <div className="inline-flex w-fit rounded-full border border-border bg-white p-1">
+          {(["all", "pending", "accepted", "rejected"] as const).map((s) => (
+            <button key={s} onClick={() => setStatusFilter(s)}
+              className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold capitalize transition ${
+                statusFilter === s ? "bg-navy text-white" : "text-muted hover:text-navy"
+              }`}>
+              {s}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="data-table-frame overflow-hidden">

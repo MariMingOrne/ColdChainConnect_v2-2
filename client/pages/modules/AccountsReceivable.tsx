@@ -199,33 +199,34 @@ export function AccountsReceivable() {
         </Card>
       </div>
 
-      {/* Tabs */}
-      <div className="inline-flex w-fit rounded-full border border-border bg-white p-1">
-        {TABS.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => { setActiveTab(tab.key); setSearchTerm(""); }}
-            className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition ${
-              activeTab === tab.key
-                ? "bg-navy text-white"
-                : "text-muted hover:text-navy"
-            }`}
-          >
-            {tab.label}
-            <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
-              activeTab === tab.key ? "bg-white/20 text-white" : "bg-off-white text-muted"
-            }`}>
-              {tabCounts[tab.key]}
-            </span>
-          </button>
-        ))}
+      <div className="flex flex-wrap items-center gap-3">
+        <SearchFilterBar
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          placeholder="Search by customer or AR ID…"
+          className="!flex-none"
+        />
+        <div className="inline-flex w-fit rounded-full border border-border bg-white p-1">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => { setActiveTab(tab.key); setSearchTerm(""); }}
+              className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition ${
+                activeTab === tab.key
+                  ? "bg-navy text-white"
+                  : "text-muted hover:text-navy"
+              }`}
+            >
+              {tab.label}
+              <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
+                activeTab === tab.key ? "bg-white/20 text-white" : "bg-off-white text-muted"
+              }`}>
+                {tabCounts[tab.key]}
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
-
-      <SearchFilterBar
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        placeholder="Search by customer or AR ID…"
-      />
 
       {/* Table */}
       <Card className="overflow-hidden rounded-xl shadow-sm">

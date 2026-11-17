@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "./ui/sheet";
+import { useAuth } from "@/hooks/useAuth";
+import { ModulePermission } from "@shared/api";
 
 interface NavigationItem {
   label: string;
@@ -70,6 +72,8 @@ const accountGroup: NavigationGroup = {
   items: [
     { label: "Agents", path: "/manage-accounts/agents", icon: Users },
     { label: "Drivers", path: "/manage-accounts/drivers", icon: Truck },
+    { label: "Admins", path: "/manage-accounts/admin", icon: ShieldCheck },
+    { label: "Accounting", path: "/manage-accounts/staff", icon: Users },
   ],
 };
 
@@ -126,7 +130,15 @@ function NavigationMenu({
   onNavigate?: () => void;
 }) {
   const { pathname } = useLocation();
+  const user = useAuth((state) => state.user);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  const moduleForGroup: Record<string, ModulePermission> = {
+    "Product & Customer Management": "product-customer",
+    "Order Fulfillment": "order-fulfillment",
+    "Delivery & Customer Operations": "delivery-operations",
+    "Manage Accounts": "manage-accounts",
+  };
+  const canAccess = (permission: ModulePermission) => user?.role !== "staff" || user.module_permissions?.includes(permission);
 
   useEffect(() => {
     const activeGroup = navigationGroups.find((group) => group.items.some((item) => isItemActive(item.path, pathname)));
@@ -181,19 +193,22 @@ function NavigationMenu({
 
   return (
     <nav aria-label="Admin navigation" className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
-      <NavigationLink
+      {canAccess("dashboard") && <NavigationLink
         item={{ label: "Dashboard", path: "/", icon: LayoutDashboard }}
         collapsed={collapsed}
         onNavigate={onNavigate}
-      />
+      />}
       <div className="mt-2 space-y-1">
-        {navigationGroups.slice(0, primaryGroups.length).map(renderGroup)}
+        {navigationGroups.slice(0, primaryGroups.length).filter((group) => canAccess(moduleForGroup[group.label])).map(renderGroup)}
       </div>
-      <div className="my-3 border-t border-white/15" />
-      {renderGroup(navigationGroups[navigationGroups.length - 1])}
-      {secondaryLinks.map((item) => (
-        <NavigationLink key={item.path} item={item} collapsed={collapsed} onNavigate={onNavigate} />
-      ))}
+      {canAccess("manage-accounts") && <>
+        <div className="my-3 border-t border-white/15" />
+        {renderGroup(navigationGroups[navigationGroups.length - 1])}
+      </>}
+      {secondaryLinks.map((item) => {
+        const permission = item.path === "/reports" ? "reports" : "administration";
+        return canAccess(permission) ? <NavigationLink key={item.path} item={item} collapsed={collapsed} onNavigate={onNavigate} /> : null;
+      })}
     </nav>
   );
 }

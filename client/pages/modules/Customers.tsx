@@ -351,11 +351,10 @@ export function Customers({ onBack }: CustomersProps) {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [districtFilter, setDistrictFilter] = useState("");
-  const [customerSort, setCustomerSort] = useState<SortState<"store" | "district">>(null);
+  const [customerSort, setCustomerSort] = useState<SortState<"store" | "address" | "contact" | "contactInfo" | "district">>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
-  const [showDeleteButtons, setShowDeleteButtons] = useState(false);
   const [viewingCustomer, setViewingCustomer] = useState<Customer | null>(null);
   const [showExcelImport, setShowExcelImport] = useState(false);
   const [truckDistricts, setTruckDistricts] = useState<string[]>([]);
@@ -471,7 +470,7 @@ export function Customers({ onBack }: CustomersProps) {
         .sort((a, b) => {
           if (!customerSort) return 0;
           const direction = customerSort.direction === "asc" ? 1 : -1;
-          const value = (c: Customer) => (customerSort.key === "store" ? c.store_name : c.district);
+          const value = (c: Customer) => ({ store: c.store_name, address: formatCustomerAddress(c), contact: c.contact_person, contactInfo: c.contact_info, district: c.district })[customerSort.key];
           return compareValues(value(a), value(b)) * direction;
         }),
     [customers, searchQuery, districtFilter, customerSort]
@@ -692,33 +691,7 @@ export function Customers({ onBack }: CustomersProps) {
         />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap items-center gap-3">
-          <button
-            onClick={() => setShowDeleteButtons(!showDeleteButtons)}
-            className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-              showDeleteButtons
-                ? "bg-red text-white hover:opacity-90"
-                : "border border-border bg-white text-navy hover:bg-off-white"
-            }`}
-          >
-            {showDeleteButtons ? "🔓 Delete Enabled" : "🔒 Enable Delete"}
-          </button>
-          <select
-            aria-label="District"
-            value={districtFilter}
-            onChange={(event) => {
-              setDistrictFilter(event.target.value);
-              setCurrentPage(1);
-            }}
-            className="rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-navy focus:border-accent-2 focus:outline-none"
-          >
-            <option value="">All districts</option>
-            {customerDistricts.map((district) => (
-              <option key={district} value={district}>{district}</option>
-            ))}
-          </select>
-        </div>
+      <div className="flex flex-wrap items-center justify-start gap-3">
         <div className="relative w-full sm:w-72">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
           <input
@@ -732,6 +705,20 @@ export function Customers({ onBack }: CustomersProps) {
             className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
           />
         </div>
+        <select
+          aria-label="District"
+          value={districtFilter}
+          onChange={(event) => {
+            setDistrictFilter(event.target.value);
+            setCurrentPage(1);
+          }}
+          className="rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-navy focus:border-accent-2 focus:outline-none"
+        >
+          <option value="">All districts</option>
+          {customerDistricts.map((district) => (
+            <option key={district} value={district}>{district}</option>
+          ))}
+        </select>
       </div>
 
       <div className="data-table-frame overflow-hidden">
@@ -740,15 +727,9 @@ export function Customers({ onBack }: CustomersProps) {
             <TableHeader>
               <TableRow>
                 <SortableHeader label="Store Name" sortKey="store" sort={customerSort} onSort={setCustomerSort} />
-                <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap">
-                  Delivery Address
-                </TableHead>
-                <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap hidden md:table-cell">
-                  Contact Person
-                </TableHead>
-                <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap hidden md:table-cell">
-                  Contact Info
-                </TableHead>
+                <SortableHeader label="Delivery Address" sortKey="address" sort={customerSort} onSort={setCustomerSort} />
+                <SortableHeader label="Contact Person" sortKey="contact" sort={customerSort} onSort={setCustomerSort} className="hidden md:table-cell" />
+                <SortableHeader label="Contact Info" sortKey="contactInfo" sort={customerSort} onSort={setCustomerSort} className="hidden md:table-cell" />
                 <SortableHeader label="District" sortKey="district" sort={customerSort} onSort={setCustomerSort} />
                 <TableHead style={{ width: '120px' }} className="sticky right-0 z-10 border-b border-border bg-navy-mid px-3 py-3 text-center font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap shadow-left">
                   Actions
@@ -788,7 +769,7 @@ export function Customers({ onBack }: CustomersProps) {
                         onView={() => setViewingCustomer(customer)}
                         onEdit={() => openEditModal(customer)}
                         onDelete={() => handleDelete(customer.id)}
-                        showDelete={showDeleteButtons}
+                        showDelete
                       />
                     </TableCell>
                   </TableRow>

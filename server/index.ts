@@ -12,7 +12,7 @@ import {
   updateUserPassword,
   resetUserMfa,
 } from "./routes/auth";
-import { handleCreateAccount } from "./routes/users";
+import { handleCreateAccount, handleListManagedAccounts, handleUpdateStaffPermissions, handleUpdateMfaRequirement } from "./routes/users";
 import {
   listCustomers,
   createCustomer,
@@ -113,7 +113,8 @@ import {
 import { getSalesForecast } from "./routes/forecast";
 import { postSalesForecastChat } from "./routes/sales-forecast-chat";
 import { getCustomerReport, getSalesReport, getStockReport } from "./routes/reports";
-import { authMiddleware, requireRole } from "./middleware/auth";
+import { authMiddleware, requireRole, type AuthRequest } from "./middleware/auth";
+import { ModulePermission } from "@shared/api";
 
 export function createServer() {
   const app = express();
@@ -146,9 +147,31 @@ export function createServer() {
   app.post("/api/auth/mfa/verify", handleMfaVerify);
   app.post("/api/auth/logout", handleLogout);
   app.post("/api/auth/refresh", authMiddleware, handleRefresh);
+  app.get("/api/users", authMiddleware, requireRole("admin", "staff"), handleListManagedAccounts);
+  app.patch("/api/users/:userId/module-permissions", authMiddleware, requireRole("admin"), handleUpdateStaffPermissions);
+  app.patch("/api/users/:userId/mfa-required", authMiddleware, requireRole("admin"), handleUpdateMfaRequirement);
   app.post("/api/users", authMiddleware, requireRole("admin"), handleCreateAccount);
   app.patch("/api/users/:userId/password", authMiddleware, requireRole("admin"), updateUserPassword);
   app.post("/api/users/:userId/mfa/reset", authMiddleware, requireRole("admin"), resetUserMfa);
+
+  app.use("/api", authMiddleware, (req, res, next) => {
+    const authReq = req as AuthRequest;
+    if (authReq.user?.role !== "staff") return next();
+    const groups: [ModulePermission[], string[]][] = [
+      [["product-customer"], ["/customers", "/products", "/batches"]],
+      [["order-fulfillment"], ["/pallets", "/orders", "/invoices", "/inventory-batches"]],
+      [["manage-accounts", "delivery-operations"], ["/drivers"]],
+      [["delivery-operations"], ["/trucks", "/deliveries", "/receipts", "/accounts-receivable", "/agent-returns"]],
+      [["manage-accounts"], ["/agents"]],
+      [["reports"], ["/reports", "/sales/forecast"]],
+      [["administration"], ["/audit-logs", "/backup"]],
+    ];
+    const required = groups.find(([, paths]) => paths.some((path) => req.path === path || req.path.startsWith(`${path}/`)))?.[0];
+    if (!required || !required.some((permission) => authReq.modulePermissions?.includes(permission))) {
+      return res.status(403).json({ error: "Module access denied" });
+    }
+    next();
+  });
 
   // Customers routes
   app.get("/api/customers", authMiddleware, listCustomers);
@@ -212,9 +235,9 @@ export function createServer() {
   app.post("/api/sales/forecast/chat", authMiddleware, requireRole("admin"), postSalesForecastChat);
 
   // Reports routes
-  app.get("/api/reports/sales", authMiddleware, requireRole("admin"), getSalesReport);
-  app.get("/api/reports/stock", authMiddleware, requireRole("admin"), getStockReport);
-  app.get("/api/reports/customers", authMiddleware, requireRole("admin"), getCustomerReport);
+  app.get("/api/reports/sales", authMiddleware, requireRole("admin", "staff"), getSalesReport);
+  app.get("/api/reports/stock", authMiddleware, requireRole("admin", "staff"), getStockReport);
+  app.get("/api/reports/customers", authMiddleware, requireRole("admin", "staff"), getCustomerReport);
 
   // Deliveries routes
   app.get("/api/deliveries", authMiddleware, listDeliveries);
@@ -230,7 +253,7 @@ export function createServer() {
   app.post("/api/deliveries/:id/items/:itemId/payment", authMiddleware, recordDeliveryItemPayment);
 
   // Audit logs routes
-  app.get("/api/audit-logs", authMiddleware, requireRole("admin"), listAuditLogs);
+  app.get("/api/audit-logs", authMiddleware, requireRole("admin", "staff"), listAuditLogs);
   app.get("/api/backup", authMiddleware, requireRole("admin"), downloadBackup);
 
   // Accounts Receivable routes
