@@ -6,6 +6,10 @@ import { Download, RefreshCw } from "lucide-react";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ActionButtons } from "@/components/ActionButtons";
 import {
   CustomerDiscountEditor,
@@ -170,7 +174,7 @@ function CustomerModal({
             <label className="mb-1 block text-xs font-semibold text-navy">
               Store Name *
             </label>
-            <input
+            <Input
               type="text"
               value={formData.store_name}
               onChange={(e) =>
@@ -189,7 +193,7 @@ function CustomerModal({
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="mb-1 block text-xs font-semibold text-navy">Street No.</label>
-              <input
+              <Input
                 type="text"
                 value={formData.street_number}
                 onChange={(e) => updateAddressField("street_number", e.target.value)}
@@ -199,7 +203,7 @@ function CustomerModal({
             </div>
             <div className="col-span-2">
               <label className="mb-1 block text-xs font-semibold text-navy">Street Address</label>
-              <input
+              <Input
                 type="text"
                 value={formData.street_address}
                 onChange={(e) => updateAddressField("street_address", e.target.value)}
@@ -212,7 +216,7 @@ function CustomerModal({
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-1">
               <label className="mb-1 block text-xs font-semibold text-navy">City *</label>
-              <input
+              <Input
                 type="text"
                 value={formData.location}
                 onChange={(e) => updateAddressField("location", e.target.value)}
@@ -222,7 +226,7 @@ function CustomerModal({
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold text-navy">State / Province</label>
-              <input
+              <Input
                 type="text"
                 value={formData.state}
                 onChange={(e) => updateAddressField("state", e.target.value)}
@@ -232,7 +236,7 @@ function CustomerModal({
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold text-navy">Postal Code</label>
-              <input
+              <Input
                 type="text"
                 value={formData.postal_code}
                 onChange={(e) => updateAddressField("postal_code", e.target.value)}
@@ -244,18 +248,19 @@ function CustomerModal({
 
           <div>
             <label className="mb-1 block text-xs font-semibold text-navy">Truck District</label>
-            <select
-              value={formData.district}
-              onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-              className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-accent-2 focus:outline-none"
+            <Select
+              value={formData.district || undefined}
+              onValueChange={(district) => setFormData({ ...formData, district })}
             >
-              <option value="">No district</option>
-              {districtOptions.map((district) => (
-                <option key={district} value={district}>
-                  {district}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger aria-label="Truck district" className="w-full">
+                <SelectValue placeholder="No district" />
+              </SelectTrigger>
+              <SelectContent>
+                {districtOptions.map((district) => (
+                  <SelectItem key={district} value={district}>{district}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <p className="mt-1 text-xs text-muted">Approved orders for this customer are dispatched to the truck serving this district.</p>
           </div>
 
@@ -263,7 +268,7 @@ function CustomerModal({
             <label className="mb-1 block text-xs font-semibold text-navy">
               Contact Person
             </label>
-            <input
+            <Input
               type="text"
               value={formData.contact_person}
               onChange={(e) =>
@@ -278,7 +283,7 @@ function CustomerModal({
             <label className="mb-1 block text-xs font-semibold text-navy">
               Contact Info
             </label>
-            <input
+            <Input
               type="text"
               value={formData.contact_info}
               onChange={(e) =>
@@ -292,7 +297,7 @@ function CustomerModal({
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1 block text-xs font-semibold text-navy">Credit Limit (₱)</label>
-              <input
+              <Input
                 type="number"
                 min="0"
                 value={formData.credit_limit}
@@ -303,7 +308,7 @@ function CustomerModal({
             </div>
             <div>
               <label className="mb-1 block text-xs font-semibold text-navy">Credit Terms (days)</label>
-              <input
+              <Input
                 type="number"
                 min="1"
                 max="365"
@@ -324,18 +329,8 @@ function CustomerModal({
         </div>
 
         <div className="sticky bottom-0 flex justify-end gap-2 rounded-b-2xl border-t border-border bg-off-white px-6 py-4">
-          <button
-            onClick={onClose}
-            className="rounded-lg border border-border px-4 py-2 text-sm font-semibold hover:bg-white"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={onSave}
-            className="rounded-lg bg-accent-2 px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
-          >
-            Save Customer
-          </button>
+          <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+          <Button type="button" variant="accent" onClick={onSave}>Save Customer</Button>
         </div>
       </div>
     </div>
@@ -676,57 +671,57 @@ export function Customers({ onBack }: CustomersProps) {
         </button>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-white">
+      <div className="data-table-frame overflow-hidden">
         <div className="overflow-x-auto text-xs md:text-sm">
-          <table className="w-full">
-            <thead>
-              <tr>
-                <th className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap">
+          <Table className="w-full">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap">
                   Store Name
-                </th>
-                <th className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap">
+                </TableHead>
+                <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap">
                   Delivery Address
-                </th>
-                <th className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap hidden md:table-cell">
+                </TableHead>
+                <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap hidden md:table-cell">
                   Contact Person
-                </th>
-                <th className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap hidden md:table-cell">
+                </TableHead>
+                <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap hidden md:table-cell">
                   Contact Info
-                </th>
-                <th className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap">
+                </TableHead>
+                <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap">
                   Discounts
-                </th>
-                <th style={{ width: '120px' }} className="sticky right-0 z-10 border-b border-border bg-navy-mid px-3 py-3 text-center font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap shadow-left">
+                </TableHead>
+                <TableHead style={{ width: '120px' }} className="sticky right-0 z-10 border-b border-border bg-navy-mid px-3 py-3 text-center font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap shadow-left">
                   Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {paginatedCustomers.length === 0 ? (
-                <tr>
-                  <td colSpan={6} className="px-3 py-6 text-center text-muted">
+                <TableRow>
+                  <TableCell colSpan={6} className="px-3 py-6 text-center text-muted">
                     {customers.length === 0
                       ? "No customers found"
                       : "No results matching your search"}
-                  </td>
-                </tr>
+                  </TableCell>
+                </TableRow>
               ) : (
                 paginatedCustomers.map((customer) => (
-                  <tr
+                  <TableRow
                     key={customer.id}
                     className="border-b border-border transition-colors hover:bg-off-white/50"
                   >
-                    <td className="px-3 py-3 font-semibold text-navy">
+                    <TableCell className="px-3 py-3 font-semibold text-navy">
                       {customer.store_name}
-                    </td>
-                    <td className="px-3 py-3 text-navy">{formatCustomerAddress(customer)}</td>
-                    <td className="hidden px-3 py-3 text-navy md:table-cell">
+                    </TableCell>
+                    <TableCell className="px-3 py-3 text-navy">{formatCustomerAddress(customer)}</TableCell>
+                    <TableCell className="hidden px-3 py-3 text-navy md:table-cell">
                       {customer.contact_person || <span className="text-muted">—</span>}
-                    </td>
-                    <td className="hidden px-3 py-3 text-navy md:table-cell">
+                    </TableCell>
+                    <TableCell className="hidden px-3 py-3 text-navy md:table-cell">
                       {customer.contact_info || <span className="text-muted">—</span>}
-                    </td>
-                    <td className="px-3 py-3 whitespace-nowrap">
+                    </TableCell>
+                    <TableCell className="px-3 py-3 whitespace-nowrap">
                       {customer.discounts && customer.discounts.length > 0 ? (
                         <span className="inline-block rounded bg-green-50 px-2 py-0.5 text-xs font-bold text-green-700">
                           {formatPercent(totalDiscountRate(customer.discounts))}% · {customer.discounts.length}
@@ -734,20 +729,20 @@ export function Customers({ onBack }: CustomersProps) {
                       ) : (
                         <span className="text-muted">—</span>
                       )}
-                    </td>
-                    <td style={{ width: '120px' }} className="sticky right-0 z-10 px-3 py-3 bg-white border-l border-border shadow-left">
+                    </TableCell>
+                    <TableCell style={{ width: '120px' }} className="sticky right-0 z-10 px-3 py-3 bg-white border-l border-border shadow-left">
                       <ActionButtons
                         onView={() => setViewingCustomer(customer)}
                         onEdit={() => openEditModal(customer)}
                         onDelete={() => handleDelete(customer.id)}
                         showDelete={showDeleteButtons}
                       />
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 ))
               )}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </div>
 
         {/* Pagination - Always Display */}

@@ -1,4 +1,13 @@
 import { Search, X } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface SearchFilterBarProps {
   searchTerm: string;
@@ -19,44 +28,42 @@ export function SearchFilterBar({
   filters = [],
 }: SearchFilterBarProps) {
   return (
-    <div className="flex-1 flex flex-col sm:flex-row gap-3 items-stretch">
-      <div className="flex-1 flex items-center bg-navy-mid border border-border rounded-lg px-3 gap-2">
-        <span className="text-muted">🔍</span>
-        <input
-          type="text"
+    <div className="flex min-w-0 flex-1 flex-col items-stretch gap-3 sm:flex-row">
+      <div className="group relative flex min-w-0 flex-1 items-center gap-2 rounded-full border border-border bg-white px-4 focus-within:border-accent-2 focus-within:ring-2 focus-within:ring-accent-2/20">
+        <Search size={16} className="shrink-0 text-muted" aria-hidden="true" />
+        <Input
+          type="search"
           placeholder={placeholder}
           value={searchTerm}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className="flex-1 bg-transparent border-none text-white placeholder-muted py-2 outline-none text-sm"
+          onChange={(event) => onSearchChange(event.target.value)}
+          className="h-auto min-w-0 flex-1 border-0 bg-transparent px-0 py-2 text-sm shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
         />
         {searchTerm && (
-          <button
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label="Clear search"
             onClick={() => onSearchChange("")}
-            className="text-muted hover:text-white transition-colors"
+            className="h-8 w-8 shrink-0 border-0 bg-transparent p-0 shadow-none hover:bg-off-white"
           >
-            <X className="w-4 h-4" />
-          </button>
+            <X className="h-4 w-4" />
+          </Button>
         )}
       </div>
       {filters.map((filter) => (
-        <select
-          key={filter.name}
-          value={filter.value}
-          onChange={(e) => filter.onChange(e.target.value)}
-          className="px-3 py-2 bg-navy-mid border border-border rounded-lg text-white text-sm focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all appearance-none cursor-pointer"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='white' d='M6 9L1 4h10z'/%3E%3C/svg%3E")`,
-            backgroundRepeat: "no-repeat",
-            backgroundPosition: "right 8px center",
-            paddingRight: "28px",
-          }}
-        >
-          {filter.options.map((opt) => (
-            <option key={opt.value} value={opt.value}>
-              {opt.label}
-            </option>
-          ))}
-        </select>
+        <Select key={filter.name} value={filter.value} onValueChange={filter.onChange}>
+          <SelectTrigger aria-label={filter.name} className="h-10 w-full rounded-full px-4 text-sm font-semibold sm:w-auto">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {filter.options.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       ))}
     </div>
   );

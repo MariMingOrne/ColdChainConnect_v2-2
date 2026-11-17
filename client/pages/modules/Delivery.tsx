@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { Table } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { localScheduleDate } from "@/lib/agentSchedule";
 import { CalendarDays, Clock3, RefreshCw, ChevronLeft, Truck as TruckIcon, ChevronDown, ChevronUp } from "lucide-react";
@@ -500,8 +501,8 @@ export function DeliveryDispatch() {
                     </div>
 
                     {/* Desktop: table */}
-                    <div className="hidden md:block overflow-x-auto">
-                      <table className="w-full text-xs">
+                    <div className="data-table-frame hidden md:block overflow-x-auto">
+                      <Table className="w-full text-xs">
                         <thead>
                           <tr>
                             {["Invoice", "Customer", "Status", "Receipt #", "Confirmed At", "Action"].map((h) => (
@@ -571,7 +572,7 @@ export function DeliveryDispatch() {
                             </tr>
                           ))}
                         </tbody>
-                      </table>
+                      </Table>
                     </div>
                   </>
                 )}

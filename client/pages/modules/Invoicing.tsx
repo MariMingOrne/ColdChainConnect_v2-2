@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import {
   Table,
@@ -374,24 +375,24 @@ export function Invoicing() {
         <div className="flex flex-col sm:flex-row gap-3 items-end">
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <div className="flex items-center bg-navy-mid border border-border rounded-lg px-3 gap-2">
+            <div className="flex items-center gap-2 rounded-full border border-border bg-white px-4">
               <Calendar size={16} className="text-muted" />
-              <input type="date" value={customDateStart} onChange={(e) => setCustomDateStart(e.target.value)}
-                className="flex-1 bg-transparent border-none text-white py-2 outline-none text-sm" />
+              <Input type="date" value={customDateStart} onChange={(e) => setCustomDateStart(e.target.value)}
+                className="flex-1 bg-transparent border-none py-2 text-sm text-navy outline-none" />
             </div>
           </div>
           <div className="flex-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-            <div className="flex items-center bg-navy-mid border border-border rounded-lg px-3 gap-2">
+            <div className="flex items-center gap-2 rounded-full border border-border bg-white px-4">
               <Calendar size={16} className="text-muted" />
-              <input type="date" value={customDateEnd} onChange={(e) => setCustomDateEnd(e.target.value)}
-                className="flex-1 bg-transparent border-none text-white py-2 outline-none text-sm" />
+              <Input type="date" value={customDateEnd} onChange={(e) => setCustomDateEnd(e.target.value)}
+                className="flex-1 bg-transparent border-none py-2 text-sm text-navy outline-none" />
             </div>
           </div>
         </div>
       )}
 
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden rounded-xl shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>

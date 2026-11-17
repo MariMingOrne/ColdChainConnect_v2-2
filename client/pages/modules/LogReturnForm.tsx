@@ -1,6 +1,10 @@
 import { useState } from "react";
 import { Package, Plus, Trash2 } from "lucide-react";
 import { Invoice, Customer, Product } from "@shared/api";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type ReturnType = "good" | "damaged";
 
@@ -8,9 +12,6 @@ function invoiceCustomerId(invoice: Invoice, customers: Customer[]) {
   if (invoice.booking?.customer_id) return invoice.booking.customer_id;
   return customers.find((c) => c.store_name === invoice.customer_name)?.id ?? "";
 }
-
-const selectClass =
-  "w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-white focus:outline-none focus:border-accent-2 disabled:opacity-50";
 
 export function LogReturnForm({
   invoices, customers, products, token, onSaved, onCancel,
@@ -93,25 +94,34 @@ export function LogReturnForm({
       <div className="p-5 space-y-4 flex-1 overflow-y-auto">
         <div>
           <label className="block text-xs font-semibold text-navy mb-1">Customer *</label>
-          <select value={customerId} onChange={(e) => handleCustomerChange(e.target.value)} className={selectClass}>
-            <option value="">Select customer…</option>
-            {customers.map((c) => (
-              <option key={c.id} value={c.id}>{c.store_name}{c.contact_person ? ` — ${c.contact_person}` : ""}</option>
-            ))}
-          </select>
+          <Select value={customerId} onValueChange={handleCustomerChange}>
+            <SelectTrigger aria-label="Select customer">
+              <SelectValue placeholder="Select customer…" />
+            </SelectTrigger>
+            <SelectContent>
+              {customers.map((customer) => (
+                <SelectItem key={customer.id} value={customer.id}>
+                  {customer.store_name}{customer.contact_person ? ` — ${customer.contact_person}` : ""}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         <div>
           <label className="block text-xs font-semibold text-navy mb-1">Order / Invoice *</label>
-          <select value={invoiceId} onChange={(e) => handleInvoiceChange(e.target.value)}
-            disabled={!customerId} className={selectClass}>
-            <option value="">{customerId ? "Select order…" : "Select a customer first"}</option>
-            {customerInvoices.map((inv) => (
-              <option key={inv.id} value={inv.id}>
-                {inv.receipt_number || inv.id.slice(0, 8).toUpperCase()}
-              </option>
-            ))}
-          </select>
+          <Select value={invoiceId} onValueChange={handleInvoiceChange} disabled={!customerId}>
+            <SelectTrigger aria-label="Select order or invoice">
+              <SelectValue placeholder={customerId ? "Select order…" : "Select a customer first"} />
+            </SelectTrigger>
+            <SelectContent>
+              {customerInvoices.map((invoice) => (
+                <SelectItem key={invoice.id} value={invoice.id}>
+                  {invoice.receipt_number || invoice.id.slice(0, 8).toUpperCase()}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
           {customerId && customerInvoices.length === 0 && (
             <p className="page-subtitle">No orders found for this customer.</p>
           )}
@@ -135,27 +145,29 @@ export function LogReturnForm({
               <div key={index} className="grid grid-cols-[minmax(0,1fr)_6rem_auto] gap-2 items-end">
                 <div>
                   <label className="block text-xs text-muted mb-1">Product</label>
-                  <select
+                  <Select
                     value={item.product_id}
-                    onChange={(e) => setItems((current) => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, product_id: e.target.value } : entry))}
+                    onValueChange={(productId) => setItems((current) => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, product_id: productId } : entry))}
                     disabled={!invoiceId}
-                    className={selectClass}
                   >
-                    <option value="">{invoiceId ? "Select product…" : "Select an order first"}</option>
-                    {invoiceProducts.filter((product) => !selectedElsewhere.has(product.id) || product.id === item.product_id).map((product) => (
-                      <option key={product.id} value={product.id}>{product.name}</option>
-                    ))}
-                  </select>
+                    <SelectTrigger aria-label={`Product for returned item ${index + 1}`}>
+                      <SelectValue placeholder={invoiceId ? "Select product…" : "Select an order first"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {invoiceProducts.filter((product) => !selectedElsewhere.has(product.id) || product.id === item.product_id).map((product) => (
+                        <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <label className="block text-xs text-muted mb-1">Quantity</label>
-                  <input
+                  <Input
                     type="number"
                     min={1}
                     step={1}
                     value={item.qty_returned}
                     onChange={(e) => setItems((current) => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, qty_returned: Number(e.target.value) } : entry))}
-                    className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-white focus:outline-none focus:border-accent-2"
                   />
                 </div>
                 <button
@@ -192,18 +204,17 @@ export function LogReturnForm({
 
         <div>
           <label className="block text-xs font-semibold text-navy mb-1">Reason / Notes</label>
-          <textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2}
+          <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2}
             placeholder="Describe why the goods are being returned…"
-            className="w-full px-3 py-2.5 border border-border rounded-lg text-sm bg-white focus:outline-none focus:border-accent-2 resize-none" />
+            className="min-h-16 resize-none" />
         </div>
       </div>
 
       <div className="flex justify-end gap-2 p-5 border-t border-border flex-shrink-0">
-        <button onClick={() => { reset(); onCancel(); }} className="btn-ghost">Cancel</button>
-        <button onClick={handleSave} disabled={!customerId || !invoiceId || items.some((item) => !item.product_id || !Number.isInteger(item.qty_returned) || item.qty_returned < 1) || saving}
-          className="btn-primary">
+        <Button type="button" variant="ghost" onClick={() => { reset(); onCancel(); }}>Cancel</Button>
+        <Button type="button" onClick={handleSave} disabled={!customerId || !invoiceId || items.some((item) => !item.product_id || !Number.isInteger(item.qty_returned) || item.qty_returned < 1) || saving}>
           {saving ? "Saving…" : "Log Return"}
-        </button>
+        </Button>
       </div>
     </>
   );

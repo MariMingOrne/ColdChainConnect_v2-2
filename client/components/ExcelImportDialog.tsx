@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent } from "react";
 import { AlertTriangle, FileSpreadsheet, Upload, X } from "lucide-react";
 import { ExcelColumn, ExcelRow, readExcelRows } from "@/lib/excel";
+import { Table } from "@/components/ui/table";
 
 interface ExcelImportDialogProps {
   title: string;
@@ -84,8 +85,8 @@ export function ExcelImportDialog({ title, columns, validateRow, onImport, onClo
                 {invalidCount ? <AlertTriangle size={16} /> : <FileSpreadsheet size={16} />}
                 <span>{validCount} valid · {invalidCount} with errors</span>
               </div>
-              <div className="overflow-x-auto rounded-lg border border-border">
-                <table className="w-full text-left text-xs">
+              <div className="data-table-frame overflow-x-auto">
+                <Table className="w-full text-left text-xs">
                   <thead className="bg-off-white text-muted"><tr>{columns.map((column) => <th key={column.key} className="whitespace-nowrap px-3 py-2">{column.header}{column.required ? " *" : ""}</th>)}<th className="px-3 py-2">Validation</th></tr></thead>
                   <tbody>{rowErrors.slice(0, 30).map(({ row, errors: messages }) => (
                     <tr key={row.rowNumber} className="border-t border-border align-top">
@@ -93,7 +94,7 @@ export function ExcelImportDialog({ title, columns, validateRow, onImport, onClo
                       <td className={`min-w-48 px-3 py-2 ${messages.length ? "text-red" : "text-green"}`}>{messages.length ? messages.join("; ") : "Ready"}</td>
                     </tr>
                   ))}</tbody>
-                </table>
+                </Table>
               </div>
               {rows.length > 30 && <p className="text-xs text-muted">Showing first 30 of {rows.length} rows.</p>}
             </div>

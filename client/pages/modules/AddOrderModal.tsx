@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { QuantityStepper } from "./QuantityStepper";
 import { Product, Customer } from "@shared/api";
 
@@ -43,6 +45,8 @@ export function AddOrderModal({
   onCreateOrder,
   isCreating,
 }: AddOrderModalProps) {
+  const today = new Date();
+  const minDeliveryDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const [selectedTab, setSelectedTab] = useState<"products" | "cart">("products");
   const [productSearch, setProductSearch] = useState("");
 
@@ -95,8 +99,9 @@ export function AddOrderModal({
             ))}
           </select>
           <label className="mt-3 block text-xs font-semibold text-navy mb-2">Prepared Delivery Date</label>
-          <input
+          <Input
             type="date"
+            min={minDeliveryDate}
             value={preparedDeliveryDate}
             onChange={(e) => onPreparedDeliveryDateChange(e.target.value)}
             className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
@@ -131,7 +136,7 @@ export function AddOrderModal({
         <div className="flex-1 overflow-y-auto p-6">
           {selectedTab === "products" ? (
             <div className="space-y-4">
-              <input
+              <Input
                 type="text"
                 placeholder="Search by product name or SKU…"
                 value={productSearch}
@@ -281,20 +286,11 @@ export function AddOrderModal({
             )}
           </div>
           <div className="flex gap-2">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 border border-border rounded-lg font-semibold text-sm hover:bg-white"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={onCreateOrder}
-              disabled={isCreating || !newCustomerId || orderItems.length === 0}
-              className="px-4 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90 disabled:opacity-50 flex items-center gap-2"
-            >
+            <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
+            <Button type="button" variant="accent" onClick={onCreateOrder} disabled={isCreating || !newCustomerId || orderItems.length === 0}>
               <Plus size={16} />
               {isCreating ? "Creating…" : "Create Order"}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

@@ -20,7 +20,7 @@ interface PickLine {
 
 function barcodeDataUrl(value: string) {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  JsBarcode(svg, value, { format: "CODE128", displayValue: false, margin: 0, height: 40, width: 1.5 });
+  JsBarcode(svg, value, { format: "CODE128", displayValue: false, margin: 20, height: 64, width: 2 });
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(new XMLSerializer().serializeToString(svg))}`;
 }
 
@@ -141,7 +141,7 @@ export function DeliverySheet({ order, pallets, batches, onClose }: DeliveryShee
             <h1 className="text-lg font-bold">Delivery Sheet</h1>
             <p className="text-xs">Order {order.id.slice(0, 8)} · {storeName}{order.customer?.location ? ` · ${order.customer.location}` : ""}</p>
             <p className="text-xs">Delivery date: {deliveryDate} · Pallets: {pallets.length}</p>
-            <img src={orderBarcode} alt={`Barcode for order ${order.id.slice(0, 8)}`} className="mt-2 h-10 w-full max-w-md" />
+            <img src={orderBarcode} alt={`Barcode for order ${order.id.slice(0, 8)}`} className="mt-2 h-auto w-full object-contain" />
             <p className="font-mono text-[10px]">{order.id}</p>
           </header>
 
@@ -169,7 +169,7 @@ export function DeliverySheet({ order, pallets, batches, onClose }: DeliveryShee
 
           <section className="label-section mt-4">
             <h2 className="mb-1 text-sm font-bold">Pallet Labels</h2>
-            <div className="label-grid grid grid-cols-3 gap-2">
+            <div className="label-grid grid grid-cols-1 gap-2">
               {pallets.map((pallet, index) => {
                 const units = (pallet.items ?? []).reduce((sum, item) => sum + item.qty_units, 0);
                 return (
@@ -177,7 +177,7 @@ export function DeliverySheet({ order, pallets, batches, onClose }: DeliveryShee
                     <p className="text-xs font-bold">Pallet {index + 1} of {pallets.length} · {units} units</p>
                     <p className="text-xs">{storeName}</p>
                     <p className="text-[10px]">Delivery: {deliveryDate}</p>
-                    {barcodes[pallet.id] && <img src={barcodes[pallet.id]} alt={`Barcode for pallet ${index + 1}`} className="h-10 w-full" />}
+                    {barcodes[pallet.id] && <img src={barcodes[pallet.id]} alt={`Barcode for pallet ${index + 1}`} className="h-auto w-full object-contain" />}
                     <p className="font-mono text-[10px]">{pallet.id}</p>
                   </div>
                 );

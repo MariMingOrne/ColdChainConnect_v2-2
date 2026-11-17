@@ -3,6 +3,7 @@ import { Check, Copy, Eye } from "lucide-react";
 import { AuditLog } from "@shared/api";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { useToast } from "@/hooks/use-toast";
+import { Table } from "@/components/ui/table";
 import { describeLog, getActionBadgeClass, getActionLabel } from "./auditDescribe";
 
 interface AuditLogTableProps {
@@ -10,8 +11,7 @@ interface AuditLogTableProps {
   onView: (log: AuditLog) => void;
 }
 
-const HEAD_CLASS =
-  "bg-navy-mid text-muted font-barlow-cond text-xs font-bold uppercase tracking-wider px-3 py-3 border-b border-border whitespace-nowrap";
+const HEAD_CLASS = "whitespace-nowrap";
 
 export function AuditLogTable({ logs, onView }: AuditLogTableProps) {
   const [query, setQuery] = useState("");
@@ -82,9 +82,9 @@ export function AuditLogTable({ logs, onView }: AuditLogTableProps) {
         ]}
       />
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-white">
+      <div className="data-table-frame overflow-hidden">
         <div className="overflow-x-auto text-xs md:text-sm">
-          <table className="w-full">
+          <Table className="w-full">
             <thead>
               <tr>
                 <th className={`${HEAD_CLASS} text-left`}>Timestamp</th>
@@ -153,7 +153,7 @@ export function AuditLogTable({ logs, onView }: AuditLogTableProps) {
                 ))
               )}
             </tbody>
-          </table>
+          </Table>
         </div>
 
         <div className="border-t border-border bg-off-white/50 px-6 py-4 text-xs text-muted">

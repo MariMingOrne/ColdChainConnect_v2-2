@@ -13,17 +13,6 @@ import { AgentPalletTracking } from "./modules/AgentPalletTracking";
 import { InventoryProvider } from "../context/InventoryContext";
 import { useAuth } from "../hooks/useAuth";
 
-const adminModules = [
-  { label: "Orders",              path: "/order-summary" },
-  { label: "Pallet Preparation", path: "/preparation" },
-  { label: "Pallet Tracking",     path: "/inventory" },
-  { label: "Receipts",            path: "/invoicing" },
-  { label: "Truck Dispatch",      path: "/delivery" },
-  { label: "Accounts Receivable", path: "/accounts" },
-  { label: "Delivery History",    path: "/delivery-history" },
-  { label: "Returns",             path: "/agent-returns" },
-];
-
 const agentModules = [
   { label: "Orders",            path: "/order-summary" },
   { label: "Pallet Tracking", path: "/preparation" },
@@ -34,17 +23,17 @@ const agentModules = [
 export function BookingDispatch() {
   const { user } = useAuth();
   const isAgent = user?.role === "agent";
-  const modules = isAgent ? agentModules : adminModules;
 
   return (
     <InventoryProvider>
       <div className="flex h-full min-h-0 min-w-0">
-        {/* Sidebar for admin, bottom bar for agent (rendered inside HubSidebar) */}
-        <HubSidebar
-          modules={modules}
-          basePath="/booking-dispatch"
-          agentMode={isAgent}
-        />
+        {isAgent && (
+          <HubSidebar
+            modules={agentModules}
+            basePath="/booking-dispatch"
+            agentMode
+          />
+        )}
 
         {/* Content — add bottom padding for agent so bar doesn't overlap */}
         <div className={`hide-scrollbar min-h-0 flex-1 overflow-auto ${isAgent ? "pb-20" : ""}`}>

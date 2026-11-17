@@ -1,4 +1,5 @@
 import { Eye, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ActionButtonsProps {
   onView?: () => void;
@@ -15,49 +16,49 @@ export function ActionButtons({
   showDelete = true,
   size = "sm",
 }: ActionButtonsProps) {
-  const buttonClasses = {
-    sm: "p-1.5",
-    md: "p-2",
-  };
-
-  const iconClasses = {
-    sm: "w-4 h-4",
-    md: "w-5 h-5",
-  };
+  const iconSize = size === "sm" ? "h-4 w-4" : "h-5 w-5";
+  const buttonSize = size === "sm" ? "h-8 w-8" : "h-10 w-10";
 
   return (
-    <div className="flex gap-2 items-center justify-center">
-      {/* View Button */}
+    <div className="flex items-center justify-center gap-2">
       {onView && (
-        <button
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
           onClick={onView}
-          className={`${buttonClasses[size]} bg-white border border-border text-navy rounded hover:bg-off-white transition-colors`}
+          aria-label="View details"
           title="View details"
+          className={buttonSize}
         >
-          <Eye className={iconClasses[size]} />
-        </button>
+          <Eye className={iconSize} />
+        </Button>
       )}
-
-      {/* Edit Button */}
       {onEdit && (
-        <button
+        <Button
+          type="button"
+          variant="warning"
+          size="icon"
           onClick={onEdit}
-          className={`${buttonClasses[size]} bg-gold text-white rounded font-semibold hover:opacity-90 transition-opacity`}
+          aria-label="Edit"
           title="Edit"
+          className={buttonSize}
         >
-          ✏️
-        </button>
+          <span aria-hidden="true">✏️</span>
+        </Button>
       )}
-
-      {/* Delete Button - with toggle */}
       {showDelete && (
-        <button
+        <Button
+          type="button"
+          variant="destructive"
+          size="icon"
           onClick={onDelete}
-          className={`${buttonClasses[size]} bg-red text-white rounded font-semibold hover:opacity-90 transition-opacity`}
+          aria-label="Delete"
           title="Delete"
+          className={buttonSize}
         >
-          <Trash2 className={iconClasses[size]} />
-        </button>
+          <Trash2 className={iconSize} />
+        </Button>
       )}
     </div>
   );

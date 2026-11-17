@@ -10,6 +10,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { RefreshCw, CheckCircle } from "lucide-react";
+import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { AccountsReceivable as ARType, Customer } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -199,20 +200,20 @@ export function AccountsReceivable() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-off-white rounded-lg p-1 w-fit">
+      <div className="inline-flex w-fit rounded-full border border-border bg-white p-1">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => { setActiveTab(tab.key); setSearchTerm(""); }}
-            className={`px-3 py-1.5 rounded text-xs font-semibold transition-all flex items-center gap-1.5 ${
+            className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition ${
               activeTab === tab.key
-                ? "bg-white text-navy shadow-sm"
+                ? "bg-navy text-white"
                 : "text-muted hover:text-navy"
             }`}
           >
             {tab.label}
             <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
-              activeTab === tab.key ? "bg-navy text-white" : "bg-border text-muted"
+              activeTab === tab.key ? "bg-white/20 text-white" : "bg-off-white text-muted"
             }`}>
               {tabCounts[tab.key]}
             </span>
@@ -220,19 +221,14 @@ export function AccountsReceivable() {
         ))}
       </div>
 
-      {/* Search */}
-      <div className="relative w-full md:max-w-sm">
-        <input
-          type="text"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          placeholder="Search by customer or AR ID…"
-          className="w-full pl-4 pr-4 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2 bg-white"
-        />
-      </div>
+      <SearchFilterBar
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        placeholder="Search by customer or AR ID…"
+      />
 
       {/* Table */}
-      <Card className="overflow-hidden">
+      <Card className="overflow-hidden rounded-xl shadow-sm">
         <Table>
           <TableHeader>
             <TableRow>
