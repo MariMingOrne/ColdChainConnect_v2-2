@@ -453,11 +453,14 @@ export function Inventory() {
           <Table className="w-full">
             <thead>
               <tr>
-                {["Name", "Cost Per Item", "Stock Qty"].map((col) => (
+                {["Name", "Cost Per Item"].map((col) => (
                   <th key={col} className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
                     {col}
                   </th>
                 ))}
+                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-center border-b border-border whitespace-nowrap">
+                  Stock Qty
+                </th>
                 {selectedBatchId === "batch-all" && (
                   <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
                     Reorder Level
@@ -491,10 +494,10 @@ export function Inventory() {
                       {/* Cost Per Item */}
                       <td className="px-3 py-3 text-navy whitespace-nowrap">₱{product.unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</td>
                       {/* Stock Qty */}
-                      <td className="px-3 py-3 whitespace-nowrap">
-                        <span className={`px-2 py-1 rounded text-xs font-bold text-white ${
+                      <td className="px-3 py-3 whitespace-nowrap text-center">
+                        <span className={`inline-block px-2 py-1 rounded text-xs font-bold text-white ${
                           product.batchQuantity / product.reorderPoint < 0.5 ? "bg-red" :
-                          product.batchQuantity / product.reorderPoint < 1 ? "bg-yellow-500" :
+                          product.batchQuantity / product.reorderPoint < 1 ? "bg-gold" :
                           "bg-green"
                         }`}>
                           {product.batchQuantity.toLocaleString()}
