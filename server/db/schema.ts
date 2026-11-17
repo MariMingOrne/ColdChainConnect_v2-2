@@ -94,6 +94,7 @@ export const products = pgTable("products", {
   batch_tracking_enabled: boolean("batch_tracking_enabled").default(true),
   manufacturer: text("manufacturer"),
   reorder_point: integer("reorder_point"),
+  weight: decimal("weight", { precision: 10, scale: 2 }),
   is_discontinued: boolean("is_discontinued").default(false),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),

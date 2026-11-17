@@ -9,6 +9,7 @@ import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
 
 interface InventoryProduct {
   id: string;
@@ -62,6 +63,7 @@ export function Inventory() {
   const [startBatchCreation, setStartBatchCreation] = useState(false);
   const [batchSearch, setBatchSearch] = useState("");
   const [batchCreatedSince, setBatchCreatedSince] = useState("");
+  const [inventorySort, setInventorySort] = useState<SortState<"name" | "stock">>(null);
   const [showExcelImport, setShowExcelImport] = useState(false);
 
   const emptyForm = (): InventoryProduct => ({
@@ -181,9 +183,16 @@ export function Inventory() {
     p.description.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const totalPages = Math.ceil(filteredBatchProducts.length / itemsPerPage);
+  const sortedBatchProducts = [...filteredBatchProducts].sort((a, b) => {
+    if (!inventorySort) return 0;
+    const direction = inventorySort.direction === "asc" ? 1 : -1;
+    const value = (p: typeof a) => (inventorySort.key === "name" ? p.description : p.batchQuantity);
+    return compareValues(value(a), value(b)) * direction;
+  });
+
+  const totalPages = Math.ceil(sortedBatchProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedBatchProducts = filteredBatchProducts.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedBatchProducts = sortedBatchProducts.slice(startIndex, startIndex + itemsPerPage);
 
   const suppliers = Array.from(new Set(products.map((p) => p.supplierId))).sort();
 
@@ -453,14 +462,11 @@ export function Inventory() {
           <Table className="w-full">
             <thead>
               <tr>
-                {["Name", "Cost Per Item"].map((col) => (
-                  <th key={col} className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                    {col}
-                  </th>
-                ))}
-                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-center border-b border-border whitespace-nowrap">
-                  Stock Qty
+                <SortableHeader label="Name" sortKey="name" sort={inventorySort} onSort={setInventorySort} />
+                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
+                  Cost Per Item
                 </th>
+                <SortableHeader label="Stock Qty" sortKey="stock" sort={inventorySort} onSort={setInventorySort} align="center" />
                 {selectedBatchId === "batch-all" && (
                   <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
                     Reorder Level

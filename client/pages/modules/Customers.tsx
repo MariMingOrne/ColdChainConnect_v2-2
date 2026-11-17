@@ -6,6 +6,7 @@ import { ArrowLeft, Download, RefreshCw } from "lucide-react";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -350,6 +351,8 @@ export function Customers({ onBack }: CustomersProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [districtFilter, setDistrictFilter] = useState("");
+  const [customerSort, setCustomerSort] = useState<SortState<"store" | "district">>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -451,15 +454,28 @@ export function Customers({ onBack }: CustomersProps) {
       .catch(() => setTruckDistricts([]));
   }, [token]);
 
+  const customerDistricts = useMemo(
+    () => [...new Set(customers.map((c) => c.district).filter((d): d is string => Boolean(d)))].sort(),
+    [customers]
+  );
+
   const filteredCustomers = useMemo(
     () =>
-      customers.filter(
-        (customer) =>
-          customer.store_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          customer.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          customer.contact_person?.toLowerCase().includes(searchQuery.toLowerCase())
-      ),
-    [customers, searchQuery]
+      customers
+        .filter(
+          (customer) =>
+            (customer.store_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              customer.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              customer.contact_person?.toLowerCase().includes(searchQuery.toLowerCase())) &&
+            (!districtFilter || customer.district === districtFilter)
+        )
+        .sort((a, b) => {
+          if (!customerSort) return 0;
+          const direction = customerSort.direction === "asc" ? 1 : -1;
+          const value = (c: Customer) => (customerSort.key === "store" ? c.store_name : c.district);
+          return compareValues(value(a), value(b)) * direction;
+        }),
+    [customers, searchQuery, districtFilter, customerSort]
   );
 
   const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
@@ -687,6 +703,19 @@ export function Customers({ onBack }: CustomersProps) {
           }}
           placeholder="Search by store, location, or contact person…"
         />
+        <select
+          value={districtFilter}
+          onChange={(event) => {
+            setDistrictFilter(event.target.value);
+            setCurrentPage(1);
+          }}
+          className="rounded-lg border border-border bg-white px-3 py-2 text-sm text-navy"
+        >
+          <option value="">All districts</option>
+          {customerDistricts.map((district) => (
+            <option key={district} value={district}>{district}</option>
+          ))}
+        </select>
 
         <button
           onClick={openAddModal}
@@ -712,9 +741,7 @@ export function Customers({ onBack }: CustomersProps) {
           <Table className="w-full">
             <TableHeader>
               <TableRow>
-                <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap">
-                  Store Name
-                </TableHead>
+                <SortableHeader label="Store Name" sortKey="store" sort={customerSort} onSort={setCustomerSort} />
                 <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap">
                   Delivery Address
                 </TableHead>
@@ -724,9 +751,7 @@ export function Customers({ onBack }: CustomersProps) {
                 <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap hidden md:table-cell">
                   Contact Info
                 </TableHead>
-                <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap">
-                  Discounts
-                </TableHead>
+                <SortableHeader label="District" sortKey="district" sort={customerSort} onSort={setCustomerSort} />
                 <TableHead style={{ width: '120px' }} className="sticky right-0 z-10 border-b border-border bg-navy-mid px-3 py-3 text-center font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap shadow-left">
                   Actions
                 </TableHead>
@@ -757,14 +782,8 @@ export function Customers({ onBack }: CustomersProps) {
                     <TableCell className="hidden px-3 py-3 text-navy md:table-cell">
                       {customer.contact_info || <span className="text-muted">—</span>}
                     </TableCell>
-                    <TableCell className="px-3 py-3 whitespace-nowrap">
-                      {customer.discounts && customer.discounts.length > 0 ? (
-                        <span className="inline-block rounded bg-green-50 px-2 py-0.5 text-xs font-bold text-green-700">
-                          {formatPercent(totalDiscountRate(customer.discounts))}% · {customer.discounts.length}
-                        </span>
-                      ) : (
-                        <span className="text-muted">—</span>
-                      )}
+                    <TableCell className="px-3 py-3 whitespace-nowrap text-navy">
+                      {customer.district || <span className="text-muted">—</span>}
                     </TableCell>
                     <TableCell style={{ width: '120px' }} className="sticky right-0 z-10 px-3 py-3 bg-white border-l border-border shadow-left">
                       <ActionButtons

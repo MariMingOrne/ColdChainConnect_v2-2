@@ -3,6 +3,7 @@ import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useInventoryContext } from "../../context/InventoryContext";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
 import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +27,7 @@ interface ProductForm {
   manufacturer?: string;
   is_discontinued: boolean;
   reorder_point?: number;
+  weight?: number;
 }
 
 const productExcelColumns: ExcelColumn[] = [
@@ -187,6 +189,19 @@ function ProductPage({
             <p className="text-xs text-muted mt-1">Stock level at which inventory shows as needing reorder.</p>
           </div>
 
+          <div>
+            <label className="block text-xs font-semibold text-navy mb-1">Weight (kg)</label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.weight ?? ""}
+              onChange={(e) => setFormData({ ...formData, weight: e.target.value === "" ? undefined : Number(e.target.value) })}
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
+              placeholder="e.g., 25"
+            />
+          </div>
+
           <div className="flex items-center gap-3">
             <Input
               type="checkbox"
@@ -294,6 +309,7 @@ export function Pricing({ onBack }: PricingProps) {
   // Shared with Inventory via context
   const { searchQuery, setSearchQuery } = useInventoryContext();
   const [currentPage, setCurrentPage] = useState(1);
+  const [productSort, setProductSort] = useState<SortState<"name" | "price" | "status">>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showDeleteButtons, setShowDeleteButtons] = useState(false);
@@ -309,6 +325,7 @@ export function Pricing({ onBack }: PricingProps) {
     manufacturer: "",
     is_discontinued: false,
     reorder_point: 0,
+    weight: undefined,
   });
   const { token } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -367,6 +384,7 @@ export function Pricing({ onBack }: PricingProps) {
       sku: product.sku ?? "",
       price: Number(product.price),
       reorder_point: product.reorder_point ?? 0,
+      weight: product.weight != null ? Number(product.weight) : undefined,
       manufacturer: product.manufacturer ?? "",
       is_discontinued: product.is_discontinued ?? false,
       batch_tracking_enabled: product.batch_tracking_enabled,
@@ -383,15 +401,25 @@ export function Pricing({ onBack }: PricingProps) {
     p.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (!productSort) return 0;
+    const direction = productSort.direction === "asc" ? 1 : -1;
+    const value = (p: Product) =>
+      productSort.key === "name" ? p.name
+      : productSort.key === "price" ? Number(p.price)
+      : p.is_discontinued ? "Discontinued" : "Active";
+    return compareValues(value(a), value(b)) * direction;
+  });
+
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const paginatedProducts = filteredProducts.slice(
+  const paginatedProducts = sortedProducts.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
   const openAddModal = () => {
     setEditingProduct(null);
-    setFormData({ name: "", sku: "", price: "", image_filename: "", manufacturer: "", is_discontinued: false, reorder_point: 0 });
+    setFormData({ name: "", sku: "", price: "", image_filename: "", manufacturer: "", is_discontinued: false, reorder_point: 0, weight: undefined });
     setIsModalOpen(true);
   };
 
@@ -405,6 +433,7 @@ export function Pricing({ onBack }: PricingProps) {
       manufacturer: (product as any).manufacturer ?? "",
       is_discontinued: (product as any).is_discontinued ?? false,
       reorder_point: (product as any).reorder_point ?? 0,
+      weight: product.weight != null ? Number(product.weight) : undefined,
     });
     setIsModalOpen(true);
   };
@@ -579,18 +608,15 @@ export function Pricing({ onBack }: PricingProps) {
                 <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
                   Image
                 </th>
-                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                  Product Name
-                </th>
-                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                  Unit Price
-                </th>
+                <SortableHeader label="Product Name" sortKey="name" sort={productSort} onSort={setProductSort} />
+                <SortableHeader label="Unit Price" sortKey="price" sort={productSort} onSort={setProductSort} />
                 <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
                   Reorder Level
                 </th>
-                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap hidden md:table-cell">
-                  Status
+                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
+                  Weight
                 </th>
+                <SortableHeader label="Status" sortKey="status" sort={productSort} onSort={setProductSort} className="hidden md:table-cell" />
                 <th style={{ width: '120px' }} className="sticky right-0 z-10 bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-center border-b border-border whitespace-nowrap shadow-left">
                   Actions
                 </th>
@@ -630,6 +656,7 @@ export function Pricing({ onBack }: PricingProps) {
                               { label: "SKU", value: product.sku || "—" },
                               { label: "Unit Price", value: `₱${parseFloat(product.price ?? "0").toLocaleString("en-PH", { minimumFractionDigits: 2 })}` },
                               { label: "Reorder Level", value: product.reorder_point?.toLocaleString() || "—" },
+                              { label: "Weight", value: product.weight != null ? `${Number(product.weight).toLocaleString()} kg` : "—" },
                               { label: "Status", value: product.is_discontinued ? "Discontinued" : "Active" },
                               { label: "Manufacturer", value: product.manufacturer || "—" },
                               { label: "Batch Tracking", value: product.batch_tracking_enabled ? "Enabled" : "Disabled" },
@@ -649,6 +676,9 @@ export function Pricing({ onBack }: PricingProps) {
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap font-semibold text-navy">
                       {product.reorder_point?.toLocaleString() || "—"}
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap text-navy">
+                      {product.weight != null ? `${Number(product.weight).toLocaleString()} kg` : "—"}
                     </td>
                     <td className="px-3 py-3 hidden md:table-cell">
                       <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${product.is_discontinued ? "bg-red text-white" : "bg-green text-white"}`}>

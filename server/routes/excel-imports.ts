@@ -61,6 +61,7 @@ export const importProducts: RequestHandler = async (req: AuthRequest, res) => {
       ...product,
       name: product.name!,
       price: String(product.price!),
+      weight: product.weight != null ? String(product.weight) : null,
       batch_tracking_enabled: product.batch_tracking_enabled ?? true,
     }));
     await db.transaction(async (tx) => {
