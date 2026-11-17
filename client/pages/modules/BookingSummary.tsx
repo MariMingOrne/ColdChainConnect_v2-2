@@ -600,6 +600,7 @@ export function BookingSummary() {
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         placeholder="Search by order ID or customer ID…"
+        className="!justify-start"
         filters={[
           {
             name: "statusFilter",
