@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { MfaChallengeResponse, MfaSetupResponse } from "@shared/api";
 import { MfaStep } from "../components/auth/MfaStep";
@@ -7,6 +8,7 @@ import { MfaStep } from "../components/auth/MfaStep";
 export function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [challenge, setChallenge] = useState<MfaChallengeResponse | null>(null);
@@ -83,9 +85,6 @@ export function Login() {
     <div className="min-h-screen bg-off-white flex flex-col md:flex-row">
       {/* Left Side - Branding */}
       <div className="w-full md:w-5/12 bg-navy flex flex-col items-center justify-center gap-6 px-8 py-12 relative overflow-hidden">
-        {/* Decorative circles */}
-        <div className="absolute top-0 right-0 w-80 h-80 rounded-full bg-white/5 -translate-y-1/3 translate-x-1/3"></div>
-        <div className="absolute bottom-0 left-0 w-56 h-56 rounded-full bg-white/4 translate-y-1/3 -translate-x-1/3"></div>
 
         {/* Logo Ring */}
         <div className="w-18 h-18 rounded-full flex items-center justify-center relative z-10 box-shadow-lg overflow-hidden">
@@ -103,23 +102,19 @@ export function Login() {
         </div>
 
         {/* Tagline */}
-        <div className="font-rajdhani text-lg letter-spacing-wider text-center text-off-white text-uppercase relative z-10">
-          <div>Cold Chain Connect</div>
-          <div>System</div>
+        <div className="text-center text-off-white relative z-10">
+          <div className="font-rajdhani text-lg tracking-wider whitespace-nowrap">Cold Chain Connect</div>
+          <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-white/65">System</div>
         </div>
       </div>
 
       {/* Right Side - Login Form */}
       <div className="w-full md:flex-1 flex items-center justify-center px-6 py-8 md:py-12">
-        <div className="bg-white rounded-2xl px-8 md:px-10 py-8 md:py-10 w-full max-w-sm md:max-w-md flex flex-col items-center gap-6 shadow-lg md:shadow-xl border border-border">
-          {/* Card Logo */}
-          <div className="w-13 h-13 rounded-full flex items-center justify-center overflow-hidden">
-            <img src="https://cdn.builder.io/api/v1/image/assets%2F95235f61d85340cc8929dd5e2ec9cafe%2Fa05b3bb956c74b3eb3761a234d9f49da?format=webp&width=800&height=1200" alt="Cold Chain Connect Logo" className="w-full h-full object-cover" />
+        <div className="bg-white rounded-2xl px-8 md:px-10 py-6 md:py-7 w-full max-w-sm md:max-w-md flex flex-col items-center gap-5 shadow-lg md:shadow-xl border border-border">
+          <div className="text-center">
+            <h2 className="font-rajdhani text-2xl font-semibold text-navy">Welcome Back</h2>
+            <p className="mt-1 text-sm text-gray-500">Sign in to continue</p>
           </div>
-
-          <h2 className="font-rajdhani text-2xl text-navy letter-spacing-wider">
-            COLD CHAIN CONNECT
-          </h2>
 
           {challenge ? (
             <MfaStep
@@ -149,7 +144,7 @@ export function Login() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   disabled={isLoading}
-                  className="w-full px-3.5 py-2.5 border-2 border-blue-200 rounded-lg text-sm text-navy bg-blue-50 transition-colors focus:outline-none focus:border-accent disabled:opacity-50"
+                  className="w-full px-3.5 py-2.5 border border-[#CBD5E1] rounded-lg text-sm text-navy bg-white transition-colors focus:outline-none focus:border-accent disabled:opacity-50"
                 />
               </div>
 
@@ -158,14 +153,26 @@ export function Login() {
                 <label className="block text-xs font-semibold text-navy mb-1.5 letter-spacing-tight">
                   Password
                 </label>
-                <input
-                  type="password"
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
-                  className="w-full px-3.5 py-2.5 border-2 border-blue-200 rounded-lg text-sm text-navy bg-blue-50 transition-colors focus:outline-none focus:border-accent disabled:opacity-50"
-                />
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isLoading}
+                    className="w-full px-3.5 py-2.5 pr-11 border border-[#CBD5E1] rounded-lg text-sm text-navy bg-white transition-colors focus:outline-none focus:border-accent disabled:opacity-50"
+                  />
+                  <button
+                    type="button"
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    title={showPassword ? "Hide password" : "Show password"}
+                    onClick={() => setShowPassword((visible) => !visible)}
+                    disabled={isLoading}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-navy disabled:opacity-50"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
               </div>
 
               {/* Login Button */}
@@ -177,7 +184,7 @@ export function Login() {
                 {isLoading ? "Logging in..." : "Login"}
               </button>
 
-              <div className="text-center text-xs text-gray-500 mt-1">
+              <div className="text-center text-xs text-gray-500">
                 Forgot credentials? Contact Administrator
               </div>
             </form>
