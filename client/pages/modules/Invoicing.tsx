@@ -316,15 +316,15 @@ export function Invoicing() {
 
   return (
     <div className="flex-1 flex flex-col p-6 gap-6">
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="page-header">
         <div>
-          <h1 className="text-3xl font-bold text-navy">Receipts</h1>
-          <p className="text-gray-600">Print and review delivery receipts</p>
+          <h1 className="page-title">Receipts</h1>
+          <p className="page-subtitle">Print and review delivery receipts</p>
         </div>
         <button
           onClick={handleRefresh}
           disabled={isRefreshing}
-          className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-navy hover:bg-off-white disabled:opacity-50 flex items-center gap-2 w-fit"
+          className="btn-ghost"
         >
           <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
           Refresh
