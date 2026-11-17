@@ -63,7 +63,7 @@ export function Inventory() {
   const [startBatchCreation, setStartBatchCreation] = useState(false);
   const [batchSearch, setBatchSearch] = useState("");
   const [batchCreatedSince, setBatchCreatedSince] = useState("");
-  const [inventorySort, setInventorySort] = useState<SortState<"name" | "stock">>(null);
+  const [inventorySort, setInventorySort] = useState<SortState<"name" | "cost" | "stock" | "reorder" | "expiry">>(null);
   const [showExcelImport, setShowExcelImport] = useState(false);
 
   const emptyForm = (): InventoryProduct => ({
@@ -186,7 +186,7 @@ export function Inventory() {
   const sortedBatchProducts = [...filteredBatchProducts].sort((a, b) => {
     if (!inventorySort) return 0;
     const direction = inventorySort.direction === "asc" ? 1 : -1;
-    const value = (p: typeof a) => (inventorySort.key === "name" ? p.description : p.batchQuantity);
+    const value = (p: typeof a) => ({ name: p.description, cost: p.unitPrice, stock: p.batchQuantity, reorder: p.reorderPoint, expiry: p.batchExpiryDate }[inventorySort.key]);
     return compareValues(value(a), value(b)) * direction;
   });
 
@@ -465,19 +465,13 @@ export function Inventory() {
             <thead>
               <tr>
                 <SortableHeader label="Name" sortKey="name" sort={inventorySort} onSort={setInventorySort} />
-                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                  Cost Per Item
-                </th>
+                <SortableHeader label="Cost Per Item" sortKey="cost" sort={inventorySort} onSort={setInventorySort} align="right" />
                 <SortableHeader label="Stock Qty" sortKey="stock" sort={inventorySort} onSort={setInventorySort} align="center" />
                 {selectedBatchId === "batch-all" && (
-                  <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                    Reorder Level
-                  </th>
+                  <SortableHeader label="Reorder Level" sortKey="reorder" sort={inventorySort} onSort={setInventorySort} align="right" />
                 )}
                 {selectedBatchId !== "batch-all" && (
-                  <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                    Expiry Date
-                  </th>
+                  <SortableHeader label="Expiry Date" sortKey="expiry" sort={inventorySort} onSort={setInventorySort} />
                 )}
                 <th style={{ width: '120px' }} className="sticky right-0 z-10 bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-center border-b border-border whitespace-nowrap shadow-left">
                   Actions

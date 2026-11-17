@@ -308,7 +308,7 @@ export function Pricing({ onBack }: PricingProps) {
   // Shared with Inventory via context
   const { searchQuery, setSearchQuery } = useInventoryContext();
   const [currentPage, setCurrentPage] = useState(1);
-  const [productSort, setProductSort] = useState<SortState<"name" | "price" | "status">>(null);
+  const [productSort, setProductSort] = useState<SortState<"image" | "name" | "price" | "reorder" | "weight" | "status">>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [showDeleteButtons, setShowDeleteButtons] = useState(false);
@@ -404,8 +404,11 @@ export function Pricing({ onBack }: PricingProps) {
     if (!productSort) return 0;
     const direction = productSort.direction === "asc" ? 1 : -1;
     const value = (p: Product) =>
-      productSort.key === "name" ? p.name
+      productSort.key === "image" ? p.image_filename
+      : productSort.key === "name" ? p.name
       : productSort.key === "price" ? Number(p.price)
+      : productSort.key === "reorder" ? Number(p.reorder_point)
+      : productSort.key === "weight" ? Number(p.weight)
       : p.is_discontinued ? "Discontinued" : "Active";
     return compareValues(value(a), value(b)) * direction;
   });
@@ -602,17 +605,11 @@ export function Pricing({ onBack }: PricingProps) {
           <Table className="w-full">
             <thead>
               <tr>
-                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                  Image
-                </th>
+                <SortableHeader label="Image" sortKey="image" sort={productSort} onSort={setProductSort} />
                 <SortableHeader label="Product Name" sortKey="name" sort={productSort} onSort={setProductSort} />
                 <SortableHeader label="Unit Price" sortKey="price" sort={productSort} onSort={setProductSort} />
-                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                  Reorder Level
-                </th>
-                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                  Weight
-                </th>
+                <SortableHeader label="Reorder Level" sortKey="reorder" sort={productSort} onSort={setProductSort} />
+                <SortableHeader label="Weight" sortKey="weight" sort={productSort} onSort={setProductSort} />
                 <SortableHeader label="Status" sortKey="status" sort={productSort} onSort={setProductSort} className="hidden md:table-cell" />
                 <th style={{ width: '120px' }} className="sticky right-0 z-10 bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-center border-b border-border whitespace-nowrap shadow-left">
                   Actions

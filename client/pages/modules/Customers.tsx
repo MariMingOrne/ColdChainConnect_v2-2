@@ -351,7 +351,7 @@ export function Customers({ onBack }: CustomersProps) {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [districtFilter, setDistrictFilter] = useState("");
-  const [customerSort, setCustomerSort] = useState<SortState<"store" | "district">>(null);
+  const [customerSort, setCustomerSort] = useState<SortState<"store" | "address" | "contact" | "contactInfo" | "district">>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -471,7 +471,7 @@ export function Customers({ onBack }: CustomersProps) {
         .sort((a, b) => {
           if (!customerSort) return 0;
           const direction = customerSort.direction === "asc" ? 1 : -1;
-          const value = (c: Customer) => (customerSort.key === "store" ? c.store_name : c.district);
+          const value = (c: Customer) => ({ store: c.store_name, address: formatCustomerAddress(c), contact: c.contact_person, contactInfo: c.contact_info, district: c.district })[customerSort.key];
           return compareValues(value(a), value(b)) * direction;
         }),
     [customers, searchQuery, districtFilter, customerSort]
@@ -740,15 +740,9 @@ export function Customers({ onBack }: CustomersProps) {
             <TableHeader>
               <TableRow>
                 <SortableHeader label="Store Name" sortKey="store" sort={customerSort} onSort={setCustomerSort} />
-                <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap">
-                  Delivery Address
-                </TableHead>
-                <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap hidden md:table-cell">
-                  Contact Person
-                </TableHead>
-                <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap hidden md:table-cell">
-                  Contact Info
-                </TableHead>
+                <SortableHeader label="Delivery Address" sortKey="address" sort={customerSort} onSort={setCustomerSort} />
+                <SortableHeader label="Contact Person" sortKey="contact" sort={customerSort} onSort={setCustomerSort} className="hidden md:table-cell" />
+                <SortableHeader label="Contact Info" sortKey="contactInfo" sort={customerSort} onSort={setCustomerSort} className="hidden md:table-cell" />
                 <SortableHeader label="District" sortKey="district" sort={customerSort} onSort={setCustomerSort} />
                 <TableHead style={{ width: '120px' }} className="sticky right-0 z-10 border-b border-border bg-navy-mid px-3 py-3 text-center font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap shadow-left">
                   Actions

@@ -281,8 +281,9 @@
   padding: 0.75rem 1rem;
 }
 
+.data-table-frame table thead th,
 .data-table thead th {
-  background-color: hsl(var(--navy));
+  background-color: #101f5e;
   color: #fff;
   font-size: 0.875rem;
   font-weight: 700;
@@ -294,12 +295,13 @@
   text-align: center;
 }
 
+.data-table-frame table thead th,
 .data-table thead th {
-  background: hsl(var(--off-white));
+  background: #101f5e;
   border-bottom: 1px solid hsl(var(--border));
-  color: hsl(var(--muted));
-  font-size: 0.75rem;
-  font-weight: 600;
+  color: #fff;
+  font-size: 0.875rem;
+  font-weight: 700;
   letter-spacing: 0.025em;
   text-transform: uppercase;
   white-space: nowrap;
