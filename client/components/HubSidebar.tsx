@@ -88,7 +88,7 @@ export function HubSidebar({ modules, basePath, agentMode = false }: HubSidebarP
       <>
         <nav
           aria-label="Agent navigation"
-          className="agent-bottom-nav fixed bottom-0 left-0 right-0 z-40 flex h-16 items-stretch justify-around border-t border-white/20 bg-navy shadow-[0_-8px_24px_rgba(15,23,42,0.24)]"
+          className="agent-bottom-nav fixed bottom-0 left-0 right-0 z-40 flex h-16 items-stretch justify-around border-t border-white/20 bg-navy shadow-lg"
         >
           {modules.slice(0, half).map(renderModule)}
           <div className="flex flex-1 flex-col items-center justify-center">

@@ -103,7 +103,7 @@ export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScanner
       <div className="flex flex-1 flex-col items-center justify-center gap-5 overflow-y-auto px-6 py-4">
         <div className="relative w-full max-w-md overflow-hidden rounded-xl border-2 border-accent-2 bg-black">
           <video ref={videoRef} autoPlay muted playsInline className="aspect-[4/3] w-full object-cover" />
-          <div className="pointer-events-none absolute inset-[15%] rounded-xl border-2 border-white/90 shadow-[0_0_0_999px_rgba(0,0,0,0.25)]" />
+          <div className="pointer-events-none absolute inset-[15%] rounded-xl border-2 border-white/90 shadow-[0_0_0_999px_hsl(var(--foreground)/0.25)]" />
         </div>
         <p className="max-w-md text-center text-sm text-white/80">
           {isDecodingImage ? "Scanning selected image…" : `Point the ${facingMode === "environment" ? "rear" : "front"} camera at a pallet or order barcode.`}

@@ -233,7 +233,7 @@ export function DeliveryHistory() {
                 disabled={page === 1}
                 className="px-3 py-1 border border-border rounded text-xs font-semibold disabled:opacity-40 hover:bg-card"
               >
-                ← Prev
+                Previous
               </button>
               <span className="px-3 py-1 text-xs font-semibold text-foreground">{page} / {totalPages}</span>
               <button
@@ -241,7 +241,7 @@ export function DeliveryHistory() {
                 disabled={page === totalPages}
                 className="px-3 py-1 border border-border rounded text-xs font-semibold disabled:opacity-40 hover:bg-card"
               >
-                Next →
+                Next
               </button>
             </div>
           </div>

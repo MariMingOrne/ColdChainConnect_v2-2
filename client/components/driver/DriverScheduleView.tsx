@@ -60,7 +60,7 @@ export function DriverScheduleView({ driverId }: { driverId?: string }) {
           onClick={() => setDate((current) => shiftDate(current, -1))}
           className="px-3 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-accent text-foreground"
         >
-          ‹ Prev
+          Previous
         </button>
         <input
           type="date"
@@ -73,7 +73,7 @@ export function DriverScheduleView({ driverId }: { driverId?: string }) {
           onClick={() => setDate((current) => shiftDate(current, 1))}
           className="px-3 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-accent text-foreground"
         >
-          Next ›
+          Next
         </button>
       </div>
 

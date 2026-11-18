@@ -1,5 +1,9 @@
 /* Hallmark · checked: 2026-11-18 · genre: modern-minimal (inferred) · shape: app screen
  * design system: ACDP navy + gold, refined; light and dark themes; tokens below are the only colour source
+ * waive 19: "—" marks an empty table cell (dashboard-design rule: no fake 0 for missing data)
+ * waive 10a: sidebar collapse animates width (shadcn sidebar primitive and AdminNavigation)
+ * waive 67: OTP code input and shadcn menu shortcut hints are tracked on purpose (digit groups)
+ * open 4: some bordered chips/rows sit inside cards (Inventory, Delivery, AddOrderModal); listed for follow-up
  * built: the project · redesign: polish · v2.0.0 */
 /** @import must precede all other statements */
 @import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap");
@@ -62,8 +66,8 @@
     --chrome-active: 236 68% 46%;
 
     /* chart series: validated with dataviz validate_palette.js (light, card surface) */
-    --chart-1: #3d52c9;
-    --chart-2: #b07816;
+    --chart-1: hsl(232 56% 51%);
+    --chart-2: hsl(38 78% 39%);
 
     --scrollbar-thumb: 225 15% 78%;
     --scrollbar-thumb-hover: 225 12% 62%;
@@ -135,8 +139,8 @@
     --chrome-active: 236 62% 50%;
 
     /* chart series: validated against the dark card surface (#151a2c) */
-    --chart-1: #6f82ee;
-    --chart-2: #b9862c;
+    --chart-1: hsl(230 79% 69%);
+    --chart-2: hsl(38 62% 45%);
 
     --scrollbar-thumb: 230 15% 30%;
     --scrollbar-thumb-hover: 230 15% 42%;

@@ -594,7 +594,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
             disabled={currentPage === 1}
             className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            ← Prev
+            Previous
           </button>
           <span className="px-3 py-1 text-xs font-semibold text-foreground bg-card rounded border border-border">
             {currentPage}
@@ -604,7 +604,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
             disabled={currentPage === totalPages || totalPages === 0}
             className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Next →
+            Next
           </button>
         </div>
       </div>

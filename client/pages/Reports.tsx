@@ -241,7 +241,6 @@ export function Reports() {
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-bold text-accent-2">Analytics</p>
             <h1 className="mt-1 text-3xl font-bold text-foreground">Reports</h1>
             <p className="mt-1 text-sm text-muted-foreground">A clear snapshot of sales, customers, and inventory.</p>
           </div>
