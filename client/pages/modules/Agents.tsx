@@ -383,6 +383,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
           method: "PATCH",
           headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
           body: JSON.stringify({
+            username: formData.username.trim() || undefined,
             full_name: formData.full_name,
             email: formData.email,
             contact_info: formData.contact_info,
@@ -392,7 +393,10 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
             is_active: formData.is_active,
           }),
         });
-        if (!agentRes.ok) throw new Error("Failed to update agent");
+        if (!agentRes.ok) {
+          const err = await agentRes.json().catch(() => null);
+          throw new Error(err?.error || "Failed to update agent");
+        }
         const saved = await agentRes.json();
 
         // Update password if provided
