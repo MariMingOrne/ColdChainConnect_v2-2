@@ -22,26 +22,26 @@ export function OrderTotalsBreakdown({ booking, products }: OrderTotalsBreakdown
 
   return (
     <div className="border-t border-border pt-4">
-      <h3 className="text-sm font-semibold text-navy mb-3">Order Totals</h3>
+      <h3 className="text-sm font-semibold text-foreground mb-3">Order Totals</h3>
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
-          <span className="text-muted">Gross</span>
-          <span className="tabular-nums text-navy">{formatPeso(gross)}</span>
+          <span className="text-muted-foreground">Gross</span>
+          <span className="tabular-nums text-foreground">{formatPeso(gross)}</span>
         </div>
         {discounts.length === 0 && (
-          <p className="text-xs text-muted italic">No customer discounts</p>
+          <p className="text-xs text-muted-foreground italic">No customer discounts</p>
         )}
         {discounts.map((d, idx) => (
           <div key={d.id ?? idx} className="flex justify-between">
-            <span className="text-muted">
+            <span className="text-muted-foreground">
               {d.label} ({formatRate(d.rate)})
             </span>
             <span className="tabular-nums text-red">-{formatPeso(gross * Number(d.rate))}</span>
           </div>
         ))}
         <div className="flex justify-between border-t border-border pt-2">
-          <span className="font-semibold text-navy">Net total</span>
-          <span className="font-bold tabular-nums text-navy">{formatPeso(net)}</span>
+          <span className="font-semibold text-foreground">Net total</span>
+          <span className="font-bold tabular-nums text-foreground">{formatPeso(net)}</span>
         </div>
       </div>
     </div>

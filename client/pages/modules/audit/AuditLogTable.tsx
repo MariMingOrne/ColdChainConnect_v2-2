@@ -4,7 +4,7 @@ import { AuditLog } from "@shared/api";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { useToast } from "@/hooks/use-toast";
 import { Table } from "@/components/ui/table";
-import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
+import { SortableHeader, SortState, compareValues, newestFirst } from "@/components/SortableHeader";
 import { describeLog, getActionBadgeClass, getActionLabel } from "./auditDescribe";
 
 interface AuditLogTableProps {
@@ -57,7 +57,7 @@ export function AuditLogTable({ logs, onView }: AuditLogTableProps) {
   }, [logs, query, actionFilter, resourceFilter]);
 
   const sortedLogs = useMemo(() => {
-    if (!sort) return filteredLogs;
+    if (!sort) return newestFirst(filteredLogs);
     const value = (log: AuditLog) => ({ timestamp: log.created_at, user: log.user_name, action: getActionLabel(log.action), description: describeLog(log), resource: log.resource_type, resourceId: log.resource_id })[sort.key];
     return [...filteredLogs].sort((a, b) => compareValues(value(a), value(b)) * (sort.direction === "asc" ? 1 : -1));
   }, [filteredLogs, sort]);
@@ -101,13 +101,13 @@ export function AuditLogTable({ logs, onView }: AuditLogTableProps) {
                 <SortableHeader label="Description" sortKey="description" sort={sort} onSort={setSort} />
                 <SortableHeader label="Resource" sortKey="resource" sort={sort} onSort={setSort} />
                 <SortableHeader label="Resource ID" sortKey="resourceId" sort={sort} onSort={setSort} />
-                <th className={`${HEAD_CLASS} bg-[#101f5e] text-right text-sm font-bold text-white`}>Details</th>
+                <th className={`${HEAD_CLASS} bg-muted text-right text-xs font-semibold text-muted-foreground`}>Details</th>
               </tr>
             </thead>
             <tbody>
               {sortedLogs.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-muted">
+                  <td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">
                     {logs.length === 0 ? "No activity yet" : "No entries match your search"}
                   </td>
                 </tr>
@@ -115,25 +115,25 @@ export function AuditLogTable({ logs, onView }: AuditLogTableProps) {
                 sortedLogs.map((log) => (
                   <tr
                     key={log.id}
-                    className="border-b border-border transition-colors hover:bg-off-white/50"
+                    className="border-b border-border transition-colors hover:bg-accent/50"
                   >
-                    <td className="px-3 py-3 whitespace-nowrap text-navy">
+                    <td className="px-3 py-3 whitespace-nowrap text-foreground">
                       {new Date(log.created_at).toLocaleString()}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap">
-                      <div className="font-semibold text-navy">{log.user_name || "Unknown user"}</div>
-                      <div className="font-mono text-xs text-muted">{log.user_id.slice(0, 8)}</div>
+                      <div className="font-semibold text-foreground">{log.user_name || "Unknown user"}</div>
+                      <div className="font-mono text-xs text-muted-foreground">{log.user_id.slice(0, 8)}</div>
                     </td>
                     <td className="px-3 py-3">
                       <span className={`inline-block rounded-full px-2 py-0.5 text-xs font-bold ${getActionBadgeClass(log.action)}`}>
                         {getActionLabel(log.action)}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-navy">{describeLog(log)}</td>
-                    <td className="px-3 py-3 capitalize text-navy whitespace-nowrap">
+                    <td className="px-3 py-3 text-foreground">{describeLog(log)}</td>
+                    <td className="px-3 py-3 capitalize text-foreground whitespace-nowrap">
                       {log.resource_type.replace(/_/g, " ")}
                     </td>
-                    <td className="px-3 py-3 font-mono text-xs text-muted whitespace-nowrap">
+                    <td className="px-3 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
                       {log.resource_id ? (
                         <span className="inline-flex items-center gap-1.5" title={log.resource_id}>
                           <span>#{log.resource_id.slice(0, 6).toUpperCase()}</span>
@@ -141,7 +141,7 @@ export function AuditLogTable({ logs, onView }: AuditLogTableProps) {
                             type="button"
                             onClick={() => void copyResourceId(log)}
                             aria-label={`Copy full ID ${log.resource_id}`}
-                            className="rounded p-1 text-gray-500 hover:bg-off-white hover:text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2"
+                            className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2"
                           >
                             {copiedId === log.id ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
                           </button>
@@ -152,7 +152,7 @@ export function AuditLogTable({ logs, onView }: AuditLogTableProps) {
                       <button
                         onClick={() => onView(log)}
                         aria-label="View details"
-                        className="inline-flex items-center justify-center rounded-lg border border-border bg-white p-2 text-navy transition-colors hover:bg-off-white"
+                        className="inline-flex items-center justify-center rounded-lg border border-border bg-card p-2 text-foreground transition-colors hover:bg-accent"
                       >
                         <Eye className="h-4 w-4" />
                       </button>
@@ -164,7 +164,7 @@ export function AuditLogTable({ logs, onView }: AuditLogTableProps) {
           </Table>
         </div>
 
-        <div className="border-t border-border bg-off-white/50 px-6 py-4 text-xs text-muted">
+        <div className="border-t border-border bg-muted/50 px-6 py-4 text-xs text-muted-foreground">
           Showing {filteredLogs.length} of {logs.length} entries
         </div>
       </div>

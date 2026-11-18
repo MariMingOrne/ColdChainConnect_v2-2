@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { AgentStopRow } from "@/components/AgentStopRow";
-import { ArrowLeft, CalendarDays, Clock3, History, RefreshCw, Search, Truck as TruckIcon, UserRound } from "lucide-react";
+import { ArrowLeft, CalendarDays, Clock3, History, Search, Truck as TruckIcon, UserRound } from "lucide-react";
 import type { AgentScheduleDelivery, AgentScheduleResponse, AgentScheduleStop } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -78,7 +79,6 @@ export function AgentDeliverySchedule() {
 
   const fetchSchedule = async () => {
     if (!token) return;
-    setIsLoading(true);
     setError("");
 
     try {
@@ -99,6 +99,7 @@ export function AgentDeliverySchedule() {
   useEffect(() => {
     void fetchSchedule();
   }, [token]);
+  useAutoRefresh(fetchSchedule, { enabled: Boolean(token) });
 
   const today = localScheduleDate(new Date());
   const currentDeliveries = deliveries.filter((delivery) => delivery.status !== "completed");
@@ -200,22 +201,18 @@ export function AgentDeliverySchedule() {
           <h1 className="page-title">My Delivery Schedule</h1>
           <p className="page-subtitle">Your assigned delivery runs, destinations, and stop details</p>
         </div>
-        <Button onClick={() => void fetchSchedule()} variant="outline" className="flex items-center gap-2">
-          <RefreshCw size={16} />
-          Refresh
-        </Button>
       </div>
 
-      <div className="rounded-lg border border-border bg-white px-4 py-3 shadow-sm">
+      <div className="rounded-lg border border-border bg-card px-4 py-3 shadow-sm">
         <div className="grid grid-cols-2 gap-x-5 gap-y-1 sm:grid-cols-4">
           {[
-            ["Assigned runs", currentDeliveries.length, "text-navy"],
-            ["Stops", stopCount, "text-navy"],
+            ["Assigned runs", currentDeliveries.length, "text-foreground"],
+            ["Stops", stopCount, "text-foreground"],
             ["Completed", completedCount, "text-green"],
             ["Remaining", stopCount - completedCount, "text-accent-2"],
           ].map(([label, count, color]) => (
             <div key={label} className="flex items-center justify-between gap-2">
-              <span className="text-xs font-medium text-muted">{label}</span>
+              <span className="text-xs font-medium text-muted-foreground">{label}</span>
               <span className={`font-rajdhani text-lg font-bold ${color}`}>{count}</span>
             </div>
           ))}
@@ -227,30 +224,30 @@ export function AgentDeliverySchedule() {
           type="button"
           aria-pressed={view === "today"}
           onClick={() => setView("today")}
-          className={`rounded-xl border p-3 text-left transition ${view === "today" ? "border-accent-2 bg-accent-2/5 shadow-sm" : "border-border bg-white hover:border-accent-2/50"}`}
+          className={`rounded-xl border p-3 text-left transition ${view === "today" ? "border-accent-2 bg-accent-2/5 shadow-sm" : "border-border bg-card hover:border-accent-2/50"}`}
         >
-          <span className="flex items-center gap-2 text-sm font-bold text-navy"><CalendarDays size={17} /> Today</span>
-          <span className="mt-1 block text-xs text-muted">{todayDeliveries.length} scheduled runs</span>
+          <span className="flex items-center gap-2 text-sm font-bold text-foreground"><CalendarDays size={17} /> Today</span>
+          <span className="mt-1 block text-xs text-muted-foreground">{todayDeliveries.length} scheduled runs</span>
         </button>
         <button
           type="button"
           aria-pressed={view === "history"}
           onClick={() => setView("history")}
-          className={`rounded-xl border p-3 text-left transition ${view === "history" ? "border-accent-2 bg-accent-2/5 shadow-sm" : "border-border bg-white hover:border-accent-2/50"}`}
+          className={`rounded-xl border p-3 text-left transition ${view === "history" ? "border-accent-2 bg-accent-2/5 shadow-sm" : "border-border bg-card hover:border-accent-2/50"}`}
         >
-          <span className="flex items-center gap-2 text-sm font-bold text-navy"><History size={17} /> History</span>
-          <span className="mt-1 block text-xs text-muted">{historyDeliveries.length} completed runs</span>
+          <span className="flex items-center gap-2 text-sm font-bold text-foreground"><History size={17} /> History</span>
+          <span className="mt-1 block text-xs text-muted-foreground">{historyDeliveries.length} completed runs</span>
         </button>
       </div>
 
       {error && <div role="alert" className="rounded-lg border border-red/30 bg-red/10 px-4 py-3 text-sm text-red">{error}</div>}
 
-      <div className="rounded-xl border border-border bg-white p-3 shadow-sm">
-        <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-muted">
+      <div className="rounded-xl border border-border bg-card p-3 shadow-sm">
+        <div className="mb-2 flex items-center gap-2 text-xs font-bold text-muted-foreground">
           <Search size={15} /> Search and filter {view === "today" ? "schedule" : "history"}
         </div>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-[minmax(0,1fr)_minmax(150px,auto)_minmax(130px,auto)]">
-          <label className="flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-muted focus-within:border-accent-2">
+          <label className="flex min-h-11 items-center gap-2 rounded-lg border border-border px-3 text-muted-foreground focus-within:border-accent-2">
             <Search size={16} aria-hidden="true" />
             <Input
               type="search"
@@ -258,31 +255,31 @@ export function AgentDeliverySchedule() {
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Truck, agent, store, or invoice"
               aria-label={`Search delivery ${view}`}
-              className="w-full bg-transparent text-sm text-navy outline-none placeholder:text-muted"
+              className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
           </label>
-          <label className="flex flex-col justify-center rounded-lg border border-border px-3 py-1 text-[10px] font-semibold text-muted focus-within:border-accent-2">
+          <label className="flex flex-col justify-center rounded-lg border border-border px-3 py-1 text-2xs font-semibold text-muted-foreground focus-within:border-accent-2">
             {view === "today" ? "Schedule date" : "History date"}
             <Input
               type="date"
               value={view === "today" ? scheduleDate : historyDate}
               onChange={(event) => view === "today" ? setScheduleDate(event.target.value || today) : setHistoryDate(event.target.value)}
               aria-label={view === "today" ? "Filter schedule by date" : "Filter history by scheduled date"}
-              className="w-full bg-transparent text-sm font-normal text-navy outline-none"
+              className="w-full bg-transparent text-sm font-normal text-foreground outline-none"
             />
           </label>
-          <label className="flex flex-col justify-center rounded-lg border border-border px-3 py-1 text-[10px] font-semibold text-muted focus-within:border-accent-2">
+          <label className="flex flex-col justify-center rounded-lg border border-border px-3 py-1 text-2xs font-semibold text-muted-foreground focus-within:border-accent-2">
             <span className="flex items-center gap-1"><Clock3 size={12} /> From time</span>
             <Input
               type="time"
               value={view === "today" ? scheduleTime : historyTime}
               onChange={(event) => view === "today" ? setScheduleTime(event.target.value) : setHistoryTime(event.target.value)}
               aria-label={`Filter delivery ${view} from time`}
-              className="w-full bg-transparent text-sm font-normal text-navy outline-none"
+              className="w-full bg-transparent text-sm font-normal text-foreground outline-none"
             />
           </label>
         </div>
-        <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted">
+        <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
           <span>{view === "history" && !historyDate ? "History date is optional; time filters show runs scheduled at or after that time." : "Time filters show runs scheduled at or after the selected time."} Runs without a saved time will not match a time filter.</span>
           <button
             type="button"
@@ -299,38 +296,38 @@ export function AgentDeliverySchedule() {
       </div>
 
       {visibleDeliveries.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-white p-8 text-center">
-          <CalendarDays size={32} className="mx-auto mb-3 text-muted opacity-50" />
-          <h2 className="font-semibold text-navy">{view === "today" ? "No matching runs" : historyDeliveries.length ? "No matching history" : "No delivery history yet"}</h2>
-          <p className="mt-1 text-sm text-muted">{view === "today" ? "Adjust the date, time, or search to find scheduled runs." : historyDeliveries.length ? "Adjust the date, time, or search to find completed runs." : "Completed delivery runs will be saved here."}</p>
+        <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center">
+          <CalendarDays size={32} className="mx-auto mb-3 text-muted-foreground opacity-50" />
+          <h2 className="font-semibold text-foreground">{view === "today" ? "No matching runs" : historyDeliveries.length ? "No matching history" : "No delivery history yet"}</h2>
+          <p className="mt-1 text-sm text-muted-foreground">{view === "today" ? "Adjust the date, time, or search to find scheduled runs." : historyDeliveries.length ? "Adjust the date, time, or search to find completed runs." : "Completed delivery runs will be saved here."}</p>
         </div>
       ) : (
         <div className="flex flex-col gap-6">
           {scheduledDays.map(([date, dayDeliveries]) => (
             <section key={date} className="space-y-3">
-              <div className="flex items-center gap-2 text-navy">
+              <div className="flex items-center gap-2 text-foreground">
                 <CalendarDays size={18} />
                 <h2 className="font-rajdhani text-xl font-bold">{formatScheduleDate(date)}</h2>
               </div>
               {dayDeliveries.map((delivery) => {
                 const stops = orderRunStops(delivery.delivery_items ?? []);
                 return (
-                  <article key={delivery.id} className="overflow-hidden rounded-xl border border-border bg-white shadow-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-off-white px-4 py-3">
+                  <article key={delivery.id} className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border bg-muted px-4 py-3">
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                        <span className="inline-flex items-center gap-2 font-semibold text-navy">
+                        <span className="inline-flex items-center gap-2 font-semibold text-foreground">
                           <TruckIcon size={17} />
                           {delivery.truck?.license_plate ?? "Truck not assigned"}
                         </span>
-                        <span className="inline-flex items-center gap-1 text-muted"><Clock3 size={14} /> {formatScheduleTime(delivery.scheduled_time)}</span>
-                        {delivery.truck?.district && <span className="text-muted">{delivery.truck.district}</span>}
+                        <span className="inline-flex items-center gap-1 text-muted-foreground"><Clock3 size={14} /> {formatScheduleTime(delivery.scheduled_time)}</span>
+                        {delivery.truck?.district && <span className="text-muted-foreground">{delivery.truck.district}</span>}
                         {delivery.agent && (
-                          <span className="inline-flex items-center gap-1 text-muted">
+                          <span className="inline-flex items-center gap-1 text-muted-foreground">
                             <UserRound size={14} /> Agent: {delivery.agent.full_name || "Assigned"}
                           </span>
                         )}
                         {delivery.driver && (
-                          <span className="inline-flex items-center gap-1 text-muted">
+                          <span className="inline-flex items-center gap-1 text-muted-foreground">
                             <UserRound size={14} /> Driver: {delivery.driver.full_name || "Assigned"}
                           </span>
                         )}
@@ -405,14 +402,14 @@ function DeliveryPaymentPrompt({ stop, mode, isConfirming, onClose, onConfirm }:
           Back
         </button>
       </div>
-      <section className="max-w-lg w-full rounded-2xl bg-white p-5 shadow-sm">
-        <p className="mt-2 text-sm text-muted">
+      <section className="max-w-lg w-full rounded-2xl bg-card p-5 shadow-sm">
+        <p className="mt-2 text-sm text-muted-foreground">
           {isRecordingPayment
             ? `Record payment collected from ${stop.destination_customer.store_name}.`
             : `How much payment was received from ${stop.destination_customer.store_name}?`}
         </p>
         {stop.invoice && (
-          <p className="mt-2 text-sm font-semibold text-navy">
+          <p className="mt-2 text-sm font-semibold text-foreground">
             Invoice {stop.invoice.receipt_number || stop.invoice.id.slice(0, 8)} · {isRecordingPayment ? "Outstanding balance" : "Amount due"} ₱{amountDue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </p>
         )}
@@ -424,15 +421,15 @@ function DeliveryPaymentPrompt({ stop, mode, isConfirming, onClose, onConfirm }:
           </div>
         )}
         {(isRecordingPayment || paymentStatus !== "unpaid") ? (
-          <div className="mt-4 space-y-3 rounded-lg bg-green-50 p-4">
+          <div className="mt-4 space-y-3 rounded-lg bg-success-soft p-4">
             {(isRecordingPayment || paymentStatus === "partial") && (
-              <p className="text-xs text-muted">Remaining after payment: ₱{Math.max(0, amountDue - (Number(paymentAmount) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+              <p className="text-xs text-muted-foreground">Remaining after payment: ₱{Math.max(0, amountDue - (Number(paymentAmount) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
             )}
-            <label className="block text-xs font-semibold text-navy">
+            <label className="block text-xs font-semibold text-foreground">
               Amount collected (₱)
-              <Input type="number" min="0.01" max={amountDue} step="0.01" value={paymentAmount} onChange={(event) => { const value = event.target.value; setPaymentAmount(value); if (!isRecordingPayment) setPaymentStatus(Number(value) >= amountDue ? "paid" : "partial"); }} className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm font-normal" />
+              <Input type="number" min="0.01" max={amountDue} step="0.01" value={paymentAmount} onChange={(event) => { const value = event.target.value; setPaymentAmount(value); if (!isRecordingPayment) setPaymentStatus(Number(value) >= amountDue ? "paid" : "partial"); }} className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm font-normal" />
             </label>
-            <label className="block text-xs font-semibold text-navy">
+            <label className="block text-xs font-semibold text-foreground">
               Payment method
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                 <SelectTrigger aria-label="Payment method" className="mt-1 font-normal">
@@ -443,13 +440,13 @@ function DeliveryPaymentPrompt({ stop, mode, isConfirming, onClose, onConfirm }:
                 </SelectContent>
               </Select>
             </label>
-            <label className="block text-xs font-semibold text-navy">
+            <label className="block text-xs font-semibold text-foreground">
               Reference / receipt number (optional)
-              <Input value={paymentReference} onChange={(event) => setPaymentReference(event.target.value)} className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm font-normal" />
+              <Input value={paymentReference} onChange={(event) => setPaymentReference(event.target.value)} className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm font-normal" />
             </label>
           </div>
         ) : (
-          <p className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">The outstanding balance will be recorded in Accounts Receivable.</p>
+          <p className="mt-4 rounded-lg border border-warning/30 bg-warning-soft p-3 text-xs text-warning">The outstanding balance will be recorded in Accounts Receivable.</p>
         )}
         <div className="mt-5 flex gap-2 border-t border-border pt-4">
           <Button type="button" variant="ghost" onClick={onClose} disabled={isConfirming} className="min-h-11 h-auto flex-1">Cancel</Button>

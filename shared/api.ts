@@ -1,3 +1,6 @@
+/** Minimum length for any password an admin sets or changes. */
+export const MIN_PASSWORD_LENGTH = 8;
+
 /**
  * Shared code between client and server
  */
@@ -322,7 +325,7 @@ export interface Agent {
 
 export const CreateAgentSchema = z.object({
   username: z.string().min(1, "Username is required"),
-  password: z.string().min(4, "Password must be at least 4 characters"),
+  password: z.string().min(MIN_PASSWORD_LENGTH, `Password must be at least ${MIN_PASSWORD_LENGTH} characters`),
   full_name: z.string().optional(),
   email: z.string().email("Valid email is required").optional(),
   contact_info: z.string().optional(),
@@ -741,4 +744,27 @@ export interface ReportCustomerRow {
   totalSpent: number;
   lastPurchaseDate: string;
   purchasesPerWeek: number;
+}
+
+// Dashboard: one small payload of server-side aggregates (replaces five full-list downloads)
+export interface DashboardLowStockItem {
+  id: string;
+  name: string;
+  available: number;
+  reorderPoint: number;
+}
+
+export interface DashboardSummary {
+  pendingOrders: number;
+  activeDeliveries: number;
+  availableUnits: number;
+  lowStock: DashboardLowStockItem[];
+  receivables: {
+    /** Decimal string, e.g. "191520.00" */
+    outstandingTotal: string;
+    outstandingCount: number;
+    /** Age in whole days of the oldest outstanding balance, or null when none. */
+    oldestDays: number | null;
+  };
+  generatedAt: string;
 }

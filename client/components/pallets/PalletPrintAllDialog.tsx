@@ -36,15 +36,15 @@ export function PalletPrintAllDialog({ entries, date, onClose }: {
           </div>
         </div>
 
-        <div className="no-print rounded-2xl border border-border bg-white p-5">
+        <div className="no-print rounded-2xl border border-border bg-card p-5">
           {entries.length === 0 ? (
-            <p className="py-10 text-center text-sm text-muted">No pallets were created on this date.</p>
+            <p className="py-10 text-center text-sm text-muted-foreground">No pallets were created on this date.</p>
           ) : (
             <div className="grid grid-cols-1 gap-3">
               {entries.map(({ pallet, customer }) => (
                 <article key={pallet.id} className="rounded-lg border border-border p-3 text-center">
-                  <p className="text-xs font-semibold text-navy">{customer?.store_name ?? "Unknown customer"}</p>
-                  <p className="mt-1 break-all font-mono text-[10px] text-muted">{pallet.id}</p>
+                  <p className="text-xs font-semibold text-foreground">{customer?.store_name ?? "Unknown customer"}</p>
+                  <p className="mt-1 break-all font-mono text-2xs text-muted-foreground">{pallet.id}</p>
                   <img src={barcodes[pallet.id]} alt={`Barcode for pallet ${pallet.id}`} className="mx-auto mt-2 h-auto w-full object-contain" />
                 </article>
               ))}
@@ -60,7 +60,7 @@ export function PalletPrintAllDialog({ entries, date, onClose }: {
               return (
                 <article key={pallet.id} className="bulk-pallet-label flex flex-col items-center justify-center gap-1 rounded border border-black p-3 text-center">
                   <p className="text-xs font-bold">{customer?.store_name ?? "Unknown customer"} · {units} units</p>
-                  <p className="break-all font-mono text-[9px]">{pallet.id}</p>
+                  <p className="break-all font-mono text-2xs">{pallet.id}</p>
                   <img src={barcodes[pallet.id]} alt={`Barcode for pallet ${pallet.id}`} className="h-auto w-full object-contain" />
                 </article>
               );

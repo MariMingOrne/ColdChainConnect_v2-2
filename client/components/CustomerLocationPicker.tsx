@@ -181,16 +181,16 @@ export function CustomerLocationPicker({ position, onSelect }: CustomerLocationP
       role={expanded ? "dialog" : undefined}
       aria-modal={expanded ? true : undefined}
       aria-label={expanded ? "Choose customer location" : undefined}
-      className={expanded ? "fixed inset-0 z-[100] flex h-dvh w-screen flex-col bg-white p-3" : "relative"}
+      className={expanded ? "fixed inset-0 z-[100] flex h-dvh w-screen flex-col bg-card p-3" : "relative isolate"}
     >
       <div className="flex h-11 shrink-0 items-center justify-between gap-3 px-1">
-        <span className="font-semibold text-navy">{expanded ? "Choose the customer’s exact location" : ""}</span>
+        <span className="font-semibold text-foreground">{expanded ? "Choose the customer’s exact location" : ""}</span>
         <button
           type="button"
           onClick={() => setExpanded((value) => !value)}
           aria-label={expanded ? "Exit fullscreen map" : "Expand map"}
           title={expanded ? "Exit fullscreen map" : "Expand map"}
-          className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-border bg-white px-3 text-sm font-semibold text-navy shadow-md hover:bg-off-white"
+          className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-md hover:bg-accent"
         >
           {expanded ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
           <span>{expanded ? "Close map" : "Expand map"}</span>
@@ -221,12 +221,12 @@ export function CustomerLocationPicker({ position, onSelect }: CustomerLocationP
 
   return (
     <section className="space-y-2">
-      <label htmlFor="customer-location-search" className="block text-xs font-semibold text-navy">
+      <label htmlFor="customer-location-search" className="block text-xs font-semibold text-foreground">
         Pin customer location
       </label>
       <form onSubmit={searchPlaces} className="flex gap-2">
         <div className="relative min-w-0 flex-1">
-          <MapPin size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <MapPin size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             id="customer-location-search"
             type="search"
@@ -236,16 +236,16 @@ export function CustomerLocationPicker({ position, onSelect }: CustomerLocationP
             className="w-full rounded-lg border border-border py-2 pl-9 pr-3 text-sm focus:border-accent-2 focus:outline-none"
           />
         </div>
-        <button type="submit" disabled={isSearching || !query.trim()} className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-navy px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">
+        <button type="submit" disabled={isSearching || !query.trim()} className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
           <Search size={15} />
           {isSearching ? "Searching" : "Search"}
         </button>
       </form>
       {results.length > 0 && (
-        <ul className="max-h-40 overflow-y-auto rounded-lg border border-border bg-white">
+        <ul className="max-h-40 overflow-y-auto rounded-lg border border-border bg-card">
           {results.map((result) => (
             <li key={`${result.lat}-${result.lon}`}>
-              <button type="button" onClick={() => selectResult(result)} className="w-full px-3 py-2 text-left text-sm text-navy hover:bg-off-white">
+              <button type="button" onClick={() => selectResult(result)} className="w-full px-3 py-2 text-left text-sm text-foreground hover:bg-accent">
                 {result.display_name}
               </button>
             </li>
@@ -253,9 +253,9 @@ export function CustomerLocationPicker({ position, onSelect }: CustomerLocationP
         </ul>
       )}
       {expanded ? createPortal(mapView, document.body) : mapView}
-      <p className="text-xs text-muted">Search for the address or tap/drag the pin to fill the address fields. OpenStreetMap contributors.</p>
+      <p className="text-xs text-muted-foreground">Search for the address or tap/drag the pin to fill the address fields. OpenStreetMap contributors.</p>
       {(isLookingUp || error) && (
-        <p role={error ? "alert" : undefined} className={`text-xs ${error ? "text-amber-700" : "text-muted"}`}>
+        <p role={error ? "alert" : undefined} className={`text-xs ${error ? "text-warning" : "text-muted-foreground"}`}>
           {isLookingUp ? <><Circle size={10} className="mr-1 inline animate-pulse" />Looking up address…</> : error}
         </p>
       )}

@@ -1,3 +1,4 @@
+import { MIN_PASSWORD_LENGTH } from "@shared/api";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { modulePermissionKeys, modulePermissionLabels, type ModulePermission } from "@shared/api";
@@ -64,7 +65,7 @@ export function CreateAccountFields({ accountType, form, onChange, modulePermiss
         type="password"
         value={form.password}
         onChange={(value) => update({ password: value })}
-        minLength={4}
+        minLength={MIN_PASSWORD_LENGTH}
         required
       />
     </>
@@ -84,9 +85,9 @@ export function CreateAccountFields({ accountType, form, onChange, modulePermiss
       <div className="space-y-4">
         {credentials}
         <fieldset className="space-y-2 rounded-xl border border-border p-4">
-          <legend className="px-1 text-sm font-semibold text-navy">Module access</legend>
+          <legend className="px-1 text-sm font-semibold text-foreground">Module access</legend>
           {modulePermissionKeys.map((permission) => (
-            <label key={permission} className="flex items-start gap-2 text-sm text-navy">
+            <label key={permission} className="flex items-start gap-2 text-sm text-foreground">
               <input type="checkbox" checked={modulePermissions.includes(permission)} onChange={() => togglePermission(permission)} className="mt-0.5 accent-navy" />
               <span>{modulePermissionLabels[permission]}</span>
             </label>
@@ -114,7 +115,7 @@ export function CreateAccountFields({ accountType, form, onChange, modulePermiss
     <div className="space-y-4">
       <TextField id="driver-full-name" label="Full Name" value={form.full_name} onChange={(value) => update({ full_name: value })} placeholder="e.g., Pedro Reyes" required />
       <TextField id="driver-username" label="Login Username (optional)" value={form.username} onChange={(value) => update({ username: value })} placeholder="e.g., pedro.reyes" />
-      <TextField id="driver-password" label="Login Password (optional)" type="password" value={form.password} onChange={(value) => update({ password: value })} minLength={4} />
+      <TextField id="driver-password" label="Login Password (optional)" type="password" value={form.password} onChange={(value) => update({ password: value })} minLength={MIN_PASSWORD_LENGTH} />
       <TextField id="driver-contact" label="Contact" value={form.contact_info} onChange={(value) => update({ contact_info: value })} placeholder="e.g., 09181234567" />
       <TextField id="driver-license" label="License Number" value={form.license} onChange={(value) => update({ license: value })} placeholder="e.g., N01-23-111111" />
       <TextField id="driver-hire-date" label="Hire Date" type="date" value={form.hire_date} onChange={(value) => update({ hire_date: value })} />

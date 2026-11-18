@@ -1,7 +1,6 @@
 import { defineConfig, Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "node:path";
-import { createServer } from "./server";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -17,6 +16,12 @@ export default defineConfig(({ mode }) => ({
     outDir: "dist/spa",
   },
   plugins: [react(), expressPlugin()],
+  test: {
+    setupFiles: ["./server/test-setup.ts"],
+    // API tests talk to a remote Postgres; allow for network latency.
+    testTimeout: 30_000,
+    hookTimeout: 60_000,
+  },
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./client"),
@@ -29,7 +34,10 @@ function expressPlugin(): Plugin {
   return {
     name: "express-plugin",
     apply: "serve", // Only apply during development (serve mode)
-    configureServer(server) {
+    // Load the API lazily: importing it at the top made every vite command
+    // (build, test config) open a database connection.
+    async configureServer(server) {
+      const { createServer } = await import("./server");
       const app = createServer();
 
       // Add Express app as middleware to Vite dev server

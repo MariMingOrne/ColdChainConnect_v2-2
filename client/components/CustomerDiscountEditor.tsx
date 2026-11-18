@@ -45,7 +45,7 @@ export function CustomerDiscountEditor({
               placeholder="5"
               className="w-full rounded-lg border border-border py-2 pl-3 pr-7 text-sm focus:border-accent-2 focus:outline-none"
             />
-            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted">
+            <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
               %
             </span>
           </div>
@@ -53,7 +53,7 @@ export function CustomerDiscountEditor({
             type="button"
             onClick={() => removeRow(index)}
             aria-label="Remove discount"
-            className="rounded-lg p-2 text-muted hover:bg-off-white hover:text-red"
+            className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-red"
           >
             <X size={16} />
           </button>
@@ -68,7 +68,7 @@ export function CustomerDiscountEditor({
         <Plus size={14} /> Add discount
       </button>
 
-      <p className="text-xs text-muted">
+      <p className="text-xs text-muted-foreground">
         Discounts stack. Total discount: {formatPercent(totalPercent / 100)}%
       </p>
     </div>

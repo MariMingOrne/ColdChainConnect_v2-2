@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { and, eq, inArray, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "../db";
 import { inventory_batches, batch_pallets, pallet_items, order_pallet_items, order_pallets } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
@@ -21,10 +21,13 @@ async function hasActiveReservations(executor: any, sourceItemIds: string[]) {
 export const listBatches: RequestHandler = async (_req, res) => {
   try {
     const allBatches = await db.query.inventory_batches.findMany({
+      orderBy: [desc(inventory_batches.created_at)],
       with: {
         pallets: {
+          orderBy: (table) => [desc(table.created_at)],
           with: {
             items: {
+              orderBy: (table) => [desc(table.created_at)],
               with: {
                 product: true,
               },
@@ -74,7 +77,7 @@ export const createBatch: RequestHandler = async (req: AuthRequest, res) => {
 
       for (const item of items) {
         const { product_id, qty_units, expiration_date } = item;
-        if (!product_id || !qty_units) {
+        if (!product_id || qty_units == null || qty_units < 0) {
           throw new Error("Each item must have product_id and qty_units");
         }
         if (expiration_date && !isValidIsoDate(expiration_date)) {
@@ -109,7 +112,7 @@ export const createBatch: RequestHandler = async (req: AuthRequest, res) => {
     res.status(201).json(newBatch);
   } catch (error) {
     console.error("Error creating batch:", error);
-    res.status(500).json({ error: error instanceof Error ? error.message : "Internal server error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 

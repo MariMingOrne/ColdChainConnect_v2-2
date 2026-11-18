@@ -46,8 +46,8 @@ export function SalesForecastChat({ token, forecast }: { token: string; forecast
       <div className="mb-3 flex items-center gap-2">
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-2/10 text-accent-2"><Bot size={17} /></span>
         <div>
-          <h3 className="text-sm font-semibold text-navy">Ask Gemini</h3>
-          <p className="text-xs text-gray-500">Answers are based on this forecast.</p>
+          <h3 className="text-sm font-semibold text-foreground">Ask Gemini</h3>
+          <p className="text-xs text-muted-foreground">Answers are based on this forecast.</p>
         </div>
       </div>
 
@@ -59,26 +59,26 @@ export function SalesForecastChat({ token, forecast }: { token: string; forecast
               type="button"
               onClick={() => void ask(suggestion)}
               disabled={isSending}
-              className="rounded-full border border-border px-3 py-1.5 text-xs text-navy transition hover:border-accent-2 hover:bg-off-white disabled:opacity-50"
+              className="rounded-full border border-border px-3 py-1.5 text-xs text-foreground transition hover:border-accent-2 hover:bg-accent disabled:opacity-50"
             >
               {suggestion}
             </button>
           ))}
         </div>
       ) : (
-        <div className="mb-3 max-h-64 space-y-2 overflow-y-auto rounded-lg bg-off-white p-3" aria-live="polite">
+        <div className="mb-3 max-h-64 space-y-2 overflow-y-auto rounded-lg bg-muted p-3" aria-live="polite">
           {messages.map((message, index) => (
             <div key={`${message.role}-${index}`} className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}>
-              <p className={`max-w-[90%] whitespace-pre-wrap rounded-xl px-3 py-2 text-sm ${message.role === "user" ? "bg-navy text-white" : "border border-border bg-white text-navy"}`}>
+              <p className={`max-w-[90%] whitespace-pre-wrap rounded-xl px-3 py-2 text-sm ${message.role === "user" ? "bg-primary text-primary-foreground" : "border border-border bg-card text-foreground"}`}>
                 {message.content}
               </p>
             </div>
           ))}
-          {isSending && <p className="text-xs text-muted">Gemini is thinking…</p>}
+          {isSending && <p className="text-xs text-muted-foreground">Gemini is thinking…</p>}
         </div>
       )}
 
-      {error && <p role="alert" className="mb-2 text-xs text-red-600">{error}</p>}
+      {error && <p role="alert" className="mb-2 text-xs text-destructive">{error}</p>}
 
       <form
         className="flex items-end gap-2"
@@ -98,13 +98,13 @@ export function SalesForecastChat({ token, forecast }: { token: string; forecast
           placeholder="Ask about your sales forecast…"
           aria-label="Ask about your sales forecast"
           disabled={isSending}
-          className="min-h-10 flex-1 resize-y rounded-lg border border-border px-3 py-2 text-sm text-navy outline-none focus:border-accent-2 disabled:bg-off-white"
+          className="min-h-10 flex-1 resize-y rounded-lg border border-border px-3 py-2 text-sm text-foreground outline-none focus:border-accent-2 disabled:bg-muted"
         />
         <button
           type="submit"
           disabled={isSending || !question.trim()}
           aria-label="Send question"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-navy text-white transition hover:bg-navy-mid disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition hover:bg-navy-mid disabled:cursor-not-allowed disabled:opacity-50"
         >
           <Send size={16} />
         </button>

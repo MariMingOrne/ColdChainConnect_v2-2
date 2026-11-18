@@ -7,13 +7,13 @@ import {
 
 type ReportTab = "activity" | "sales" | "inventory" | "customer" | "performance" | "profit";
 
-const REPORT_TABS: { id: ReportTab; label: string; icon: string }[] = [
-  { id: "activity", label: "Activity", icon: "🕐" },
-  { id: "sales", label: "Sales", icon: "📊" },
-  { id: "inventory", label: "Inventory", icon: "📦" },
-  { id: "customer", label: "Customer", icon: "👥" },
-  { id: "performance", label: "Performance", icon: "📈" },
-  { id: "profit", label: "Profit", icon: "💰" },
+const REPORT_TABS: { id: ReportTab; label: string; }[] = [
+  { id: "activity", label: "Activity" },
+  { id: "sales", label: "Sales" },
+  { id: "inventory", label: "Inventory" },
+  { id: "customer", label: "Customer" },
+  { id: "performance", label: "Performance" },
+  { id: "profit", label: "Profit" },
 ];
 
 export function AuditReports({ logs }: { logs: AuditLog[] }) {
@@ -26,11 +26,11 @@ export function AuditReports({ logs }: { logs: AuditLog[] }) {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-semibold transition-all ${
-              activeTab === tab.id ? "bg-accent text-white" : "bg-off-white text-gray-700 hover:bg-gray-200"
+            className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+              activeTab === tab.id ? "bg-primary text-primary-foreground" : "bg-muted text-foreground hover:bg-muted"
             }`}
           >
-            <span className="mr-1.5">{tab.icon}</span>{tab.label}
+            {tab.label}
           </button>
         ))}
       </div>

@@ -3,8 +3,7 @@ import { Booking, Customer, Product } from "@shared/api";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AgentProductPicker } from "./AgentProductPicker";
-import { AgentOrderItems } from "./AgentOrderItems";
+import { OrderProductList } from "./OrderProductList";
 import { AgentPendingOrders } from "./AgentPendingOrders";
 
 interface OrderItem {
@@ -56,13 +55,12 @@ export function AgentOrderScreen({
   const today = new Date();
   const minDeliveryDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const [view, setView] = useState<"new" | "pending">("new");
-  const [tab, setTab] = useState<"products" | "items">("products");
   const totalQty = orderItems.reduce((sum, item) => sum + item.qty_ordered, 0);
   const canCreate = !isCreating && !!newCustomerId && orderItems.length > 0;
 
   return (
-    <div className="min-h-full flex flex-col bg-off-white">
-      <header className="bg-navy text-white px-5 pt-5 pb-4">
+    <div className="min-h-full flex flex-col bg-muted">
+      <header className="bg-primary text-primary-foreground px-5 pt-5 pb-4">
         <div className="flex items-end justify-between gap-3">
           <div>
             <h1 className="font-rajdhani text-2xl font-bold">Point of Sale</h1>
@@ -74,7 +72,7 @@ export function AgentOrderScreen({
         </div>
       </header>
 
-      <div className="flex bg-white border-b border-border">
+      <div className="flex bg-card border-b border-border">
         {(["new", "pending"] as const).map((key) => (
           <button
             key={key}
@@ -82,7 +80,7 @@ export function AgentOrderScreen({
             onClick={() => setView(key)}
             className={cn(
               "flex-1 py-3 text-sm font-semibold transition",
-              view === key ? "border-b-2 border-accent-2 text-accent-2" : "text-muted"
+              view === key ? "border-b-2 border-accent-2 text-accent-2" : "text-muted-foreground"
             )}
           >
             {key === "new" ? "New Order" : `Pending (${pendingOrders.length})`}
@@ -93,9 +91,9 @@ export function AgentOrderScreen({
       {view === "new" ? (
         <>
           <div className="flex-1 p-4 space-y-4">
-            <section className="bg-white rounded-xl border border-border p-4 space-y-3">
+            <section className="bg-card rounded-xl border border-border p-4 space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-navy mb-2">Customer *</label>
+                <label className="block text-xs font-semibold text-foreground mb-2">Customer *</label>
                 <Select value={newCustomerId || undefined} onValueChange={onCustomerChange}>
                   <SelectTrigger aria-label="Select a customer store">
                     <SelectValue placeholder="Select a customer store" />
@@ -110,7 +108,7 @@ export function AgentOrderScreen({
                 </Select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-navy mb-2">Prepared Delivery Date</label>
+                <label className="block text-xs font-semibold text-foreground mb-2">Prepared Delivery Date</label>
                 <Input
                   type="date"
                   min={minDeliveryDate}
@@ -121,51 +119,25 @@ export function AgentOrderScreen({
               </div>
             </section>
 
-            <section className="bg-white rounded-xl border border-border overflow-hidden">
-              <div className="flex border-b border-border">
-                {(["products", "items"] as const).map((key) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setTab(key)}
-                    className={cn(
-                      "flex-1 py-3 text-sm font-semibold transition",
-                      tab === key ? "border-b-2 border-accent-2 text-accent-2" : "text-muted"
-                    )}
-                  >
-                    {key === "products" ? "Products" : `Order Items (${totalQty})`}
-                  </button>
-                ))}
-              </div>
-
+            <section className="bg-card rounded-xl border border-border overflow-hidden">
               <div className="p-4">
-                {tab === "products" ? (
-                  <AgentProductPicker
-                    products={products}
-                    productStock={productStock}
-                    orderItems={orderItems}
-                    onAddItem={onAddItem}
-                    onRemoveItem={onRemoveItem}
-                  />
-                ) : (
-                  <AgentOrderItems
-                    products={products}
-                    productStock={productStock}
-                    orderItems={orderItems}
-                    onItemChange={onItemChange}
-                    onRemoveItem={onRemoveItem}
-                    onBrowseProducts={() => setTab("products")}
-                  />
-                )}
+                <OrderProductList
+                  products={products}
+                  productStock={productStock}
+                  orderItems={orderItems}
+                  onAddItem={onAddItem}
+                  onRemoveItem={onRemoveItem}
+                  onItemChange={onItemChange}
+                />
               </div>
             </section>
           </div>
 
-          <footer className="mt-auto flex shrink-0 items-center gap-3 border-t border-border bg-white px-4 py-3 shadow-[0_-4px_12px_rgba(15,23,42,0.06)]">
+          <footer className="mt-auto flex shrink-0 items-center gap-3 border-t border-border bg-card px-4 py-3 shadow-md">
             <button
               type="button"
               onClick={onCancel}
-              className="min-h-[52px] flex-[0.8] rounded-xl border border-border bg-off-white px-4 font-semibold text-sm text-muted transition hover:bg-border/40 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2"
+              className="min-h-[52px] flex-[0.8] rounded-xl border border-border bg-muted px-4 font-semibold text-sm text-muted-foreground transition hover:bg-border/40 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2"
             >
               Cancel
             </button>
@@ -173,7 +145,7 @@ export function AgentOrderScreen({
               type="button"
               onClick={onCreateOrder}
               disabled={!canCreate}
-              className="min-h-[52px] flex-[1.2] rounded-xl bg-navy px-4 font-semibold text-sm text-white transition hover:bg-navy-mid active:scale-[0.98] disabled:opacity-40 disabled:hover:bg-navy focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2"
+              className="min-h-[52px] flex-[1.2] rounded-xl bg-primary px-4 font-semibold text-sm text-primary-foreground transition hover:bg-navy-mid active:scale-[0.98] disabled:opacity-40 disabled:hover:bg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2"
             >
               {isCreating ? "Creating…" : "Create Order"}
             </button>

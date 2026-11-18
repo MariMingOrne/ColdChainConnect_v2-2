@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { cn } from "./utils";
+import { cn, formatPeso } from "./utils";
 
 describe("cn function", () => {
   it("should merge classes correctly", () => {
@@ -28,5 +28,17 @@ describe("cn function", () => {
     expect(cn("base", { conditional: true, "not-included": false })).toBe(
       "base conditional",
     );
+  });
+});
+
+describe("formatPeso", () => {
+  it("adds thousands separators and two decimals", () => {
+    expect(formatPeso(191520)).toBe("₱191,520.00");
+    expect(formatPeso("3785.5")).toBe("₱3,785.50");
+  });
+
+  it("treats missing or invalid values as zero", () => {
+    expect(formatPeso(null)).toBe("₱0.00");
+    expect(formatPeso("abc")).toBe("₱0.00");
   });
 });

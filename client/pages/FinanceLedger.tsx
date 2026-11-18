@@ -392,7 +392,7 @@ export function FinanceLedger() {
       case "scheduled":
         return "bg-accent-2/15 text-accent-2 border border-accent-2/30";
       default:
-        return "bg-muted/15 text-muted border border-muted/30";
+        return "bg-muted/15 text-muted-foreground border border-muted/30";
     }
   };
 
@@ -454,8 +454,8 @@ export function FinanceLedger() {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl md:text-4xl font-bold text-navy mb-2">Expenses & Finance</h1>
-          <p className="text-muted">
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Expenses & Finance</h1>
+          <p className="text-muted-foreground">
             Manage financial operations, track expenses, and monitor accounts receivable
           </p>
         </div>
@@ -465,13 +465,13 @@ export function FinanceLedger() {
           <Card className="p-6 border-l-4 border-l-green bg-gradient-to-br from-green/5 to-transparent">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-muted mb-1">
+                <h3 className="text-sm font-semibold text-muted-foreground mb-1">
                   Receivables
                 </h3>
-                <p className="text-2xl md:text-3xl font-bold text-navy">
+                <p className="text-2xl md:text-3xl font-bold text-foreground">
                   ₱{totalReceivables.toLocaleString()}
                 </p>
-                <p className="text-xs text-muted mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   {accountsReceivable.length} invoices
                 </p>
               </div>
@@ -484,13 +484,13 @@ export function FinanceLedger() {
           <Card className="p-6 border-l-4 border-l-red bg-gradient-to-br from-red/5 to-transparent">
             <div className="flex items-start justify-between">
               <div>
-                <h3 className="text-sm font-semibold text-muted mb-1">
+                <h3 className="text-sm font-semibold text-muted-foreground mb-1">
                   Payables
                 </h3>
-                <p className="text-2xl md:text-3xl font-bold text-navy">
+                <p className="text-2xl md:text-3xl font-bold text-foreground">
                   ₱{totalPayables.toLocaleString()}
                 </p>
-                <p className="text-xs text-muted mt-2">
+                <p className="text-xs text-muted-foreground mt-2">
                   {accountsPayable.length} invoices
                 </p>
               </div>
@@ -507,8 +507,8 @@ export function FinanceLedger() {
             <div className="flex items-center gap-3">
               <AlertCircle className="text-yellow" size={20} />
               <div>
-                <h4 className="text-xs font-semibold text-muted">Pending Approvals</h4>
-                <p className="text-lg font-bold text-navy">₱{pendingExpenses.toLocaleString()}</p>
+                <h4 className="text-xs font-semibold text-muted-foreground">Pending Approvals</h4>
+                <p className="text-lg font-bold text-foreground">₱{pendingExpenses.toLocaleString()}</p>
               </div>
             </div>
           </Card>
@@ -517,8 +517,8 @@ export function FinanceLedger() {
             <div className="flex items-center gap-3">
               <AlertCircle className="text-red" size={20} />
               <div>
-                <h4 className="text-xs font-semibold text-muted">Unpaid Receivables</h4>
-                <p className="text-lg font-bold text-navy">₱{unpaidReceivables.toLocaleString()}</p>
+                <h4 className="text-xs font-semibold text-muted-foreground">Unpaid Receivables</h4>
+                <p className="text-lg font-bold text-foreground">₱{unpaidReceivables.toLocaleString()}</p>
               </div>
             </div>
           </Card>
@@ -527,8 +527,8 @@ export function FinanceLedger() {
             <div className="flex items-center gap-3">
               <AlertCircle className="text-red" size={20} />
               <div>
-                <h4 className="text-xs font-semibold text-muted">Unpaid Payables</h4>
-                <p className="text-lg font-bold text-navy">₱{unpaidPayables.toLocaleString()}</p>
+                <h4 className="text-xs font-semibold text-muted-foreground">Unpaid Payables</h4>
+                <p className="text-lg font-bold text-foreground">₱{unpaidPayables.toLocaleString()}</p>
               </div>
             </div>
           </Card>
@@ -537,8 +537,8 @@ export function FinanceLedger() {
             <div className="flex items-center gap-3">
               <TrendingUp className="text-green" size={20} />
               <div>
-                <h4 className="text-xs font-semibold text-muted">Collected Payments</h4>
-                <p className="text-lg font-bold text-navy">₱{paidReceivables.toLocaleString()}</p>
+                <h4 className="text-xs font-semibold text-muted-foreground">Collected Payments</h4>
+                <p className="text-lg font-bold text-foreground">₱{paidReceivables.toLocaleString()}</p>
               </div>
             </div>
           </Card>
@@ -548,30 +548,30 @@ export function FinanceLedger() {
         <div className="flex gap-2 mb-6 border-b border-border overflow-x-auto">
           <button
             onClick={() => setActiveTab("expense-records")}
-            className={`px-4 py-3 font-semibold transition-all border-b-2 whitespace-nowrap ${
+            className={`px-4 py-3 font-semibold transition border-b-2 whitespace-nowrap ${
               activeTab === "expense-records"
-                ? "border-accent text-accent"
-                : "border-transparent text-muted hover:text-navy"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             Financial Records
           </button>
           <button
             onClick={() => setActiveTab("receivables")}
-            className={`px-4 py-3 font-semibold transition-all border-b-2 whitespace-nowrap ${
+            className={`px-4 py-3 font-semibold transition border-b-2 whitespace-nowrap ${
               activeTab === "receivables"
-                ? "border-accent text-accent"
-                : "border-transparent text-muted hover:text-navy"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             Accounts Receivable
           </button>
           <button
             onClick={() => setActiveTab("payables")}
-            className={`px-4 py-3 font-semibold transition-all border-b-2 whitespace-nowrap ${
+            className={`px-4 py-3 font-semibold transition border-b-2 whitespace-nowrap ${
               activeTab === "payables"
-                ? "border-accent text-accent"
-                : "border-transparent text-muted hover:text-navy"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             Accounts Payable
@@ -582,25 +582,25 @@ export function FinanceLedger() {
         {activeTab === "expense-records" && (
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-navy">
+              <h2 className="text-xl font-bold text-foreground">
                 Financial Records
               </h2>
               <Button
                 onClick={() => setShowAddForm(!showAddForm)}
-                className="bg-accent hover:bg-accent-dark text-white"
+                className="bg-primary hover:bg-accent-dark text-primary-foreground"
               >
                 {showAddForm ? "Cancel" : "+ Add Record"}
               </Button>
             </div>
 
             {showAddForm && (
-              <Card className="p-6 mb-4 bg-off-white border-2 border-accent/20">
-                <h3 className="font-bold text-navy mb-4">
+              <Card className="p-6 mb-4 bg-muted border-2 border-primary/20">
+                <h3 className="font-bold text-foreground mb-4">
                   Log New Financial Record
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-foreground mb-2">
                       Date
                     </label>
                     <Input
@@ -612,7 +612,7 @@ export function FinanceLedger() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-foreground mb-2">
                       Category
                     </label>
                     <select
@@ -623,7 +623,7 @@ export function FinanceLedger() {
                           category: e.target.value,
                         })
                       }
-                      className="w-full px-3 py-2 border border-border rounded bg-white text-navy"
+                      className="w-full px-3 py-2 border border-border rounded bg-card text-foreground"
                     >
                       <option>Maintenance</option>
                       <option>Fuel</option>
@@ -638,7 +638,7 @@ export function FinanceLedger() {
                   </div>
                 </div>
                 <div className="mb-4">
-                  <label className="block text-sm font-semibold text-navy mb-2">
+                  <label className="block text-sm font-semibold text-foreground mb-2">
                     Description
                   </label>
                   <Input
@@ -654,7 +654,7 @@ export function FinanceLedger() {
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-foreground mb-2">
                       Amount (₱)
                     </label>
                     <Input
@@ -667,7 +667,7 @@ export function FinanceLedger() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-foreground mb-2">
                       Status
                     </label>
                     <select
@@ -678,7 +678,7 @@ export function FinanceLedger() {
                           status: e.target.value as any,
                         })
                       }
-                      className="w-full px-3 py-2 border border-border rounded bg-white text-navy"
+                      className="w-full px-3 py-2 border border-border rounded bg-card text-foreground"
                     >
                       <option value="pending">Pending</option>
                       <option value="approved">Approved</option>
@@ -698,7 +698,7 @@ export function FinanceLedger() {
                   <Button
                     onClick={handleAddExpense}
                     disabled={isSubmitting}
-                    className="bg-accent hover:bg-accent-dark text-white"
+                    className="bg-primary hover:bg-accent-dark text-primary-foreground"
                   >
                     {isSubmitting ? "Saving..." : "Save Record"}
                   </Button>
@@ -729,21 +729,21 @@ export function FinanceLedger() {
                     </tr>
                   </thead>
                   <tbody>
-                    {expenseRecords.map((record) => (
+                    {[...expenseRecords].sort((a, b) => b.date.localeCompare(a.date)).map((record) => (
                       <tr
                         key={record.id}
-                        className="border-b border-border hover:bg-off-white transition-colors"
+                        className="border-b border-border hover:bg-accent transition-colors"
                       >
-                        <td className="py-3 px-4 text-navy font-medium">
+                        <td className="py-3 px-4 text-foreground font-medium">
                           {record.date}
                         </td>
-                        <td className="py-3 px-4 text-navy">
+                        <td className="py-3 px-4 text-foreground">
                           {record.category}
                         </td>
-                        <td className="py-3 px-4 text-muted">
+                        <td className="py-3 px-4 text-muted-foreground">
                           {record.description}
                         </td>
-                        <td className="py-3 px-4 text-right font-bold text-navy">
+                        <td className="py-3 px-4 text-right font-bold text-foreground">
                           ₱{record.amount.toFixed(2)}
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap">
@@ -752,7 +752,7 @@ export function FinanceLedger() {
                             onChange={(e) =>
                               handleUpdateExpenseRecordStatus(record.id, e.target.value)
                             }
-                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border-none cursor-pointer transition-all ${getStatusBadgeColor(
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border-none cursor-pointer transition ${getStatusBadgeColor(
                               record.status
                             )}`}
                           >
@@ -775,7 +775,7 @@ export function FinanceLedger() {
         {activeTab === "receivables" && (
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-navy">
+              <h2 className="text-xl font-bold text-foreground">
                 Accounts Receivable
               </h2>
             </div>
@@ -809,27 +809,27 @@ export function FinanceLedger() {
                     </tr>
                   </thead>
                   <tbody>
-                    {accountsReceivable.map((ar) => (
+                    {[...accountsReceivable].sort((a, b) => b.date.localeCompare(a.date)).map((ar) => (
                       <tr
                         key={ar.id}
-                        className="border-b border-border hover:bg-off-white transition-colors"
+                        className="border-b border-border hover:bg-accent transition-colors"
                       >
-                        <td className="py-3 px-4 text-accent font-bold">
+                        <td className="py-3 px-4 text-primary font-bold">
                           {ar.salesId}
                         </td>
-                        <td className="py-3 px-4 text-muted font-medium">
+                        <td className="py-3 px-4 text-muted-foreground font-medium">
                           {ar.customerId}
                         </td>
-                        <td className="py-3 px-4 text-navy font-medium">
+                        <td className="py-3 px-4 text-foreground font-medium">
                           {ar.customerName}
                         </td>
-                        <td className="py-3 px-4 text-muted">
+                        <td className="py-3 px-4 text-muted-foreground">
                           {ar.date}
                         </td>
-                        <td className="py-3 px-4 text-right font-bold text-navy">
+                        <td className="py-3 px-4 text-right font-bold text-foreground">
                           ₱{ar.amount.toLocaleString()}
                         </td>
-                        <td className="py-3 px-4 text-muted">
+                        <td className="py-3 px-4 text-muted-foreground">
                           {ar.dueDate}
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap">
@@ -838,12 +838,12 @@ export function FinanceLedger() {
                             onChange={(e) =>
                               handleUpdateReceivableStatus(ar.id, e.target.value as "paid" | "unpaid" | "revoked")
                             }
-                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border-none cursor-pointer transition-all ${
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border-none cursor-pointer transition ${
                               ar.status === "paid"
                                 ? "bg-green/15 text-green"
                                 : ar.status === "unpaid"
                                 ? "bg-yellow/15 text-yellow"
-                                : "bg-gray-400/15 text-gray-600"
+                                : "bg-muted-foreground text-muted-foreground"
                             }`}
                           >
                             <option value="paid">Paid</option>
@@ -863,7 +863,7 @@ export function FinanceLedger() {
         {activeTab === "payables" && (
           <div className="space-y-4">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-bold text-navy">
+              <h2 className="text-xl font-bold text-foreground">
                 Accounts Payable
               </h2>
             </div>
@@ -897,27 +897,27 @@ export function FinanceLedger() {
                     </tr>
                   </thead>
                   <tbody>
-                    {accountsPayable.map((ap) => (
+                    {[...accountsPayable].sort((a, b) => b.date.localeCompare(a.date)).map((ap) => (
                       <tr
                         key={ap.id}
-                        className="border-b border-border hover:bg-off-white transition-colors"
+                        className="border-b border-border hover:bg-accent transition-colors"
                       >
-                        <td className="py-3 px-4 text-accent font-bold">
+                        <td className="py-3 px-4 text-primary font-bold">
                           {ap.vendorId}
                         </td>
-                        <td className="py-3 px-4 text-navy font-medium">
+                        <td className="py-3 px-4 text-foreground font-medium">
                           {ap.vendorName}
                         </td>
-                        <td className="py-3 px-4 text-muted font-medium">
+                        <td className="py-3 px-4 text-muted-foreground font-medium">
                           {ap.invoiceNumber}
                         </td>
-                        <td className="py-3 px-4 text-muted">
+                        <td className="py-3 px-4 text-muted-foreground">
                           {ap.date}
                         </td>
-                        <td className="py-3 px-4 text-right font-bold text-navy">
+                        <td className="py-3 px-4 text-right font-bold text-foreground">
                           ₱{ap.amount.toLocaleString()}
                         </td>
-                        <td className="py-3 px-4 text-muted">
+                        <td className="py-3 px-4 text-muted-foreground">
                           {ap.dueDate}
                         </td>
                         <td className="py-3 px-4 whitespace-nowrap">
@@ -926,12 +926,12 @@ export function FinanceLedger() {
                             onChange={(e) =>
                               handleUpdatePayableStatus(ap.id, e.target.value as "paid" | "unpaid" | "revoked")
                             }
-                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border-none cursor-pointer transition-all ${
+                            className={`px-3 py-1.5 rounded-full text-xs font-semibold border-none cursor-pointer transition ${
                               ap.status === "paid"
                                 ? "bg-green/15 text-green"
                                 : ap.status === "unpaid"
                                 ? "bg-yellow/15 text-yellow"
-                                : "bg-gray-400/15 text-gray-600"
+                                : "bg-muted-foreground text-muted-foreground"
                             }`}
                           >
                             <option value="unpaid">Unpaid</option>

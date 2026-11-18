@@ -1,25 +1,28 @@
+import { toast } from "sonner";
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { ArrowLeft, RefreshCw, RotateCcw, CheckCircle, XCircle, Search } from "lucide-react";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { ArrowLeft, RotateCcw, CheckCircle, XCircle, Search } from "lucide-react";
 import { AgentReturn, Invoice, Customer, Product } from "@shared/api";
 import { LogReturnForm } from "./LogReturnForm";
 import { Table } from "@/components/ui/table";
+import { newestFirst } from "@/components/SortableHeader";
 
 function authHeaders(token: string) {
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 }
 
 function statusBadge(status: string) {
-  if (status === "accepted") return "bg-green-100 text-green-800";
-  if (status === "rejected") return "bg-red-100 text-red-800";
-  return "bg-yellow-100 text-yellow-800";
+  if (status === "accepted") return "bg-success-soft text-success";
+  if (status === "rejected") return "bg-destructive-soft text-destructive";
+  return "bg-warning-soft text-warning";
 }
 
 function returnTypeBadge(type: string) {
   return type === "damaged"
-    ? "bg-orange-100 text-orange-800"
-    : "bg-blue-100 text-blue-800";
+    ? "bg-warning-soft text-warning"
+    : "bg-info-soft text-link";
 }
 
 // ─── Agent: full-screen Log Return ────────────────────────────────────────────
@@ -43,7 +46,7 @@ function AgentLogReturnScreen({
         </div>
       )}
 
-      <div className="bg-white rounded-2xl border border-border flex flex-col">
+      <div className="bg-card rounded-2xl border border-border flex flex-col">
         <LogReturnForm
           invoices={invoices}
           customers={customers}
@@ -75,7 +78,7 @@ function CreateReturnModal({
           Back
         </button>
       </div>
-      <div className="bg-white rounded-2xl border border-border flex flex-col">
+      <div className="bg-card rounded-2xl border border-border flex flex-col">
         <LogReturnForm
           invoices={invoices}
           customers={customers}
@@ -101,7 +104,6 @@ export function AgentReports() {
   const [products,  setProducts]  = useState<Product[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "accepted" | "rejected">("all");
@@ -109,7 +111,6 @@ export function AgentReports() {
 
   const fetchAll = useCallback(async () => {
     if (!token) return;
-    setLoading(true);
     try {
       const [rRes, iRes, cRes, pRes] = await Promise.all([
         fetch("/api/agent-returns",  { headers: { Authorization: `Bearer ${token}` } }),
@@ -135,8 +136,8 @@ export function AgentReports() {
     }
   }, [token]);
 
-  const handleRefresh = async () => { setIsRefreshing(true); await fetchAll(); setIsRefreshing(false); };
   useEffect(() => { fetchAll(); }, [fetchAll]);
+  useAutoRefresh(fetchAll, { enabled: Boolean(token) });
 
   const handleAccept = async (id: string) => {
     if (!token) return;
@@ -148,7 +149,7 @@ export function AgentReports() {
       if (!res.ok) throw new Error(await res.text());
       await fetchAll();
     } catch (err) {
-      alert("Failed: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setProcessing(null);
     }
@@ -167,7 +168,7 @@ export function AgentReports() {
       if (!res.ok) throw new Error(await res.text());
       await fetchAll();
     } catch (err) {
-      alert("Failed: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setProcessing(null);
     }
@@ -197,14 +198,14 @@ export function AgentReports() {
     );
   }
 
-  const filtered = returns.filter((ret) => {
+  const filtered = newestFirst(returns.filter((ret) => {
     const invoice = invoices.find((entry) => entry.id === ret.invoice_id);
     const customer = customers.find((entry) => entry.id === ret.customer_id);
     const query = searchTerm.trim().toLowerCase();
     const matchesSearch = !query || [ret.id, invoice?.receipt_number, ret.customer_id, customer?.store_name, ret.product_name, ret.reason]
       .some((value) => value?.toLowerCase().includes(query));
     return matchesSearch && (statusFilter === "all" || ret.status === statusFilter);
-  });
+  }));
 
   const pendingCount  = returns.filter((r) => r.status === "pending").length;
   const acceptedCount = returns.filter((r) => r.status === "accepted").length;
@@ -219,11 +220,6 @@ export function AgentReports() {
           <p className="page-subtitle">Manage returned goods — restock or write off</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={handleRefresh} disabled={isRefreshing}
-            className="btn-ghost">
-            <RefreshCw size={15} className={isRefreshing ? "animate-spin" : ""} />
-            <span className="hidden sm:inline">Refresh</span>
-          </button>
           <button onClick={() => setShowCreate(true)}
             className="px-3 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90 flex items-center gap-2">
             <RotateCcw size={15} /> Log Return
@@ -232,41 +228,41 @@ export function AgentReports() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red/30 bg-red/10 px-4 py-2 text-xs text-red">⚠️ {error}</div>
+        <div className="rounded-lg border border-red/30 bg-red/10 px-4 py-2 text-xs text-red">{error}</div>
       )}
 
       <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white border border-border rounded-2xl p-4">
-          <div className="text-2xl font-bold text-yellow-600">{pendingCount}</div>
-          <div className="text-xs text-muted font-semibold uppercase tracking-tight mt-1">Pending Review</div>
+        <div className="bg-card border border-border rounded-2xl p-4">
+          <div className="text-2xl font-bold text-warning">{pendingCount}</div>
+          <div className="text-xs text-muted-foreground font-semibold tracking-tight mt-1">Pending Review</div>
         </div>
-        <div className="bg-white border border-border rounded-2xl p-4">
+        <div className="bg-card border border-border rounded-2xl p-4">
           <div className="text-2xl font-bold text-green">{acceptedCount}</div>
-          <div className="text-xs text-muted font-semibold uppercase tracking-tight mt-1">Accepted</div>
+          <div className="text-xs text-muted-foreground font-semibold tracking-tight mt-1">Accepted</div>
         </div>
-        <div className="bg-white border border-border rounded-2xl p-4">
+        <div className="bg-card border border-border rounded-2xl p-4">
           <div className="text-2xl font-bold text-red">{rejectedCount}</div>
-          <div className="text-xs text-muted font-semibold uppercase tracking-tight mt-1">Rejected</div>
+          <div className="text-xs text-muted-foreground font-semibold tracking-tight mt-1">Rejected</div>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-start gap-3">
         <div className="relative w-full sm:w-72">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="search"
             aria-label="Search returns"
             placeholder="Search order, customer, product…"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
+            className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
           />
         </div>
-        <div className="inline-flex w-fit rounded-full border border-border bg-white p-1">
+        <div className="inline-flex w-fit rounded-full border border-border bg-card p-1">
           {(["all", "pending", "accepted", "rejected"] as const).map((s) => (
             <button key={s} onClick={() => setStatusFilter(s)}
               className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold capitalize transition ${
-                statusFilter === s ? "bg-navy text-white" : "text-muted hover:text-navy"
+                statusFilter === s ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
               }`}>
               {s}
             </button>
@@ -283,7 +279,7 @@ export function AgentReports() {
               <thead>
                 <tr>
                   {["Date", "Order", "Customer", "Product", "Qty", "Type", "Reason", "Status", "Actions"].map((h) => (
-                    <th key={h} className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold uppercase tracking-wider px-3 py-3 text-left border-b border-border whitespace-nowrap">
+                    <th key={h} className="bg-navy-mid text-muted-foreground font-barlow-cond text-xs font-bold px-3 py-3 text-left border-b border-border whitespace-nowrap">
                       {h}
                     </th>
                   ))}
@@ -292,7 +288,7 @@ export function AgentReports() {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-8 text-center text-muted">
+                    <td colSpan={9} className="px-6 py-8 text-center text-muted-foreground">
                       {returns.length === 0 ? "No returns logged yet." : "No records match this filter."}
                     </td>
                   </tr>
@@ -301,27 +297,27 @@ export function AgentReports() {
                     const inv = invoices.find((i) => i.id === ret.invoice_id);
                     const cust = customers.find((c) => c.id === ret.customer_id);
                     return (
-                      <tr key={ret.id} className="border-b border-border hover:bg-off-white/40 transition-colors">
-                        <td className="px-3 py-3 text-muted whitespace-nowrap">
+                      <tr key={ret.id} className="border-b border-border hover:bg-accent/40 transition-colors">
+                        <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">
                           {new Date(ret.created_at).toLocaleDateString("en-PH")}
                         </td>
-                        <td className="px-3 py-3 font-mono text-navy">
+                        <td className="px-3 py-3 font-mono text-foreground">
                           {inv?.receipt_number || ret.invoice_id.slice(0, 8).toUpperCase()}
                         </td>
-                        <td className="px-3 py-3 text-navy font-semibold">
+                        <td className="px-3 py-3 text-foreground font-semibold">
                           {cust?.store_name || ret.customer_id.slice(0, 8)}
                           {cust?.contact_person && (
-                            <p className="text-xs text-muted font-normal">{cust.contact_person}</p>
+                            <p className="text-xs text-muted-foreground font-normal">{cust.contact_person}</p>
                           )}
                         </td>
-                        <td className="px-3 py-3 text-navy">{ret.product_name}</td>
-                        <td className="px-3 py-3 font-semibold text-navy">{ret.qty_returned}</td>
+                        <td className="px-3 py-3 text-foreground">{ret.product_name}</td>
+                        <td className="px-3 py-3 font-semibold text-foreground">{ret.qty_returned}</td>
                         <td className="px-3 py-3">
                           <span className={`px-2 py-0.5 rounded text-xs font-semibold ${returnTypeBadge(ret.return_type)}`}>
-                            {ret.return_type === "damaged" ? "🗑 Damaged" : "✅ Good"}
+                            {ret.return_type === "damaged" ? "Damaged" : "Good"}
                           </span>
                         </td>
-                        <td className="px-3 py-3 text-muted max-w-[160px] truncate" title={ret.reason ?? ""}>
+                        <td className="px-3 py-3 text-muted-foreground max-w-[160px] truncate" title={ret.reason ?? ""}>
                           {ret.reason || "—"}
                         </td>
                         <td className="px-3 py-3">
@@ -329,7 +325,7 @@ export function AgentReports() {
                             {ret.status}
                           </span>
                           {ret.status === "accepted" && ret.return_type === "good" && (
-                            <p className="text-xs text-muted mt-0.5">
+                            <p className="text-xs text-muted-foreground mt-0.5">
                               {ret.restored_to_pallet_id ? "Restocked ✓" : "Written off"}
                             </p>
                           )}
@@ -353,7 +349,7 @@ export function AgentReports() {
                               </button>
                             </div>
                           ) : (
-                            <span className="text-xs text-muted">
+                            <span className="text-xs text-muted-foreground">
                               {ret.reviewed_at ? new Date(ret.reviewed_at).toLocaleDateString("en-PH") : "—"}
                             </span>
                           )}

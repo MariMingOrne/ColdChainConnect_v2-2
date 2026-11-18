@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "../db";
 import { products } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
@@ -11,10 +11,12 @@ export const listProducts: RequestHandler = async (_req, res) => {
   try {
     // Use demo data if no database
     if (!process.env.DATABASE_URL) {
-      return res.json(demoProducts);
+      return res.json([...demoProducts].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
     }
 
-    const allProducts = await db.query.products.findMany();
+    const allProducts = await db.query.products.findMany({
+      orderBy: [desc(products.created_at)],
+    });
     res.json(allProducts);
   } catch (error) {
     console.error("Error fetching products:", error);

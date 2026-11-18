@@ -1,5 +1,12 @@
+/* Hallmark · checked: 2026-11-18 · genre: modern-minimal (inferred) · shape: app screen
+ * design system: ACDP navy + gold, refined; light and dark themes; tokens below are the only colour source
+ * waive 19: "—" marks an empty table cell (dashboard-design rule: no fake 0 for missing data)
+ * waive 10a: sidebar collapse animates width (shadcn sidebar primitive and AdminNavigation)
+ * waive 67: OTP code input and shadcn menu shortcut hints are tracked on purpose (digit groups)
+ * open 4: some bordered chips/rows sit inside cards (Inventory, Delivery, AddOrderModal); listed for follow-up
+ * built: the project · redesign: polish · v2.0.0 */
 /** @import must precede all other statements */
-@import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300&family=Barlow+Condensed:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Barlow:wght@400;500;600;700&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -7,83 +14,139 @@
 
 @layer base {
   /**
-   * ACDP Cold Chain Connect - ERP System Design Tokens
-   * tailwind.config.ts expects HSL values
-  */
+   * ACDP Cold Chain Connect — design tokens (HSL triplets for Tailwind).
+   * Semantic names follow shadcn/ui so its components render correctly:
+   *   background / card / popover  surfaces
+   *   foreground / muted-foreground text
+   *   primary                       brand navy: primary action, current selection
+   *   accent                        soft tint for hover and selected rows (never a CTA)
+   *   brand-gold                    the one warm brand mark (active nav marker, focus of attention)
+   *   success / warning / destructive status only
+   *   chrome-*                      the navy app shell (sidebar, top bar, agent bottom bar) in both themes
+   */
   :root {
-    /* Navy/Primary Colors */
-    --navy: 230 79% 20%;
-    --navy-dark: 236 90% 15%;
-    --navy-mid: 235 85% 18%;
-    --navy-light: 233 73% 21%;
-    --navy-card: 0 0% 100%;
-    
-    /* Accent Colors */
-    --accent: 230 79% 20%;
-    --accent2: 240 87% 35%;
-    
-    /* Status/Utility Colors */
-    --gold: 37 92% 50%;
-    --green: 151 66% 40%;
-    --red: 4 74% 55%;
-    --yellow: 35 84% 63%;
-    
-    /* Neutral Colors */
-    --white: 0 0% 100%;
-    --off-white: 0 0% 96%;
-    --muted: 223 14% 50%;
-    --border: 220 13% 91%;
-    
-    /* Legacy - for compatibility */
-    --background: 0 0% 100%;
-    --foreground: 230 79% 20%;
+    --background: 220 23% 97%;
+    --foreground: 230 55% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 230 79% 20%;
+    --card-foreground: 230 55% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 230 79% 20%;
-    --muted-foreground: 223 14% 50%;
-    --accent-foreground: 0 0% 100%;
-    
+    --popover-foreground: 230 55% 15%;
+
     --primary: 230 79% 20%;
-    --primary-foreground: 0 0% 98%;
-    
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 230 79% 20%;
-    
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    
-    --input: 220 13% 91%;
-    --ring: 240 87% 35%;
-    
+    --primary-foreground: 0 0% 100%;
+    --secondary: 225 27% 94%;
+    --secondary-foreground: 230 55% 18%;
+    --muted: 225 25% 95%;
+    --muted-foreground: 225 13% 38%;
+    --accent: 228 45% 94%;
+    --accent-foreground: 230 70% 20%;
+    --link: 236 72% 42%;
+
+    --brand-gold: 38 92% 50%;
+    --brand-gold-foreground: 30 60% 12%;
+    --success: 152 62% 30%;
+    --success-soft: 150 50% 93%;
+    --warning: 28 90% 31%;
+    --warning-soft: 40 95% 92%;
+    --destructive: 2 70% 47%;
+    --destructive-soft: 2 80% 95%;
+    --destructive-foreground: 0 0% 100%;
+    --info-soft: 228 70% 95%;
+
+    --border: 225 20% 88%;
+    --input: 225 18% 82%;
+    --ring: 236 80% 52%;
     --radius: 0.5rem;
+
+    --chrome: 230 79% 18%;
+    --chrome-raised: 231 62% 25%;
+    --chrome-foreground: 225 40% 96%;
+    --chrome-muted: 226 30% 74%;
+    --chrome-border: 230 45% 28%;
+    --chrome-active: 236 68% 46%;
+
+    /* chart series: validated with dataviz validate_palette.js (light, card surface) */
+    --chart-1: hsl(232 56% 51%);
+    --chart-2: hsl(38 78% 39%);
+
+    --scrollbar-thumb: 225 15% 78%;
+    --scrollbar-thumb-hover: 225 12% 62%;
+
+    /* shadcn sidebar tokens map to the chrome */
+    --sidebar-background: var(--chrome);
+    --sidebar-foreground: var(--chrome-foreground);
+    --sidebar-primary: var(--brand-gold);
+    --sidebar-primary-foreground: var(--brand-gold-foreground);
+    --sidebar-accent: var(--chrome-raised);
+    --sidebar-accent-foreground: var(--chrome-foreground);
+    --sidebar-border: var(--chrome-border);
+    --sidebar-ring: var(--brand-gold);
+
+    /* legacy names kept so un-migrated classes still resolve to the system */
+    --navy: var(--chrome);
+    --navy-dark: 236 90% 13%;
+    --navy-mid: var(--chrome-raised);
+    --navy-light: var(--chrome-raised);
+    --navy-card: var(--card);
+    --accent2: var(--link);
+    --gold: var(--brand-gold);
+    --green: var(--success);
+    --red: var(--destructive);
+    --yellow: var(--warning);
+    --off-white: var(--background);
+
+    color-scheme: light;
   }
 
   .dark {
-    --navy: 230 79% 20%;
-    --navy-dark: 236 90% 15%;
-    --navy-mid: 235 85% 18%;
-    --navy-light: 233 73% 21%;
-    --navy-card: 15 10% 10%;
-    
-    --accent: 230 79% 20%;
-    --accent2: 240 87% 35%;
-    
-    --gold: 37 92% 50%;
-    --green: 151 66% 40%;
-    --red: 4 74% 55%;
-    --yellow: 35 84% 63%;
-    
-    --white: 0 0% 100%;
-    --off-white: 230 50% 95%;
-    --muted: 223 14% 50%;
-    --card: 15 10% 10%;
-    --card-foreground: 0 0% 98%;
-    --popover: 15 10% 10%;
-    --popover-foreground: 0 0% 98%;
-    --muted-foreground: 223 14% 65%;
-    --accent-foreground: 0 0% 100%;
-    --border: 230 30% 25%;
+    --background: 230 30% 7%;
+    --foreground: 225 30% 93%;
+    --card: 230 26% 11%;
+    --card-foreground: 225 30% 93%;
+    --popover: 230 26% 12%;
+    --popover-foreground: 225 30% 93%;
+
+    --primary: 229 85% 72%;
+    --primary-foreground: 232 60% 10%;
+    --secondary: 230 22% 17%;
+    --secondary-foreground: 225 30% 93%;
+    --muted: 230 22% 15%;
+    --muted-foreground: 226 14% 66%;
+    --accent: 230 30% 19%;
+    --accent-foreground: 225 30% 96%;
+    --link: 229 90% 76%;
+
+    --brand-gold: 40 92% 58%;
+    --brand-gold-foreground: 30 60% 10%;
+    --success: 150 50% 55%;
+    --success-soft: 152 40% 14%;
+    --warning: 38 92% 62%;
+    --warning-soft: 35 50% 14%;
+    --destructive: 2 80% 66%;
+    --destructive-soft: 2 45% 16%;
+    --destructive-foreground: 0 0% 100%;
+    --info-soft: 230 40% 18%;
+
+    --border: 230 20% 20%;
+    --input: 230 18% 26%;
+    --ring: 229 85% 72%;
+
+    --chrome: 232 45% 9%;
+    --chrome-raised: 231 35% 16%;
+    --chrome-foreground: 225 35% 94%;
+    --chrome-muted: 226 18% 66%;
+    --chrome-border: 230 25% 18%;
+    --chrome-active: 236 62% 50%;
+
+    /* chart series: validated against the dark card surface (#151a2c) */
+    --chart-1: hsl(230 79% 69%);
+    --chart-2: hsl(38 62% 45%);
+
+    --scrollbar-thumb: 230 15% 30%;
+    --scrollbar-thumb-hover: 230 15% 42%;
+    --navy-dark: 232 45% 6%;
+
+    color-scheme: dark;
   }
 }
 
@@ -92,33 +155,40 @@
     @apply border-border;
   }
 
+  /* 14px root keeps the existing rem spacing; the type scale itself is in px (tailwind.config.ts). */
   html {
     font-size: 14px;
   }
 
-  @media (max-width: 768px) {
-    html {
-      font-size: 13px;
-    }
+  html,
+  body {
+    overflow-x: clip;
+  }
 
-    h1, h2, h3, h4, h5, h6 {
-      @apply text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl;
-    }
-
-    body {
-      @apply text-xs sm:text-sm;
+  /* iOS zooms the page when a focused field is under 16px. */
+  @media (max-width: 767px) {
+    input,
+    select,
+    textarea {
+      font-size: 16px !important;
     }
   }
 
+  :focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+  }
+
   body {
-    @apply bg-off-white text-foreground font-barlow;
+    @apply bg-background text-foreground font-barlow text-sm antialiased;
+    font-variant-numeric: tabular-nums;
   }
 
   h1, h2, h3, h4, h5, h6 {
     @apply font-rajdhani;
   }
 
-  :where(p, span, li, a, button, label, td, th) {
+  :where(p, li, label) {
     overflow-wrap: anywhere;
     word-break: break-word;
   }
@@ -136,11 +206,11 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: hsl(var(--navy));
+    background: transparent;
   }
 
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--off-white));
+    background: hsl(var(--scrollbar-thumb));
     border-radius: 4px;
   }
 }
@@ -149,7 +219,7 @@
   /* Visible scrollbars with custom styling */
   .scrollbar-visible {
     scrollbar-width: thin;
-    scrollbar-color: rgb(209, 213, 219) rgb(249, 250, 251);
+    scrollbar-color: hsl(var(--scrollbar-thumb)) transparent;
   }
 
   .scrollbar-visible::-webkit-scrollbar {
@@ -158,16 +228,16 @@
   }
 
   .scrollbar-visible::-webkit-scrollbar-track {
-    background: rgb(249, 250, 251);
+    background: transparent;
   }
 
   .scrollbar-visible::-webkit-scrollbar-thumb {
-    background: rgb(209, 213, 219);
+    background: hsl(var(--scrollbar-thumb));
     border-radius: 3px;
   }
 
   .scrollbar-visible::-webkit-scrollbar-thumb:hover {
-    background: rgb(156, 163, 175);
+    background: hsl(var(--scrollbar-thumb-hover));
   }
 }
 
@@ -187,45 +257,45 @@
   }
 
   .badge-green {
-    @apply bg-green/15 text-green border border-green/30;
+    @apply bg-success-soft text-success border border-success/30;
   }
 
   .badge-red {
-    @apply bg-red/15 text-red border border-red/30;
+    @apply bg-destructive-soft text-destructive border border-destructive/30;
   }
 
   .badge-gold {
-    @apply bg-gold/15 text-gold border border-gold/30;
+    @apply bg-warning-soft text-warning border border-warning/30;
   }
 
   .badge-blue {
-    @apply bg-accent-2/15 text-accent-2 border border-accent-2/30;
+    @apply bg-info-soft text-link border border-link/30;
   }
 
   /* ── Button system ── */
   .btn-primary {
-    @apply inline-flex items-center gap-2 px-4 py-2 bg-navy text-white text-sm font-semibold rounded-lg hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {
-    @apply inline-flex items-center gap-2 px-4 py-2 border-2 border-navy text-navy bg-white text-sm font-semibold rounded-lg hover:bg-navy hover:text-white active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 px-4 py-2 border border-input text-foreground bg-card text-sm font-semibold rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-accent {
-    @apply inline-flex items-center gap-2 px-4 py-2 bg-accent-2 text-white text-sm font-semibold rounded-lg hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-danger {
-    @apply inline-flex items-center gap-2 px-4 py-2 border-2 border-red text-red bg-white text-sm font-semibold rounded-lg hover:bg-red hover:text-white active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 px-4 py-2 border border-destructive/40 text-destructive bg-card text-sm font-semibold rounded-lg hover:bg-destructive hover:text-destructive-foreground transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-ghost {
-    @apply inline-flex items-center gap-2 px-3 py-2 border border-border text-navy bg-white text-sm font-semibold rounded-lg hover:bg-off-white active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center gap-2 px-3 py-2 border border-border text-foreground bg-card text-sm font-semibold rounded-lg hover:bg-accent transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   /* ── Search input ── */
   .search-input {
-    @apply w-full pl-10 pr-4 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2 bg-white placeholder:text-muted;
+    @apply w-full pl-10 pr-4 py-2 border border-border rounded-lg text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring bg-card placeholder:text-muted-foreground;
   }
 
   /* ── Page header ── */
@@ -234,21 +304,21 @@
   }
 
   .page-title {
-    @apply font-rajdhani text-2xl md:text-3xl font-bold text-navy;
+    @apply font-rajdhani text-2xl md:text-3xl font-bold text-foreground;
   }
 
   .page-subtitle {
-    @apply text-xs text-muted mt-0.5;
+    @apply text-sm text-muted-foreground mt-0.5;
   }
 
   /* ── Module card ── */
   .module-card {
-    @apply bg-white rounded-xl border border-border overflow-hidden;
+    @apply bg-card text-card-foreground rounded-xl border border-border overflow-hidden;
   }
 
   /* ── Stat card ── */
   .stat-card {
-    @apply bg-white border border-border rounded-xl p-4;
+    @apply bg-card text-card-foreground border border-border rounded-xl p-4;
   }
 
   /* Stock value badges */
@@ -257,23 +327,22 @@
   }
 
   .stock-low {
-    @apply bg-red/20 text-red;
+    @apply bg-destructive-soft text-destructive;
   }
 
   .stock-med {
-    @apply bg-gold/20 text-gold;
+    @apply bg-warning-soft text-warning;
   }
 
   .stock-ok {
-    @apply bg-green/20 text-green;
+    @apply bg-success-soft text-success;
   }
 }
 
 .data-table-frame {
   border: 1px solid hsl(var(--border));
   border-radius: 0.75rem;
-  background: white;
-  box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+  background: hsl(var(--card));
 }
 
 .data-table th,
@@ -281,29 +350,21 @@
   padding: 0.75rem 1rem;
 }
 
-.data-table-frame table thead th,
-.data-table thead th {
-  background-color: #101f5e;
-  color: #fff;
-  font-size: 0.875rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
 .data-table td[colspan] {
   padding: 2rem 1rem;
   text-align: center;
 }
 
+/* Table heads: body face, a step smaller, sentence case, muted — never a navy bar of capitals. */
 .data-table-frame table thead th,
 .data-table thead th {
-  background: #101f5e;
+  background: hsl(var(--muted));
   border-bottom: 1px solid hsl(var(--border));
-  color: #fff;
-  font-size: 0.875rem;
-  font-weight: 700;
-  letter-spacing: 0.025em;
-  text-transform: uppercase;
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
   white-space: nowrap;
 }
 
@@ -363,16 +424,14 @@
 .stagger-children > *:nth-child(6) { animation-delay: 300ms; }
 .stagger-children > *:nth-child(n + 7) { animation-delay: 360ms; }
 
-.module-card,
-.stat-card,
-.stagger-children > * {
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+a.stat-card,
+button.stat-card {
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.module-card:hover,
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px -10px rgb(0 0 0 / 0.25);
+a.stat-card:hover,
+button.stat-card:hover {
+  border-color: hsl(var(--primary) / 0.35);
 }
 
 .fixed.inset-0.bg-black\/50,

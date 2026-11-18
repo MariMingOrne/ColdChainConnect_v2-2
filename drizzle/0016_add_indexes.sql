@@ -1,0 +1,47 @@
+-- Indexes for every foreign key and the status/date columns lists filter and sort on.
+-- Postgres does not index foreign keys automatically. Additive and safe to re-run.
+
+CREATE INDEX IF NOT EXISTS "accounts_receivable_customer_id_idx" ON "accounts_receivable" ("customer_id");
+CREATE INDEX IF NOT EXISTS "accounts_receivable_delivery_item_id_idx" ON "accounts_receivable" ("delivery_item_id");
+CREATE INDEX IF NOT EXISTS "accounts_receivable_invoice_id_idx" ON "accounts_receivable" ("invoice_id");
+CREATE INDEX IF NOT EXISTS "agent_returns_created_by_idx" ON "agent_returns" ("created_by");
+CREATE INDEX IF NOT EXISTS "agent_returns_customer_id_idx" ON "agent_returns" ("customer_id");
+CREATE INDEX IF NOT EXISTS "agent_returns_invoice_id_idx" ON "agent_returns" ("invoice_id");
+CREATE INDEX IF NOT EXISTS "agent_returns_product_id_idx" ON "agent_returns" ("product_id");
+CREATE INDEX IF NOT EXISTS "agents_user_id_idx" ON "agents" ("user_id");
+CREATE INDEX IF NOT EXISTS "audit_logs_user_id_idx" ON "audit_logs" ("user_id");
+CREATE INDEX IF NOT EXISTS "batch_pallets_batch_id_idx" ON "batch_pallets" ("batch_id");
+CREATE INDEX IF NOT EXISTS "booking_items_booking_id_idx" ON "booking_items" ("booking_id");
+CREATE INDEX IF NOT EXISTS "booking_items_product_id_idx" ON "booking_items" ("product_id");
+CREATE INDEX IF NOT EXISTS "bookings_created_by_idx" ON "bookings" ("created_by");
+CREATE INDEX IF NOT EXISTS "bookings_customer_id_idx" ON "bookings" ("customer_id");
+CREATE INDEX IF NOT EXISTS "customer_discounts_customer_id_idx" ON "customer_discounts" ("customer_id");
+CREATE INDEX IF NOT EXISTS "customers_agent_id_idx" ON "customers" ("agent_id");
+CREATE INDEX IF NOT EXISTS "deliveries_agent_id_idx" ON "deliveries" ("agent_id");
+CREATE INDEX IF NOT EXISTS "deliveries_driver_id_idx" ON "deliveries" ("driver_id");
+CREATE INDEX IF NOT EXISTS "deliveries_truck_id_idx" ON "deliveries" ("truck_id");
+CREATE INDEX IF NOT EXISTS "delivery_items_delivery_id_idx" ON "delivery_items" ("delivery_id");
+CREATE INDEX IF NOT EXISTS "delivery_items_destination_customer_id_idx" ON "delivery_items" ("destination_customer_id");
+CREATE INDEX IF NOT EXISTS "delivery_items_invoice_id_idx" ON "delivery_items" ("invoice_id");
+CREATE INDEX IF NOT EXISTS "drivers_user_id_idx" ON "drivers" ("user_id");
+CREATE INDEX IF NOT EXISTS "invoice_items_invoice_id_idx" ON "invoice_items" ("invoice_id");
+CREATE INDEX IF NOT EXISTS "invoices_agent_id_idx" ON "invoices" ("agent_id");
+CREATE INDEX IF NOT EXISTS "invoices_booking_id_idx" ON "invoices" ("booking_id");
+CREATE INDEX IF NOT EXISTS "order_pallet_items_pallet_id_idx" ON "order_pallet_items" ("pallet_id");
+CREATE INDEX IF NOT EXISTS "order_pallet_items_product_id_idx" ON "order_pallet_items" ("product_id");
+CREATE INDEX IF NOT EXISTS "order_pallets_order_id_idx" ON "order_pallets" ("order_id");
+CREATE INDEX IF NOT EXISTS "order_pallets_truck_id_idx" ON "order_pallets" ("truck_id");
+CREATE INDEX IF NOT EXISTS "pallet_items_pallet_id_idx" ON "pallet_items" ("pallet_id");
+CREATE INDEX IF NOT EXISTS "pallet_items_product_id_idx" ON "pallet_items" ("product_id");
+CREATE INDEX IF NOT EXISTS "receipts_customer_id_idx" ON "receipts" ("customer_id");
+CREATE INDEX IF NOT EXISTS "receipts_delivery_item_id_idx" ON "receipts" ("delivery_item_id");
+CREATE INDEX IF NOT EXISTS "receipts_invoice_id_idx" ON "receipts" ("invoice_id");
+CREATE INDEX IF NOT EXISTS "receipts_truck_id_idx" ON "receipts" ("truck_id");
+CREATE INDEX IF NOT EXISTS "trucks_driver_id_idx" ON "trucks" ("driver_id");
+CREATE INDEX IF NOT EXISTS "bookings_status_idx" ON "bookings" ("status");
+CREATE INDEX IF NOT EXISTS "bookings_created_at_idx" ON "bookings" ("created_at");
+CREATE INDEX IF NOT EXISTS "accounts_receivable_status_idx" ON "accounts_receivable" ("status");
+CREATE INDEX IF NOT EXISTS "audit_logs_created_at_idx" ON "audit_logs" ("created_at");
+CREATE INDEX IF NOT EXISTS "deliveries_status_idx" ON "deliveries" ("status");
+CREATE INDEX IF NOT EXISTS "invoices_created_at_idx" ON "invoices" ("created_at");
+CREATE INDEX IF NOT EXISTS "receipts_confirmed_at_idx" ON "receipts" ("confirmed_at");

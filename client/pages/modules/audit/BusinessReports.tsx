@@ -10,9 +10,9 @@ import { useReportData } from "./useReportData";
 const peso = (value: number) => `₱${value.toLocaleString()}`;
 
 const STATUS_STYLES: Record<string, string> = {
-  "in-stock": "bg-green-100 text-green-800",
-  "low-stock": "bg-yellow-100 text-yellow-800",
-  expiring: "bg-orange-100 text-orange-800",
+  "in-stock": "bg-success-soft text-success",
+  "low-stock": "bg-warning-soft text-warning",
+  expiring: "bg-warning-soft text-warning",
 };
 
 const statusLabel = (status: string) =>
@@ -31,9 +31,9 @@ function ChartFrame({ children }: { children: React.ReactElement }) {
 function ReportStatus({ title, subtitle, message }: { title: string; subtitle: string; message: string }) {
   return (
     <Card className="space-y-2 p-6">
-      <h2 className="text-xl font-bold text-navy">{title}</h2>
-      <p className="text-sm text-gray-500">{subtitle}</p>
-      <p role="status" className="text-sm text-gray-600">{message}</p>
+      <h2 className="text-xl font-bold text-foreground">{title}</h2>
+      <p className="text-sm text-muted-foreground">{subtitle}</p>
+      <p role="status" className="text-sm text-muted-foreground">{message}</p>
     </Card>
   );
 }

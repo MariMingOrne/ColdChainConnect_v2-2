@@ -12,6 +12,7 @@ import {
   primaryKey,
   date,
   jsonb,
+  index,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
@@ -74,7 +75,9 @@ export const customers = pgTable("customers", {
   credit_terms_days: integer("credit_terms_days").default(30).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("customers_agent_id_idx").on(table.agent_id),
+]);
 
 // Customer discounts table
 export const customer_discounts = pgTable("customer_discounts", {
@@ -85,7 +88,9 @@ export const customer_discounts = pgTable("customer_discounts", {
   label: text("label").notNull(),
   rate: decimal("rate", { precision: 5, scale: 4 }).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("customer_discounts_customer_id_idx").on(table.customer_id),
+]);
 
 // Products table
 export const products = pgTable("products", {
@@ -125,7 +130,9 @@ export const batch_pallets = pgTable("batch_pallets", {
   placement_location: text("placement_location"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("batch_pallets_batch_id_idx").on(table.batch_id),
+]);
 
 // Pallet items table
 export const pallet_items = pgTable("pallet_items", {
@@ -140,7 +147,10 @@ export const pallet_items = pgTable("pallet_items", {
   expiration_date: date("expiration_date", { mode: "string" }),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("pallet_items_pallet_id_idx").on(table.pallet_id),
+  index("pallet_items_product_id_idx").on(table.product_id),
+]);
 
 // Agents table — account-linked staff with login credentials
 export const agents = pgTable("agents", {
@@ -157,7 +167,9 @@ export const agents = pgTable("agents", {
   is_active: boolean("is_active").default(true),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("agents_user_id_idx").on(table.user_id),
+]);
 
 // Drivers table — field staff; optional login account via user_id
 export const drivers = pgTable("drivers", {
@@ -171,7 +183,9 @@ export const drivers = pgTable("drivers", {
   is_active: boolean("is_active").default(true),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("drivers_user_id_idx").on(table.user_id),
+]);
 
 // Trucks table
 export const trucks = pgTable("trucks", {
@@ -182,7 +196,9 @@ export const trucks = pgTable("trucks", {
   status: truckStatusEnum("status").default("available"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("trucks_driver_id_idx").on(table.driver_id),
+]);
 
 // Bookings table
 export const bookings = pgTable("bookings", {
@@ -196,7 +212,12 @@ export const bookings = pgTable("bookings", {
   status: bookingStatusEnum("status").default("pending").notNull(),
   prepared_delivery_date: text("prepared_delivery_date"),
   created_at: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("bookings_created_by_idx").on(table.created_by),
+  index("bookings_customer_id_idx").on(table.customer_id),
+  index("bookings_status_idx").on(table.status),
+  index("bookings_created_at_idx").on(table.created_at),
+]);
 
 // Booking items table
 export const booking_items = pgTable("booking_items", {
@@ -209,7 +230,10 @@ export const booking_items = pgTable("booking_items", {
     .references(() => products.id),
   qty_ordered: integer("qty_ordered").notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("booking_items_booking_id_idx").on(table.booking_id),
+  index("booking_items_product_id_idx").on(table.product_id),
+]);
 
 // Order pallets table (pallets created for order fulfillment)
 export const order_pallets = pgTable("order_pallets", {
@@ -221,7 +245,10 @@ export const order_pallets = pgTable("order_pallets", {
   status: varchar("status", { length: 20 }).default("draft").notNull(), // draft, prepared, approved, shipped
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("order_pallets_order_id_idx").on(table.order_id),
+  index("order_pallets_truck_id_idx").on(table.truck_id),
+]);
 
 // Order pallet items table
 export const order_pallet_items = pgTable("order_pallet_items", {
@@ -237,7 +264,10 @@ export const order_pallet_items = pgTable("order_pallet_items", {
   batch_item_id: text("batch_item_id").notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("order_pallet_items_pallet_id_idx").on(table.pallet_id),
+  index("order_pallet_items_product_id_idx").on(table.product_id),
+]);
 
 // Invoices table
 export const invoices = pgTable("invoices", {
@@ -264,7 +294,11 @@ export const invoices = pgTable("invoices", {
   prepared_by: text("prepared_by"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("invoices_agent_id_idx").on(table.agent_id),
+  index("invoices_booking_id_idx").on(table.booking_id),
+  index("invoices_created_at_idx").on(table.created_at),
+]);
 
 // Invoice items table — line-item snapshot frozen at invoice creation
 export const invoice_items = pgTable("invoice_items", {
@@ -279,7 +313,9 @@ export const invoice_items = pgTable("invoice_items", {
   unit_price: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("invoice_items_invoice_id_idx").on(table.invoice_id),
+]);
 
 // Deliveries table
 export const deliveries = pgTable("deliveries", {
@@ -296,7 +332,12 @@ export const deliveries = pgTable("deliveries", {
   status: deliveryStatusEnum("status").default("pending").notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("deliveries_agent_id_idx").on(table.agent_id),
+  index("deliveries_driver_id_idx").on(table.driver_id),
+  index("deliveries_truck_id_idx").on(table.truck_id),
+  index("deliveries_status_idx").on(table.status),
+]);
 
 // Delivery items table
 export const delivery_items = pgTable("delivery_items", {
@@ -319,7 +360,11 @@ export const delivery_items = pgTable("delivery_items", {
   paid_at: timestamp("paid_at"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("delivery_items_delivery_id_idx").on(table.delivery_id),
+  index("delivery_items_destination_customer_id_idx").on(table.destination_customer_id),
+  index("delivery_items_invoice_id_idx").on(table.invoice_id),
+]);
 
 // Receipts table
 export const receipts = pgTable("receipts", {
@@ -341,7 +386,13 @@ export const receipts = pgTable("receipts", {
   notes: text("notes"),
   payment_reference: text("payment_reference"),
   confirmed_at: timestamp("confirmed_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("receipts_customer_id_idx").on(table.customer_id),
+  index("receipts_delivery_item_id_idx").on(table.delivery_item_id),
+  index("receipts_invoice_id_idx").on(table.invoice_id),
+  index("receipts_truck_id_idx").on(table.truck_id),
+  index("receipts_confirmed_at_idx").on(table.confirmed_at),
+]);
 
 // Accounts Receivable table — tracks unpaid delivery amounts
 export const accounts_receivable = pgTable("accounts_receivable", {
@@ -359,7 +410,12 @@ export const accounts_receivable = pgTable("accounts_receivable", {
   notes: text("notes"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("accounts_receivable_customer_id_idx").on(table.customer_id),
+  index("accounts_receivable_delivery_item_id_idx").on(table.delivery_item_id),
+  index("accounts_receivable_invoice_id_idx").on(table.invoice_id),
+  index("accounts_receivable_status_idx").on(table.status),
+]);
 
 // Agent Returns table — tracks returned delivery goods
 export const agent_returns = pgTable("agent_returns", {
@@ -385,7 +441,12 @@ export const agent_returns = pgTable("agent_returns", {
   reviewed_at: timestamp("reviewed_at"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("agent_returns_created_by_idx").on(table.created_by),
+  index("agent_returns_customer_id_idx").on(table.customer_id),
+  index("agent_returns_invoice_id_idx").on(table.invoice_id),
+  index("agent_returns_product_id_idx").on(table.product_id),
+]);
 
 // Audit logs table
 export const audit_logs = pgTable("audit_logs", {
@@ -399,7 +460,10 @@ export const audit_logs = pgTable("audit_logs", {
   before_state: text("before_state"),
   after_state: text("after_state"),
   created_at: timestamp("created_at").defaultNow().notNull(),
-});
+}, (table) => [
+  index("audit_logs_user_id_idx").on(table.user_id),
+  index("audit_logs_created_at_idx").on(table.created_at),
+]);
 
 // ─── Relations ────────────────────────────────────────────────────────────────
 

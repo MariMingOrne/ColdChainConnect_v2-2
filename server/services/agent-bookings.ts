@@ -1,6 +1,38 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray, type SQL } from "drizzle-orm";
+import type { PgColumn } from "drizzle-orm/pg-core";
 import { db } from "../db";
-import { agents, bookings, deliveries } from "../db/schema";
+import { agents, bookings, deliveries, invoices } from "../db/schema";
+import type { AuthRequest } from "../middleware/auth";
+
+/** Invoices for the orders an agent created or is delivering. */
+export async function getAgentInvoiceIds(userId: string): Promise<string[]> {
+  const orderIds = await getAgentOrderIds(userId);
+  if (!orderIds.length) return [];
+  const rows = await db.select({ id: invoices.id }).from(invoices).where(inArray(invoices.booking_id, orderIds));
+  return rows.map((row) => row.id);
+}
+
+/**
+ * For agents, the invoice ids they may see; for every other role, null (no restriction).
+ * Use to scope financial lists (invoices, receipts, AR, returns) server-side.
+ */
+export async function agentInvoiceScope(req: AuthRequest): Promise<string[] | null> {
+  return req.user?.role === "agent" ? getAgentInvoiceIds(req.user.userId) : null;
+}
+
+/**
+ * The agent restriction as a query condition on an invoice-id column.
+ * `none` means the agent has no invoices (return an empty list without querying);
+ * `where` is undefined for roles that see everything.
+ */
+export async function agentInvoiceFilter(
+  req: AuthRequest,
+  invoiceIdColumn: PgColumn,
+): Promise<{ none: boolean; where: SQL | undefined }> {
+  const scope = await agentInvoiceScope(req);
+  if (scope?.length === 0) return { none: true, where: undefined };
+  return { none: false, where: scope ? inArray(invoiceIdColumn, scope) : undefined };
+}
 
 export async function getAgentOrderIds(userId: string): Promise<string[]> {
   const agent = await db.query.agents.findFirst({

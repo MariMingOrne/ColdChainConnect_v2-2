@@ -1,6 +1,9 @@
+import { StatCard } from "@/components/shared/StatCard";
+import { Package, CalendarDays, Store, CircleCheck } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { RefreshCw, ArrowLeft } from "lucide-react";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { ArrowLeft } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Customer, Truck, Invoice } from "@shared/api";
 import { Table } from "@/components/ui/table";
@@ -36,7 +39,6 @@ export function DeliveryHistory() {
   const [invoices,  setInvoices]  = useState<Invoice[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [search,       setSearch]       = useState("");
   const [customerFilter, setCustomerFilter] = useState("");
@@ -48,7 +50,6 @@ export function DeliveryHistory() {
 
   const fetchAll = useCallback(async () => {
     if (!token) return;
-    setLoading(true);
     try {
       const [rRes, cRes, tRes, iRes] = await Promise.all([
         fetch("/api/receipts",  { headers: authHeaders(token) }),
@@ -84,13 +85,8 @@ export function DeliveryHistory() {
     }
   }, [token]);
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchAll();
-    setIsRefreshing(false);
-  };
-
   useEffect(() => { fetchAll(); }, [fetchAll]);
+  useAutoRefresh(fetchAll, { enabled: Boolean(token) });
 
   const filtered = receipts.filter((r) => {
     const q = search.toLowerCase();
@@ -106,7 +102,7 @@ export function DeliveryHistory() {
   });
 
   const sorted = [...filtered].sort((a, b) => {
-    if (!sort) return 0;
+    if (!sort) return (Date.parse(b.confirmed_at) || 0) - (Date.parse(a.confirmed_at) || 0);
     const value = (receipt: ReceiptExt) => ({ receipt: receipt.receipt_number, customer: receipt.customer?.store_name, truck: receipt.truck?.license_plate, confirmed: receipt.confirmed_at, notes: receipt.notes })[sort.key];
     return compareValues(value(a), value(b)) * (sort.direction === "asc" ? 1 : -1);
   });
@@ -134,27 +130,18 @@ export function DeliveryHistory() {
             Completed deliveries and their original receipts
           </p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="btn-ghost"
-          title="Refresh data"
-        >
-          <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-          Refresh
-        </button>
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red/30 bg-red/10 px-4 py-2 text-xs text-red">⚠️ {error}</div>
+        <div className="rounded-lg border border-red/30 bg-red/10 px-4 py-2 text-xs text-red">{error}</div>
       )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <SummaryCard label="Total Deliveries" value={totalReceipts.toString()} icon="📦" color="blue" />
-        <SummaryCard label="Today"             value={todayReceipts.toString()} icon="📅" color="green" />
-        <SummaryCard label="Unique Customers"  value={new Set(receipts.map((r) => r.customer_id)).size.toString()} icon="🏪" color="gold" />
-        <SummaryCard label="Paid Invoices"     value={receipts.length.toString()} icon="✅" color="green" />
+        <StatCard label="Total Deliveries" value={totalReceipts.toString()} icon={Package} />
+        <StatCard label="Today"             value={todayReceipts.toString()} icon={CalendarDays} />
+        <StatCard label="Unique customers" value={new Set(receipts.map((r) => r.customer_id)).size.toString()} icon={Store} />
+        <StatCard label="Paid in full" value={receipts.filter((r) => r.invoice?.payment_status === "paid").length.toString()} icon={CircleCheck} detail={`of ${receipts.length} delivered`} />
       </div>
 
       {/* Search and Filters */}
@@ -182,7 +169,7 @@ export function DeliveryHistory() {
       {/* Table */}
       <div className="data-table-frame overflow-hidden">
         {loading ? (
-          <p className="px-6 py-8 text-sm text-muted">Loading…</p>
+          <p className="px-6 py-8 text-sm text-muted-foreground">Loading…</p>
         ) : (
           <div className="overflow-x-auto">
             <Table className="w-full text-xs md:text-sm">
@@ -193,37 +180,37 @@ export function DeliveryHistory() {
                   <SortableHeader label="Truck" sortKey="truck" sort={sort} onSort={setSort} />
                   <SortableHeader label="Confirmed At" sortKey="confirmed" sort={sort} onSort={setSort} />
                   <SortableHeader label="Notes" sortKey="notes" sort={sort} onSort={setSort} />
-                  <th className="bg-[#101f5e] px-3 py-3 text-left text-sm font-bold text-white">Action</th>
+                  <th className="bg-muted px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Action</th>
                 </tr>
               </thead>
               <tbody>
                 {paginated.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-8 text-center text-muted">
+                    <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
                       {receipts.length === 0 ? "No completed deliveries yet." : "No results matching your search."}
                     </td>
                   </tr>
                 ) : (
                   paginated.map((r) => (
-                    <tr key={r.id} className="border-b border-border hover:bg-off-white/50 transition-colors">
+                    <tr key={r.id} className="border-b border-border hover:bg-accent/50 transition-colors">
                       <td className="px-3 py-3 font-mono font-semibold text-accent-2">{r.receipt_number}</td>
-                      <td className="px-3 py-3 text-navy font-semibold">
-                        {r.customer?.store_name ?? <span className="text-muted font-normal">{r.customer_id.slice(0, 8)}…</span>}
-                        {r.customer?.location && <p className="text-muted font-normal text-xs">{r.customer.location}</p>}
+                      <td className="px-3 py-3 text-foreground font-semibold">
+                        {r.customer?.store_name ?? <span className="text-muted-foreground font-normal">{r.customer_id.slice(0, 8)}…</span>}
+                        {r.customer?.location && <p className="text-muted-foreground font-normal text-xs">{r.customer.location}</p>}
                       </td>
-                      <td className="px-3 py-3 text-navy">
-                        {r.truck?.license_plate ?? <span className="text-muted">{r.truck_id.slice(0, 8)}…</span>}
+                      <td className="px-3 py-3 text-foreground">
+                        {r.truck?.license_plate ?? <span className="text-muted-foreground">{r.truck_id.slice(0, 8)}…</span>}
                       </td>
-                      <td className="px-3 py-3 text-navy whitespace-nowrap">
+                      <td className="px-3 py-3 text-foreground whitespace-nowrap">
                         {new Date(r.confirmed_at).toLocaleString("en-PH")}
                       </td>
-                      <td className="px-3 py-3 text-muted">{r.notes ?? "—"}</td>
+                      <td className="px-3 py-3 text-muted-foreground">{r.notes ?? "—"}</td>
                       <td className="px-3 py-3">
                         <button
                           onClick={() => setViewReceipt(r)}
-                          className="px-3 py-1 border border-border rounded text-xs font-semibold whitespace-nowrap hover:bg-off-white transition-colors"
+                          className="px-3 py-1 border border-border rounded text-xs font-semibold whitespace-nowrap hover:bg-accent transition-colors"
                         >
-                          🧾 View OR
+                          View OR
                         </button>
                       </td>
                     </tr>
@@ -236,25 +223,25 @@ export function DeliveryHistory() {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-off-white/50">
-            <span className="text-xs text-muted">
+          <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-muted/50">
+            <span className="text-xs text-muted-foreground">
               {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length}
             </span>
             <div className="flex gap-2">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-3 py-1 border border-border rounded text-xs font-semibold disabled:opacity-40 hover:bg-white"
+                className="px-3 py-1 border border-border rounded text-xs font-semibold disabled:opacity-40 hover:bg-card"
               >
-                ← Prev
+                Previous
               </button>
-              <span className="px-3 py-1 text-xs font-semibold text-navy">{page} / {totalPages}</span>
+              <span className="px-3 py-1 text-xs font-semibold text-foreground">{page} / {totalPages}</span>
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="px-3 py-1 border border-border rounded text-xs font-semibold disabled:opacity-40 hover:bg-white"
+                className="px-3 py-1 border border-border rounded text-xs font-semibold disabled:opacity-40 hover:bg-card"
               >
-                Next →
+                Next
               </button>
             </div>
           </div>
@@ -267,19 +254,6 @@ export function DeliveryHistory() {
 
 // ─── Summary Card ─────────────────────────────────────────────────────────────
 
-function SummaryCard({ label, value, icon, color }: { label: string; value: string; icon: string; color: string }) {
-  return (
-    <div className="bg-white border border-border rounded-2xl p-5 flex flex-col gap-2">
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="text-xs text-muted font-semibold uppercase tracking-tight">{label}</div>
-          <div className={`font-rajdhani text-2xl font-bold mt-2 text-${color}`}>{value}</div>
-        </div>
-        <span className="text-3xl">{icon}</span>
-      </div>
-    </div>
-  );
-}
 
 // ─── Original Receipt Modal ───────────────────────────────────────────────────
 
@@ -294,7 +268,7 @@ function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt; onClo
         </div>
         <div className="flex gap-2">
           <button onClick={handlePrint} className="btn-ghost">
-            🖨 Print
+            Print
           </button>
           <button onClick={onClose} className="btn-ghost">
             <ArrowLeft size={15} />
@@ -303,37 +277,37 @@ function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt; onClo
         </div>
       </div>
 
-      <div className="max-w-lg w-full bg-white rounded-2xl border border-border">
+      <div className="max-w-lg w-full bg-card rounded-2xl border border-border">
         {/* Receipt body */}
         <div className="p-8 space-y-6 font-mono text-sm" id="receipt-print-area">
           {/* Company header */}
           <div className="text-center border-b-2 border-dashed border-border pb-4">
-            <p className="font-rajdhani text-2xl font-bold text-navy tracking-tight">COLDCHAIN CONNECT</p>
+            <p className="font-rajdhani text-2xl font-bold text-foreground tracking-tight">COLDCHAIN CONNECT</p>
             <p className="page-subtitle">ACDP Warehouse, Pampanga</p>
-            <p className="text-xs text-muted">Cold Chain Logistics & Distribution</p>
+            <p className="text-xs text-muted-foreground">Cold Chain Logistics & Distribution</p>
           </div>
 
           {/* Receipt info */}
           <div className="space-y-1 text-xs">
             <div className="flex justify-between">
-              <span className="text-muted">Receipt No.:</span>
+              <span className="text-muted-foreground">Receipt No.:</span>
               <span className="font-bold text-accent-2">{receipt.receipt_number}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted">Date:</span>
+              <span className="text-muted-foreground">Date:</span>
               <span>{new Date(receipt.confirmed_at).toLocaleString("en-PH")}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted">Invoice ID:</span>
+              <span className="text-muted-foreground">Invoice ID:</span>
               <span>{receipt.invoice_id.slice(0, 8)}…</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-muted">Truck:</span>
+              <span className="text-muted-foreground">Truck:</span>
               <span>{receipt.truck?.license_plate ?? receipt.truck_id.slice(0, 8)}</span>
             </div>
             {receipt.confirmed_by && (
               <div className="flex justify-between">
-                <span className="text-muted">Confirmed by:</span>
+                <span className="text-muted-foreground">Confirmed by:</span>
                 <span>{receipt.confirmed_by}</span>
               </div>
             )}
@@ -341,10 +315,10 @@ function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt; onClo
 
           {/* Customer info */}
           <div className="border-t border-dashed border-border pt-4 space-y-1 text-xs">
-            <p className="font-semibold text-navy mb-1">Delivered to:</p>
+            <p className="font-semibold text-foreground mb-1">Delivered to:</p>
             <p className="font-bold">{receipt.customer?.store_name ?? receipt.customer_id}</p>
-            {receipt.customer?.location && <p className="text-muted">{receipt.customer.location}</p>}
-            {receipt.customer?.contact_info && <p className="text-muted">{receipt.customer.contact_info}</p>}
+            {receipt.customer?.location && <p className="text-muted-foreground">{receipt.customer.location}</p>}
+            {receipt.customer?.contact_info && <p className="text-muted-foreground">{receipt.customer.contact_info}</p>}
           </div>
 
           {/* Invoice status */}
@@ -355,7 +329,7 @@ function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt; onClo
             </div>
             {receipt.invoice?.payment_status && (
               <div className="flex justify-between">
-                <span className="text-muted">Payment Status:</span>
+                <span className="text-muted-foreground">Payment Status:</span>
                 <span>{receipt.invoice.payment_status.toUpperCase()}</span>
               </div>
             )}
@@ -364,16 +338,16 @@ function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt; onClo
           {/* Notes */}
           {receipt.notes && (
             <div className="border-t border-dashed border-border pt-4 text-xs">
-              <p className="text-muted">Notes:</p>
+              <p className="text-muted-foreground">Notes:</p>
               <p>{receipt.notes}</p>
             </div>
           )}
 
           {/* Footer */}
-          <div className="border-t-2 border-dashed border-border pt-4 text-center text-xs text-muted space-y-1">
+          <div className="border-t-2 border-dashed border-border pt-4 text-center text-xs text-muted-foreground space-y-1">
             <p>This is an official Original Receipt.</p>
             <p>Thank you for your business!</p>
-            <p className="mt-2 font-semibold text-navy">ColdChain Connect</p>
+            <p className="mt-2 font-semibold text-foreground">ColdChain Connect</p>
           </div>
         </div>
       </div>

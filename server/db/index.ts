@@ -23,3 +23,6 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.trim()) {
 }
 
 export const db = drizzle(pool, { schema });
+
+/** Close the connection pool (tests, graceful shutdown). */
+export const closeDb = () => pool.end();

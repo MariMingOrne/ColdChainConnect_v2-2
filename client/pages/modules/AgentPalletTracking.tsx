@@ -1,10 +1,14 @@
+import { confirmAction } from "@/lib/confirm";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { ArrowLeft, ChevronDown, ChevronUp, Package, RefreshCw, Search } from "lucide-react";
-import { Booking, Pallet, Product } from "@shared/api";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { ArrowLeft, ChevronDown, ChevronUp, Package, Search } from "lucide-react";
+import { Booking, InventoryBatch, Pallet, Product } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { Input } from "@/components/ui/input";
+import { batchSummary, groupPalletItemsByProduct } from "@/components/pallets/palletUtils";
+import { PalletBatchBreakdown } from "@/components/pallets/PalletBatchBreakdown";
 
 interface TrackingPallet extends Pallet {
   order?: Booking;
@@ -28,9 +32,9 @@ const nextActionLabels: Record<Pallet["status"], string | null> = {
 
 function statusClasses(status: Pallet["status"]) {
   if (status === "shipped") return "bg-green/10 text-green";
-  if (status === "approved") return "bg-blue-50 text-accent-2";
-  if (status === "prepared") return "bg-gold/15 text-navy";
-  return "bg-off-white text-muted";
+  if (status === "approved") return "bg-info-soft text-accent-2";
+  if (status === "prepared") return "bg-gold/15 text-foreground";
+  return "bg-muted text-muted-foreground";
 }
 
 export function AgentPalletTracking() {
@@ -42,25 +46,26 @@ export function AgentPalletTracking() {
   const [scanPalletId, setScanPalletId] = useState<string | null>(null);
   const [pallets, setPallets] = useState<TrackingPallet[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [batches, setBatches] = useState<InventoryBatch[]>([]);
   const [search, setSearch] = useState(searchParams.get("order") ?? "");
   const [filter, setFilter] = useState<PalletFilter>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedProductKeys, setExpandedProductKeys] = useState<Set<string>>(() => new Set());
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [updatingPalletId, setUpdatingPalletId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   const fetchTracking = async () => {
     if (!token) return;
-    setIsLoading(true);
     setError("");
 
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const [bookingRes, palletRes, productRes] = await Promise.all([
+      const [bookingRes, palletRes, productRes, batchRes] = await Promise.all([
         fetch("/api/bookings", { headers }),
         fetch("/api/pallets", { headers }),
         fetch("/api/products", { headers }),
+        fetch("/api/inventory-batches", { headers }),
       ]);
 
       if (!bookingRes.ok || !palletRes.ok || !productRes.ok) {
@@ -75,6 +80,7 @@ export function AgentPalletTracking() {
       const bookingsById = new Map(bookings.map((booking) => [booking.id, booking]));
 
       setProducts(productList);
+      setBatches(batchRes.ok ? await batchRes.json() : []);
       setPallets(allPallets
         .filter((pallet) => bookingsById.has(pallet.order_id))
         .map((pallet) => ({ ...pallet, order: bookingsById.get(pallet.order_id) })));
@@ -82,13 +88,13 @@ export function AgentPalletTracking() {
       setError(fetchError instanceof Error ? fetchError.message : "Could not load pallet tracking.");
     } finally {
       setIsLoading(false);
-      setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
     void fetchTracking();
   }, [token]);
+  useAutoRefresh(fetchTracking, { enabled: Boolean(token) });
 
   useEffect(() => {
     if (isLoading || !scanCode || handledScanKeyRef.current === location.key) return;
@@ -125,13 +131,16 @@ export function AgentPalletTracking() {
   const productNameFor = (productId: string) =>
     products.find((product) => product.id === productId)?.name ?? productId;
 
+  const toggleProductBatches = (key: string) =>
+    setExpandedProductKeys((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+
   const totalUnits = (pallet: Pallet) =>
     (pallet.items ?? []).reduce((sum, item) => sum + item.qty_units, 0);
-
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    void fetchTracking();
-  };
 
   const handleAdvancePallet = async (pallet: TrackingPallet): Promise<boolean> => {
     if (!token) return false;
@@ -173,23 +182,23 @@ export function AgentPalletTracking() {
     if (await handleAdvancePallet(scanPallet)) setScanPalletId(null);
   };
 
-  const handleListAdvance = (pallet: TrackingPallet) => {
-    if (pallet.status === "approved" && !window.confirm("Mark this pallet as shipped?")) return;
+  const handleListAdvance = async (pallet: TrackingPallet) => {
+    if (pallet.status === "approved" && !(await confirmAction("Mark this pallet as shipped?"))) return;
     void handleAdvancePallet(pallet);
   };
 
-  if (isLoading) return <LoadingSpinner className="fixed inset-0 z-0 min-h-0 bg-off-white" slow />;
+  if (isLoading) return <LoadingSpinner className="fixed inset-0 z-0 min-h-0 bg-muted" slow />;
 
   if (scanPallet) {
     return (
       <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col gap-4 px-0 pb-24 pt-5 sm:px-4">
         <header className="flex items-start justify-between gap-3 px-4 sm:px-0">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Scanned pallet</p>
-            <h1 className="mt-1 truncate font-rajdhani text-2xl font-bold text-navy">
+            <p className="text-xs font-semibold text-muted-foreground">Scanned pallet</p>
+            <h1 className="mt-1 truncate font-rajdhani text-2xl font-bold text-foreground">
               {scanPallet.order?.customer?.store_name ?? "Customer order"}
             </h1>
-            <p className="mt-0.5 text-xs text-muted">Pallet {scanPallet.id.slice(0, 8)} · Order {scanPallet.order_id.slice(0, 8)}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">Pallet {scanPallet.id.slice(0, 8)} · Order {scanPallet.order_id.slice(0, 8)}</p>
           </div>
           <button
             type="button"
@@ -202,9 +211,9 @@ export function AgentPalletTracking() {
           </button>
         </header>
 
-        <div className="mx-4 rounded-2xl border border-border bg-white p-5 shadow-sm sm:mx-0">
-          <div className="flex items-center justify-between rounded-xl bg-off-white p-3 text-sm">
-            <span className="text-muted">Current status</span>
+        <div className="mx-4 rounded-2xl border border-border bg-card p-5 shadow-sm sm:mx-0">
+          <div className="flex items-center justify-between rounded-xl bg-muted p-3 text-sm">
+            <span className="text-muted-foreground">Current status</span>
             <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClasses(scanPallet.status)}`}>
               {statusLabels[scanPallet.status]}
             </span>
@@ -217,7 +226,7 @@ export function AgentPalletTracking() {
               type="button"
               onClick={() => setScanPalletId(null)}
               disabled={updatingPalletId !== null}
-              className="min-h-11 rounded-xl border border-border bg-white px-4 text-sm font-semibold text-navy disabled:opacity-60"
+              className="min-h-11 rounded-xl border border-border bg-card px-4 text-sm font-semibold text-foreground disabled:opacity-60"
             >
               {nextActionLabels[scanPallet.status] ? "Cancel" : "Close"}
             </button>
@@ -226,7 +235,7 @@ export function AgentPalletTracking() {
                 type="button"
                 onClick={() => void confirmScannedPallet()}
                 disabled={updatingPalletId !== null}
-                className="min-h-11 rounded-xl bg-navy px-4 text-sm font-semibold text-white disabled:cursor-wait disabled:opacity-60"
+                className="min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:cursor-wait disabled:opacity-60"
               >
                 {updatingPalletId === scanPallet.id ? "Updating…" : nextActionLabels[scanPallet.status]}
               </button>
@@ -241,18 +250,9 @@ export function AgentPalletTracking() {
     <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col gap-4 px-0 pb-24 pt-5 sm:px-4">
       <header className="flex items-start justify-between gap-3 px-4 sm:px-0">
         <div>
-          <h1 className="font-rajdhani text-2xl font-bold text-navy">Pallet Tracking</h1>
-          <p className="mt-0.5 text-sm text-muted">Track preparation and dispatch progress for your orders.</p>
+          <h1 className="font-rajdhani text-2xl font-bold text-foreground">Pallet Tracking</h1>
+          <p className="mt-0.5 text-sm text-muted-foreground">Track preparation and dispatch progress for your orders.</p>
         </div>
-        <button
-          type="button"
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          aria-label="Refresh pallets"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-white text-navy transition hover:bg-off-white disabled:opacity-50"
-        >
-          <RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} />
-        </button>
       </header>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
@@ -262,20 +262,20 @@ export function AgentPalletTracking() {
           ["Ready", pallets.filter((pallet) => pallet.status === "approved").length],
           ["Dispatched", pallets.filter((pallet) => pallet.status === "shipped").length],
         ] as const).map(([label, count]) => (
-          <div key={label} className="rounded-2xl border border-border bg-white px-3 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-muted">{label}</p>
-            <p className="mt-1 font-rajdhani text-2xl font-bold text-navy">{count}</p>
+          <div key={label} className="rounded-2xl border border-border bg-card px-3 py-3">
+            <p className="text-xs font-semibold text-muted-foreground">{label}</p>
+            <p className="mt-1 font-rajdhani text-2xl font-bold text-foreground">{count}</p>
           </div>
         ))}
       </div>
 
-      <label className="flex min-h-12 items-center gap-2 rounded-xl border border-border bg-white px-3 text-muted focus-within:border-accent-2">
+      <label className="flex min-h-12 items-center gap-2 rounded-xl border border-border bg-card px-3 text-muted-foreground focus-within:border-accent-2">
         <Search size={17} />
         <Input
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search pallet, order, or customer"
-          className="min-w-0 flex-1 bg-transparent text-sm text-navy outline-none placeholder:text-muted"
+          className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
         />
       </label>
 
@@ -291,7 +291,7 @@ export function AgentPalletTracking() {
             key={value}
             type="button"
             onClick={() => setFilter(value)}
-            className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-semibold transition ${filter === value ? "bg-navy text-white" : "border border-border bg-white text-muted"}`}
+            className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-semibold transition ${filter === value ? "bg-primary text-primary-foreground" : "border border-border bg-card text-muted-foreground"}`}
           >
             {label}
           </button>
@@ -301,10 +301,10 @@ export function AgentPalletTracking() {
       {error && <p role="alert" className="rounded-xl border border-red/20 bg-red/5 p-3 text-sm text-red">{error}</p>}
 
       {filteredPallets.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border bg-white px-5 py-10 text-center">
-          <Package size={30} className="mx-auto mb-3 text-muted" />
-          <p className="font-semibold text-navy">{pallets.length ? "No matching pallets" : "No pallets yet"}</p>
-          <p className="mt-1 text-sm text-muted">
+        <div className="rounded-2xl border border-dashed border-border bg-card px-5 py-10 text-center">
+          <Package size={30} className="mx-auto mb-3 text-muted-foreground" />
+          <p className="font-semibold text-foreground">{pallets.length ? "No matching pallets" : "No pallets yet"}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
             {pallets.length ? "Try another search or status filter." : "Pallets for your orders will appear here."}
           </p>
         </div>
@@ -314,9 +314,10 @@ export function AgentPalletTracking() {
             const isExpanded = expandedId === pallet.id;
             const customer = pallet.order?.customer;
             const items = pallet.items ?? [];
+            const productGroups = groupPalletItemsByProduct(items, batches);
 
             return (
-              <article key={pallet.id} className="overflow-hidden rounded-2xl border border-border bg-white shadow-sm">
+              <article key={pallet.id} className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
                 <button
                   type="button"
                   onClick={() => setExpandedId(isExpanded ? null : pallet.id)}
@@ -325,12 +326,12 @@ export function AgentPalletTracking() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="text-xs font-medium text-muted">Pallet {pallet.id.slice(0, 8)}</p>
-                      <h2 className="mt-0.5 truncate font-semibold text-navy">{customer?.store_name ?? "Customer order"}</h2>
-                      <p className="mt-0.5 text-xs text-muted">
+                      <p className="text-xs font-medium text-muted-foreground">Pallet {pallet.id.slice(0, 8)}</p>
+                      <h2 className="mt-0.5 truncate font-semibold text-foreground">{customer?.store_name ?? "Customer order"}</h2>
+                      <p className="mt-0.5 text-xs text-muted-foreground">
                         Order {pallet.order_id.slice(0, 8)} · {new Date(pallet.created_at).toLocaleDateString()}
                       </p>
-                      <p className="mt-1 truncate text-xs text-navy">
+                      <p className="mt-1 truncate text-xs text-foreground">
                         {items.map((item) => productNameFor(item.product_id)).join(", ") || "No items"}
                       </p>
                     </div>
@@ -339,8 +340,8 @@ export function AgentPalletTracking() {
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between border-t border-border pt-3 text-xs text-muted">
-                    <span>{items.length} product{items.length === 1 ? "" : "s"} · {totalUnits(pallet)} units</span>
+                  <div className="flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
+                    <span>{productGroups.length} product{productGroups.length === 1 ? "" : "s"} · {totalUnits(pallet)} units</span>
                     <span className="flex items-center gap-1 font-semibold text-accent-2">
                       {isExpanded ? "Hide items" : "View items"}
                       {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
@@ -349,21 +350,43 @@ export function AgentPalletTracking() {
                 </button>
 
                 {isExpanded && (
-                  <div className="border-t border-border bg-off-white/60 px-4 py-3">
-                    {customer?.location && <p className="mb-2 text-xs text-muted">{customer.location}</p>}
+                  <div className="border-t border-border bg-muted/60 px-4 py-3">
+                    {customer?.location && <p className="mb-2 text-xs text-muted-foreground">{customer.location}</p>}
                     {items.length ? (
                       <ul className="divide-y divide-border">
-                        {items.map((item) => (
-                          <li key={item.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                            <span className="text-navy">{productNameFor(item.product_id)}</span>
-                            <span className="shrink-0 font-semibold text-navy">× {item.qty_units}</span>
-                          </li>
-                        ))}
+                        {productGroups.map((group) => {
+                          const key = `${pallet.id}|${group.productId}`;
+                          const isOpen = expandedProductKeys.has(key);
+                          return (
+                            <li key={group.productId} className="py-2 text-sm">
+                              <button
+                                type="button"
+                                onClick={() => toggleProductBatches(key)}
+                                aria-expanded={isOpen}
+                                className="flex w-full items-center justify-between gap-3 text-left"
+                              >
+                                <span className="min-w-0">
+                                  <span className="block text-foreground">{productNameFor(group.productId)}</span>
+                                  <span className="block text-xs text-muted-foreground">{batchSummary(group.batches)}</span>
+                                </span>
+                                <span className="flex shrink-0 items-center gap-2 font-semibold text-foreground">
+                                  × {group.qty}
+                                  {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                                </span>
+                              </button>
+                              {isOpen && (
+                                <div className="mt-2 pl-1">
+                                  <PalletBatchBreakdown lines={group.batches} />
+                                </div>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                     ) : (
-                      <p className="text-sm text-muted">No pallet items recorded.</p>
+                      <p className="text-sm text-muted-foreground">No pallet items recorded.</p>
                     )}
-                    <p className="mt-2 text-[11px] text-muted">Updated {new Date(pallet.updated_at).toLocaleDateString()}</p>
+                    <p className="mt-2 text-xs text-muted-foreground">Updated {new Date(pallet.updated_at).toLocaleDateString()}</p>
                   </div>
                 )}
 
@@ -373,7 +396,7 @@ export function AgentPalletTracking() {
                       type="button"
                       onClick={() => handleListAdvance(pallet)}
                       disabled={updatingPalletId !== null}
-                      className="min-h-11 w-full rounded-xl bg-navy px-4 text-sm font-semibold text-white transition hover:bg-navy-mid active:scale-[0.99] disabled:cursor-wait disabled:opacity-60"
+                      className="min-h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-navy-mid active:scale-[0.99] disabled:cursor-wait disabled:opacity-60"
                     >
                       {updatingPalletId === pallet.id ? "Updating…" : nextActionLabels[pallet.status]}
                     </button>

@@ -1,6 +1,8 @@
+// Runtime value: relative path because vite.config bundles the server before the @shared alias exists.
+import { MIN_PASSWORD_LENGTH } from "../../shared/api";
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "../db";
 import { drivers, users } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
@@ -30,8 +32,8 @@ async function validateLoginInput(
     return null;
   }
   if (requirePassword || input.password !== undefined) {
-    if (!input.password || input.password.trim().length < 4) {
-      return "Password must be at least 4 characters";
+    if (!input.password || input.password.trim().length < MIN_PASSWORD_LENGTH) {
+      return `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
     }
   }
   const taken = await db.query.users.findFirst({ where: eq(users.username, input.username) });
@@ -41,7 +43,10 @@ async function validateLoginInput(
 
 export const listDrivers: RequestHandler = async (_req, res) => {
   try {
-    const allDrivers = await db.query.drivers.findMany({ with: driverWithUser });
+    const allDrivers = await db.query.drivers.findMany({
+      with: driverWithUser,
+      orderBy: [desc(drivers.created_at)],
+    });
     res.json(allDrivers);
   } catch (error) {
     console.error("Error fetching drivers:", error);

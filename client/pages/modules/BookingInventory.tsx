@@ -1,7 +1,9 @@
+import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { RefreshCw, Package, Printer } from "lucide-react";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { Package, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Pallet, Booking, Customer, Product, Truck, Invoice, Delivery, DeliveryItem, InventoryBatch, formatCustomerAddress } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
@@ -79,11 +81,7 @@ export function BookingInventory() {
   useEffect(() => {
     if (token) fetchAll();
   }, [token]);
-
-  const handleRefresh = async () => {
-    setIsLoading(true);
-    await fetchAll();
-  };
+  useAutoRefresh(fetchAll, { enabled: Boolean(token) });
 
   const handleStatusChange = async (palletId: string, status: Pallet["status"]) => {
     setIsUpdatingStatus(true);
@@ -98,10 +96,10 @@ export function BookingInventory() {
         throw new Error(errorData.error || "Failed to update pallet status");
       }
       const updated: Pallet & { invoice_pending_reason?: string } = await res.json();
-      if (updated.invoice_pending_reason) alert(updated.invoice_pending_reason);
+      if (updated.invoice_pending_reason) toast.warning(updated.invoice_pending_reason);
       setPallets((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to update pallet status");
+      toast.error(err instanceof Error ? err.message : "Failed to update pallet status");
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -202,9 +200,9 @@ export function BookingInventory() {
         <div className="flex flex-wrap items-center gap-2">
           {isAdmin && (
             <>
-              <label className="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm text-muted">
+              <label className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
                 <span>Date</span>
-                <input type="date" value={printDate} onChange={(event) => setPrintDate(event.target.value)} className="bg-transparent text-navy outline-none" />
+                <input type="date" value={printDate} onChange={(event) => setPrintDate(event.target.value)} className="bg-transparent text-foreground outline-none" />
               </label>
               <Button onClick={() => setShowPrintAll(true)} variant="outline" className="flex items-center gap-2">
                 <Printer size={16} />
@@ -212,15 +210,11 @@ export function BookingInventory() {
               </Button>
             </>
           )}
-          <Button onClick={handleRefresh} variant="outline" className="flex items-center gap-2">
-            <RefreshCw size={16} />
-            Refresh
-          </Button>
         </div>
       </div>
 
       {loadError && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{loadError}</div>
+        <div className="rounded-lg border border-warning/30 bg-warning-soft p-3 text-sm text-warning">{loadError}</div>
       )}
 
       <PalletStats pallets={visiblePallets} />
@@ -230,6 +224,7 @@ export function BookingInventory() {
           pallet={selected.pallet}
           order={bookings.find((b) => b.id === selected.pallet.order_id) ?? null}
           customer={selected.customer}
+          batches={batches}
           getProductName={getProductName}
           onStatusChange={(status) => handleStatusChange(selected.pallet.id, status)}
           onPrintSheet={() => setSheetOrder(bookings.find((b) => b.id === selected.pallet.order_id) ?? null)}
@@ -251,7 +246,7 @@ export function BookingInventory() {
           />
 
           {filteredEntries.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border bg-white p-10 text-center text-muted">
+            <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center text-muted-foreground">
               <Package size={32} className="mx-auto mb-2 opacity-40" />
               <p>
                 {pallets.length === 0
@@ -262,7 +257,7 @@ export function BookingInventory() {
           ) : (
             <div className="flex flex-col gap-6">
               {visiblePalletGroups.length === 0 && (
-                <div className="rounded-xl border border-dashed border-border bg-white p-10 text-center text-muted">
+                <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center text-muted-foreground">
                   No pallets for this truck.
                 </div>
               )}
@@ -270,10 +265,10 @@ export function BookingInventory() {
                 <section key={group.truck?.id ?? "unassigned"} className="space-y-2">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <div>
-                      <h2 className="font-semibold text-navy">{group.truck?.license_plate ?? "Unassigned"}</h2>
-                      <p className="text-xs text-muted">{group.truck?.district ?? "Pallets not yet on a truck"}</p>
+                      <h2 className="font-semibold text-foreground">{group.truck?.license_plate ?? "Unassigned"}</h2>
+                      <p className="text-xs text-muted-foreground">{group.truck?.district ?? "Pallets not yet on a truck"}</p>
                     </div>
-                    <span className="text-sm text-muted">
+                    <span className="text-sm text-muted-foreground">
                       {group.entries.length} pallet{group.entries.length === 1 ? "" : "s"}
                     </span>
                   </div>

@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { and, desc, gte, inArray, lte } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { db } from "../db";
 import { agents, audit_logs, users } from "../db/schema";
 
@@ -10,11 +10,11 @@ export const listAuditLogs: RequestHandler = async (req, res) => {
     let whereConditions = [];
 
     if (user_id) {
-      whereConditions.push((audit_logs.user_id as any) === user_id);
+      whereConditions.push(eq(audit_logs.user_id, String(user_id)));
     }
 
     if (action) {
-      whereConditions.push((audit_logs.action as any) === action);
+      whereConditions.push(eq(audit_logs.action, String(action) as any));
     }
 
     if (start_date) {
@@ -35,7 +35,7 @@ export const listAuditLogs: RequestHandler = async (req, res) => {
           ? and(...(whereConditions as any))
           : undefined,
       orderBy: desc(audit_logs.created_at),
-      limit: Math.min(parseInt(limit as string), 1000),
+      limit: Math.min(Math.max(parseInt(limit as string, 10) || 100, 1), 1000),
     });
 
     const userIds = [...new Set(logs.map((log) => log.user_id))];

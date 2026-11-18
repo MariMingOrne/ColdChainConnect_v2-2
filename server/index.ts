@@ -111,6 +111,7 @@ import {
   suggestBatches,
 } from "./routes/pallets";
 import { getSalesForecast } from "./routes/forecast";
+import { getDashboardSummary } from "./routes/dashboard";
 import { postSalesForecastChat } from "./routes/sales-forecast-chat";
 import { getCustomerReport, getSalesReport, getStockReport } from "./routes/reports";
 import { authMiddleware, requireRole, type AuthRequest } from "./middleware/auth";
@@ -119,8 +120,15 @@ import { ModulePermission } from "@shared/api";
 export function createServer() {
   const app = express();
 
+  // Behind Netlify/AWS Lambda (or any reverse proxy) the client IP is in X-Forwarded-For.
+  // Trust exactly one hop there so req.ip is the real client; set TRUST_PROXY to override.
+  const trustProxy = process.env.TRUST_PROXY ?? (process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY ? "1" : "");
+  if (trustProxy) app.set("trust proxy", /^[0-9]+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
+
   // Middleware
-  app.use(cors());
+  // Same-origin by default; list extra allowed origins in CORS_ORIGIN (comma-separated).
+  const allowedOrigins = process.env.CORS_ORIGIN?.split(",").map((o) => o.trim()).filter(Boolean) ?? [];
+  app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : false }));
   app.use(express.json({ limit: "6mb" }));
   app.use(express.urlencoded({ extended: true }));
   app.use(express.static("public"));
@@ -139,7 +147,7 @@ export function createServer() {
   app.get("/api/demo", handleDemo);
 
   // Upload route
-  app.post("/api/upload", uploadMiddleware, handleUpload);
+  app.post("/api/upload", authMiddleware, requireRole("admin"), uploadMiddleware, handleUpload);
 
   // Auth routes (no auth required)
   app.post("/api/auth/login", handleLogin);
@@ -163,6 +171,7 @@ export function createServer() {
       [["manage-accounts", "delivery-operations"], ["/drivers"]],
       [["delivery-operations"], ["/trucks", "/deliveries", "/receipts", "/accounts-receivable", "/agent-returns"]],
       [["manage-accounts"], ["/agents"]],
+      [["dashboard"], ["/dashboard"]],
       [["reports"], ["/reports", "/sales/forecast"]],
       [["administration"], ["/audit-logs", "/backup"]],
     ];
@@ -229,6 +238,9 @@ export function createServer() {
   app.post("/api/invoices", authMiddleware, requireRole("admin"), createInvoice);
   app.patch("/api/invoices/:id/status", authMiddleware, requireRole("admin"), updateInvoiceStatus);
   app.patch("/api/invoices/:id/payment-status", authMiddleware, requireRole("admin"), updateInvoicePaymentStatus);
+
+  // Dashboard summary (admin, and staff with the dashboard module)
+  app.get("/api/dashboard/summary", authMiddleware, requireRole("admin", "staff"), getDashboardSummary);
 
   // Sales forecast routes
   app.get("/api/sales/forecast", authMiddleware, getSalesForecast);

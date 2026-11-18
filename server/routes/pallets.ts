@@ -1,5 +1,6 @@
+import { sendRouteError } from "../utils";
 import { RequestHandler } from "express";
-import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { Pallet, PalletItem, CreatePalletSchema, UpdatePalletStatusSchema } from "../../shared/api";
 import { db } from "../db";
@@ -10,7 +11,7 @@ import { getAgentOrderIds } from "../services/agent-bookings";
 import { createInvoiceAfterPicking } from "../services/booking-invoices";
 import { logAction } from "../middleware/audit-logger";
 
-async function calculateProductInventory(): Promise<Record<string, number>> {
+export async function calculateProductInventory(): Promise<Record<string, number>> {
   try {
     if (!process.env.DATABASE_URL) {
       return {};
@@ -20,10 +21,14 @@ async function calculateProductInventory(): Promise<Record<string, number>> {
 
     const batches = await db.query.inventory_batches.findMany({
       where: eq(inventory_batches.is_archived, false),
+      orderBy: [desc(inventory_batches.created_at)],
       with: {
         pallets: {
+          orderBy: (table) => [desc(table.created_at)],
           with: {
-            items: true,
+            items: {
+              orderBy: (table) => [desc(table.created_at)],
+            },
           },
         },
       },
@@ -84,7 +89,7 @@ export const listPallets: RequestHandler = async (req: AuthRequest, res) => {
       with: {
         items: true,
       },
-      orderBy: (table) => [table.created_at],
+      orderBy: [desc(order_pallets.created_at)],
     });
 
     const pallets = dbPallets.map(formatPallet);
@@ -208,9 +213,8 @@ export const createPallet: RequestHandler = async (req: AuthRequest, res) => {
       with: { items: true },
     });
     res.status(201).json(createdPallets.map(formatPallet));
-  } catch (error: any) {
-    console.error("Error creating pallet:", error);
-    res.status(400).json({ error: error.message });
+  } catch (error) {
+    sendRouteError(res, error, "Error creating pallet");
   }
 };
 
@@ -300,9 +304,8 @@ export const updatePalletStatus: RequestHandler = async (req: AuthRequest, res) 
       ? "Invoice not created: picked quantities must exactly match the booking."
       : undefined;
     res.json({ ...formatPallet(updated), invoice_pending_reason: invoicePendingReason });
-  } catch (error: any) {
-    console.error("Error updating pallet status:", error);
-    res.status(400).json({ error: error.message });
+  } catch (error) {
+    sendRouteError(res, error, "Error updating pallet status");
   }
 };
 

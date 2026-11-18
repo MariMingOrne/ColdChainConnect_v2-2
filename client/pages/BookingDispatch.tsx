@@ -1,3 +1,4 @@
+import NotFound from "./NotFound";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { HubSidebar } from "@/components/HubSidebar";
 import { BookingSummary } from "./modules/BookingSummary";
@@ -52,6 +53,7 @@ export function BookingDispatch() {
             <Route path="/delivery-history" element={<DeliveryHistory />} />
             <Route path="/agent-returns"    element={<AgentReports />} />
             <Route path="/"                 element={<BookingSummary />} />
+            <Route path="*" element={<NotFound embedded />} />
           </Routes>
         </div>
       </div>

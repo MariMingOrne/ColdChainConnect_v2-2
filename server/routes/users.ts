@@ -1,6 +1,8 @@
+// Runtime value: relative path because vite.config bundles the server before the @shared alias exists.
+import { MIN_PASSWORD_LENGTH } from "../../shared/api";
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { asc, eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { users } from "../db/schema";
 import { hashPassword } from "../auth";
@@ -19,7 +21,7 @@ export const handleListManagedAccounts: RequestHandler = async (req: AuthRequest
     .select({ id: users.id, username: users.username, role: users.role, created_at: users.created_at, mfa_enabled: users.mfa_enabled, mfa_required: users.mfa_required, module_permissions: users.module_permissions })
     .from(users)
     .where(inArray(users.role, ["admin", "staff"]))
-    .orderBy(asc(users.username));
+    .orderBy(desc(users.created_at));
   res.json(accounts);
 };
 
@@ -65,8 +67,8 @@ export const handleCreateAccount: RequestHandler = async (req, res) => {
     return res.status(400).json({ error: "Role must be admin, agent, or staff" });
   }
 
-  if (password.trim().length < 4) {
-    return res.status(400).json({ error: "Password must be at least 4 characters" });
+  if (password.trim().length < MIN_PASSWORD_LENGTH) {
+    return res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` });
   }
 
   try {

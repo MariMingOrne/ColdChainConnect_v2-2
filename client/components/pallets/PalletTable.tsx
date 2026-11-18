@@ -1,6 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import { Customer, Pallet, formatCustomerAddress } from "@shared/api";
 import { Table } from "@/components/ui/table";
+import { compareNewestFirst } from "@/components/SortableHeader";
 import { cn } from "@/lib/utils";
 import { formatMoney, palletStatusStyles, palletTotal } from "./palletUtils";
 
@@ -29,10 +30,10 @@ export function PalletStatusBadge({ status }: { status: Pallet["status"] }) {
 
 export function PalletTable({ entries, onSelect }: PalletTableProps) {
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-white shadow-sm">
+    <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
       <Table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-border bg-off-white text-left text-xs uppercase tracking-wide text-muted">
+          <tr className="border-b border-border bg-muted text-left text-xs text-muted-foreground">
             <th className="whitespace-nowrap px-4 py-3 font-semibold">Pallet</th>
             <th className="whitespace-nowrap px-4 py-3 font-semibold">Customer &amp; delivery address</th>
             <th className="whitespace-nowrap px-4 py-3 text-right font-semibold">Contents</th>
@@ -42,41 +43,42 @@ export function PalletTable({ entries, onSelect }: PalletTableProps) {
           </tr>
         </thead>
         <tbody>
-          {entries.map(({ pallet, customer }) => {
+          {[...entries].sort((a, b) => compareNewestFirst(a.pallet, b.pallet)).map(({ pallet, customer }) => {
             const items = pallet.items ?? [];
             const units = items.reduce((sum, item) => sum + item.qty_units, 0);
+            const productCount = new Set(items.map((item) => item.product_id)).size;
 
             return (
               <tr
                 key={pallet.id}
                 onClick={() => onSelect(pallet.id)}
-                className="cursor-pointer border-b border-border last:border-0 transition hover:bg-off-white/60"
+                className="cursor-pointer border-b border-border last:border-0 transition hover:bg-accent/60"
               >
                 <td className="px-4 py-3">
-                  <p className="font-semibold text-navy">Pallet {pallet.id.substring(0, 8)}</p>
-                  <p className="text-xs text-muted">Order {(pallet.order_id ?? "").substring(0, 8)}</p>
+                  <p className="font-semibold text-foreground">Pallet {pallet.id.substring(0, 8)}</p>
+                  <p className="text-xs text-muted-foreground">Order {(pallet.order_id ?? "").substring(0, 8)}</p>
                 </td>
                 <td className="px-4 py-3">
                   {customer ? (
                     <>
-                      <p className="font-medium text-navy">{customer.store_name}</p>
-                      <p className="text-xs text-muted">{formatCustomerAddress(customer)}</p>
+                      <p className="font-medium text-foreground">{customer.store_name}</p>
+                      <p className="text-xs text-muted-foreground">{formatCustomerAddress(customer)}</p>
                     </>
                   ) : (
-                    <p className="text-muted">Unknown customer</p>
+                    <p className="text-muted-foreground">Unknown customer</p>
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <p className="font-medium tabular-nums text-navy">{items.length} product{items.length === 1 ? "" : "s"}</p>
-                  <p className="text-xs text-muted tabular-nums">{units} units</p>
+                  <p className="font-medium tabular-nums text-foreground">{productCount} product{productCount === 1 ? "" : "s"}</p>
+                  <p className="text-xs text-muted-foreground tabular-nums">{units} units</p>
                 </td>
-                <td className="px-4 py-3 text-right font-semibold tabular-nums text-navy">
+                <td className="px-4 py-3 text-right font-semibold tabular-nums text-foreground">
                   {formatMoney(palletTotal(pallet))}
                 </td>
                 <td className="px-4 py-3">
                   <PalletStatusBadge status={pallet.status} />
                 </td>
-                <td className="px-4 py-3 text-muted">
+                <td className="px-4 py-3 text-muted-foreground">
                   <ChevronRight size={18} />
                 </td>
               </tr>

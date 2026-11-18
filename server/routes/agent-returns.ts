@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
 import { eq, desc, sql } from "drizzle-orm";
+import { agentInvoiceFilter } from "../services/agent-bookings";
 import { db } from "../db";
 import {
   agent_returns,
@@ -14,10 +15,13 @@ import { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
 
 // ─── GET /api/agent-returns ───────────────────────────────────────────────────
-export const listAgentReturns: RequestHandler = async (_req, res) => {
+export const listAgentReturns: RequestHandler = async (req: AuthRequest, res) => {
   try {
     if (!process.env.DATABASE_URL) return res.json([]);
+    const scope = await agentInvoiceFilter(req, agent_returns.invoice_id);
+    if (scope.none) return res.json([]);
     const all = await db.query.agent_returns.findMany({
+      where: scope.where,
       with: { invoice: true, customer: true, product: true, creator: true },
       orderBy: [desc(agent_returns.created_at)],
     });

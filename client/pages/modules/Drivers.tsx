@@ -1,3 +1,6 @@
+import { MIN_PASSWORD_LENGTH } from "@shared/api";
+import { toast } from "sonner";
+import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -39,7 +42,7 @@ function ViewDriverModal({ driver, onClose }: { driver: Driver; onClose: () => v
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-border">
+      <div className="bg-card rounded-2xl border border-border">
 
         <div className="p-6 space-y-4">
           {[
@@ -51,20 +54,20 @@ function ViewDriverModal({ driver, onClose }: { driver: Driver; onClose: () => v
             ["Login Username", driver.user?.username],
           ].map(([label, value]) => (
             <div key={label as string}>
-              <label className="block text-xs font-semibold text-muted mb-1">{label}</label>
-              <div className="text-sm text-navy font-medium capitalize">{value || "—"}</div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">{label}</label>
+              <div className="text-sm text-foreground font-medium capitalize">{value || "—"}</div>
             </div>
           ))}
           <div>
-            <label className="block text-xs font-semibold text-muted mb-1">Status</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Status</label>
             <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${driver.is_active ? "badge-green" : "badge-red"}`}>
               {driver.is_active ? "Active" : "Inactive"}
             </span>
           </div>
         </div>
 
-        <div className="sticky bottom-0 bg-off-white px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
-          <button onClick={onClose} className="px-4 py-2 bg-navy text-white rounded-lg font-semibold text-sm hover:opacity-90">
+        <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
+          <button onClick={onClose} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90">
             Close
           </button>
         </div>
@@ -97,7 +100,7 @@ function DriverModal({
     type = "text"
   ) => (
     <div>
-      <label className="block text-xs font-semibold text-navy mb-1">{label}</label>
+      <label className="block text-xs font-semibold text-foreground mb-1">{label}</label>
       <Input
         type={type}
         value={formData[key] as string}
@@ -120,7 +123,7 @@ function DriverModal({
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-border">
+      <div className="bg-card rounded-2xl border border-border">
 
         <div className="p-6 space-y-4">
           {field("Full Name *", "full_name", "e.g., Juan Dela Cruz")}
@@ -129,7 +132,7 @@ function DriverModal({
           {field("Hire Date", "hire_date", "", "date")}
 
           <div>
-            <label className="block text-xs font-semibold text-navy mb-1">Employment Type</label>
+            <label className="block text-xs font-semibold text-foreground mb-1">Employment Type</label>
             <Select
               value={formData.employment_type || undefined}
               onValueChange={(employment_type) => setFormData({ ...formData, employment_type: employment_type as DriverForm["employment_type"] })}
@@ -145,15 +148,15 @@ function DriverModal({
           </div>
 
           <div className="border-t border-border pt-4 space-y-4">
-            <p className="text-xs font-bold text-muted uppercase tracking-wider">Login</p>
+            <p className="text-xs font-bold text-muted-foreground">Login</p>
             {field("Username", "username", "e.g., juan.delacruz")}
             {field(
               "Password",
               "password",
-              hasLogin ? "Leave blank to keep current password" : "At least 4 characters",
+              hasLogin ? "Leave blank to keep current password" : `At least ${MIN_PASSWORD_LENGTH} characters`,
               "password"
             )}
-            <p className="text-xs text-muted">
+            <p className="text-xs text-muted-foreground">
               Drivers sign in with these details and set up an authenticator app on first login.
             </p>
           </div>
@@ -166,11 +169,11 @@ function DriverModal({
               onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
               className="w-4 h-4 accent-navy"
             />
-            <label htmlFor="is_active" className="text-sm font-semibold text-navy">Active Driver</label>
+            <label htmlFor="is_active" className="text-sm font-semibold text-foreground">Active Driver</label>
           </div>
         </div>
 
-        <div className="sticky bottom-0 flex justify-end gap-2 rounded-b-2xl border-t border-border bg-off-white px-6 py-4">
+        <div className="sticky bottom-0 flex justify-end gap-2 rounded-b-2xl border-t border-border bg-muted px-6 py-4">
           <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
           <Button type="button" variant="accent" onClick={onSave}>Save Driver</Button>
         </div>
@@ -204,16 +207,16 @@ function DriverCard({
     .toUpperCase();
 
   return (
-    <div className="bg-white border border-border rounded-2xl p-4 flex flex-col gap-3 hover:shadow-sm transition-shadow">
+    <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-3 hover:shadow-sm transition-shadow">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-navy-mid flex items-center justify-center shrink-0">
           <span className="font-rajdhani font-bold text-sm text-white">{initials}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-navy text-sm truncate">
+          <div className="font-semibold text-foreground text-sm truncate">
             {driver.full_name || "—"}
           </div>
-          <div className="text-xs text-muted truncate">{driver.license || "No license"}</div>
+          <div className="text-xs text-muted-foreground truncate">{driver.license || "No license"}</div>
         </div>
         <span className={`shrink-0 inline-block px-2 py-0.5 rounded text-xs font-bold ${driver.is_active ? "badge-green" : "badge-red"}`}>
           {driver.is_active ? "Active" : "Inactive"}
@@ -222,27 +225,27 @@ function DriverCard({
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
         <div>
-          <span className="text-muted block">Contact</span>
-          <span className="text-navy font-medium">{driver.contact_info || "—"}</span>
+          <span className="text-muted-foreground block">Contact</span>
+          <span className="text-foreground font-medium">{driver.contact_info || "—"}</span>
         </div>
         <div>
-          <span className="text-muted block">Employment</span>
-          <span className="text-navy font-medium capitalize">{driver.employment_type?.replace("_", " ") || "—"}</span>
+          <span className="text-muted-foreground block">Employment</span>
+          <span className="text-foreground font-medium capitalize">{driver.employment_type?.replace("_", " ") || "—"}</span>
         </div>
         <div>
-          <span className="text-muted block">Hired</span>
-          <span className="text-navy font-medium">{driver.hire_date || "—"}</span>
+          <span className="text-muted-foreground block">Hired</span>
+          <span className="text-foreground font-medium">{driver.hire_date || "—"}</span>
         </div>
         <div>
-          <span className="text-muted block">Login</span>
-          <span className="text-navy font-medium">{driver.user?.username || "No login"}</span>
+          <span className="text-muted-foreground block">Login</span>
+          <span className="text-foreground font-medium">{driver.user?.username || "No login"}</span>
         </div>
       </div>
 
       <div className="flex gap-2 pt-1 border-t border-border">
-        <button onClick={onView} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-off-white text-navy transition-colors">View</button>
-        <button onClick={onSchedule} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-off-white text-navy transition-colors">Schedule</button>
-        <button onClick={onEdit} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-off-white text-navy transition-colors">Edit</button>
+        <button onClick={onView} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-accent text-foreground transition-colors">View</button>
+        <button onClick={onSchedule} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-accent text-foreground transition-colors">Schedule</button>
+        <button onClick={onEdit} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-accent text-foreground transition-colors">Edit</button>
         {showDelete && (
           <button onClick={onDelete} className="flex-1 py-1.5 text-xs font-semibold bg-red/10 border border-red/30 rounded-lg hover:bg-red/20 text-red transition-colors">Delete</button>
         )}
@@ -337,7 +340,7 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
   const handleSave = async () => {
     try {
       if (!formData.full_name) {
-        alert("Full name is required");
+        toast.error("Full name is required");
         return;
       }
 
@@ -377,16 +380,17 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
           const err = await res.json();
           throw new Error(err.error || "Failed to create driver");
         }
-        setDrivers([...drivers, await res.json()]);
+        const created = await res.json();
+        setDrivers((current) => [created, ...current]);
       }
       setIsModalOpen(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to save driver");
+      toast.error(err instanceof Error ? err.message : "Failed to save driver");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this driver?")) return;
+    if (!(await confirmAction("Delete this driver?"))) return;
     try {
       await fetch(`/api/drivers/${id}`, {
         method: "DELETE",
@@ -394,7 +398,7 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
       });
       setDrivers(drivers.filter((d) => d.id !== id));
     } catch {
-      alert("Failed to delete driver");
+      toast.error("Failed to delete driver");
     }
   };
 
@@ -431,13 +435,13 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden px-4 py-4 md:px-6 md:py-5">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="font-rajdhani text-3xl font-bold text-navy letter-spacing-tight">
+          <h1 className="font-rajdhani text-3xl font-bold text-foreground letter-spacing-tight">
             Driver Management
           </h1>
-          <p className="text-xs text-muted mt-1">Manage field drivers</p>
+          <p className="text-xs text-muted-foreground mt-1">Manage field drivers</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Create Accounts</button>
+          <button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">Create Accounts</button>
         </div>
       </div>
 
@@ -456,7 +460,7 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
       />
 
       {paginatedDrivers.length === 0 ? (
-        <div className="text-center text-muted text-sm py-12">
+        <div className="text-center text-muted-foreground text-sm py-12">
           {drivers.length === 0 ? "No drivers found" : "No results matching your search"}
         </div>
       ) : (
@@ -476,26 +480,26 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
       )}
 
       <div className="mt-auto flex items-center justify-between px-2 py-2">
-        <div className="text-xs text-muted">
+        <div className="text-xs text-muted-foreground">
           Page {currentPage} of {Math.max(1, totalPages)} · {filteredDrivers.length} drivers
         </div>
         <div className="flex gap-2 items-center">
           <button
             onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
-            className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            ← Prev
+            Previous
           </button>
-          <span className="px-3 py-1 text-xs font-semibold text-navy bg-white rounded border border-border">
+          <span className="px-3 py-1 text-xs font-semibold text-foreground bg-card rounded border border-border">
             {currentPage}
           </span>
           <button
             onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages || totalPages === 0}
-            className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Next →
+            Next
           </button>
         </div>
       </div>

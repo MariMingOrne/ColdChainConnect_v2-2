@@ -27,12 +27,12 @@ const ACTION_LABELS: Record<string, string> = {
 };
 
 const ACTION_BADGES: Record<string, string> = {
-  create: "bg-green-100 text-green-800",
-  update: "bg-blue-100 text-blue-800",
-  delete: "bg-red-100 text-red-800",
-  rollback: "bg-orange-100 text-orange-800",
-  approve: "bg-green-100 text-green-800",
-  reject: "bg-red-100 text-red-800",
+  create: "bg-success-soft text-success",
+  update: "bg-info-soft text-link",
+  delete: "bg-destructive-soft text-destructive",
+  rollback: "bg-warning-soft text-warning",
+  approve: "bg-success-soft text-success",
+  reject: "bg-destructive-soft text-destructive",
 };
 
 export function getActionLabel(action: string) {
@@ -40,7 +40,7 @@ export function getActionLabel(action: string) {
 }
 
 export function getActionBadgeClass(action: string) {
-  return ACTION_BADGES[action] ?? "bg-gray-100 text-gray-700";
+  return ACTION_BADGES[action] ?? "bg-muted text-foreground";
 }
 
 const NAME_FIELDS = ["store_name", "name", "username", "full_name", "receipt_number"];

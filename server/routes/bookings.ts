@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { and, eq, inArray, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "../db";
 import { bookings, booking_items, invoices, agents, trucks, users, order_pallets } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
@@ -39,6 +39,7 @@ export const listBookings: RequestHandler = async (req: AuthRequest, res) => {
     const [allBookings, agentProfiles] = await Promise.all([
       db.query.bookings.findMany({
         where: whereClause,
+        orderBy: [desc(bookings.created_at)],
         with: {
           booking_items: {
             with: {
@@ -180,7 +181,7 @@ export const createBooking: RequestHandler = async (req: AuthRequest, res) => {
     res.status(201).json(newBooking);
   } catch (error) {
     console.error("Error creating booking:", error);
-    res.status(500).json({ error: error instanceof Error ? error.message : "Internal server error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 

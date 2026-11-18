@@ -1,4 +1,4 @@
-import { Pallet, PalletItem } from "@shared/api";
+import { InventoryBatch, Pallet, PalletItem } from "@shared/api";
 
 export function palletItemTotal(item: PalletItem): number {
   return item.qty_units * Number(item.unit_cost);
@@ -6,6 +6,56 @@ export function palletItemTotal(item: PalletItem): number {
 
 export function palletTotal(pallet: Pallet): number {
   return (pallet.items ?? []).reduce((sum, item) => sum + palletItemTotal(item), 0);
+}
+
+export interface PalletProductBatchLine {
+  batchItemId: string;
+  batchName: string;
+  qty: number;
+}
+
+export interface PalletProductGroup {
+  productId: string;
+  unitCost: string;
+  qty: number;
+  value: number;
+  batches: PalletProductBatchLine[];
+}
+
+export function groupPalletItemsByProduct(items: PalletItem[], batches: InventoryBatch[]): PalletProductGroup[] {
+  const batchNameByItemId = new Map(
+    batches.flatMap((batch) => (batch.items ?? []).map((item) => [item.id, batch.name] as const)),
+  );
+  const groups = new Map<string, PalletProductGroup>();
+
+  for (const item of items) {
+    const group = groups.get(item.product_id) ?? {
+      productId: item.product_id,
+      unitCost: item.unit_cost,
+      qty: 0,
+      value: 0,
+      batches: [],
+    };
+    let line = group.batches.find((entry) => entry.batchItemId === item.batch_item_id);
+    if (!line) {
+      line = {
+        batchItemId: item.batch_item_id,
+        batchName: batchNameByItemId.get(item.batch_item_id) ?? "Unknown batch",
+        qty: 0,
+      };
+      group.batches.push(line);
+    }
+    line.qty += item.qty_units;
+    group.qty += item.qty_units;
+    group.value += palletItemTotal(item);
+    groups.set(item.product_id, group);
+  }
+
+  return [...groups.values()];
+}
+
+export function batchSummary(batches: PalletProductBatchLine[]): string {
+  return batches.length === 1 ? `From ${batches[0].batchName}` : `From ${batches.length} batches`;
 }
 
 export function formatMoney(amount: number): string {
@@ -67,8 +117,8 @@ export function isInDatePreset(isoDate: string, preset: DatePresetFilter, now = 
 }
 
 export const palletStatusStyles: Record<Pallet["status"], string> = {
-  draft: "bg-orange-50 text-orange-700 border-orange-200",
-  prepared: "bg-yellow-50 text-yellow-800 border-yellow-200",
-  approved: "bg-green-50 text-green-700 border-green-200",
-  shipped: "bg-blue-50 text-blue-700 border-blue-200",
+  draft: "bg-warning-soft text-warning border-warning/30",
+  prepared: "bg-warning-soft text-warning border-warning/30",
+  approved: "bg-success-soft text-success border-success/30",
+  shipped: "bg-info-soft text-link border-link/30",
 };

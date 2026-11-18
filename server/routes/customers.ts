@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "../db";
 import { customers, customer_discounts } from "../db/schema";
 import { CustomerDiscount } from "@shared/api";
@@ -27,10 +27,13 @@ export const listCustomers: RequestHandler = async (_req, res) => {
   try {
     // Use demo data if no database
     if (!process.env.DATABASE_URL) {
-      return res.json(demoCustomers);
+      return res.json([...demoCustomers].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
     }
 
-    const allCustomers = await db.query.customers.findMany({ with: { discounts: true } });
+    const allCustomers = await db.query.customers.findMany({
+      with: { discounts: true },
+      orderBy: [desc(customers.created_at)],
+    });
     res.json(allCustomers);
   } catch (error) {
     console.error("Error fetching customers:", error);

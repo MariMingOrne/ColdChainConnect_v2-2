@@ -1,27 +1,38 @@
 import "./global.css";
+import { lazy } from "react";
 
 import { Toaster } from "@/components/ui/toaster";
 import { createRoot } from "react-dom/client";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { ConfirmDialogHost } from "@/lib/confirm";
+import { installSessionGuard } from "@/lib/session-guard";
+
+installSessionGuard();
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import type { ModulePermission } from "@shared/api";
 import { useAuth } from "./hooks/useAuth";
 import { Login } from "./pages/Login";
-import { Dashboard } from "./pages/Dashboard";
-import { InformationManagement } from "./pages/InformationManagement";
-import { ManageAccounts } from "./pages/ManageAccounts";
-import { BookingDispatch } from "./pages/BookingDispatch";
-import { AuditLogPage } from "./pages/AuditLog";
-import { Reports } from "./pages/Reports";
-import { SearchResults } from "./pages/SearchResults";
-import { DriverSchedule } from "./pages/DriverSchedule";
 import { Topbar } from "./components/Topbar";
 import { AdminMobileNavigation, AdminNavigation } from "./components/AdminNavigation";
 import { PostLoginLoadingScreen } from "./components/auth/PostLoginLoadingScreen";
 import { BottomNavBar } from "./components/BottomNavBar";
 import NotFound from "./pages/NotFound";
+import { RouteBoundary } from "./components/shared/RouteBoundary";
+
+// Route-level code splitting: each role downloads only the screens it opens.
+const named = <K extends string>(load: () => Promise<Record<K, React.ComponentType>>, key: K) =>
+  lazy(() => load().then((module) => ({ default: module[key] })));
+const Dashboard = named(() => import("./pages/Dashboard"), "Dashboard");
+const InformationManagement = named(() => import("./pages/InformationManagement"), "InformationManagement");
+const ManageAccounts = named(() => import("./pages/ManageAccounts"), "ManageAccounts");
+const BookingDispatch = named(() => import("./pages/BookingDispatch"), "BookingDispatch");
+const AuditLogPage = named(() => import("./pages/AuditLog"), "AuditLogPage");
+const Reports = named(() => import("./pages/Reports"), "Reports");
+const SearchResults = named(() => import("./pages/SearchResults"), "SearchResults");
+const DriverSchedule = named(() => import("./pages/DriverSchedule"), "DriverSchedule");
 
 const queryClient = new QueryClient();
 
@@ -34,7 +45,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         <AdminNavigation />
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex flex-1">
-            <div className="flex min-w-0 flex-1 flex-col bg-off-white pb-32 animate-fade-in md:pb-0">
+            <div className="flex min-w-0 flex-1 flex-col bg-background pb-32 animate-fade-in md:pb-0">
               {children}
             </div>
           </div>
@@ -51,7 +62,7 @@ const AgentLayout = ({ children, agentMode = false }: { children: React.ReactNod
   return (
     <div className={agentMode ? "flex h-dvh min-h-0 flex-col overflow-hidden" : "flex flex-col min-h-screen"}>
       <Topbar userName={user?.username || "User"} onLogout={logout} agentMode />
-      <div className={`flex-1 flex flex-col bg-off-white min-w-0 animate-fade-in ${agentMode ? "min-h-0" : ""}`}>
+      <div className={`flex-1 flex flex-col bg-background min-w-0 animate-fade-in ${agentMode ? "min-h-0" : ""}`}>
         {children}
       </div>
     </div>
@@ -80,7 +91,7 @@ function StaffModule({ permission, children }: { permission: ModulePermission; c
   const allowed = user?.module_permissions ?? [];
   if (!allowed.includes(permission)) {
     const next = Object.keys(staffModulePaths).find((key) => allowed.includes(key as ModulePermission)) as ModulePermission | undefined;
-    return next ? <Navigate to={staffModulePaths[next]} replace /> : <div className="p-8 text-center text-navy">No modules are currently assigned to your account. Contact an administrator.</div>;
+    return next ? <Navigate to={staffModulePaths[next]} replace /> : <div className="p-8 text-center text-foreground">No modules are currently assigned to your account. Contact an administrator.</div>;
   }
   return <>{children}</>;
 }
@@ -160,16 +171,21 @@ function PostLoginLoadingGate() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AppContent />
-        <PostLoginLoadingGate />
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange storageKey="ccc-theme">
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner position="top-center" richColors closeButton />
+        <ConfirmDialogHost />
+        <BrowserRouter>
+          <RouteBoundary>
+            <AppContent />
+          </RouteBoundary>
+          <PostLoginLoadingGate />
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 const rootElement = document.getElementById("root");

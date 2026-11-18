@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { Download, RefreshCw } from "lucide-react";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { Download } from "lucide-react";
 import { AuditLog } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { AuditLogTable } from "./audit/AuditLogTable";
@@ -17,7 +18,6 @@ export function AuditLogPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { token } = useAuth();
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
 
   const fetchLogs = async () => {
@@ -35,12 +35,6 @@ export function AuditLogPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchLogs();
-    setIsRefreshing(false);
   };
 
   const handleBackup = async () => {
@@ -67,6 +61,7 @@ export function AuditLogPage() {
   };
 
   useEffect(() => { if (token) fetchLogs(); }, [token]);
+  useAutoRefresh(fetchLogs, { enabled: Boolean(token) });
 
   if (selectedLog) return <AuditLogDetailDialog log={selectedLog} onClose={() => setSelectedLog(null)} />;
 
@@ -74,24 +69,16 @@ export function AuditLogPage() {
     <div className="flex-1 flex flex-col p-6 gap-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-navy">Audit Log</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-foreground">Audit Log</h1>
+          <p className="text-muted-foreground">
             Every create, update, and delete is recorded with who made it, when, and exactly which fields changed.
           </p>
         </div>
         <div className="flex gap-2 w-fit">
           <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-navy transition-colors hover:bg-off-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-            Refresh
-          </button>
-          <button
             onClick={handleBackup}
             disabled={isBackingUp}
-            className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-navy transition-colors hover:bg-off-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <Download size={16} className={isBackingUp ? "animate-pulse" : ""} />
             {isBackingUp ? "Preparing backup…" : "Backup all data"}
@@ -101,19 +88,19 @@ export function AuditLogPage() {
 
       <div className="flex gap-2 border-b border-border pb-0">
         {[
-          { id: "activity", label: "Activity Log", icon: "🕐" },
-          { id: "activity-report", label: "Activity Report", icon: "📊" },
+          { id: "activity", label: "Activity Log" },
+          { id: "activity-report", label: "Activity Report" },
         ].map(tab => (
           <button
             key={tab.id}
             onClick={() => setPageTab(tab.id as PageTab)}
-            className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all ${
+            className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition ${
               pageTab === tab.id
-                ? "bg-white border-border text-navy -mb-px"
-                : "bg-off-white border-transparent text-gray-500 hover:text-navy"
+                ? "bg-card border-border text-foreground -mb-px"
+                : "bg-muted border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            <span className="mr-2">{tab.icon}</span>{tab.label}
+            {tab.label}
           </button>
         ))}
       </div>
@@ -121,8 +108,8 @@ export function AuditLogPage() {
       {pageTab === "activity" && (
         <>
           {error && (
-            <Card className="p-4 bg-red-50 border-red-200">
-              <p className="text-red-700">{error}</p>
+            <Card className="p-4 bg-destructive-soft border-destructive/30">
+              <p className="text-destructive">{error}</p>
             </Card>
           )}
           {isLoading ? (

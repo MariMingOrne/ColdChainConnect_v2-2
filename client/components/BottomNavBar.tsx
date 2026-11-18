@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+import type { DashboardSummary } from "@shared/api";
 import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
@@ -56,32 +58,18 @@ export function BottomNavBar({ onLogout }: BottomNavBarProps) {
   const isAdmin = user?.role === "admin";
   const isStaff = user?.role === "staff";
   const staffCan = (permission: "dashboard" | "product-customer" | "order-fulfillment" | "delivery-operations" | "manage-accounts") => !isStaff || Boolean(user.module_permissions?.includes(permission));
-  const [counts, setCounts] = useState({ pendingOrders: 0, activeDeliveries: 0 });
-
-  useEffect(() => {
-    if (!isAdmin || !token) return;
-    let active = true;
-    const loadCounts = async () => {
-      try {
-        const headers = { Authorization: `Bearer ${token}` };
-        const [ordersResponse, deliveriesResponse] = await Promise.all([
-          fetch("/api/bookings", { headers }),
-          fetch("/api/deliveries", { headers }),
-        ]);
-        if (!ordersResponse.ok || !deliveriesResponse.ok) return;
-        const [orders, deliveries] = await Promise.all([ordersResponse.json(), deliveriesResponse.json()]);
-        if (active) setCounts({
-          pendingOrders: orders.filter((order: { status: string }) => order.status === "pending").length,
-          activeDeliveries: deliveries.filter((delivery: { status: string }) => delivery.status !== "completed").length,
-        });
-      } catch {
-        if (active) setCounts({ pendingOrders: 0, activeDeliveries: 0 });
-      }
-    };
-    void loadCounts();
-    const intervalId = window.setInterval(() => void loadCounts(), 60_000);
-    return () => { active = false; window.clearInterval(intervalId); };
-  }, [isAdmin, token]);
+  // Badge counts share the dashboard's 1 KB summary (same query key, one request).
+  const { data: summary } = useQuery({
+    queryKey: ["dashboard-summary"],
+    queryFn: async (): Promise<DashboardSummary> => {
+      const res = await fetch("/api/dashboard/summary", { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error(`dashboard summary ${res.status}`);
+      return res.json();
+    },
+    enabled: isAdmin && Boolean(token),
+    refetchInterval: 60_000,
+  });
+  const counts = { pendingOrders: summary?.pendingOrders ?? 0, activeDeliveries: summary?.activeDeliveries ?? 0 };
 
   const countForPath = (path: string) => {
     if (path.endsWith("/order-summary")) return counts.pendingOrders;
@@ -118,13 +106,13 @@ export function BottomNavBar({ onLogout }: BottomNavBarProps) {
               <Link
                 key={fullPath}
                 to={fullPath}
-                className={`flex-shrink-0 flex flex-col items-center justify-center px-3 py-2 rounded-full text-[10px] font-semibold transition-all min-w-max gap-0.5 ${
+                className={`flex-shrink-0 flex flex-col items-center justify-center px-3 py-2 rounded-full text-2xs font-semibold transition min-w-max gap-0.5 ${
                   isActive
-                    ? "bg-accent-2 text-white"
+                    ? "bg-chrome-active text-white"
                     : "text-white/60 hover:text-white hover:bg-white/10"
                 }`}
               >
-                <span className="relative"><Icon size={16} />{countForPath(path) > 0 && <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-red px-1 text-center text-[9px] font-bold leading-4 text-white">{countForPath(path) > 99 ? "99+" : countForPath(path)}</span>}</span>
+                <span className="relative"><Icon size={16} />{countForPath(path) > 0 && <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-brand-gold px-1 text-center text-2xs font-bold leading-4 text-brand-gold-foreground">{countForPath(path) > 99 ? "99+" : countForPath(path)}</span>}</span>
                 <span className="truncate">{label}</span>
               </Link>
             );
@@ -137,7 +125,7 @@ export function BottomNavBar({ onLogout }: BottomNavBarProps) {
   // Show global nav for dashboard or when not in a hub page
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-navy border-t border-white/10 z-30 md:hidden">
-      <div className="flex overflow-x-auto overflow-y-hidden scrollbar-visible gap-1 scroll-smooth touch-pan-x px-2 py-1 justify-center" style={{ WebkitOverflowScrolling: "touch" }}>
+      <div className="flex overflow-x-auto overflow-y-hidden scrollbar-visible gap-1 scroll-smooth touch-pan-x px-2 py-1 [justify-content:safe_center]" style={{ WebkitOverflowScrolling: "touch" }}>
         {globalNavItems.filter(({ path }) => {
           if (path === "/") return staffCan("dashboard");
           if (path.startsWith("/information-management")) return staffCan("product-customer");
@@ -149,13 +137,13 @@ export function BottomNavBar({ onLogout }: BottomNavBarProps) {
             <Link
               key={path}
               to={path}
-              className={`flex-shrink-0 flex flex-col items-center justify-center px-3 py-2 rounded-full text-[10px] font-semibold transition-all min-w-max gap-0.5 ${
+              className={`flex-shrink-0 flex flex-col items-center justify-center px-3 py-2 rounded-full text-2xs font-semibold transition min-w-max gap-0.5 ${
                 isActive
-                  ? "bg-accent-2 text-white"
+                  ? "bg-chrome-active text-white"
                   : "text-white/60 hover:text-white hover:bg-white/10"
               }`}
             >
-              <span className="relative"><Icon size={16} />{countForPath(path) > 0 && <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-red px-1 text-center text-[9px] font-bold leading-4 text-white">{countForPath(path) > 99 ? "99+" : countForPath(path)}</span>}</span>
+              <span className="relative"><Icon size={16} />{countForPath(path) > 0 && <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-brand-gold px-1 text-center text-2xs font-bold leading-4 text-brand-gold-foreground">{countForPath(path) > 99 ? "99+" : countForPath(path)}</span>}</span>
               <span>{label}</span>
             </Link>
           );
