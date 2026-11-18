@@ -565,7 +565,7 @@ export function BookingSummary() {
     if (!isDateInRange(b.created_at)) return false;
 
     return true;
-  });
+  }).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return (
     <div className="flex-1 flex flex-col p-6 gap-6">
