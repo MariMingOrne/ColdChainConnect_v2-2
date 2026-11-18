@@ -7,7 +7,7 @@ import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { useInventoryContext } from "../context/InventoryContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Search } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, Search, Trash2 } from "lucide-react";
 import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
 import { ActionButtons } from "@/components/ActionButtons";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
@@ -774,8 +774,8 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                               <div className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
                             </div>
                             <div className="flex gap-1">
-                              <button onClick={(e) => { e.stopPropagation(); handleArchiveBatch(batch.id); }} className="px-2 py-1 bg-warning text-white rounded text-xs font-semibold hover:opacity-90" title="Archive batch"></button>
-                              <button onClick={(e) => { e.stopPropagation(); onDeleteBatch(batch.id); }} className="px-2 py-1 bg-red text-white rounded text-xs font-semibold hover:opacity-90"></button>
+                              <Button onClick={(e) => { e.stopPropagation(); handleArchiveBatch(batch.id); }} variant="ghost" size="icon" className="h-8 w-8" aria-label={`Archive batch ${batch.name}`} title="Archive batch"><Archive size={15} aria-hidden="true" /></Button>
+                              <Button onClick={(e) => { e.stopPropagation(); onDeleteBatch(batch.id); }} variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label={`Delete batch ${batch.name}`} title="Delete batch"><Trash2 size={15} aria-hidden="true" /></Button>
                             </div>
                           </div>
                         );
@@ -803,8 +803,8 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                               <div className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
                             </div>
                             <div className="flex gap-1">
-                              <Button onClick={() => handleUnarchiveBatch(batch.id)} variant="success" size="sm" title="Restore batch"></Button>
-                              <button onClick={() => onDeleteBatch(batch.id)} className="px-2 py-1 bg-red text-white rounded text-xs font-semibold hover:opacity-90"></button>
+                              <Button onClick={() => handleUnarchiveBatch(batch.id)} variant="ghost" size="icon" className="h-8 w-8" aria-label={`Restore batch ${batch.name}`} title="Restore batch"><ArchiveRestore size={15} aria-hidden="true" /></Button>
+                              <Button onClick={() => onDeleteBatch(batch.id)} variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label={`Delete batch ${batch.name}`} title="Delete batch"><Trash2 size={15} aria-hidden="true" /></Button>
                             </div>
                           </div>
                         );
