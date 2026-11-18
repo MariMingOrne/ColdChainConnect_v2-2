@@ -3,11 +3,13 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
-import { ArrowLeft, RotateCcw, CheckCircle, XCircle, Search } from "lucide-react";
+import { ArrowLeft, RotateCcw, CheckCircle, XCircle } from "lucide-react";
 import { AgentReturn, Invoice, Customer, Product } from "@shared/api";
 import { LogReturnForm } from "./LogReturnForm";
 import { Table } from "@/components/ui/table";
 import { newestFirst } from "@/components/SortableHeader";
+import { TableBulkAction, TableToolbar } from "@/components/TableToolbar";
+import { confirmAction } from "@/lib/confirm";
 
 function authHeaders(token: string) {
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
@@ -108,6 +110,7 @@ export function AgentReports() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "accepted" | "rejected">("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const fetchAll = useCallback(async () => {
     if (!token) return;
@@ -174,6 +177,38 @@ export function AgentReports() {
     }
   };
 
+  const processSelected = async (action: "accept" | "reject") => {
+    if (!token) return;
+    const pending = returns.filter((ret) => selectedIds.includes(ret.id) && ret.status === "pending");
+    if (pending.length === 0) return void toast.error("Select pending returns to review");
+
+    let reason = "";
+    if (action === "reject") {
+      const input = prompt("Reason for rejection (optional):");
+      if (input === null) return;
+      reason = input;
+    } else if (!(await confirmAction(`Accept ${pending.length} selected ${pending.length === 1 ? "return" : "returns"}?`))) {
+      return;
+    }
+
+    const results = await Promise.all(pending.map(async (ret) => {
+      try {
+        const res = await fetch(`/api/agent-returns/${ret.id}/${action}`, {
+          method: "POST",
+          headers: authHeaders(token),
+          ...(action === "reject" && { body: JSON.stringify({ reason }) }),
+        });
+        return res.ok;
+      } catch {
+        return false;
+      }
+    }));
+    const failed = results.filter((ok) => !ok).length;
+    setSelectedIds([]);
+    await fetchAll();
+    if (failed > 0) toast.error(`${failed} return(s) could not be ${action === "accept" ? "accepted" : "rejected"}.`);
+  };
+
   if (isAgent) {
     return (
       <AgentLogReturnScreen
@@ -211,6 +246,18 @@ export function AgentReports() {
   const acceptedCount = returns.filter((r) => r.status === "accepted").length;
   const rejectedCount = returns.filter((r) => r.status === "rejected").length;
 
+  const filteredIds = filtered.map((ret) => ret.id);
+  const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedIds.includes(id));
+  const selectedReturns = returns.filter((ret) => selectedIds.includes(ret.id));
+  const toggleReturnSelection = (id: string, checked: boolean) =>
+    setSelectedIds((current) => (checked ? [...current, id] : current.filter((selectedId) => selectedId !== id)));
+  const toggleFilteredSelection = (checked: boolean) =>
+    setSelectedIds((current) => (checked ? Array.from(new Set([...current, ...filteredIds])) : current.filter((id) => !filteredIds.includes(id))));
+  const bulkActions: TableBulkAction[] = [
+    { label: "Accept selected returns", onSelect: () => void processSelected("accept") },
+    { label: "Reject selected returns", onSelect: () => void processSelected("reject"), destructive: true },
+  ];
+
   return (
     <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto space-y-6">
 
@@ -246,18 +293,7 @@ export function AgentReports() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-start gap-3">
-        <div className="relative w-full sm:w-72">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="search"
-            aria-label="Search returns"
-            placeholder="Search order, customer, product…"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
-          />
-        </div>
+      <div className="flex flex-col gap-3">
         <div className="inline-flex w-fit rounded-full border border-border bg-card p-1">
           {(["all", "pending", "accepted", "rejected"] as const).map((s) => (
             <button key={s} onClick={() => setStatusFilter(s)}
@@ -268,6 +304,13 @@ export function AgentReports() {
             </button>
           ))}
         </div>
+        <TableToolbar
+          selectedCount={selectedReturns.length}
+          bulkActions={bulkActions}
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchPlaceholder="Search order, customer, product…"
+        />
       </div>
 
       <div className="data-table-frame overflow-hidden">
@@ -278,6 +321,9 @@ export function AgentReports() {
             <Table className="w-full text-xs md:text-sm">
               <thead>
                 <tr>
+                  <th className="w-10 bg-navy-mid px-3 py-3 text-left border-b border-border">
+                    <input aria-label="Select all returns" type="checkbox" checked={allFilteredSelected} onChange={(event) => toggleFilteredSelection(event.target.checked)} />
+                  </th>
                   {["Date", "Order", "Customer", "Product", "Qty", "Type", "Reason", "Status", "Actions"].map((h) => (
                     <th key={h} className="bg-navy-mid text-muted-foreground font-barlow-cond text-xs font-bold px-3 py-3 text-left border-b border-border whitespace-nowrap">
                       {h}
@@ -288,7 +334,7 @@ export function AgentReports() {
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-8 text-center text-muted-foreground">
+                    <td colSpan={10} className="px-6 py-8 text-center text-muted-foreground">
                       {returns.length === 0 ? "No returns logged yet." : "No records match this filter."}
                     </td>
                   </tr>
@@ -298,6 +344,9 @@ export function AgentReports() {
                     const cust = customers.find((c) => c.id === ret.customer_id);
                     return (
                       <tr key={ret.id} className="border-b border-border hover:bg-accent/40 transition-colors">
+                        <td className="w-10 px-3 py-3">
+                          <input aria-label={`Select return ${ret.id.slice(0, 8)}`} type="checkbox" checked={selectedIds.includes(ret.id)} onChange={(event) => toggleReturnSelection(ret.id, event.target.checked)} />
+                        </td>
                         <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">
                           {new Date(ret.created_at).toLocaleDateString("en-PH")}
                         </td>

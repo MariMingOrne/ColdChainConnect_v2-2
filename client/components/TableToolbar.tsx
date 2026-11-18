@@ -9,39 +9,41 @@ export interface TableBulkAction {
 }
 
 interface TableToolbarProps {
-  selectedCount: number;
-  bulkActions: TableBulkAction[];
+  selectedCount?: number;
+  bulkActions?: TableBulkAction[];
   searchValue: string;
   onSearchChange: (value: string) => void;
   searchPlaceholder: string;
   children?: ReactNode;
 }
 
-export function TableToolbar({ selectedCount, bulkActions, searchValue, onSearchChange, searchPlaceholder, children }: TableToolbarProps) {
+export function TableToolbar({ selectedCount = 0, bulkActions, searchValue, onSearchChange, searchPlaceholder, children }: TableToolbarProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <button
-            type="button"
-            disabled={selectedCount === 0}
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <MoreHorizontal size={16} /> Actions ({selectedCount})
-          </button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="start" className="bg-card text-foreground">
-          {bulkActions.map((action) => (
-            <DropdownMenuItem
-              key={action.label}
-              className={action.destructive ? "text-red focus:text-red" : undefined}
-              onClick={action.onSelect}
+      {bulkActions && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              type="button"
+              disabled={selectedCount === 0}
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {action.label}
-            </DropdownMenuItem>
-          ))}
-        </DropdownMenuContent>
-      </DropdownMenu>
+              <MoreHorizontal size={16} /> Actions ({selectedCount})
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="bg-card text-foreground">
+            {bulkActions.map((action) => (
+              <DropdownMenuItem
+                key={action.label}
+                className={action.destructive ? "text-red focus:text-red" : undefined}
+                onClick={action.onSelect}
+              >
+                {action.label}
+              </DropdownMenuItem>
+            ))}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
       <div className="relative w-full sm:w-72">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
         <input

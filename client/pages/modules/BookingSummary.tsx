@@ -10,7 +10,7 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { ArrowLeft, Plus, Calendar, CheckCircle, XCircle } from "lucide-react";
-import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
 import { newestFirst } from "@/components/SortableHeader";
 import { Booking, Truck, Customer, Product } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
@@ -36,6 +36,7 @@ export function BookingSummary() {
   const [dateRangeFilter, setDateRangeFilter] = useState<"all" | "today" | "week" | "month" | "custom">("today");
   const [customDateStart, setCustomDateStart] = useState<string>("");
   const [customDateEnd, setCustomDateEnd] = useState<string>("");
+  const [selectedBookingIds, setSelectedBookingIds] = useState<string[]>([]);
 
   // Approve booking modal
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -330,6 +331,32 @@ export function BookingSummary() {
     }
   };
 
+  const handleApproveSelected = async () => {
+    const pending = bookings.filter((b) => selectedBookingIds.includes(b.id) && b.status === "pending");
+    if (pending.length === 0) return void toast.error("Select pending orders to approve");
+    if (!(await confirmAction(`Approve ${pending.length} selected ${pending.length === 1 ? "order" : "orders"}?`))) return;
+
+    const results = await Promise.all(pending.map(async (booking) => {
+      try {
+        const res = await fetch(`/api/bookings/${booking.id}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ status: "approved" }),
+        });
+        if (!res.ok) return null;
+        const { booking: updated } = await res.json();
+        return updated as Booking;
+      } catch {
+        return null;
+      }
+    }));
+    const approved = results.filter((b): b is Booking => b !== null);
+    setBookings((prev) => prev.map((b) => approved.find((a) => a.id === b.id) ?? b));
+    setSelectedBookingIds((current) => current.filter((id) => !approved.some((b) => b.id === id)));
+    if (approved.length > 0) toast.success(`${approved.length} order${approved.length === 1 ? "" : "s"} approved.`);
+    if (approved.length < pending.length) toast.error(`${pending.length - approved.length} order(s) could not be approved.`);
+  };
+
   const openRejectModal = (booking: Booking) => {
     setSelectedBooking(booking);
     setRejectReason("");
@@ -569,6 +596,17 @@ export function BookingSummary() {
     return true;
   }));
 
+  const filteredIds = filtered.map((booking) => booking.id);
+  const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedBookingIds.includes(id));
+  const selectedBookings = bookings.filter((booking) => selectedBookingIds.includes(booking.id));
+  const toggleBookingSelection = (id: string, checked: boolean) =>
+    setSelectedBookingIds((current) => (checked ? [...current, id] : current.filter((selectedId) => selectedId !== id)));
+  const toggleFilteredSelection = (checked: boolean) =>
+    setSelectedBookingIds((current) => (checked ? Array.from(new Set([...current, ...filteredIds])) : current.filter((id) => !filteredIds.includes(id))));
+  const bulkActions: TableBulkAction[] = [
+    { label: "Approve selected orders", onSelect: () => void handleApproveSelected() },
+  ];
+
   return (
     <div className="flex-1 flex flex-col p-6 gap-6">
       {/* Header */}
@@ -590,48 +628,33 @@ export function BookingSummary() {
         </Card>
       )}
 
-      <SearchFilterBar
-        searchTerm={searchTerm}
+      <TableToolbar
+        selectedCount={selectedBookings.length}
+        bulkActions={bulkActions}
+        searchValue={searchTerm}
         onSearchChange={setSearchTerm}
-        placeholder="Search by order ID or customer ID…"
-        className="!justify-start"
-        filters={[
-          {
-            name: "statusFilter",
-            value: statusFilter,
-            onChange: (value) => setStatusFilter(value as any),
-            options: [
-              { label: "All Status", value: "all" },
-              { label: "Pending", value: "pending" },
-              { label: "Approved", value: "approved" },
-              { label: "Prep", value: "prep" },
-              { label: "Ready", value: "ready" },
-            ],
-          },
-          {
-            name: "approvalFilter",
-            value: approvalFilter,
-            onChange: (value) => setApprovalFilter(value as any),
-            options: [
-              { label: "All Orders", value: "all" },
-              { label: "Approved", value: "approved" },
-              { label: "Unapproved", value: "unapproved" },
-            ],
-          },
-          {
-            name: "dateRangeFilter",
-            value: dateRangeFilter,
-            onChange: (value) => setDateRangeFilter(value as any),
-            options: [
-              { label: "All Dates", value: "all" },
-              { label: "This Day", value: "today" },
-              { label: "This Week", value: "week" },
-              { label: "This Month", value: "month" },
-              { label: "Custom", value: "custom" },
-            ],
-          },
-        ]}
-      />
+        searchPlaceholder="Search by order ID or customer ID…"
+      >
+        <TableFilterSelect label="Status" value={statusFilter} onChange={(value) => setStatusFilter(value as typeof statusFilter)}>
+          <option value="all">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="prep">Prep</option>
+          <option value="ready">Ready</option>
+        </TableFilterSelect>
+        <TableFilterSelect label="Approval" value={approvalFilter} onChange={(value) => setApprovalFilter(value as typeof approvalFilter)}>
+          <option value="all">All Orders</option>
+          <option value="approved">Approved</option>
+          <option value="unapproved">Unapproved</option>
+        </TableFilterSelect>
+        <TableFilterSelect label="Date range" value={dateRangeFilter} onChange={(value) => setDateRangeFilter(value as typeof dateRangeFilter)}>
+          <option value="all">All Dates</option>
+          <option value="today">This Day</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="custom">Custom</option>
+        </TableFilterSelect>
+      </TableToolbar>
 
       {/* Custom Date Picker */}
       {dateRangeFilter === "custom" && (
@@ -672,6 +695,9 @@ export function BookingSummary() {
         <Table>
           <TableHeader>
             <TableRow className="whitespace-nowrap">
+              <TableHead className="w-10 px-3">
+                <input aria-label="Select all orders" type="checkbox" checked={allFilteredSelected} onChange={(event) => toggleFilteredSelection(event.target.checked)} />
+              </TableHead>
               <TableHead>Order ID</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Agent</TableHead>
@@ -685,7 +711,7 @@ export function BookingSummary() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                   {bookings.length === 0 ? "No orders found" : "No orders match your search"}
                 </TableCell>
               </TableRow>
@@ -696,6 +722,9 @@ export function BookingSummary() {
                 const isApproved = booking.status === "approved";
                 return (
                   <TableRow key={booking.id}>
+                    <TableCell className="w-10 px-3">
+                      <input aria-label={`Select order ${booking.id.slice(0, 8)}`} type="checkbox" checked={selectedBookingIds.includes(booking.id)} onChange={(event) => toggleBookingSelection(booking.id, event.target.checked)} />
+                    </TableCell>
                     <TableCell className="font-mono text-sm">
                       <button
                         onClick={() => openDetailModal(booking)}
