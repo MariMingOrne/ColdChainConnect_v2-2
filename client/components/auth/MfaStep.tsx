@@ -45,12 +45,15 @@ export function MfaStep({ mode, setupInfo, error, isLoading, onSubmit, onBack }:
       )}
 
       <div>
-        <label className="block text-xs font-semibold text-foreground mb-1.5 letter-spacing-tight">
+        <label htmlFor="mfa-code" className="mb-1.5 block text-sm font-semibold text-foreground">
           Authentication code
         </label>
         <input
+          id="mfa-code"
           type="text"
           inputMode="numeric"
+          autoFocus
+          pattern="d{6}"
           autoComplete="one-time-code"
           placeholder="123456"
           maxLength={6}
