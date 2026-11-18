@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { StatusBadge, StatusTone } from "@/components/StatusBadge";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
@@ -103,15 +104,15 @@ export function BookingSummary() {
   useEffect(() => { if (token) fetchAll(); }, [token]);
   useAutoRefresh(fetchAll, { enabled: Boolean(token) });
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: "bg-warning-soft text-warning",
-      approved: "bg-info-soft text-link",
-      rejected: "bg-destructive-soft text-destructive",
-      prep: "bg-info-soft text-link",
-      ready: "bg-success-soft text-success",
+  const getStatusTone = (status: string): StatusTone => {
+    const tones: Record<string, StatusTone> = {
+      pending: "warning",
+      prep: "info",
+      approved: "success",
+      ready: "success",
+      rejected: "danger",
     };
-    return colors[status] || "bg-muted text-foreground";
+    return tones[status] ?? "warning";
   };
 
   const isDateInRange = (dateStr: string): boolean => {
@@ -570,7 +571,7 @@ export function BookingSummary() {
       <BookingDetailPage
         booking={detailBooking}
         products={products}
-        getStatusColor={getStatusColor}
+        getStatusTone={getStatusTone}
         onBack={closeDetailModal}
       />
     );
@@ -762,9 +763,7 @@ export function BookingSummary() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <span className={`px-2 py-1 rounded text-sm ${getStatusColor(booking.status)}`}>
-                        {booking.status}
-                      </span>
+                      <StatusBadge label={booking.status} tone={getStatusTone(booking.status)} />
                     </TableCell>
                     <TableCell className="text-sm whitespace-nowrap">
                       {booking.prepared_delivery_date
@@ -803,7 +802,7 @@ export function BookingSummary() {
                           </button>
                         </div>
                       ) : (
-                        <span className="px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-muted rounded-lg capitalize border border-border">{booking.status}</span>
+                        <StatusBadge label={booking.status} tone={getStatusTone(booking.status)} />
                       )}
                     </TableCell>
                   </TableRow>

@@ -3,6 +3,7 @@ import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { StatusBadge, StatusTone } from "@/components/StatusBadge";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import {
   Table,
@@ -132,10 +133,10 @@ export function AccountsReceivable() {
     return "bg-destructive-soft text-destructive";
   };
 
-  const getStatusColor = (status: string) => {
-    if (status === "paid")    return "badge-green";
-    if (status === "partial") return "badge-gold";
-    return "badge-blue";
+  const getStatusTone = (status: string): StatusTone => {
+    if (status === "paid")    return "success";
+    if (status === "partial") return "info";
+    return "warning";
   };
 
   // ── Derived counts ──────────────────────────────────────────────────────────
@@ -302,9 +303,7 @@ export function AccountsReceivable() {
                       }
                     </TableCell>
                     <TableCell>
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(ar.status)}`}>
-                        {ar.status}
-                      </span>
+                      <StatusBadge label={ar.status} tone={getStatusTone(ar.status)} />
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate" title={ar.notes ?? ""}>
                       {ar.notes || "—"}

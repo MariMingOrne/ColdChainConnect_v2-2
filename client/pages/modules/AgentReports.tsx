@@ -2,6 +2,7 @@ import { toast } from "sonner";
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { StatusBadge, StatusTone } from "@/components/StatusBadge";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { ArrowLeft, RotateCcw, CheckCircle, XCircle } from "lucide-react";
 import { AgentReturn, Invoice, Customer, Product } from "@shared/api";
@@ -15,10 +16,10 @@ function authHeaders(token: string) {
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 }
 
-function statusBadge(status: string) {
-  if (status === "accepted") return "bg-success-soft text-success";
-  if (status === "rejected") return "bg-destructive-soft text-destructive";
-  return "bg-warning-soft text-warning";
+function returnStatusTone(status: string): StatusTone {
+  if (status === "accepted") return "success";
+  if (status === "rejected") return "danger";
+  return "warning";
 }
 
 function returnTypeBadge(type: string) {
@@ -370,9 +371,7 @@ export function AgentReports() {
                           {ret.reason || "—"}
                         </td>
                         <td className="px-3 py-3">
-                          <span className={`px-2 py-0.5 rounded text-xs font-semibold capitalize ${statusBadge(ret.status)}`}>
-                            {ret.status}
-                          </span>
+                          <StatusBadge label={ret.status} tone={returnStatusTone(ret.status)} />
                           {ret.status === "accepted" && ret.return_type === "good" && (
                             <p className="text-xs text-muted-foreground mt-0.5">
                               {ret.restored_to_pallet_id ? "Restocked ✓" : "Written off"}
