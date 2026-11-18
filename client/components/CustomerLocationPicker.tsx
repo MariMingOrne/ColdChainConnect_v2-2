@@ -181,7 +181,7 @@ export function CustomerLocationPicker({ position, onSelect }: CustomerLocationP
       role={expanded ? "dialog" : undefined}
       aria-modal={expanded ? true : undefined}
       aria-label={expanded ? "Choose customer location" : undefined}
-      className={expanded ? "fixed inset-0 z-[100] flex h-dvh w-screen flex-col bg-card p-3" : "relative"}
+      className={expanded ? "fixed inset-0 z-[100] flex h-dvh w-screen flex-col bg-card p-3" : "relative isolate"}
     >
       <div className="flex h-11 shrink-0 items-center justify-between gap-3 px-1">
         <span className="font-semibold text-foreground">{expanded ? "Choose the customer’s exact location" : ""}</span>
