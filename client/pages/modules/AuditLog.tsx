@@ -1,3 +1,4 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
@@ -87,27 +88,13 @@ export function AuditLogPage() {
         </div>
       </div>
 
-      <div className="flex gap-2 border-b border-border pb-0">
-        {[
-          { id: "activity", label: "Activity Log" },
-          { id: "activity-report", label: "Activity Report" },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setPageTab(tab.id as PageTab)}
-            className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition ${
-              pageTab === tab.id
-                ? "bg-card border-border text-foreground -mb-px"
-                : "bg-muted border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <Tabs value={pageTab} onValueChange={(value) => setPageTab(value as PageTab)} className="space-y-4">
+      <TabsList aria-label="Audit views" className="justify-start">
+        <TabsTrigger value="activity">Activity log</TabsTrigger>
+        <TabsTrigger value="activity-report">Activity report</TabsTrigger>
+      </TabsList>
 
-      {pageTab === "activity" && (
-        <>
+      <TabsContent value="activity" className="space-y-4">
           {error && (
             <Card className="p-4 bg-destructive-soft border-destructive/30">
               <p className="text-destructive">{error}</p>
@@ -118,10 +105,10 @@ export function AuditLogPage() {
           ) : (
             <AuditLogTable logs={logs} onView={setSelectedLog} />
           )}
-        </>
-      )}
+      </TabsContent>
 
-      {pageTab === "activity-report" && <ActivityReport logs={logs} />}
+      <TabsContent value="activity-report"><ActivityReport logs={logs} /></TabsContent>
+      </Tabs>
     </div>
   );
 }

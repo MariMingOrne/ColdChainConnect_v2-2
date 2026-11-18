@@ -1,3 +1,4 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { AuditLog } from "@shared/api";
 import { ActivityReport } from "./ActivityReport";
@@ -20,27 +21,18 @@ export function AuditReports({ logs }: { logs: AuditLog[] }) {
   const [activeTab, setActiveTab] = useState<ReportTab>("activity");
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-2 border-b border-border pb-3">
+    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as ReportTab)} className="space-y-4">
+      <TabsList aria-label="Audit reports" className="h-auto flex-wrap justify-start">
         {REPORT_TABS.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
-              activeTab === tab.id ? "bg-primary text-primary-foreground" : "bg-muted text-foreground hover:bg-muted"
-            }`}
-          >
-            {tab.label}
-          </button>
+          <TabsTrigger key={tab.id} value={tab.id}>{tab.label}</TabsTrigger>
         ))}
-      </div>
-
-      {activeTab === "activity" && <ActivityReport logs={logs} />}
-      {activeTab === "sales" && <SalesReport />}
-      {activeTab === "inventory" && <InventoryReport />}
-      {activeTab === "customer" && <CustomerReport />}
-      {activeTab === "performance" && <PerformanceReport />}
-      {activeTab === "profit" && <ProfitReport />}
-    </div>
+      </TabsList>
+      <TabsContent value="activity"><ActivityReport logs={logs} /></TabsContent>
+      <TabsContent value="sales"><SalesReport /></TabsContent>
+      <TabsContent value="inventory"><InventoryReport /></TabsContent>
+      <TabsContent value="customer"><CustomerReport /></TabsContent>
+      <TabsContent value="performance"><PerformanceReport /></TabsContent>
+      <TabsContent value="profit"><ProfitReport /></TabsContent>
+    </Tabs>
   );
 }
