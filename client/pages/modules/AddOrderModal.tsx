@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { ArrowLeft, Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { QuantityStepper } from "./QuantityStepper";
+import { ProductOrderRow } from "./ProductOrderRow";
 import { Product, Customer } from "@shared/api";
 
 interface OrderItem {
@@ -45,18 +45,12 @@ export function AddOrderModal({
 }: AddOrderModalProps) {
   const today = new Date();
   const minDeliveryDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
-  const [selectedTab, setSelectedTab] = useState<"products" | "cart">("products");
   const [productSearch, setProductSearch] = useState("");
 
   const getImageUrl = (imageFilename?: string): string => {
     if (!imageFilename) return "/placeholder.svg";
     if (imageFilename.startsWith("http")) return imageFilename;
     return `/uploads/${imageFilename}`;
-  };
-
-  const getStockStatus = (productId: string): { stock: number; isOutOfStock: boolean } => {
-    const stock = productStock[productId] || 0;
-    return { stock, isOutOfStock: stock === 0 };
   };
 
   const getTotalQuantity = (): number => {
@@ -108,170 +102,37 @@ export function AddOrderModal({
           />
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-border bg-white">
-          <button
-            onClick={() => setSelectedTab("products")}
-            className={`flex-1 px-4 py-3 text-sm font-semibold transition ${
-              selectedTab === "products"
-                ? "border-b-2 border-accent-2 text-accent-2"
-                : "text-muted hover:text-navy"
-            }`}
-          >
-            Browse Products
-          </button>
-          <button
-            onClick={() => setSelectedTab("cart")}
-            className={`flex-1 px-4 py-3 text-sm font-semibold transition ${
-              selectedTab === "cart"
-                ? "border-b-2 border-accent-2 text-accent-2"
-                : "text-muted hover:text-navy"
-            }`}
-          >
-            Order Items ({getTotalQuantity()})
-          </button>
-        </div>
+        {/* Product List */}
+        <div className="flex-1 overflow-y-auto p-6 min-h-[400px] space-y-4">
+          <Input
+            type="text"
+            placeholder="Search by product name or SKU…"
+            value={productSearch}
+            onChange={(e) => setProductSearch(e.target.value)}
+            className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
+          />
+          <div className="space-y-2">
+            {filteredProducts.map((product) => {
+              const itemIdx = orderItems.findIndex((item) => item.product_id === product.id);
+              const selectedItem = itemIdx !== -1 ? orderItems[itemIdx] : undefined;
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 min-h-[400px]">
-          {selectedTab === "products" ? (
-            <div className="space-y-4">
-              <Input
-                type="text"
-                placeholder="Search by product name or SKU…"
-                value={productSearch}
-                onChange={(e) => setProductSearch(e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
-              />
-              <div className="space-y-2">
-                {filteredProducts.map((product) => {
-                const { stock, isOutOfStock } = getStockStatus(product.id);
-                const isSelected = orderItems.some((item) => item.product_id === product.id);
-
-                return (
-                  <button
-                    key={product.id}
-                    onClick={() => {
-                      if (isSelected) {
-                        const itemIdx = orderItems.findIndex((item) => item.product_id === product.id);
-                        if (itemIdx !== -1) onRemoveItem(itemIdx);
-                      } else if (!isOutOfStock) {
-                        onAddItem(product.id);
-                      }
-                    }}
-                    disabled={isOutOfStock}
-                    className={`w-full flex items-center gap-4 p-4 rounded-lg border-2 transition ${
-                      isOutOfStock
-                        ? "border-red-300 bg-red-50 opacity-60 cursor-not-allowed"
-                        : isSelected
-                          ? "border-accent-2 bg-blue-50"
-                          : "border-border bg-white hover:border-accent-2 hover:shadow-md cursor-pointer"
-                    }`}
-                  >
-                    {/* Image */}
-                    <div className="w-16 h-16 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-                      <img
-                        src={getImageUrl(product.image_filename)}
-                        alt={product.name}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = "/placeholder.svg";
-                        }}
-                      />
-                    </div>
-
-                    {/* Product Info */}
-                    <div className="flex-1 text-left">
-                      <h3 className="font-semibold text-sm text-navy mb-1">{product.name}</h3>
-                      <div className="flex items-center gap-3">
-                        <p className="text-sm font-bold text-accent-2">₱{product.price}</p>
-                        <div
-                          className={`px-2 py-1 rounded text-xs font-semibold ${
-                            isOutOfStock
-                              ? "bg-red-200 text-red-700"
-                              : stock < 10
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-green-100 text-green-800"
-                          }`}
-                        >
-                          {isOutOfStock ? "Out of Stock" : `${stock} available`}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Selected Indicator */}
-                    {isSelected && (
-                      <div className="px-3 py-1 bg-accent-2 text-white text-xs font-semibold rounded">
-                        ✓ Added
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-              </div>
-              {filteredProducts.length === 0 && (
-                <div className="text-center py-8">
-                  <p className="text-muted text-sm">No products found matching "{productSearch}"</p>
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {orderItems.length === 0 ? (
-                <div className="text-center py-12">
-                  <p className="text-muted text-sm mb-4">No items added yet. Browse products to add items.</p>
-                  <button
-                    onClick={() => setSelectedTab("products")}
-                    className="px-4 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90"
-                  >
-                    Browse Products
-                  </button>
-                </div>
-              ) : (
-                <>
-                  {orderItems.map((item, idx) => {
-                    const product = products.find((p) => p.id === item.product_id);
-                    const maxQty = productStock[item.product_id] || 0;
-
-                    if (!product) return null;
-
-                    return (
-                      <div
-                        key={idx}
-                        className="flex items-center gap-3 p-4 border border-border rounded-lg bg-off-white"
-                      >
-                        <img
-                          src={getImageUrl(product.image_filename)}
-                          alt={product.name}
-                          className="w-16 h-16 object-cover rounded"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/placeholder.svg";
-                          }}
-                        />
-                        <div className="flex-1">
-                          <h4 className="font-semibold text-sm text-navy">{product.name}</h4>
-                          <p className="text-xs text-muted">₱{product.price}</p>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <QuantityStepper
-                            value={item.qty_ordered}
-                            min={1}
-                            max={maxQty}
-                            onChange={(qty) => onItemChange(idx, "qty_ordered", qty)}
-                          />
-                          <span className="text-xs text-muted">{maxQty} available</span>
-                        </div>
-                        <button
-                          onClick={() => onRemoveItem(idx)}
-                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    );
-                  })}
-                </>
-              )}
+              return (
+                <ProductOrderRow
+                  key={product.id}
+                  product={product}
+                  imageUrl={getImageUrl(product.image_filename)}
+                  stock={productStock[product.id] || 0}
+                  selectedQty={selectedItem?.qty_ordered}
+                  onAdd={() => onAddItem(product.id)}
+                  onRemove={() => onRemoveItem(itemIdx)}
+                  onQuantityChange={(qty) => onItemChange(itemIdx, "qty_ordered", qty)}
+                />
+              );
+            })}
+          </div>
+          {filteredProducts.length === 0 && (
+            <div className="text-center py-8">
+              <p className="text-muted text-sm">No products found matching "{productSearch}"</p>
             </div>
           )}
         </div>
