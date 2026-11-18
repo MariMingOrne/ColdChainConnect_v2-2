@@ -88,8 +88,8 @@ export function AuditLogPage() {
 
       <div className="flex gap-2 border-b border-border pb-0">
         {[
-          { id: "activity", label: "Activity Log", icon: "🕐" },
-          { id: "activity-report", label: "Activity Report", icon: "📊" },
+          { id: "activity", label: "Activity Log" },
+          { id: "activity-report", label: "Activity Report" },
         ].map(tab => (
           <button
             key={tab.id}
@@ -100,7 +100,7 @@ export function AuditLogPage() {
                 : "bg-muted border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            <span className="mr-2">{tab.icon}</span>{tab.label}
+            {tab.label}
           </button>
         ))}
       </div>

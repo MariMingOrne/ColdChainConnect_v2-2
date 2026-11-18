@@ -1,3 +1,6 @@
+import { formatPeso } from "@/lib/utils";
+import { StatCard } from "@/components/shared/StatCard";
+import { Package, TriangleAlert, Hash, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
@@ -266,9 +269,9 @@ export function Inventory() {
     const expiry = parseIsoDate(expiryDate);
     const daysUntilExpiry = Math.floor((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-    if (daysUntilExpiry < 0) return { status: "expired", icon: "❌", color: { bg: "bg-destructive-soft", hover: "hover:bg-destructive-soft" } };
-    if (daysUntilExpiry <= 7) return { status: "almost-expired", icon: "⚠️", color: { bg: "bg-warning-soft", hover: "hover:bg-warning-soft" } };
-    return { status: "ok", icon: "✅", color: { bg: "", hover: "hover:bg-accent/50" } };
+    if (daysUntilExpiry < 0) return { status: "expired", icon: "Expired", color: { bg: "bg-destructive-soft", hover: "hover:bg-destructive-soft" } };
+    if (daysUntilExpiry <= 7) return { status: "almost-expired", icon: "Expires soon", color: { bg: "bg-warning-soft", hover: "hover:bg-warning-soft" } };
+    return { status: "ok", icon: "", color: { bg: "", hover: "hover:bg-accent/50" } };
   };
 
   const getRowHighlightColor = (qty: number, reorderPoint: number, expiryDate?: string) => {
@@ -371,7 +374,7 @@ export function Inventory() {
           <p className="page-subtitle">Track, manage, and monitor all frozen goods SKUs</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => { setNewBatchName(""); setStartBatchCreation(true); setIsBatchModalOpen(true); }} className="px-4 py-2 bg-green text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-colors">➕ Add Items</button>
+          <button onClick={() => { setNewBatchName(""); setStartBatchCreation(true); setIsBatchModalOpen(true); }} className="btn-primary">Add Items</button>
           <ExcelActionsDropdown
             onImport={() => setShowExcelImport(true)}
             onExport={handleInventoryExport}
@@ -387,7 +390,7 @@ export function Inventory() {
         <div>
           <label className="block text-xs font-semibold text-foreground mb-2">Batch</label>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-visible">
-            <FilterChip label="📦 All Products" meta={`${products.length} SKUs`} active={selectedBatchId === "batch-all"} onClick={() => selectBatch("batch-all")} />
+            <FilterChip label="All Products" meta={`${products.length} SKUs`} active={selectedBatchId === "batch-all"} onClick={() => selectBatch("batch-all")} />
             {visibleBatches.map((batch) => {
               const itemCount = batch.pallets.reduce((sum: number, p) => sum + p.items.length, 0);
               return (
@@ -417,7 +420,7 @@ export function Inventory() {
             </div>
             <input type="datetime-local" value={batchCreatedSince} onChange={(e) => setBatchCreatedSince(e.target.value)} title="Show batches created on or after this date and time" className="rounded-lg border border-border px-3 py-2 text-sm text-foreground" />
           </div>
-          <button onClick={() => setIsBatchModalOpen(true)} className="px-4 py-2 bg-card border border-border text-foreground rounded-lg font-semibold text-sm hover:bg-accent w-fit">⚙ Manage Batches</button>
+          <button onClick={() => setIsBatchModalOpen(true)} className="px-4 py-2 bg-card border border-border text-foreground rounded-lg font-semibold text-sm hover:bg-accent w-fit">Manage Batches</button>
         </div>
       </div>
 
@@ -442,10 +445,10 @@ export function Inventory() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatsBox label="Total Items" value={batchProducts.length.toString()} icon="📦" />
-        <StatsBox label="Re-Order Needed" value={batchProducts.filter((p) => p.batchQuantity <= p.reorderPoint).length.toString()} icon="⚠️" color="red" />
-        <StatsBox label="Total Stock Qty" value={batchProducts.reduce((s, p) => s + p.batchQuantity, 0).toLocaleString()} icon="🔢" color="accent-2" />
-        <StatsBox label="Total Value" value={`₱${batchProducts.reduce((s, p) => s + p.unitPrice * p.batchQuantity, 0).toLocaleString("en-PH", { maximumFractionDigits: 0 })}`} icon="💰" />
+        <StatCard label="Total Items" value={batchProducts.length.toString()} icon={Package} />
+        <StatCard label="Re-order needed" value={batchProducts.filter((p) => p.batchQuantity <= p.reorderPoint).length.toString()} icon={TriangleAlert} attention={batchProducts.filter((p) => p.batchQuantity <= p.reorderPoint).length > 0} />
+        <StatCard label="Total Stock Qty" value={batchProducts.reduce((s, p) => s + p.batchQuantity, 0).toLocaleString()} icon={Hash} />
+        <StatCard label="Total Value" value={formatPeso(batchProducts.reduce((s, p) => s + p.unitPrice * p.batchQuantity, 0))} icon={Wallet} />
       </div>
 
       {/* Inventory Table */}
@@ -481,7 +484,7 @@ export function Inventory() {
                       {/* Name */}
                       <td className="px-3 py-3 text-foreground font-semibold max-w-[200px] truncate">
                         <div className="flex items-center gap-2 truncate">
-                          {expiryStatus && <span title={expiryStatus.status}>{expiryStatus.icon}</span>}
+                          {expiryStatus?.icon && <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-2xs font-semibold ${expiryStatus.status === "expired" ? "bg-destructive-soft text-destructive" : "bg-warning-soft text-warning"}`}>{expiryStatus.icon}</span>}
                           <span className="truncate">{product.description}</span>
                         </div>
                       </td>
@@ -570,16 +573,6 @@ function FilterChip({ label, meta, active, onClick }: { label: string; meta: str
   );
 }
 
-// ─── StatsBox ─────────────────────────────────────────────────────────────────
-function StatsBox({ label, value, icon, color }: { label: string; value: string; icon: string; color?: string }) {
-  return (
-    <div className="bg-card border border-border rounded-lg p-3 text-center">
-      <div className="text-2xl mb-1">{icon}</div>
-      <div className={`font-rajdhani text-xl font-bold ${color ? `text-${color}` : "text-accent-2"}`}>{value}</div>
-      <div className="text-xs text-muted-foreground mt-1">{label}</div>
-    </div>
-  );
-}
 
 // ─── Extra Info Modal ─────────────────────────────────────────────────────────
 function ExtraInfoModal({ product, batches, onClose, onSelectPallet }: { product: InventoryProduct & { batchQuantity: number }; batches: any[]; onClose: () => void; onSelectPallet: (batchId: string, palletId: string) => void }) {
@@ -764,7 +757,7 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                     <h3 className="text-xs font-semibold text-muted-foreground mb-3">Active Batches</h3>
                     <div className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedBatchId === "batch-all" ? "border-accent-2 bg-accent-2/10" : "border-border hover:bg-accent"}`} onClick={() => onSelectBatch("batch-all")}>
                       <div className="flex-1">
-                        <div className="text-sm font-semibold text-foreground">📦 All Products</div>
+                        <div className="text-sm font-semibold text-foreground">All Products</div>
                         <div className="text-xs text-muted-foreground">View all products across all batches</div>
                       </div>
                     </div>
@@ -780,8 +773,8 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                               <div className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
                             </div>
                             <div className="flex gap-1">
-                              <button onClick={(e) => { e.stopPropagation(); handleArchiveBatch(batch.id); }} className="px-2 py-1 bg-warning text-white rounded text-xs font-semibold hover:opacity-90" title="Archive batch">📦</button>
-                              <button onClick={(e) => { e.stopPropagation(); onDeleteBatch(batch.id); }} className="px-2 py-1 bg-red text-white rounded text-xs font-semibold hover:opacity-90">🗑</button>
+                              <button onClick={(e) => { e.stopPropagation(); handleArchiveBatch(batch.id); }} className="px-2 py-1 bg-warning text-white rounded text-xs font-semibold hover:opacity-90" title="Archive batch"></button>
+                              <button onClick={(e) => { e.stopPropagation(); onDeleteBatch(batch.id); }} className="px-2 py-1 bg-red text-white rounded text-xs font-semibold hover:opacity-90"></button>
                             </div>
                           </div>
                         );
@@ -789,8 +782,8 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                     )}
                   </div>
                   <div className="flex gap-2 justify-between">
-                    <button onClick={() => setShowArchived(true)} className="px-4 py-2 bg-muted-foreground text-white rounded-lg font-semibold text-sm hover:opacity-90">📋 View Archived ({archivedBatches.length})</button>
-                    <button onClick={() => { setIsCreatingBatch(true); setPallets([]); setNewBatchName(""); }} className="px-4 py-2 bg-green text-white rounded-lg font-semibold text-sm hover:opacity-90">➕ Create New Batch</button>
+                    <button onClick={() => setShowArchived(true)} className="px-4 py-2 bg-muted-foreground text-white rounded-lg font-semibold text-sm hover:opacity-90">View Archived ({archivedBatches.length})</button>
+                    <button onClick={() => { setIsCreatingBatch(true); setPallets([]); setNewBatchName(""); }} className="px-4 py-2 bg-green text-white rounded-lg font-semibold text-sm hover:opacity-90">Create New Batch</button>
                   </div>
                 </>
               ) : (
@@ -809,8 +802,8 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                               <div className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
                             </div>
                             <div className="flex gap-1">
-                              <button onClick={() => handleUnarchiveBatch(batch.id)} className="px-2 py-1 bg-green text-white rounded text-xs font-semibold hover:opacity-90" title="Restore batch">♻️</button>
-                              <button onClick={() => onDeleteBatch(batch.id)} className="px-2 py-1 bg-red text-white rounded text-xs font-semibold hover:opacity-90">🗑</button>
+                              <button onClick={() => handleUnarchiveBatch(batch.id)} className="px-2 py-1 bg-green text-white rounded text-xs font-semibold hover:opacity-90" title="Restore batch"></button>
+                              <button onClick={() => onDeleteBatch(batch.id)} className="px-2 py-1 bg-red text-white rounded text-xs font-semibold hover:opacity-90"></button>
                             </div>
                           </div>
                         );
@@ -968,7 +961,7 @@ function CreateBatchForm({ newBatchName, setNewBatchName, pallets, setPallets, o
       <div className="flex justify-end gap-2 border-t border-border pt-4">
         <Button type="button" variant="ghost" onClick={onCancel}>Cancel</Button>
         <Button type="button" variant="success" onClick={handleCreate} disabled={!newBatchName.trim() || items.length === 0 || !acquisitionDate}>
-          ✓ Add Items
+          Add items
         </Button>
       </div>
     </div>

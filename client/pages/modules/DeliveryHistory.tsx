@@ -1,3 +1,5 @@
+import { StatCard } from "@/components/shared/StatCard";
+import { Package, CalendarDays, Store, CircleCheck } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
@@ -131,15 +133,15 @@ export function DeliveryHistory() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red/30 bg-red/10 px-4 py-2 text-xs text-red">⚠️ {error}</div>
+        <div className="rounded-lg border border-red/30 bg-red/10 px-4 py-2 text-xs text-red">{error}</div>
       )}
 
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <SummaryCard label="Total Deliveries" value={totalReceipts.toString()} icon="📦" color="blue" />
-        <SummaryCard label="Today"             value={todayReceipts.toString()} icon="📅" color="green" />
-        <SummaryCard label="Unique Customers"  value={new Set(receipts.map((r) => r.customer_id)).size.toString()} icon="🏪" color="gold" />
-        <SummaryCard label="Paid Invoices"     value={receipts.length.toString()} icon="✅" color="green" />
+        <StatCard label="Total Deliveries" value={totalReceipts.toString()} icon={Package} />
+        <StatCard label="Today"             value={todayReceipts.toString()} icon={CalendarDays} />
+        <StatCard label="Unique customers" value={new Set(receipts.map((r) => r.customer_id)).size.toString()} icon={Store} />
+        <StatCard label="Paid in full" value={receipts.filter((r) => r.invoice?.payment_status === "paid").length.toString()} icon={CircleCheck} detail={`of ${receipts.length} delivered`} />
       </div>
 
       {/* Search and Filters */}
@@ -208,7 +210,7 @@ export function DeliveryHistory() {
                           onClick={() => setViewReceipt(r)}
                           className="px-3 py-1 border border-border rounded text-xs font-semibold whitespace-nowrap hover:bg-accent transition-colors"
                         >
-                          🧾 View OR
+                          View OR
                         </button>
                       </td>
                     </tr>
@@ -252,19 +254,6 @@ export function DeliveryHistory() {
 
 // ─── Summary Card ─────────────────────────────────────────────────────────────
 
-function SummaryCard({ label, value, icon, color }: { label: string; value: string; icon: string; color: string }) {
-  return (
-    <div className="bg-card border border-border rounded-2xl p-5 flex flex-col gap-2">
-      <div className="flex items-start justify-between">
-        <div>
-          <div className="text-xs text-muted-foreground font-semibold tracking-tight">{label}</div>
-          <div className={`font-rajdhani text-2xl font-bold mt-2 text-${color}`}>{value}</div>
-        </div>
-        <span className="text-3xl">{icon}</span>
-      </div>
-    </div>
-  );
-}
 
 // ─── Original Receipt Modal ───────────────────────────────────────────────────
 
@@ -279,7 +268,7 @@ function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt; onClo
         </div>
         <div className="flex gap-2">
           <button onClick={handlePrint} className="btn-ghost">
-            🖨 Print
+            Print
           </button>
           <button onClick={onClose} className="btn-ghost">
             <ArrowLeft size={15} />

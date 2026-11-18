@@ -287,7 +287,7 @@ export function AccountsReceivable() {
                           {markingPaid === ar.id ? "Saving…" : "Mark Paid"}
                         </button>
                       ) : ar.status === "paid" ? (
-                        <span className="text-xs text-green font-semibold">✅ Paid</span>
+                        <span className="text-xs text-green font-semibold">Paid</span>
                       ) : (
                         <span className="text-xs text-muted-foreground">—</span>
                       )}

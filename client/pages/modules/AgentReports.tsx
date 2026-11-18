@@ -227,7 +227,7 @@ export function AgentReports() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red/30 bg-red/10 px-4 py-2 text-xs text-red">⚠️ {error}</div>
+        <div className="rounded-lg border border-red/30 bg-red/10 px-4 py-2 text-xs text-red">{error}</div>
       )}
 
       <div className="grid grid-cols-3 gap-4">
@@ -313,7 +313,7 @@ export function AgentReports() {
                         <td className="px-3 py-3 font-semibold text-foreground">{ret.qty_returned}</td>
                         <td className="px-3 py-3">
                           <span className={`px-2 py-0.5 rounded text-xs font-semibold ${returnTypeBadge(ret.return_type)}`}>
-                            {ret.return_type === "damaged" ? "🗑 Damaged" : "✅ Good"}
+                            {ret.return_type === "damaged" ? "Damaged" : "Good"}
                           </span>
                         </td>
                         <td className="px-3 py-3 text-muted-foreground max-w-[160px] truncate" title={ret.reason ?? ""}>

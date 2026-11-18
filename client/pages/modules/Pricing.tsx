@@ -1,3 +1,5 @@
+import { StatCard } from "@/components/shared/StatCard";
+import { Tag, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
@@ -43,26 +45,6 @@ const productExcelColumns: ExcelColumn[] = [
   { header: "Batch Tracking", key: "batch_tracking_enabled", width: 16 },
 ];
 
-function StatsBox({
-  label,
-  value,
-  icon,
-  color,
-}: {
-  label: string;
-  value: string;
-  icon: string;
-  color?: string;
-}) {
-  const colorClass = color ? `text-${color}` : "text-accent-2";
-  return (
-    <div className="bg-card border border-border rounded-lg p-3 text-center">
-      <div className="text-2xl mb-1">{icon}</div>
-      <div className={`font-rajdhani text-xl font-bold ${colorClass}`}>{value}</div>
-      <div className="text-xs text-muted-foreground mt-1">{label}</div>
-    </div>
-  );
-}
 
 function ProductPage({
   title,
@@ -545,7 +527,7 @@ export function Pricing({ onBack }: PricingProps) {
             onClick={openAddModal}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
           >
-            ➕ Add Product
+            Add Product
           </button>
           <ExcelActionsDropdown
             onImport={() => setShowExcelImport(true)}
@@ -562,11 +544,10 @@ export function Pricing({ onBack }: PricingProps) {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
-        <StatsBox label="Total Products" value={products.length.toString()} icon="🏷️" />
-        <StatsBox
+        <StatCard label="Total Products" value={products.length.toString()} icon={Tag} />
+        <StatCard
           label="Avg Price"
-          value={`₱${avgPrice.toLocaleString("en-PH", { maximumFractionDigits: 0 })}`}
-          icon="💰"
+          value={`₱${avgPrice.toLocaleString("en-PH", { maximumFractionDigits: 0 })}`} icon={Wallet}
         />
       </div>
 

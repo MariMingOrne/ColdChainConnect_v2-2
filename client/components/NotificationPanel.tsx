@@ -1,3 +1,4 @@
+import { Inbox, LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { RefreshCw } from "lucide-react";
@@ -127,7 +128,7 @@ export function NotificationPanel({
           )}
           {filteredNotifications.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center p-4 text-center">
-              <div className="mb-3 text-4xl">{isLoading ? "⏳" : "📭"}</div>
+              <div className="mb-3 text-muted-foreground">{isLoading ? <LoaderCircle className="h-8 w-8 animate-spin" aria-hidden="true" /> : <Inbox className="h-8 w-8" aria-hidden="true" />}</div>
               <p className="font-medium text-muted-foreground">{isLoading ? "Loading notifications" : "No notifications"}</p>
               <p className="text-sm text-muted-foreground">{isLoading ? "Checking recent activity…" : "You're all caught up!"}</p>
             </div>

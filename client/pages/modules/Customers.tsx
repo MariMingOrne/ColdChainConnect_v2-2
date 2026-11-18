@@ -1,3 +1,5 @@
+import { StatCard } from "@/components/shared/StatCard";
+import { Store, Receipt, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
 import { useEffect, useMemo, useState } from "react";
@@ -61,27 +63,6 @@ const customerExcelColumns: ExcelColumn[] = [
   { header: "Discounts JSON", key: "discounts_json", width: 42 },
 ];
 
-function StatsBox({
-  label,
-  value,
-  icon,
-  color,
-}: {
-  label: string;
-  value: string;
-  icon: string;
-  color?: string;
-}) {
-  const colorClass = color ? `text-${color}` : "text-accent-2";
-
-  return (
-    <div className="bg-card border border-border rounded-lg p-3 text-center">
-      <div className="text-2xl mb-1">{icon}</div>
-      <div className={`font-rajdhani text-xl font-bold ${colorClass}`}>{value}</div>
-      <div className="text-xs text-muted-foreground mt-1">{label}</div>
-    </div>
-  );
-}
 
 function ViewCustomerPage({ customer, onClose }: { customer: Customer; onClose: () => void }) {
   return (
@@ -648,7 +629,7 @@ export function Customers({ onBack }: CustomersProps) {
 
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={openAddModal} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90">
-            ➕ Add Customer
+            Add Customer
           </button>
           <ExcelActionsDropdown
             onImport={() => setShowExcelImport(true)}
@@ -664,17 +645,14 @@ export function Customers({ onBack }: CustomersProps) {
       )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        <StatsBox label="Total Customers" value={customers.length.toString()} icon="🏪" />
-        <StatsBox
+        <StatCard label="Total Customers" value={customers.length.toString()} icon={Store} />
+        <StatCard
           label="Avg Discount"
-          value={`${formatPercent(averageDiscountRate)}%`}
-          icon="🧾"
+          value={`${formatPercent(averageDiscountRate)}%`} icon={Receipt}
         />
-        <StatsBox
+        <StatCard
           label="With Discounts"
-          value={customers.filter((customer) => (customer.discounts?.length ?? 0) > 0).length.toString()}
-          icon="📊"
-          color="gold"
+          value={customers.filter((customer) => (customer.discounts?.length ?? 0) > 0).length.toString()} icon={BarChart3}
         />
       </div>
 

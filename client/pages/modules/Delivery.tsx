@@ -501,7 +501,7 @@ export function DeliveryDispatch() {
                             </p>
                           )}
                           {item.status === "completed" ? (
-                            <span className="text-xs text-green font-semibold">✅ Done</span>
+                            <span className="text-xs text-green font-semibold">Done</span>
                           ) : (
                             <>
                               <button
@@ -573,7 +573,7 @@ export function DeliveryDispatch() {
                               </td>
                               <td className="px-3 py-3">
                                 {item.status === "completed" ? (
-                                  <span className="text-xs text-green font-semibold">✅ Done</span>
+                                  <span className="text-xs text-green font-semibold">Done</span>
                                 ) : (
                                   <div className="flex items-center gap-2">
                                     <button
@@ -698,7 +698,7 @@ export function DeliveryDispatch() {
 
       {error && (
         <div className="rounded-lg border border-red/30 bg-red/10 px-4 py-2 text-xs text-red flex-shrink-0">
-          ⚠️ {error}
+          {error}
         </div>
       )}
 
@@ -836,8 +836,8 @@ function ChangeTruckDriverModal({ truck, drivers, token, onClose, onSave }: {
           return d ? (
             <div className="mt-3 bg-muted rounded-lg p-3 text-xs space-y-0.5">
               <p className="font-semibold text-foreground text-sm">{d.full_name || "—"}</p>
-              {d.contact_info && <p className="text-muted-foreground">📞 {d.contact_info}</p>}
-              {d.license      && <p className="text-muted-foreground">🪪 {d.license}</p>}
+              {d.contact_info && <p className="text-muted-foreground"><span className="sr-only">Contact: </span>{d.contact_info}</p>}
+              {d.license && <p className="text-muted-foreground">License {d.license}</p>}
               {d.employment_type && (
                 <p className="text-muted-foreground capitalize">{d.employment_type.replace("_", " ")}</p>
               )}
@@ -1233,7 +1233,7 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
                     Receipt: {selectedInv.receipt_number || selectedInv.id.slice(0, 8).toUpperCase()}
                   </p>
                   {!resolvedCustomer && (
-                    <p className="text-red font-semibold">⚠ Customer record not found — cannot add stop</p>
+                    <p className="text-red font-semibold">Customer record not found — cannot add stop</p>
                   )}
                 </div>
               )}
@@ -1295,10 +1295,10 @@ function PaymentConfirmationModal({
   const [paymentReference, setPaymentReference] = useState("");
 
   const PAYMENT_METHODS = [
-    { value: "cash", label: "💵 Cash" },
+    { value: "cash", label: "Cash" },
     { value: "check", label: "✓ Check" },
-    { value: "bank_transfer", label: "🏦 Bank Transfer" },
-    { value: "online", label: "💳 Online Payment" },
+    { value: "bank_transfer", label: "Bank Transfer" },
+    { value: "online", label: "Online Payment" },
   ];
 
   const handleConfirm = async () => {
@@ -1383,7 +1383,7 @@ function PaymentConfirmationModal({
         {/* Warning if not paid */}
         {!isPaid && (
           <div className="p-4 bg-warning-soft rounded-lg border border-warning/30">
-            <p className="text-xs font-semibold text-warning mb-1">⚠️ Accounts Receivable</p>
+            <p className="text-xs font-semibold text-warning mb-1">Accounts Receivable</p>
             <p className="text-xs text-warning">
               Since payment was not received, this amount will be recorded in Accounts Receivable. {customer?.store_name} will show as owing this amount.
             </p>
