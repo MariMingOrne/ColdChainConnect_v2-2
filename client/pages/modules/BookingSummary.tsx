@@ -30,7 +30,6 @@ export function BookingSummary() {
   const isAgent = user?.role === "agent";
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "approved" | "prep" | "ready">("all");
-  const [approvalFilter, setApprovalFilter] = useState<"all" | "approved" | "unapproved">("all");
   const [dateRangeFilter, setDateRangeFilter] = useState<"all" | "today" | "week" | "month" | "custom">("today");
   const [customDateStart, setCustomDateStart] = useState<string>("");
   const [customDateEnd, setCustomDateEnd] = useState<string>("");
@@ -554,13 +553,6 @@ export function BookingSummary() {
     if (!matchesSearch) return false;
     if (statusFilter !== "all" && b.status !== statusFilter) return false;
 
-    // Check approval status
-    if (approvalFilter !== "all") {
-      const isApproved = b.status === "approved";
-      if (approvalFilter === "approved" && !isApproved) return false;
-      if (approvalFilter === "unapproved" && isApproved) return false;
-    }
-
     // Check date range filter
     if (!isDateInRange(b.created_at)) return false;
 
@@ -604,16 +596,6 @@ export function BookingSummary() {
               { label: "Approved", value: "approved" },
               { label: "Prep", value: "prep" },
               { label: "Ready", value: "ready" },
-            ],
-          },
-          {
-            name: "approvalFilter",
-            value: approvalFilter,
-            onChange: (value) => setApprovalFilter(value as any),
-            options: [
-              { label: "All Orders", value: "all" },
-              { label: "Approved", value: "approved" },
-              { label: "Unapproved", value: "unapproved" },
             ],
           },
           {
@@ -673,7 +655,6 @@ export function BookingSummary() {
               <TableHead>Order ID</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Agent</TableHead>
-              <TableHead>Approval</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Prepared Delivery Date</TableHead>
               <TableHead>Created</TableHead>
@@ -683,7 +664,7 @@ export function BookingSummary() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted">
+                <TableCell colSpan={7} className="text-center py-8 text-muted">
                   {bookings.length === 0 ? "No orders found" : "No orders match your search"}
                 </TableCell>
               </TableRow>
@@ -691,7 +672,6 @@ export function BookingSummary() {
               filtered.map((booking) => {
                 const customer = booking.customer;
                 const creator = (booking as any).creator;
-                const isApproved = booking.status === "approved";
                 return (
                   <TableRow key={booking.id}>
                     <TableCell className="font-mono text-sm">
@@ -720,15 +700,6 @@ export function BookingSummary() {
                       ) : (
                         <span className="text-muted italic">Unknown</span>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded text-sm ${
-                        isApproved
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
-                      }`}>
-                        {isApproved ? "Approved" : "Pending"}
-                      </span>
                     </TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded text-sm ${getStatusColor(booking.status)}`}>
