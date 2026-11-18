@@ -33,6 +33,21 @@ export const handleUpdateMfaRequirement: RequestHandler = async (req, res) => {
   res.json(updated);
 };
 
+export const handleUpdateManagedAccount: RequestHandler = async (req, res) => {
+  const { userId } = req.params;
+  const username = typeof (req.body as { username?: unknown }).username === "string" ? (req.body as { username: string }).username.trim() : "";
+  if (!username) return res.status(400).json({ error: "Username is required" });
+
+  const [account] = await db.select({ id: users.id, role: users.role }).from(users).where(eq(users.id, userId)).limit(1);
+  if (!account || (account.role !== "admin" && account.role !== "staff")) return res.status(404).json({ error: "Account not found" });
+
+  const taken = await db.query.users.findFirst({ where: eq(users.username, username) });
+  if (taken && taken.id !== userId) return res.status(409).json({ error: "Username already exists" });
+
+  const [updated] = await db.update(users).set({ username }).where(eq(users.id, userId)).returning({ id: users.id, username: users.username, role: users.role });
+  res.json(updated);
+};
+
 export const handleUpdateStaffPermissions: RequestHandler = async (req, res) => {
   const { userId } = req.params;
   const permissions = (req.body as { module_permissions?: unknown }).module_permissions;

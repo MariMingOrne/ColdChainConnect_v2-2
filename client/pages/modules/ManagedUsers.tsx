@@ -1,42 +1,34 @@
 import { useEffect, useMemo, useState } from "react";
-import { ShieldCheck, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
-import { modulePermissionKeys, modulePermissionLabels, type ModulePermission } from "@shared/api";
-import { Button } from "@/components/ui/button";
-
-type ManagedUser = {
-  id: string;
-  username: string;
-  role: "admin" | "staff";
-  created_at: string;
-  mfa_enabled: boolean;
-  mfa_required: boolean;
-  module_permissions: ModulePermission[];
-};
+import { ManagedUserCard } from "@/components/managed-users/ManagedUserCard";
+import { ManagedUserModal } from "@/components/managed-users/ManagedUserModal";
+import type { ManagedUser } from "@/components/managed-users/types";
 
 export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["role"]; onCreateAccount?: () => void }) {
   const token = useAuth((state) => state.token);
   const currentUser = useAuth((state) => state.user);
-  const [users, setUsers] = useState<ManagedUser[]>([]);
+  const [accounts, setAccounts] = useState<ManagedUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [savingId, setSavingId] = useState<string | null>(null);
   const [mfaSavingId, setMfaSavingId] = useState<string | null>(null);
-  const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [editingAccount, setEditingAccount] = useState<ManagedUser | null>(null);
   const [search, setSearch] = useState("");
   const [mfaFilter, setMfaFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
+
+  const isAdmin = currentUser?.role === "admin";
+  const roleLabel = role === "admin" ? "Admin" : "Accounting";
 
   const fetchAccounts = async () => {
     if (!token) return;
     try {
       const response = await fetch("/api/users", { headers: { Authorization: `Bearer ${token}` } });
       if (!response.ok) throw new Error("Could not load accounts");
-      const accounts = await response.json() as ManagedUser[];
-      setUsers(accounts.filter((account) => account.role === role));
+      const data = (await response.json()) as ManagedUser[];
+      setAccounts(data.filter((account) => account.role === role));
       setError(null);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not load accounts");
@@ -47,119 +39,127 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
 
   useEffect(() => { void fetchAccounts(); }, [role, token]);
 
-  const filteredUsers = useMemo(() => users.filter((account) =>
+  const filteredAccounts = useMemo(() => accounts.filter((account) =>
     account.username.toLowerCase().includes(search.toLowerCase()) &&
     (mfaFilter === "all" || (mfaFilter === "enabled" ? account.mfa_enabled : !account.mfa_enabled))
-  ), [users, search, mfaFilter]);
-  const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
-  const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  ), [accounts, search, mfaFilter]);
+  const totalPages = Math.ceil(filteredAccounts.length / itemsPerPage);
+  const paginatedAccounts = filteredAccounts.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const updateAccount = (id: string, patch: Partial<ManagedUser>) => {
+    setAccounts((current) => current.map((account) => (account.id === id ? { ...account, ...patch } : account)));
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6">
+        <LoadingSpinner className="min-h-64" />
+      </div>
+    );
+  }
+
+  if (editingAccount) {
+    return (
+      <ManagedUserModal
+        key={editingAccount.id}
+        account={editingAccount}
+        token={token}
+        onClose={() => setEditingAccount(null)}
+        onUpdated={(patch) => updateAccount(editingAccount.id, patch)}
+      />
+    );
+  }
 
   const updateMfaRequirement = async (account: ManagedUser, required: boolean) => {
     setMfaSavingId(account.id);
-    setSaveMessage(null);
     try {
       const response = await fetch(`/api/users/${account.id}/mfa-required`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ mfa_required: required }),
       });
-      if (!response.ok) throw new Error("Could not update MFA requirement");
-      setUsers((current) => current.map((user) => user.id === account.id ? { ...user, mfa_required: required } : user));
-      setSaveMessage(`MFA requirement ${required ? "enabled" : "disabled"} for ${account.username}.`);
+      if (!response.ok) throw new Error("Failed to update MFA requirement");
+      updateAccount(account.id, { mfa_required: required });
     } catch (cause) {
-      setSaveMessage(cause instanceof Error ? cause.message : "Could not update MFA requirement");
+      alert(cause instanceof Error ? cause.message : "Failed to update MFA requirement");
     } finally {
       setMfaSavingId(null);
     }
   };
 
-  const togglePermission = (userId: string, permission: ModulePermission) => {
-    setUsers((current) => current.map((account) => account.id !== userId ? account : {
-      ...account,
-      module_permissions: account.module_permissions.includes(permission)
-        ? account.module_permissions.filter((value) => value !== permission)
-        : [...account.module_permissions, permission],
-    }));
-  };
-
-  const savePermissions = async (account: ManagedUser) => {
-    setSavingId(account.id);
-    setSaveMessage(null);
-    try {
-      const response = await fetch(`/api/users/${account.id}/module-permissions`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ module_permissions: account.module_permissions }),
-      });
-      if (!response.ok) throw new Error("Could not save module access");
-      setSaveMessage(`Access updated for ${account.username}.`);
-    } catch (cause) {
-      setSaveMessage(cause instanceof Error ? cause.message : "Could not save module access");
-    } finally {
-      setSavingId(null);
-    }
-  };
-
-  const Icon = role === "admin" ? ShieldCheck : Users;
-  const roleLabel = role === "admin" ? "Admin" : "Accounting";
-  const title = role === "admin" ? "Admin Management" : "Accounting Management";
-
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden px-4 py-4 md:px-6 md:py-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div><h1 className="font-rajdhani text-3xl font-bold tracking-tight text-navy">{title}</h1><p className="mt-1 text-xs text-muted">Manage {roleLabel.toLowerCase()} accounts</p></div>
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 className="font-rajdhani text-3xl font-bold text-navy letter-spacing-tight">
+            {role === "admin" ? "Admin Management" : "Accounting Management"}
+          </h1>
+          <p className="text-xs text-muted mt-1">Manage {roleLabel.toLowerCase()} accounts</p>
+        </div>
         <div className="flex flex-wrap items-center gap-2">
-          {currentUser?.role === "admin" && <button type="button" onClick={onCreateAccount} className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Create Accounts</button>}
+          {isAdmin && (
+            <button onClick={onCreateAccount} className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white hover:opacity-90">
+              Create Accounts
+            </button>
+          )}
         </div>
       </div>
-      {error && <p className="rounded-lg border border-red/30 bg-red/10 px-4 py-3 text-sm text-red">{error}</p>}
-      <SearchFilterBar searchTerm={search} onSearchChange={(value) => { setSearch(value); setCurrentPage(1); }} placeholder={`Search ${roleLabel.toLowerCase()} accounts by username…`} className="!flex-none" filters={[{ name: "MFA Status", value: mfaFilter, onChange: (value) => { setMfaFilter(value); setCurrentPage(1); }, options: [{ label: "All MFA Status", value: "all" }, { label: "Enabled", value: "enabled" }, { label: "Not set up", value: "not-enabled" }] }]} />
-      {saveMessage && <p role="status" className="text-sm text-navy">{saveMessage}</p>}
-      {isLoading ? <div className="flex flex-1 items-center justify-center"><LoadingSpinner /></div> : paginatedUsers.length === 0 ? (
-        <div className="flex flex-1 items-center justify-center text-center text-sm text-muted">No {roleLabel.toLowerCase()} accounts match your search.</div>
+
+      {error && (
+        <div className="bg-red/10 border border-red/30 text-red rounded-lg px-4 py-3 text-sm">
+          {error}
+        </div>
+      )}
+
+      <SearchFilterBar
+        searchTerm={search}
+        onSearchChange={(value) => { setSearch(value); setCurrentPage(1); }}
+        placeholder={`Search ${roleLabel.toLowerCase()} accounts by username…`}
+        className="!flex-none"
+        filters={[{ name: "MFA Status", value: mfaFilter, onChange: (value) => { setMfaFilter(value); setCurrentPage(1); }, options: [{ label: "All MFA Status", value: "all" }, { label: "Enabled", value: "enabled" }, { label: "Not set up", value: "not-enabled" }] }]}
+      />
+
+      {paginatedAccounts.length === 0 ? (
+        <div className="text-center text-muted text-sm py-12">
+          {accounts.length === 0 ? `No ${roleLabel.toLowerCase()} accounts found` : "No results matching your search"}
+        </div>
       ) : (
-        <div className="grid flex-1 content-start grid-cols-1 gap-3 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {paginatedUsers.map((account) => (
-            <article key={account.id} className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-4 transition-shadow hover:shadow-sm">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy-mid"><span className="font-rajdhani text-sm font-bold text-white">{account.username.slice(0, 2).toUpperCase()}</span></div>
-                <div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold text-navy">{account.username}</div><div className="truncate text-xs text-muted">@{account.username}</div></div>
-                <span className="shrink-0 rounded px-2 py-0.5 text-xs font-bold badge-green">{account.role === "staff" ? "Accounting" : "Admin"}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-border pt-2 text-xs">
-                <div><span className="block text-muted">MFA enrollment</span><span className="font-medium text-navy">{account.mfa_enabled ? "Set up" : "Not set up"}</span></div>
-                <div><span className="block text-muted">Created</span><span className="font-medium text-navy">{new Date(account.created_at).toLocaleDateString()}</span></div>
-              </div>
-              {currentUser?.role === "admin" && (
-                <label className="flex items-center justify-between gap-3 border-t border-border pt-2 text-xs font-semibold text-navy">
-                  <span>Require MFA at sign-in</span>
-                  <input type="checkbox" checked={account.mfa_required} disabled={mfaSavingId === account.id} onChange={(event) => void updateMfaRequirement(account, event.target.checked)} className="h-4 w-4 accent-navy" />
-                </label>
-              )}
-              {account.role === "staff" && currentUser?.role === "admin" && (
-                <div className="border-t border-border pt-2">
-                  <h2 className="mb-2 text-xs font-bold text-navy">Module access</h2>
-                  <div className="grid grid-cols-1 gap-1.5">
-                    {modulePermissionKeys.map((permission) => (
-                      <label key={permission} className="flex items-start gap-2 text-xs text-navy">
-                        <input type="checkbox" checked={account.module_permissions?.includes(permission) ?? false} onChange={() => togglePermission(account.id, permission)} className="mt-0.5 accent-navy" />
-                        <span>{modulePermissionLabels[permission]}</span>
-                      </label>
-                    ))}
-                  </div>
-                  <Button type="button" size="sm" className="mt-3 w-full" onClick={() => void savePermissions(account)} disabled={savingId === account.id}>{savingId === account.id ? "Saving…" : "Save Access"}</Button>
-                </div>
-              )}
-            </article>
+        <div className="grid flex-1 content-start grid-cols-1 gap-3 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 stagger-children">
+          {paginatedAccounts.map((account) => (
+            <ManagedUserCard
+              key={account.id}
+              account={account}
+              canManage={isAdmin}
+              isSavingMfa={mfaSavingId === account.id}
+              onMfaRequirementChange={(required) => void updateMfaRequirement(account, required)}
+              onEdit={() => setEditingAccount(account)}
+            />
           ))}
         </div>
       )}
+
       <div className="mt-auto flex items-center justify-between px-2 py-2">
-        <span className="text-xs text-muted">Page {currentPage} of {Math.max(1, totalPages)} · {filteredUsers.length} {role} accounts</span>
-        <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={currentPage === 1} className="rounded border border-border px-3 py-1 text-xs font-semibold hover:bg-white disabled:opacity-50">← Prev</button>
-          <span className="rounded border border-border bg-white px-3 py-1 text-xs font-semibold text-navy">{currentPage}</span>
-          <button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={currentPage >= totalPages} className="rounded border border-border px-3 py-1 text-xs font-semibold hover:bg-white disabled:opacity-50">Next →</button>
+        <div className="text-xs text-muted">
+          Page {currentPage} of {Math.max(1, totalPages)} · {filteredAccounts.length} {roleLabel.toLowerCase()} accounts
+        </div>
+        <div className="flex gap-2 items-center">
+          <button
+            onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            ← Prev
+          </button>
+          <span className="px-3 py-1 text-xs font-semibold text-navy bg-white rounded border border-border">
+            {currentPage}
+          </span>
+          <button
+            onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+            disabled={currentPage === totalPages || totalPages === 0}
+            className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next →
+          </button>
         </div>
       </div>
     </div>

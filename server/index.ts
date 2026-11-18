@@ -12,7 +12,7 @@ import {
   updateUserPassword,
   resetUserMfa,
 } from "./routes/auth";
-import { handleCreateAccount, handleListManagedAccounts, handleUpdateStaffPermissions, handleUpdateMfaRequirement } from "./routes/users";
+import { handleCreateAccount, handleListManagedAccounts, handleUpdateManagedAccount, handleUpdateStaffPermissions, handleUpdateMfaRequirement } from "./routes/users";
 import {
   listCustomers,
   createCustomer,
@@ -148,6 +148,7 @@ export function createServer() {
   app.post("/api/auth/logout", handleLogout);
   app.post("/api/auth/refresh", authMiddleware, handleRefresh);
   app.get("/api/users", authMiddleware, requireRole("admin", "staff"), handleListManagedAccounts);
+  app.patch("/api/users/:userId", authMiddleware, requireRole("admin"), handleUpdateManagedAccount);
   app.patch("/api/users/:userId/module-permissions", authMiddleware, requireRole("admin"), handleUpdateStaffPermissions);
   app.patch("/api/users/:userId/mfa-required", authMiddleware, requireRole("admin"), handleUpdateMfaRequirement);
   app.post("/api/users", authMiddleware, requireRole("admin"), handleCreateAccount);
