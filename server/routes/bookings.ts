@@ -2,13 +2,24 @@ import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "../db";
-import { bookings, booking_items, invoices, agents, trucks, users, order_pallets } from "../db/schema";
+import { bookings, booking_items, invoices, agents, trucks, users, order_pallets, order_item_reservations } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
 import { CreditBlockResponse } from "../../shared/api";
 import { evaluateCreditRules } from "../services/credit-rules";
 import { estimateOrderTotal, loadCustomerCredit } from "../services/customer-credit";
 import { getAgentOrderIds } from "../services/agent-bookings";
+import { getAvailableUnitsByProduct, releaseBookingReservationsTx, reserveBookingItemsTx } from "../services/inventory-reservations";
+
+class StockReservationConflict extends Error {
+  constructor(readonly productId: string, readonly available: number, readonly requested: number) {
+    super("Insufficient stock");
+  }
+}
+
+function quantitiesForProduct(items: Array<{ product_id: string; qty_ordered: number }>, productId: string) {
+  return items.filter((item) => item.product_id === productId).reduce((total, item) => total + item.qty_ordered, 0);
+}
 
 // Returns the truck serving the given district, preferring an available truck.
 function findTruckForDistrict(
@@ -100,8 +111,10 @@ export const createBooking: RequestHandler = async (req: AuthRequest, res) => {
       return res.status(401).json({ error: "User account not found. Please log in again." });
     }
 
-    if (items.some((item: { product_id?: string; qty_ordered?: unknown }) => !item?.product_id || item.qty_ordered === undefined)) {
-      return res.status(400).json({ error: "Each item needs a product_id and qty_ordered" });
+    if (items.some((item: { product_id?: string; qty_ordered?: unknown }) =>
+      !item?.product_id || !Number.isInteger(Number(item.qty_ordered)) || Number(item.qty_ordered) <= 0,
+    )) {
+      return res.status(400).json({ error: "Each item needs a product_id and a positive integer qty_ordered" });
     }
 
     const credit = await loadCustomerCredit(customer_id);
@@ -131,26 +144,32 @@ export const createBooking: RequestHandler = async (req: AuthRequest, res) => {
     }
 
     const bookingId = randomUUID();
+    const bookingItemRows = items.map((item: { product_id: string; qty_ordered: number }) => ({
+      id: randomUUID(),
+      booking_id: bookingId,
+      product_id: item.product_id,
+      qty_ordered: Number(item.qty_ordered),
+    }));
 
-    await db.insert(bookings).values({
-      id: bookingId,
-      customer_id,
-      created_by: req.user.userId,
-      status: "pending",
-      prepared_delivery_date: prepared_delivery_date || null,
-    });
-
-    for (const item of items) {
-      if (!item.product_id || item.qty_ordered === undefined) {
-        throw new Error(`Invalid item: ${JSON.stringify(item)}`);
-      }
-      await db.insert(booking_items).values({
-        id: randomUUID(),
-        booking_id: bookingId,
-        product_id: item.product_id,
-        qty_ordered: parseInt(String(item.qty_ordered)),
+    await db.transaction(async (tx) => {
+      await tx.insert(bookings).values({
+        id: bookingId,
+        customer_id,
+        created_by: req.user!.userId,
+        status: "pending",
+        prepared_delivery_date: prepared_delivery_date || null,
       });
-    }
+      if (bookingItemRows.length > 0) await tx.insert(booking_items).values(bookingItemRows);
+
+      const reservation = await reserveBookingItemsTx(tx, bookingId, bookingItemRows);
+      if (reservation.status === "insufficient_stock") {
+        throw new StockReservationConflict(
+          reservation.productId,
+          reservation.available,
+          quantitiesForProduct(bookingItemRows, reservation.productId),
+        );
+      }
+    });
 
     const newBooking = await db.query.bookings.findFirst({
       where: eq(bookings.id, bookingId),
@@ -180,6 +199,11 @@ export const createBooking: RequestHandler = async (req: AuthRequest, res) => {
 
     res.status(201).json(newBooking);
   } catch (error) {
+    if (error instanceof StockReservationConflict) {
+      return res.status(409).json({
+        error: `Only ${error.available} units are currently available for product ${error.productId}; this order requests ${error.requested}.`,
+      });
+    }
     console.error("Error creating booking:", error);
     res.status(500).json({ error: "Internal server error" });
   }
@@ -239,26 +263,45 @@ export const updateBookingStatus: RequestHandler = async (req: AuthRequest, res)
     if (status) updates.status = status;
 
     const updateResult = await db.transaction(async (tx) => {
-      await tx.select({ id: bookings.id }).from(bookings).where(eq(bookings.id, id)).for("update");
+      const [lockedBooking] = await tx.select({ id: bookings.id, status: bookings.status })
+        .from(bookings)
+        .where(eq(bookings.id, id))
+        .for("update");
+      if (!lockedBooking) return { status: "not_found" as const };
+
       if (status && status !== "approved") {
         const existingInvoice = await tx.query.invoices.findFirst({
           where: eq(invoices.booking_id, id),
         });
-        if (existingInvoice) return "invoiced";
+        if (existingInvoice) return { status: "invoiced" as const };
 
         const reservedPallet = await tx.query.order_pallets.findFirst({
           where: eq(order_pallets.order_id, id),
         });
-        if (reservedPallet) return "reserved";
+        if (reservedPallet) return { status: "reserved" as const };
+        await releaseBookingReservationsTx(tx, id);
       }
+
+      if (status === "approved" && lockedBooking.status !== "approved") {
+        const items = await tx.query.booking_items.findMany({ where: eq(booking_items.booking_id, id) });
+        const reservation = await reserveBookingItemsTx(tx, id, items);
+        if (reservation.status === "insufficient_stock") {
+          return { status: "insufficient_stock" as const, productId: reservation.productId, available: reservation.available };
+        }
+      }
+
       await tx.update(bookings).set(updates).where(eq(bookings.id, id));
-      return "updated";
+      return { status: "updated" as const };
     });
-    if (updateResult === "invoiced") {
+    if (updateResult.status === "not_found") return res.status(404).json({ error: "Booking not found" });
+    if (updateResult.status === "invoiced") {
       return res.status(409).json({ error: "An invoiced order cannot be moved out of approved status." });
     }
-    if (updateResult === "reserved") {
+    if (updateResult.status === "reserved") {
       return res.status(409).json({ error: "Remove the order's unshipped pallets before moving it out of approved status." });
+    }
+    if (updateResult.status === "insufficient_stock") {
+      return res.status(409).json({ error: `Only ${updateResult.available} units are currently available for product ${updateResult.productId}.` });
     }
 
     const updated = await db.query.bookings.findFirst({
@@ -273,6 +316,92 @@ export const updateBookingStatus: RequestHandler = async (req: AuthRequest, res)
     res.json({ booking: updated, invoice: null });
   } catch (error) {
     console.error("Error updating booking status:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const updateBookingItems: RequestHandler = async (req: AuthRequest, res) => {
+  const { id } = req.params;
+  const items = req.body?.items;
+  if (!Array.isArray(items) || items.some((item) =>
+    !item || typeof item.id !== "string" || !Number.isInteger(item.qty_ordered) || item.qty_ordered <= 0,
+  )) {
+    return res.status(400).json({ error: "Items must contain booking item IDs and positive integer quantities." });
+  }
+
+  try {
+    const before = await db.query.bookings.findFirst({
+      where: eq(bookings.id, id),
+      with: { booking_items: true },
+    });
+    if (!before) return res.status(404).json({ error: "Booking not found" });
+
+    const result = await db.transaction(async (tx) => {
+      const [booking] = await tx.select({ id: bookings.id, status: bookings.status })
+        .from(bookings)
+        .where(eq(bookings.id, id))
+        .for("update");
+      if (!booking) return { status: "not_found" as const };
+      if (booking.status !== "pending" && booking.status !== "approved") return { status: "locked" as const };
+
+      const invoice = await tx.query.invoices.findFirst({ where: eq(invoices.booking_id, id) });
+      const pallet = await tx.query.order_pallets.findFirst({ where: eq(order_pallets.order_id, id) });
+      if (invoice || pallet) return { status: "locked" as const };
+
+      const currentItems = await tx.query.booking_items.findMany({ where: eq(booking_items.booking_id, id) });
+      if (items.length !== currentItems.length || items.some((item) => !currentItems.some((current) => current.id === item.id))) {
+        return { status: "invalid_items" as const };
+      }
+
+      const activeReservation = await tx.query.order_item_reservations.findFirst({
+        where: and(
+          eq(order_item_reservations.booking_id, id),
+          eq(order_item_reservations.status, "reserved"),
+        ),
+      });
+      const updatedItems = currentItems.map((item) => ({
+        ...item,
+        qty_ordered: items.find((requested) => requested.id === item.id)!.qty_ordered as number,
+      }));
+
+      if (activeReservation) {
+        const reservation = await reserveBookingItemsTx(tx, id, updatedItems, "superseded");
+        if (reservation.status === "insufficient_stock") {
+          return {
+            status: "insufficient_stock" as const,
+            productId: reservation.productId,
+            available: reservation.available,
+          };
+        }
+      }
+
+      for (const item of updatedItems) {
+        await tx.update(booking_items)
+          .set({ qty_ordered: item.qty_ordered })
+          .where(eq(booking_items.id, item.id));
+      }
+      return { status: "updated" as const };
+    });
+
+    if (result.status === "not_found") return res.status(404).json({ error: "Booking not found" });
+    if (result.status === "locked") return res.status(409).json({ error: "Order quantities cannot be changed after pallets or an invoice exist." });
+    if (result.status === "invalid_items") return res.status(400).json({ error: "The item list must match the order's current items." });
+    if (result.status === "insufficient_stock") {
+      return res.status(409).json({ error: `Only ${result.available} units are currently available for product ${result.productId}.` });
+    }
+
+    const updated = await db.query.bookings.findFirst({
+      where: eq(bookings.id, id),
+      with: {
+        booking_items: { with: { product: true } },
+        customer: { with: { discounts: true } },
+        creator: true,
+      },
+    });
+    if (req.user) await logAction(req.user.userId, "update", "booking", id, before, updated);
+    res.json(updated);
+  } catch (error) {
+    console.error("Error updating booking items:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
