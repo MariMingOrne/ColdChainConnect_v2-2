@@ -184,7 +184,7 @@ export function AddOrderModal({
 
                     {/* Selected Indicator */}
                     {isSelected && (
-                      <div className="px-3 py-1 bg-accent-2 text-white text-xs font-semibold rounded">
+                      <div className="px-3 py-1 bg-primary text-primary-foreground text-xs font-semibold rounded">
                         ✓ Added
                       </div>
                     )}

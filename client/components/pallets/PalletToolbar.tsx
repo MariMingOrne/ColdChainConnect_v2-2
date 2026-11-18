@@ -52,7 +52,7 @@ export function PalletToolbar({
           placeholder="Search order, pallet, customer…"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full"
+          className="w-full pl-9"
         />
       </div>
 
@@ -62,7 +62,7 @@ export function PalletToolbar({
           value={statusFilter}
           onValueChange={(value) => value && onStatusChange(value as PalletStatusFilter)}
           aria-label="Filter pallets by status"
-          className="flex-wrap justify-start rounded-full border border-border bg-card p-1"
+          className="hide-scrollbar max-w-full justify-start overflow-x-auto rounded-full border border-border bg-card p-1"
         >
           {statusTabs.map((tab) => (
             <ToggleGroupItem key={tab.value} value={tab.value} variant="pill" size="sm">

@@ -428,7 +428,7 @@ export function Inventory() {
       <div className="flex flex-wrap items-center justify-start gap-3">
         <div className="relative w-full sm:w-72">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input type="text" placeholder="Search by SKU or name…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full" />
+          <Input type="text" placeholder="Search by SKU or name…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full pl-9" />
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <NativeSelect aria-label="Filter inventory by stock level" value={stockFilter} onChange={(e) => { setStockFilter(e.target.value); setCurrentPage(1); }} >

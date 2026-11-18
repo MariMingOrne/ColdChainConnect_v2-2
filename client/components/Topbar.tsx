@@ -136,9 +136,11 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
         <div className="flex items-center gap-3 flex-shrink-0">
           {!agentMode && (
             <button
+              type="button"
               onClick={() => navigate("/")}
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-              title="Back to Dashboard"
+              className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold"
+              aria-label="Back to dashboard"
+              title="Back to dashboard"
             >
               <ChevronLeft className="w-5 h-5 text-white" />
             </button>
@@ -191,7 +193,7 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
             <button
               type="submit"
               aria-label="Search"
-              className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+              className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-white/70 hover:text-white hover:bg-white/10 transition-colors"
             >
               <Search className="w-4 h-4" />
             </button>

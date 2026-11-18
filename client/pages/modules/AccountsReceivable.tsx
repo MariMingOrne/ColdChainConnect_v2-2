@@ -194,14 +194,14 @@ export function AccountsReceivable() {
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
           placeholder="Search by customer or AR ID…"
-          className="!flex-none"
+          className="w-full !flex-none sm:w-auto"
         />
         <ToggleGroup
           type="single"
           value={activeTab}
           onValueChange={(value) => { if (value) { setActiveTab(value as typeof activeTab); setSearchTerm(""); } }}
           aria-label="Filter receivables"
-          className="w-fit flex-wrap justify-start rounded-full border border-border bg-card p-1"
+          className="hide-scrollbar w-fit max-w-full justify-start overflow-x-auto rounded-full border border-border bg-card p-1"
         >
           {TABS.map((tab) => (
             <ToggleGroupItem key={tab.key} value={tab.key} variant="pill" size="sm" className="gap-1.5">

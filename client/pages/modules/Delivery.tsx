@@ -379,7 +379,7 @@ export function DeliveryDispatch() {
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3">
           <div className="relative w-full sm:w-64">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input type="search" aria-label="Search truck schedule" placeholder="Search runs, customers, agents…" value={scheduleSearch} onChange={(event) => setScheduleSearch(event.target.value)} className="w-full" />
+            <Input type="search" aria-label="Search truck schedule" placeholder="Search runs, customers, agents…" value={scheduleSearch} onChange={(event) => setScheduleSearch(event.target.value)} className="w-full pl-9" />
           </div>
           <Input type="datetime-local" aria-label="Scheduled from date and time" title="Show runs scheduled from this date and time" value={scheduleFromDateTime} onChange={(event) => setScheduleFromDateTime(event.target.value)}  />
           <NativeSelect aria-label="Filter by driver" value={scheduleDriverFilter} onChange={(event) => setScheduleDriverFilter(event.target.value)} >

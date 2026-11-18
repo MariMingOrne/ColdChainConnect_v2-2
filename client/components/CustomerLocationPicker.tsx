@@ -235,7 +235,7 @@ export function CustomerLocationPicker({ position, onSelect }: CustomerLocationP
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search an address or place"
-            className="w-full"
+            className="w-full pl-9"
           />
         </div>
         <Button type="submit" disabled={isSearching || !query.trim()} variant="default" className="shrink-0">

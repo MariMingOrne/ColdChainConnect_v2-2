@@ -31,7 +31,7 @@ export function SearchFilterBar({
 }: SearchFilterBarProps) {
   return (
     <div className={`flex min-w-0 flex-1 flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between ${className}`}>
-      <div className="group relative flex w-full items-center gap-2 rounded-full border border-border bg-card px-4 focus-within:border-accent-2 focus-within:ring-2 focus-within:ring-accent-2/20 sm:w-72">
+      <div className="group relative flex h-10 w-full items-center gap-2 rounded-lg border border-border bg-card px-3 focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 ring-offset-background sm:w-72">
         <Search size={16} className="shrink-0 text-muted-foreground" aria-hidden="true" />
         <Input
           type="search"

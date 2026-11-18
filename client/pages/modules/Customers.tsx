@@ -668,7 +668,7 @@ export function Customers({ onBack }: CustomersProps) {
               setSearchQuery(event.target.value);
               setCurrentPage(1);
             }}
-            className="w-full"
+            className="w-full pl-9"
           />
         </div>
         <NativeSelect

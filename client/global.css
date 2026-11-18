@@ -124,7 +124,7 @@
     --warning-soft: 35 50% 14%;
     --destructive: 2 80% 66%;
     --destructive-soft: 2 45% 16%;
-    --destructive-foreground: 0 0% 100%;
+    --destructive-foreground: 2 60% 10%; /* dark text: white on this light red is ~3:1 */
     --info-soft: 230 40% 18%;
 
     --border: 230 20% 20%;
@@ -411,7 +411,7 @@
 .animate-slide-down { animation: slide-down 0.3s ease-out backwards; }
 .animate-pop-out {
   transform-origin: bottom right;
-  animation: pop-out 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+  animation: pop-out 0.4s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 .stagger-children > * {

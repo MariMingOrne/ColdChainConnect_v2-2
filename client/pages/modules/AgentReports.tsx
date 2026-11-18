@@ -257,7 +257,7 @@ export function AgentReports() {
             placeholder="Search order, customer, product…"
             value={searchTerm}
             onChange={(event) => setSearchTerm(event.target.value)}
-            className="w-full"
+            className="w-full pl-9"
           />
         </div>
         <ToggleGroup
@@ -265,7 +265,7 @@ export function AgentReports() {
           value={statusFilter}
           onValueChange={(value) => value && setStatusFilter(value as typeof statusFilter)}
           aria-label="Filter returns by status"
-          className="w-fit flex-wrap justify-start rounded-full border border-border bg-card p-1"
+          className="hide-scrollbar w-fit max-w-full justify-start overflow-x-auto rounded-full border border-border bg-card p-1"
         >
           {(["all", "pending", "accepted", "rejected"] as const).map((s) => (
             <ToggleGroupItem key={s} value={s} variant="pill" size="sm" className="capitalize">

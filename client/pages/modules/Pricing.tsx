@@ -579,7 +579,7 @@ export function Pricing({ onBack }: PricingProps) {
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <div className="relative w-full sm:w-72">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input type="text" placeholder="Search by product name or SKU…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full" />
+            <Input type="text" placeholder="Search by product name or SKU…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full pl-9" />
           </div>
           <NativeSelect aria-label="Filter products by status" value={productStatusFilter} onChange={(event) => { setProductStatusFilter(event.target.value); setCurrentPage(1); }} >
             <option value="all">All statuses</option>
@@ -665,7 +665,7 @@ export function Pricing({ onBack }: PricingProps) {
                       {product.weight != null ? `${Number(product.weight).toLocaleString()} kg` : "—"}
                     </td>
                     <td className="px-3 py-3 hidden md:table-cell">
-                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${product.is_discontinued ? "bg-red text-white" : "bg-green text-white"}`}>
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${product.is_discontinued ? "bg-destructive-soft text-destructive" : "bg-success-soft text-success"}`}>
                         {product.is_discontinued ? "Discontinued" : "Active"}
                       </span>
                     </td>
