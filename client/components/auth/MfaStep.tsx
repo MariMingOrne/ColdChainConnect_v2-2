@@ -53,7 +53,7 @@ export function MfaStep({ mode, setupInfo, error, isLoading, onSubmit, onBack }:
           type="text"
           inputMode="numeric"
           autoFocus
-          pattern="d{6}"
+          pattern="[0-9]{6}"
           autoComplete="one-time-code"
           placeholder="123456"
           maxLength={6}
