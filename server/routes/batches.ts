@@ -77,7 +77,7 @@ export const createBatch: RequestHandler = async (req: AuthRequest, res) => {
 
       for (const item of items) {
         const { product_id, qty_units, expiration_date } = item;
-        if (!product_id || !qty_units) {
+        if (!product_id || qty_units == null || qty_units < 0) {
           throw new Error("Each item must have product_id and qty_units");
         }
         if (expiration_date && !isValidIsoDate(expiration_date)) {
