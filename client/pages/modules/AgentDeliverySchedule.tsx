@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { AgentStopRow } from "@/components/AgentStopRow";
-import { ArrowLeft, CalendarDays, Clock3, History, RefreshCw, Search, Truck as TruckIcon, UserRound } from "lucide-react";
+import { ArrowLeft, CalendarDays, Clock3, History, Search, Truck as TruckIcon, UserRound } from "lucide-react";
 import type { AgentScheduleDelivery, AgentScheduleResponse, AgentScheduleStop } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -78,7 +79,6 @@ export function AgentDeliverySchedule() {
 
   const fetchSchedule = async () => {
     if (!token) return;
-    setIsLoading(true);
     setError("");
 
     try {
@@ -99,6 +99,7 @@ export function AgentDeliverySchedule() {
   useEffect(() => {
     void fetchSchedule();
   }, [token]);
+  useAutoRefresh(fetchSchedule, { enabled: Boolean(token) });
 
   const today = localScheduleDate(new Date());
   const currentDeliveries = deliveries.filter((delivery) => delivery.status !== "completed");
@@ -200,10 +201,6 @@ export function AgentDeliverySchedule() {
           <h1 className="page-title">My Delivery Schedule</h1>
           <p className="page-subtitle">Your assigned delivery runs, destinations, and stop details</p>
         </div>
-        <Button onClick={() => void fetchSchedule()} variant="outline" className="flex items-center gap-2">
-          <RefreshCw size={16} />
-          Refresh
-        </Button>
       </div>
 
       <div className="rounded-lg border border-border bg-white px-4 py-3 shadow-sm">

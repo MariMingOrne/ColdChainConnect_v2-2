@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import {
   Table,
   TableBody,
@@ -9,7 +10,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RefreshCw, CheckCircle } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { AccountsReceivable as ARType, Customer } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
@@ -29,14 +30,12 @@ export function AccountsReceivable() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { token } = useAuth();
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("outstanding");
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
 
   const fetchData = async () => {
     if (!token) return;
-    setIsLoading(true);
     try {
       const [arRes, custRes] = await Promise.all([
         fetch("/api/accounts-receivable", {
@@ -84,15 +83,10 @@ export function AccountsReceivable() {
     }
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchData();
-    setIsRefreshing(false);
-  };
-
   useEffect(() => {
     if (token) fetchData();
   }, [token]);
+  useAutoRefresh(fetchData, { enabled: Boolean(token) });
 
   const getCustomerName = (customerId: string) =>
     customers.find((c) => c.id === customerId)?.store_name || customerId.slice(0, 8);
@@ -163,14 +157,6 @@ export function AccountsReceivable() {
           <h1 className="page-title">Accounts Receivable</h1>
           <p className="page-subtitle">Track customer balances and unpaid deliveries</p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="btn-ghost"
-        >
-          <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-          Refresh
-        </button>
       </div>
 
       {error && (

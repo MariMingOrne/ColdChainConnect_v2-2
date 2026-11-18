@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { Download, RefreshCw } from "lucide-react";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { Download } from "lucide-react";
 import { AuditLog } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { AuditLogTable } from "./audit/AuditLogTable";
@@ -17,7 +18,6 @@ export function AuditLogPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { token } = useAuth();
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [isBackingUp, setIsBackingUp] = useState(false);
 
   const fetchLogs = async () => {
@@ -35,12 +35,6 @@ export function AuditLogPage() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchLogs();
-    setIsRefreshing(false);
   };
 
   const handleBackup = async () => {
@@ -67,6 +61,7 @@ export function AuditLogPage() {
   };
 
   useEffect(() => { if (token) fetchLogs(); }, [token]);
+  useAutoRefresh(fetchLogs, { enabled: Boolean(token) });
 
   if (selectedLog) return <AuditLogDetailDialog log={selectedLog} onClose={() => setSelectedLog(null)} />;
 
@@ -80,14 +75,6 @@ export function AuditLogPage() {
           </p>
         </div>
         <div className="flex gap-2 w-fit">
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-navy transition-colors hover:bg-off-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-          >
-            <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-            Refresh
-          </button>
           <button
             onClick={handleBackup}
             disabled={isBackingUp}

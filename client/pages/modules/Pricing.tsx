@@ -7,7 +7,9 @@ import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Product } from "@shared/api";
-import { ArrowLeft, Download, Upload, RefreshCw, Search, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Search, MoreHorizontal } from "lucide-react";
+import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
@@ -329,7 +331,6 @@ export function Pricing({ onBack }: PricingProps) {
     weight: undefined,
   });
   const { token } = useAuth();
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const itemsPerPage = 10;
 
@@ -347,12 +348,6 @@ export function Pricing({ onBack }: PricingProps) {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchProducts();
-    setIsRefreshing(false);
   };
 
   const validateProductImportRow = (row: Record<string, unknown>) => {
@@ -397,6 +392,7 @@ export function Pricing({ onBack }: PricingProps) {
       fetchProducts();
     }
   }, [token]);
+  useAutoRefresh(fetchProducts, { enabled: Boolean(token) });
 
   const manufacturers = Array.from(new Set(products.map((product) => product.manufacturer).filter((manufacturer): manufacturer is string => Boolean(manufacturer)))).sort();
   const filteredProducts = products.filter((product) =>
@@ -543,26 +539,15 @@ export function Pricing({ onBack }: PricingProps) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            title="Refresh data"
-          >
-            <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-            Refresh
-          </button>
-          <button
             onClick={openAddModal}
             className="px-4 py-2 bg-navy text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
           >
             ➕ Add Product
           </button>
-          <button onClick={() => setShowExcelImport(true)} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors">
-            ⬇ Import Excel
-          </button>
-          <button onClick={() => void handleProductExport()} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors">
-            <Download size={15} className="mr-1 inline" />Export Excel
-          </button>
+          <ExcelActionsDropdown
+            onImport={() => setShowExcelImport(true)}
+            onExport={handleProductExport}
+          />
         </div>
       </div>
 

@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useInventoryContext } from "../context/InventoryContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Download, Search } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
+import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
 import { ActionButtons } from "@/components/ActionButtons";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
@@ -369,8 +370,10 @@ export function Inventory() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={() => { setNewBatchName(""); setStartBatchCreation(true); setIsBatchModalOpen(true); }} className="px-4 py-2 bg-green text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-colors">➕ Add Items</button>
-          <button onClick={() => setShowExcelImport(true)} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors">⬇ Import Excel</button>
-          <button onClick={() => void handleInventoryExport()} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors"><Download size={15} className="mr-1 inline" />Export Excel</button>
+          <ExcelActionsDropdown
+            onImport={() => setShowExcelImport(true)}
+            onExport={handleInventoryExport}
+          />
         </div>
       </div>
 

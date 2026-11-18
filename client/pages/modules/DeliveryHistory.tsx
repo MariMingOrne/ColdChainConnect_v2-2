@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { RefreshCw, ArrowLeft } from "lucide-react";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { ArrowLeft } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Customer, Truck, Invoice } from "@shared/api";
 import { Table } from "@/components/ui/table";
@@ -36,7 +37,6 @@ export function DeliveryHistory() {
   const [invoices,  setInvoices]  = useState<Invoice[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [search,       setSearch]       = useState("");
   const [customerFilter, setCustomerFilter] = useState("");
@@ -48,7 +48,6 @@ export function DeliveryHistory() {
 
   const fetchAll = useCallback(async () => {
     if (!token) return;
-    setLoading(true);
     try {
       const [rRes, cRes, tRes, iRes] = await Promise.all([
         fetch("/api/receipts",  { headers: authHeaders(token) }),
@@ -84,13 +83,8 @@ export function DeliveryHistory() {
     }
   }, [token]);
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchAll();
-    setIsRefreshing(false);
-  };
-
   useEffect(() => { fetchAll(); }, [fetchAll]);
+  useAutoRefresh(fetchAll, { enabled: Boolean(token) });
 
   const filtered = receipts.filter((r) => {
     const q = search.toLowerCase();
@@ -134,15 +128,6 @@ export function DeliveryHistory() {
             Completed deliveries and their original receipts
           </p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="btn-ghost"
-          title="Refresh data"
-        >
-          <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-          Refresh
-        </button>
       </div>
 
       {error && (
