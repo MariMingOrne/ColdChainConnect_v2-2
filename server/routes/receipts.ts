@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
+import { agentInvoiceScope } from "../services/agent-bookings";
 import { db } from "../db";
 import {
   receipts,
@@ -19,13 +20,18 @@ import { logAction } from "../middleware/audit-logger";
 // Returns all receipts (joined data is resolved on the client via separate
 // /api/customers, /api/trucks, /api/invoices calls — same pattern as deliveries).
 
-export const listReceipts: RequestHandler = async (_req, res) => {
+export const listReceipts: RequestHandler = async (req: AuthRequest, res) => {
   try {
     if (!process.env.DATABASE_URL) {
       return res.json([]);
     }
 
-    const all = await db.select().from(receipts).orderBy(desc(receipts.confirmed_at));
+    const scope = await agentInvoiceScope(req);
+    if (scope?.length === 0) return res.json([]);
+
+    const all = await db.select().from(receipts)
+      .where(scope ? inArray(receipts.invoice_id, scope) : undefined)
+      .orderBy(desc(receipts.confirmed_at));
     res.json(all);
   } catch (error) {
     console.error("Error fetching receipts:", error);

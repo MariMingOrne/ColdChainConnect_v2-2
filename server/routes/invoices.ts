@@ -1,8 +1,9 @@
 import { RequestHandler } from "express";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { invoices } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
+import { agentInvoiceScope } from "../services/agent-bookings";
 import { logAction } from "../middleware/audit-logger";
 import { createInvoiceAfterPicking } from "../services/booking-invoices";
 
@@ -25,11 +26,15 @@ async function fetchInvoiceWithItems(id: string) {
 
 // ─── List Invoices ───────────────────────────────────────────────────────────
 
-export const listInvoices: RequestHandler = async (req, res) => {
+export const listInvoices: RequestHandler = async (req: AuthRequest, res) => {
   try {
     const { status, payment_status, unpaid } = req.query;
 
+    const scope = await agentInvoiceScope(req);
+    if (scope?.length === 0) return res.json([]);
+
     const allInvoices = await db.query.invoices.findMany({
+      where: scope ? inArray(invoices.id, scope) : undefined,
       orderBy: [desc(invoices.created_at)],
       with: {
         invoice_items: true,
@@ -56,9 +61,11 @@ export const listInvoices: RequestHandler = async (req, res) => {
 
 // ─── Get Single Invoice ──────────────────────────────────────────────────────
 
-export const getInvoice: RequestHandler = async (req, res) => {
+export const getInvoice: RequestHandler = async (req: AuthRequest, res) => {
   try {
     const { id } = req.params;
+    const scope = await agentInvoiceScope(req);
+    if (scope && !scope.includes(id)) return res.status(404).json({ error: "Invoice not found" });
     const invoice = await fetchInvoiceWithItems(id);
     if (!invoice) return res.status(404).json({ error: "Invoice not found" });
     res.json(invoice);
