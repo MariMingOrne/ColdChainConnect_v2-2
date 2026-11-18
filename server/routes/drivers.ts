@@ -1,3 +1,4 @@
+import { MIN_PASSWORD_LENGTH } from "../../shared/api";
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
 import { desc, eq } from "drizzle-orm";
@@ -30,8 +31,8 @@ async function validateLoginInput(
     return null;
   }
   if (requirePassword || input.password !== undefined) {
-    if (!input.password || input.password.trim().length < 4) {
-      return "Password must be at least 4 characters";
+    if (!input.password || input.password.trim().length < MIN_PASSWORD_LENGTH) {
+      return `Password must be at least ${MIN_PASSWORD_LENGTH} characters`;
     }
   }
   const taken = await db.query.users.findFirst({ where: eq(users.username, input.username) });

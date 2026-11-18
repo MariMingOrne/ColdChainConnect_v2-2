@@ -121,7 +121,9 @@ export function createServer() {
   const app = express();
 
   // Middleware
-  app.use(cors());
+  // Same-origin by default; list extra allowed origins in CORS_ORIGIN (comma-separated).
+  const allowedOrigins = process.env.CORS_ORIGIN?.split(",").map((o) => o.trim()).filter(Boolean) ?? [];
+  app.use(cors({ origin: allowedOrigins.length ? allowedOrigins : false }));
   app.use(express.json({ limit: "6mb" }));
   app.use(express.urlencoded({ extended: true }));
   app.use(express.static("public"));

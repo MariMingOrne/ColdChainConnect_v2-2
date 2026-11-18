@@ -79,3 +79,22 @@ describe("token refresh", () => {
     expect(verifyToken(body.token)).toMatchObject({ role: "agent", userId: verifyToken(token)!.userId });
   });
 });
+
+describe("password and CORS policy", () => {
+  it("rejects admin-set passwords shorter than 8 characters before touching the database", async () => {
+    const token = await tokenForRole("admin");
+    if (!token) return;
+    const res = await fetch(`${baseUrl}/api/users/00000000-0000-0000-0000-000000000000/password`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ password: "short1" }),
+    });
+    expect(res.status).toBe(400);
+    expect((await res.json()).error).toMatch(/at least 8/);
+  });
+
+  it("does not grant cross-origin access to other websites", async () => {
+    const res = await fetch(`${baseUrl}/api/health`, { headers: { Origin: "https://evil.example" } });
+    expect(res.headers.get("access-control-allow-origin")).toBeNull();
+  });
+});

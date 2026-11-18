@@ -112,7 +112,7 @@ export const createBatch: RequestHandler = async (req: AuthRequest, res) => {
     res.status(201).json(newBatch);
   } catch (error) {
     console.error("Error creating batch:", error);
-    res.status(500).json({ error: error instanceof Error ? error.message : "Internal server error" });
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 

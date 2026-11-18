@@ -1,3 +1,4 @@
+import { MIN_PASSWORD_LENGTH } from "@shared/api";
 import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
@@ -152,7 +153,7 @@ function DriverModal({
             {field(
               "Password",
               "password",
-              hasLogin ? "Leave blank to keep current password" : "At least 4 characters",
+              hasLogin ? "Leave blank to keep current password" : `At least ${MIN_PASSWORD_LENGTH} characters`,
               "password"
             )}
             <p className="text-xs text-muted-foreground">

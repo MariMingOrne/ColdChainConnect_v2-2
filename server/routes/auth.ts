@@ -21,6 +21,7 @@ import {
   MfaSetupResponse,
   MfaVerifyRequest,
 } from "@shared/api";
+import { MIN_PASSWORD_LENGTH } from "../../shared/api";
 import { AuthRequest } from "../middleware/auth";
 import { loginIpLimiter, loginLimiter, mfaLimiter } from "../middleware/rate-limit";
 import { logAction } from "../middleware/audit-logger";
@@ -209,8 +210,8 @@ export const updateUserPassword: RequestHandler = async (req: AuthRequest, res) 
   const { userId } = req.params;
   const { password } = req.body;
 
-  if (!password || typeof password !== "string" || password.trim().length < 4) {
-    return res.status(400).json({ error: "Password must be at least 4 characters" });
+  if (!password || typeof password !== "string" || password.trim().length < MIN_PASSWORD_LENGTH) {
+    return res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` });
   }
 
   try {

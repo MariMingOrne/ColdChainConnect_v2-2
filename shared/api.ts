@@ -1,3 +1,6 @@
+/** Minimum length for any password an admin sets or changes. */
+export const MIN_PASSWORD_LENGTH = 8;
+
 /**
  * Shared code between client and server
  */
@@ -322,7 +325,7 @@ export interface Agent {
 
 export const CreateAgentSchema = z.object({
   username: z.string().min(1, "Username is required"),
-  password: z.string().min(4, "Password must be at least 4 characters"),
+  password: z.string().min(MIN_PASSWORD_LENGTH, `Password must be at least ${MIN_PASSWORD_LENGTH} characters`),
   full_name: z.string().optional(),
   email: z.string().email("Valid email is required").optional(),
   contact_info: z.string().optional(),
