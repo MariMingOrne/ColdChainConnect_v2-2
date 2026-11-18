@@ -1,3 +1,4 @@
+import NotFound from "./NotFound";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { Pricing } from "./modules/Pricing";
 import { Inventory } from "./Inventory";
@@ -21,6 +22,7 @@ export function InformationManagement() {
               <Route path="/inventory" element={<Inventory />} />
               <Route path="/customers" element={<Customers />} />
               <Route path="/" element={<ProductsDefault />} />
+              <Route path="*" element={<NotFound embedded />} />
             </Routes>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import "./global.css";
+import { lazy } from "react";
 
 import { Toaster } from "@/components/ui/toaster";
 import { createRoot } from "react-dom/client";
@@ -11,19 +12,24 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import type { ModulePermission } from "@shared/api";
 import { useAuth } from "./hooks/useAuth";
 import { Login } from "./pages/Login";
-import { Dashboard } from "./pages/Dashboard";
-import { InformationManagement } from "./pages/InformationManagement";
-import { ManageAccounts } from "./pages/ManageAccounts";
-import { BookingDispatch } from "./pages/BookingDispatch";
-import { AuditLogPage } from "./pages/AuditLog";
-import { Reports } from "./pages/Reports";
-import { SearchResults } from "./pages/SearchResults";
-import { DriverSchedule } from "./pages/DriverSchedule";
 import { Topbar } from "./components/Topbar";
 import { AdminMobileNavigation, AdminNavigation } from "./components/AdminNavigation";
 import { PostLoginLoadingScreen } from "./components/auth/PostLoginLoadingScreen";
 import { BottomNavBar } from "./components/BottomNavBar";
 import NotFound from "./pages/NotFound";
+import { RouteBoundary } from "./components/shared/RouteBoundary";
+
+// Route-level code splitting: each role downloads only the screens it opens.
+const named = <K extends string>(load: () => Promise<Record<K, React.ComponentType>>, key: K) =>
+  lazy(() => load().then((module) => ({ default: module[key] })));
+const Dashboard = named(() => import("./pages/Dashboard"), "Dashboard");
+const InformationManagement = named(() => import("./pages/InformationManagement"), "InformationManagement");
+const ManageAccounts = named(() => import("./pages/ManageAccounts"), "ManageAccounts");
+const BookingDispatch = named(() => import("./pages/BookingDispatch"), "BookingDispatch");
+const AuditLogPage = named(() => import("./pages/AuditLog"), "AuditLogPage");
+const Reports = named(() => import("./pages/Reports"), "Reports");
+const SearchResults = named(() => import("./pages/SearchResults"), "SearchResults");
+const DriverSchedule = named(() => import("./pages/DriverSchedule"), "DriverSchedule");
 
 const queryClient = new QueryClient();
 
@@ -169,7 +175,9 @@ const App = () => (
         <Sonner position="top-center" richColors closeButton />
         <ConfirmDialogHost />
         <BrowserRouter>
-          <AppContent />
+          <RouteBoundary>
+            <AppContent />
+          </RouteBoundary>
           <PostLoginLoadingGate />
         </BrowserRouter>
       </TooltipProvider>
