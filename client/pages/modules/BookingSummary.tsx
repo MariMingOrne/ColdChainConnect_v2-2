@@ -397,7 +397,7 @@ export function BookingSummary() {
           setShowAddModal(false);
           setNewCustomerId("");
           setPreparedDeliveryDate("");
-          setOrderItems([{ product_id: "", qty_ordered: 1 }]);
+          setOrderItems([]);
         }}
         customers={customers}
         products={products}
