@@ -120,6 +120,11 @@ import { ModulePermission } from "@shared/api";
 export function createServer() {
   const app = express();
 
+  // Behind Netlify/AWS Lambda (or any reverse proxy) the client IP is in X-Forwarded-For.
+  // Trust exactly one hop there so req.ip is the real client; set TRUST_PROXY to override.
+  const trustProxy = process.env.TRUST_PROXY ?? (process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY ? "1" : "");
+  if (trustProxy) app.set("trust proxy", /^[0-9]+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
+
   // Middleware
   // Same-origin by default; list extra allowed origins in CORS_ORIGIN (comma-separated).
   const allowedOrigins = process.env.CORS_ORIGIN?.split(",").map((o) => o.trim()).filter(Boolean) ?? [];

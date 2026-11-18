@@ -50,7 +50,11 @@ export function createAttemptLimiter({ max, windowMs }: { max: number; windowMs:
 
 const FIFTEEN_MINUTES = 15 * 60 * 1000;
 
-/** 5 wrong passwords per username+IP, 30 per IP, within 15 minutes. */
+/**
+ * 5 wrong passwords per username (independent of IP, so a shared proxy IP or a
+ * spoofed one changes nothing), plus 30 per client IP, within 15 minutes.
+ * Counts live in this process: on serverless each warm instance counts separately.
+ */
 export const loginLimiter = createAttemptLimiter({ max: 5, windowMs: FIFTEEN_MINUTES });
 export const loginIpLimiter = createAttemptLimiter({ max: 30, windowMs: FIFTEEN_MINUTES });
 

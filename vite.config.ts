@@ -18,6 +18,9 @@ export default defineConfig(({ mode }) => ({
   plugins: [react(), expressPlugin()],
   test: {
     setupFiles: ["./server/test-setup.ts"],
+    // API tests talk to a remote Postgres; allow for network latency.
+    testTimeout: 30_000,
+    hookTimeout: 60_000,
   },
   resolve: {
     alias: {

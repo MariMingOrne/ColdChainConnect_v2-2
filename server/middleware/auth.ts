@@ -20,6 +20,9 @@ export async function authMiddleware(
   res: Response,
   next: NextFunction
 ) {
+  // Routes run this after the global /api guard already did; don't verify twice.
+  if (req.user) return next();
+
   const token = req.headers.authorization?.split(" ")[1];
 
   if (!token) {
@@ -31,7 +34,8 @@ export async function authMiddleware(
     return res.status(401).json({ error: "Invalid token" });
   }
 
-  if (payload.role === "driver" && !DRIVER_ALLOWED_PATHS.has(req.path)) {
+  // Compare the full path: under app.use("/api", ...) req.path has the mount stripped.
+  if (payload.role === "driver" && !DRIVER_ALLOWED_PATHS.has(`${req.baseUrl}${req.path}`)) {
     return res.status(403).json({ error: "Insufficient permissions" });
   }
 

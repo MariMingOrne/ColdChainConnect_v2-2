@@ -43,3 +43,24 @@ describe.skipIf(!hasDb)("authMiddleware account check", () => {
     expect((await getProducts(token)).status).toBe(200);
   });
 });
+
+describe("driver path allow-list behind the /api mount", () => {
+  it("lets a driver reach their schedule when the guard is mounted at /api", async () => {
+    const { authMiddleware } = await import("./auth");
+    const saved = process.env.DATABASE_URL;
+    delete process.env.DATABASE_URL; // isolate the path rule from the account lookup
+    try {
+      const token = signToken({ userId: "driver-1", username: "driver", role: "driver" });
+      const run = (originalUrl: string) =>
+        new Promise<number>((resolve) => {
+          const req = { headers: { authorization: `Bearer ${token}` }, baseUrl: "/api", path: originalUrl.replace(/^\/api/, ""), originalUrl } as any;
+          const res = { status: (code: number) => ({ json: () => resolve(code) }) } as any;
+          void authMiddleware(req, res, () => resolve(200));
+        });
+      expect(await run("/api/driver-schedule")).toBe(200);
+      expect(await run("/api/customers")).toBe(403);
+    } finally {
+      process.env.DATABASE_URL = saved;
+    }
+  });
+});

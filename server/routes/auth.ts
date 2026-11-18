@@ -21,7 +21,9 @@ import {
   MfaSetupResponse,
   MfaVerifyRequest,
 } from "@shared/api";
+// Runtime value: relative path because vite.config bundles the server before the @shared alias exists.
 import { MIN_PASSWORD_LENGTH } from "../../shared/api";
+import { sendTooManyAttempts } from "../utils";
 import { AuthRequest } from "../middleware/auth";
 import { loginIpLimiter, loginLimiter, mfaLimiter } from "../middleware/rate-limit";
 import { logAction } from "../middleware/audit-logger";
@@ -37,12 +39,9 @@ export const handleLogin: RequestHandler<{}, LoginResponse | object> = async (
   }
 
   const ip = req.ip ?? "unknown";
-  const userKey = `${ip}:${String(username).toLowerCase()}`;
+  const userKey = `user:${String(username).trim().toLowerCase()}`;
   const wait = Math.max(loginLimiter.retryAfter(userKey), loginIpLimiter.retryAfter(ip));
-  if (wait > 0) {
-    res.setHeader("Retry-After", String(wait));
-    return res.status(429).json({ error: `Too many failed sign-in attempts. Try again in ${Math.ceil(wait / 60)} minute(s).` });
-  }
+  if (wait > 0) return sendTooManyAttempts(res, wait, "failed sign-in attempts");
 
   try {
     if (!process.env.DATABASE_URL) {
@@ -141,10 +140,7 @@ export const handleMfaVerify: RequestHandler = async (req, res) => {
 
   const mfaKey = `mfa:${userId}`;
   const wait = mfaLimiter.retryAfter(mfaKey);
-  if (wait > 0) {
-    res.setHeader("Retry-After", String(wait));
-    return res.status(429).json({ error: `Too many wrong codes. Try again in ${Math.ceil(wait / 60)} minute(s).` });
-  }
+  if (wait > 0) return sendTooManyAttempts(res, wait, "wrong codes");
 
   try {
     const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
