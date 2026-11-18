@@ -859,8 +859,7 @@ function CreateBatchForm({ newBatchName, setNewBatchName, pallets, setPallets, o
 
   const addItem = (productId: string) => {
     if (!productId) return;
-    const p = products.find((x) => x.id === productId);
-    setItems([...items, { productId, quantity: p?.quantity ?? 1, expirationDate: "" }]);
+    setItems([...items, { productId, quantity: 0, expirationDate: "" }]);
   };
 
   const removeItem = (itemIdx: number) => {
@@ -876,6 +875,10 @@ function CreateBatchForm({ newBatchName, setNewBatchName, pallets, setPallets, o
   const handleCreate = async () => {
     if (!newBatchName.trim() || items.length === 0 || !acquisitionDate) {
       alert("Ensure batch name, acquisition date, and at least one item are set");
+      return;
+    }
+    if (items.some((item) => !item.quantity)) {
+      alert("Enter a quantity greater than 0 for every item");
       return;
     }
     const token = localStorage.getItem("auth_token") || "";
@@ -950,7 +953,7 @@ function CreateBatchForm({ newBatchName, setNewBatchName, pallets, setPallets, o
                     <div className="text-xs font-semibold text-navy">{getName(item.productId)}</div>
                     <div className="text-xs text-muted">{getSku(item.productId)}</div>
                   </div>
-                  <Input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(itemIdx, "quantity", parseInt(e.target.value) || 1)} className="w-20 px-2 py-1 border border-border rounded text-sm focus:outline-none focus:border-accent-2" />
+                  <Input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(itemIdx, "quantity", parseInt(e.target.value) || 0)} className="w-20 px-2 py-1 border border-border rounded text-sm focus:outline-none focus:border-accent-2" />
                   <Button type="button" variant="destructive" size="sm" onClick={() => removeItem(itemIdx)} aria-label="Remove product">✕</Button>
                 </div>
                 <div>
