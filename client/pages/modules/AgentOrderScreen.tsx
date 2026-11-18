@@ -3,8 +3,7 @@ import { Booking, Customer, Product } from "@shared/api";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AgentProductPicker } from "./AgentProductPicker";
-import { AgentOrderItems } from "./AgentOrderItems";
+import { OrderProductList } from "./OrderProductList";
 import { AgentPendingOrders } from "./AgentPendingOrders";
 
 interface OrderItem {
@@ -56,7 +55,6 @@ export function AgentOrderScreen({
   const today = new Date();
   const minDeliveryDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const [view, setView] = useState<"new" | "pending">("new");
-  const [tab, setTab] = useState<"products" | "items">("products");
   const totalQty = orderItems.reduce((sum, item) => sum + item.qty_ordered, 0);
   const canCreate = !isCreating && !!newCustomerId && orderItems.length > 0;
 
@@ -122,41 +120,15 @@ export function AgentOrderScreen({
             </section>
 
             <section className="bg-card rounded-xl border border-border overflow-hidden">
-              <div className="flex border-b border-border">
-                {(["products", "items"] as const).map((key) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setTab(key)}
-                    className={cn(
-                      "flex-1 py-3 text-sm font-semibold transition",
-                      tab === key ? "border-b-2 border-accent-2 text-accent-2" : "text-muted-foreground"
-                    )}
-                  >
-                    {key === "products" ? "Products" : `Order Items (${totalQty})`}
-                  </button>
-                ))}
-              </div>
-
               <div className="p-4">
-                {tab === "products" ? (
-                  <AgentProductPicker
-                    products={products}
-                    productStock={productStock}
-                    orderItems={orderItems}
-                    onAddItem={onAddItem}
-                    onRemoveItem={onRemoveItem}
-                  />
-                ) : (
-                  <AgentOrderItems
-                    products={products}
-                    productStock={productStock}
-                    orderItems={orderItems}
-                    onItemChange={onItemChange}
-                    onRemoveItem={onRemoveItem}
-                    onBrowseProducts={() => setTab("products")}
-                  />
-                )}
+                <OrderProductList
+                  products={products}
+                  productStock={productStock}
+                  orderItems={orderItems}
+                  onAddItem={onAddItem}
+                  onRemoveItem={onRemoveItem}
+                  onItemChange={onItemChange}
+                />
               </div>
             </section>
           </div>
