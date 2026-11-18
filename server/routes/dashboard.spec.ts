@@ -4,13 +4,13 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Server } from "http";
 import type { AddressInfo } from "net";
 import { createServer } from "../index";
-import { signToken } from "../auth";
+import { tokenForRole } from "../test-utils";
 import type { DashboardSummary } from "@shared/api";
 
 const hasDb = Boolean(process.env.DATABASE_URL);
 let server: Server;
 let baseUrl: string;
-const token = signToken({ userId: "dashboard-spec", username: "dashboard-spec", role: "admin" });
+let token = "";
 const get = async <T,>(path: string) => {
   const res = await fetch(`${baseUrl}${path}`, { headers: { Authorization: `Bearer ${token}` } });
   expect(res.status).toBe(200);
@@ -19,6 +19,7 @@ const get = async <T,>(path: string) => {
 
 beforeAll(async () => {
   if (!hasDb) return;
+  token = (await tokenForRole("admin")) ?? "";
   server = createServer().listen(0);
   await new Promise((resolve) => server.once("listening", resolve));
   baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;

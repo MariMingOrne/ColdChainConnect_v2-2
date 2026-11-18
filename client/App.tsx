@@ -5,6 +5,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { createRoot } from "react-dom/client";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { ConfirmDialogHost } from "@/lib/confirm";
+import { installSessionGuard } from "@/lib/session-guard";
+
+installSessionGuard();
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";

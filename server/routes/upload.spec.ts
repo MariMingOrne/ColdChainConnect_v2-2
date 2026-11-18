@@ -4,7 +4,7 @@ import type { AddressInfo } from "net";
 import { existsSync, rmSync } from "fs";
 import path from "path";
 import { createServer } from "../index";
-import { signToken } from "../auth";
+import { tokenForRole } from "../test-utils";
 
 let server: Server;
 let baseUrl: string;
@@ -26,10 +26,14 @@ function imageForm(name = "photo.png", bytes: Uint8Array<ArrayBuffer> = PNG_BYTE
   return form;
 }
 
-const adminToken = () => signToken({ userId: "test-admin", username: "admin", role: "admin" });
-const agentToken = () => signToken({ userId: "test-agent", username: "agent", role: "agent" });
+let admin = "";
+const adminToken = () => admin;
+let agent = "";
+const agentToken = () => agent;
 
 beforeAll(async () => {
+  admin = (await tokenForRole("admin")) ?? "";
+  agent = (await tokenForRole("agent")) ?? "";
   server = createServer().listen(0);
   await new Promise((resolve) => server.once("listening", resolve));
   baseUrl = `http://127.0.0.1:${(server.address() as AddressInfo).port}`;

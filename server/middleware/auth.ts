@@ -35,10 +35,24 @@ export async function authMiddleware(
     return res.status(403).json({ error: "Insufficient permissions" });
   }
 
-  if (payload.role === "staff") {
-    const [account] = await db.select({ module_permissions: users.module_permissions }).from(users).where(eq(users.id, payload.userId)).limit(1);
-    if (!account) return res.status(401).json({ error: "Invalid account" });
-    req.modulePermissions = account.module_permissions;
+  // A token lives 24h. Re-check the account on every request so deleting an
+  // account or changing its role takes effect immediately (one PK lookup).
+  if (process.env.DATABASE_URL) {
+    try {
+      const [account] = await db
+        .select({ role: users.role, module_permissions: users.module_permissions })
+        .from(users)
+        .where(eq(users.id, payload.userId))
+        .limit(1);
+      if (!account) return res.status(401).json({ error: "This account no longer exists. Please sign in again." });
+      if (account.role !== payload.role) {
+        return res.status(401).json({ error: "Your access has changed. Please sign in again." });
+      }
+      if (payload.role === "staff") req.modulePermissions = account.module_permissions;
+    } catch (error) {
+      console.error("Account check failed:", error);
+      return res.status(503).json({ error: "Sign-in could not be verified. Try again shortly." });
+    }
   }
 
   req.user = payload;

@@ -4,6 +4,7 @@ import type { AddressInfo } from "net";
 import { createServer } from "../index";
 import { signMfaChallenge, signToken, verifyToken } from "../auth";
 import { loginLimiter, mfaLimiter } from "../middleware/rate-limit";
+import { tokenForRole } from "../test-utils";
 
 let server: Server;
 let baseUrl: string;
@@ -70,10 +71,11 @@ describe("brute-force protection", () => {
 
 describe("token refresh", () => {
   it("issues a new valid token instead of crashing", async () => {
-    const token = signToken({ userId: "u-refresh", username: "refresh", role: "agent" });
+    const token = await tokenForRole("agent");
+    if (!token) return;
     const res = await post("/api/auth/refresh", {}, token);
     expect(res.status).toBe(200);
     const body = (await res.json()) as { token: string };
-    expect(verifyToken(body.token)).toMatchObject({ userId: "u-refresh", role: "agent" });
+    expect(verifyToken(body.token)).toMatchObject({ role: "agent", userId: verifyToken(token)!.userId });
   });
 });
