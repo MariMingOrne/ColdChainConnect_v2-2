@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -177,16 +179,16 @@ export function BookingSummary() {
 
   const submitOrder = async (override?: { reason: string }) => {
     if (!newCustomerId) {
-      alert("Please select a customer");
+      toast.error("Please select a customer");
       return;
     }
     const emptyItems = orderItems.filter((i) => !i.product_id);
     if (emptyItems.length > 0) {
-      alert(`Please select a product for ${emptyItems.length} item${emptyItems.length > 1 ? "s" : ""}`);
+      toast.error(`Please select a product for ${emptyItems.length} item${emptyItems.length > 1 ? "s" : ""}`);
       return;
     }
     if (orderItems.length === 0) {
-      alert("Please add at least one item to the order");
+      toast.error("Please add at least one item to the order");
       return;
     }
     setIsCreating(true);
@@ -202,7 +204,7 @@ export function BookingSummary() {
         }),
       });
       if (res.status === 401) {
-        alert("Your session has expired or your account was not found. Please log in again.");
+        toast.error("Your session has expired or your account was not found. Please log in again.");
         await logout();
         return;
       }
@@ -211,7 +213,7 @@ export function BookingSummary() {
         if (isCreditBlock(block)) {
           const reason = override ? null : promptCreditOverride(block);
           if (reason) return await submitOrder({ reason });
-          alert(describeCreditBlock(block));
+          toast.error(describeCreditBlock(block));
           return;
         }
       }
@@ -226,7 +228,7 @@ export function BookingSummary() {
       setPreparedDeliveryDate("");
       setOrderItems([]);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to create order");
+      toast.error(err instanceof Error ? err.message : "Failed to create order");
     } finally {
       setIsCreating(false);
     }
@@ -241,7 +243,7 @@ export function BookingSummary() {
   };
 
   const handleRollbackOrder = async (booking: Booking) => {
-    if (!window.confirm("Roll back this order? It will be permanently deleted.")) return;
+    if (!(await confirmAction("Roll back this order? It will be permanently deleted."))) return;
     setRollingBackId(booking.id);
     try {
       const res = await fetch(`/api/bookings/${booking.id}`, {
@@ -254,7 +256,7 @@ export function BookingSummary() {
       }
       setBookings((prev) => prev.filter((b) => b.id !== booking.id));
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to roll back order");
+      toast.error(err instanceof Error ? err.message : "Failed to roll back order");
     } finally {
       setRollingBackId(null);
     }
@@ -285,7 +287,7 @@ export function BookingSummary() {
   };
 
   const handleApproveBooking = async () => {
-    if (!selectedBooking) return alert("No booking selected");
+    if (!selectedBooking) return void toast.error("No booking selected");
     setIsApproving(true);
     try {
       const res = await fetch(`/api/bookings/${selectedBooking.id}/status`, {
@@ -301,14 +303,14 @@ export function BookingSummary() {
       setBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
       setApproveSuccess("Order approved. The invoice will be created after stock picking is complete.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to approve booking");
+      toast.error(err instanceof Error ? err.message : "Failed to approve booking");
     } finally {
       setIsApproving(false);
     }
   };
 
   const handleUnapproveBooking = async (booking: Booking) => {
-    if (!window.confirm("Are you sure you want to unapprove this order? It will return to pending status.")) return;
+    if (!(await confirmAction("Are you sure you want to unapprove this order? It will return to pending status."))) return;
     try {
       const res = await fetch(`/api/bookings/${booking.id}/status`, {
         method: "PATCH",
@@ -321,9 +323,9 @@ export function BookingSummary() {
       }
       const updated = await res.json();
       setBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
-      alert("Order moved back to pending status.");
+      toast.success("Order moved back to pending status.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to unapprove booking");
+      toast.error(err instanceof Error ? err.message : "Failed to unapprove booking");
     }
   };
 
@@ -340,7 +342,7 @@ export function BookingSummary() {
   };
 
   const handleRejectBooking = async () => {
-    if (!selectedBooking) return alert("No booking selected");
+    if (!selectedBooking) return void toast.error("No booking selected");
     setIsRejecting(true);
     try {
       const res = await fetch(`/api/bookings/${selectedBooking.id}/status`, {
@@ -355,9 +357,9 @@ export function BookingSummary() {
       const updated = await res.json();
       setBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
       closeRejectModal();
-      alert("Order rejected successfully.");
+      toast.success("Order rejected successfully.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to reject booking");
+      toast.error(err instanceof Error ? err.message : "Failed to reject booking");
     } finally {
       setIsRejecting(false);
     }

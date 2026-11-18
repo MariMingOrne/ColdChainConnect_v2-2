@@ -3,6 +3,7 @@ import "./global.css";
 import { Toaster } from "@/components/ui/toaster";
 import { createRoot } from "react-dom/client";
 import { Toaster as Sonner } from "@/components/ui/sonner";
+import { ConfirmDialogHost } from "@/lib/confirm";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -165,7 +166,8 @@ const App = () => (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
-        <Sonner />
+        <Sonner position="top-center" richColors closeButton />
+        <ConfirmDialogHost />
         <BrowserRouter>
           <AppContent />
           <PostLoginLoadingGate />

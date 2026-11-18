@@ -1,3 +1,4 @@
+import { confirmAction } from "@/lib/confirm";
 import { useState } from "react";
 import { ArrowLeft, MoreVertical } from "lucide-react";
 import { Booking, Customer, Pallet, formatCustomerAddress, totalDiscountRate } from "@shared/api";
@@ -36,10 +37,10 @@ export function PalletDetail({
   const nextStatus = palletStatusOptions[statusIndex + 1];
   const previousStatus = statusIndex > 0 ? palletStatusOptions[statusIndex - 1] : undefined;
 
-  const handleRevert = () => {
+  const handleRevert = async () => {
     setMenuOpen(false);
     if (!previousStatus) return;
-    if (window.confirm(`Revert this pallet from ${palletStatusOptions[statusIndex].label} to ${previousStatus.label}?`)) {
+    if (await confirmAction(`Revert this pallet from ${palletStatusOptions[statusIndex].label} to ${previousStatus.label}?`)) {
       onStatusChange(previousStatus.value);
     }
   };

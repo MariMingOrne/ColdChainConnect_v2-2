@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -147,7 +148,7 @@ export function AgentReports() {
       if (!res.ok) throw new Error(await res.text());
       await fetchAll();
     } catch (err) {
-      alert("Failed: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setProcessing(null);
     }
@@ -166,7 +167,7 @@ export function AgentReports() {
       if (!res.ok) throw new Error(await res.text());
       await fetchAll();
     } catch (err) {
-      alert("Failed: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setProcessing(null);
     }

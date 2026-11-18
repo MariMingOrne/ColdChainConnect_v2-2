@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -95,7 +97,7 @@ function ProductPage({
       if (!response.ok) throw new Error(data.error || "Upload failed");
       setFormData({ ...formData, image_filename: data.filename });
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to upload image");
+      toast.error(err instanceof Error ? err.message : "Failed to upload image");
     } finally {
       setUploadingImage(false);
     }
@@ -465,14 +467,14 @@ export function Pricing({ onBack }: PricingProps) {
       }
       setIsModalOpen(false);
     } catch (err) {
-      alert("Failed to save product");
+      toast.error("Failed to save product");
     }
   };
 
   const handleDeleteSelected = async () => {
     if (selectedProducts.length === 0) return;
     const noun = selectedProducts.length === 1 ? "product" : "products";
-    if (!confirm(`Delete ${selectedProducts.length} selected ${noun}?`)) return;
+    if (!(await confirmAction(`Delete ${selectedProducts.length} selected ${noun}?`))) return;
     const selectedIds = selectedProducts.map((product) => product.id);
     try {
       await Promise.all(selectedIds.map((id) => fetch(`/api/products/${id}`, {
@@ -482,7 +484,7 @@ export function Pricing({ onBack }: PricingProps) {
       setProducts((current) => current.filter((product) => !selectedIds.includes(product.id)));
       setSelectedProductIds([]);
     } catch {
-      alert("Failed to delete selected products");
+      toast.error("Failed to delete selected products");
     }
   };
 

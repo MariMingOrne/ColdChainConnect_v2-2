@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { confirmAction } from "@/lib/confirm";
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { Table } from "@/components/ui/table";
@@ -197,7 +199,7 @@ export function DeliveryDispatch() {
       setShowPaymentModal(false);
       setPaymentItem(null);
     } catch (err) {
-      alert("Failed to confirm: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to confirm: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setConfirmingItem(null);
     }
@@ -226,7 +228,7 @@ export function DeliveryDispatch() {
       await fetchAll();
       setShowAddDeliveryModal(false);
     } catch (err) {
-      alert("Failed to create delivery: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to create delivery: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -263,7 +265,7 @@ export function DeliveryDispatch() {
   const handleRemoveStop = async (delivery: DeliveryExt, item: DeliveryItemExt) => {
     if (!token) return;
     const name = item.customer?.store_name ?? "this stop";
-    if (!window.confirm(`Remove ${name} from this run? The order will go back to the unassigned list.`)) return;
+    if (!(await confirmAction(`Remove ${name} from this run? The order will go back to the unassigned list.`))) return;
     try {
       const res = await fetch(`/api/deliveries/${delivery.id}/items/${item.id}`, {
         method: "DELETE",
@@ -272,7 +274,7 @@ export function DeliveryDispatch() {
       if (!res.ok) throw new Error(await res.text());
       await fetchAll();
     } catch (err) {
-      alert("Failed to remove stop: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to remove stop: " + (err instanceof Error ? err.message : String(err)));
     }
   };
 
@@ -646,7 +648,7 @@ export function DeliveryDispatch() {
           await fetchAll();
           setShowChangeTruckDriverModal(false);
         } catch (err) {
-          alert("Failed to update driver: " + (err instanceof Error ? err.message : String(err)));
+          toast.error("Failed to update driver: " + (err instanceof Error ? err.message : String(err)));
         }
       }}
     />
@@ -873,7 +875,7 @@ function AddTruckModal({ drivers, token, onClose, onCreated }: {
   const [saving, setSaving]                 = useState(false);
 
   const handleSave = async () => {
-    if (!PLATE_PATTERN.test(licensePlate) || !truckDistrict) { alert("Enter a license plate like ABC 1234 and a district."); return; }
+    if (!PLATE_PATTERN.test(licensePlate) || !truckDistrict) { toast.error("Enter a license plate like ABC 1234 and a district."); return; }
     setSaving(true);
     try {
       const res = await fetch("/api/trucks", {
@@ -884,7 +886,7 @@ function AddTruckModal({ drivers, token, onClose, onCreated }: {
       if (!res.ok) throw new Error(await res.text());
       await onCreated();
     } catch (err) {
-      alert("Failed to add truck: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to add truck: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
@@ -945,7 +947,7 @@ function EditTruckModal({ truck, token, onClose, onSaved }: {
   const [saving, setSaving]               = useState(false);
 
   const handleSave = async () => {
-    if (!PLATE_PATTERN.test(licensePlate) || !truckDistrict) { alert("Enter a license plate like ABC 1234 and a district."); return; }
+    if (!PLATE_PATTERN.test(licensePlate) || !truckDistrict) { toast.error("Enter a license plate like ABC 1234 and a district."); return; }
     setSaving(true);
     try {
       const res = await fetch(`/api/trucks/${truck.id}`, {
@@ -956,7 +958,7 @@ function EditTruckModal({ truck, token, onClose, onSaved }: {
       if (!res.ok) throw new Error(await res.text());
       await onSaved();
     } catch (err) {
-      alert("Failed to update truck: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to update truck: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }
@@ -1090,7 +1092,7 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
   ]);
 
   const handleSave = async () => {
-    if (!valid || !scheduledDate || !scheduledTime) { alert("Choose a scheduled date and time and valid order stops."); return; }
+    if (!valid || !scheduledDate || !scheduledTime) { toast.error("Choose a scheduled date and time and valid order stops."); return; }
     setSaving(true);
     try { await onSave(buildPayload(), selectedDriverId, scheduledDate, scheduledTime); }
     finally { setSaving(false); }

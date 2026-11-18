@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -337,7 +339,7 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
   const handleSave = async () => {
     try {
       if (!formData.full_name) {
-        alert("Full name is required");
+        toast.error("Full name is required");
         return;
       }
 
@@ -382,12 +384,12 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
       }
       setIsModalOpen(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to save driver");
+      toast.error(err instanceof Error ? err.message : "Failed to save driver");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this driver?")) return;
+    if (!(await confirmAction("Delete this driver?"))) return;
     try {
       await fetch(`/api/drivers/${id}`, {
         method: "DELETE",
@@ -395,7 +397,7 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
       });
       setDrivers(drivers.filter((d) => d.id !== id));
     } catch {
-      alert("Failed to delete driver");
+      toast.error("Failed to delete driver");
     }
   };
 

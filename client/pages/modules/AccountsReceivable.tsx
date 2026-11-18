@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -64,7 +66,7 @@ export function AccountsReceivable() {
   };
 
   const handleMarkPaid = async (id: string) => {
-    if (!confirm("Mark this AR record as paid?")) return;
+    if (!(await confirmAction("Mark this AR record as paid?"))) return;
     setMarkingPaid(id);
     try {
       const res = await fetch(`/api/accounts-receivable/${id}/status`, {
@@ -77,7 +79,7 @@ export function AccountsReceivable() {
       setActiveTab("paid");
       await fetchData();
     } catch (err) {
-      alert("Failed to mark as paid: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to mark as paid: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setMarkingPaid(null);
     }

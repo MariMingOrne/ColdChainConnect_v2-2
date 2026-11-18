@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -72,8 +73,8 @@ export function InventoryBatchesTab() {
     );
 
   const handleCreateBatch = async () => {
-    if (!newBatchName.trim()) return alert("Please enter batch name");
-    if (batchItems.some((i) => !i.product_id)) return alert("Please select product for each item");
+    if (!newBatchName.trim()) return void toast.error("Please enter batch name");
+    if (batchItems.some((i) => !i.product_id)) return void toast.error("Please select product for each item");
 
     setIsCreating(true);
     try {
@@ -94,7 +95,7 @@ export function InventoryBatchesTab() {
       setNewBatchName("");
       setBatchItems([{ product_id: "", qty_units: 1 }]);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to create batch");
+      toast.error(err instanceof Error ? err.message : "Failed to create batch");
     } finally {
       setIsCreating(false);
     }
@@ -116,7 +117,7 @@ export function InventoryBatchesTab() {
 
       setBatches((prev) => prev.map((b) => (b.id === batchId ? updated : b)));
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to close batch");
+      toast.error(err instanceof Error ? err.message : "Failed to close batch");
     }
   };
 

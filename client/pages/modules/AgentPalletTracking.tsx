@@ -1,3 +1,4 @@
+import { confirmAction } from "@/lib/confirm";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -167,8 +168,8 @@ export function AgentPalletTracking() {
     if (await handleAdvancePallet(scanPallet)) setScanPalletId(null);
   };
 
-  const handleListAdvance = (pallet: TrackingPallet) => {
-    if (pallet.status === "approved" && !window.confirm("Mark this pallet as shipped?")) return;
+  const handleListAdvance = async (pallet: TrackingPallet) => {
+    if (pallet.status === "approved" && !(await confirmAction("Mark this pallet as shipped?"))) return;
     void handleAdvancePallet(pallet);
   };
 

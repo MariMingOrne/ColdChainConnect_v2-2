@@ -1,3 +1,4 @@
+import { toast } from "sonner";
 import { useState } from "react";
 import { Package, Plus, Trash2 } from "lucide-react";
 import { Invoice, Customer, Product } from "@shared/api";
@@ -58,7 +59,7 @@ export function LogReturnForm({
 
   const handleSave = async () => {
     if (!customerId || !invoiceId || items.some((item) => !item.product_id || !Number.isInteger(item.qty_returned) || item.qty_returned < 1)) {
-      alert("Select a product and enter a valid quantity for every item.");
+      toast.error("Select a product and enter a valid quantity for every item.");
       return;
     }
     setSaving(true);
@@ -78,7 +79,7 @@ export function LogReturnForm({
       reset();
       onSaved();
     } catch (err) {
-      alert("Failed to create return: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to create return: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }

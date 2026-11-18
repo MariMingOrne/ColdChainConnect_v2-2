@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { confirmAction } from "@/lib/confirm";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -582,12 +584,12 @@ export function Customers({ onBack }: CustomersProps) {
 
       setIsModalOpen(false);
     } catch {
-      alert("Failed to save customer");
+      toast.error("Failed to save customer");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this customer?")) return;
+    if (!(await confirmAction("Delete this customer?"))) return;
 
     try {
       await fetch(`/api/customers/${id}`, {
@@ -596,7 +598,7 @@ export function Customers({ onBack }: CustomersProps) {
       });
       setCustomers(customers.filter((customer) => customer.id !== id));
     } catch {
-      alert("Failed to delete customer");
+      toast.error("Failed to delete customer");
     }
   };
 
