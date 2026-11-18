@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { and, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { Pallet, PalletItem, CreatePalletSchema, UpdatePalletStatusSchema } from "../../shared/api";
 import { db } from "../db";
@@ -20,10 +20,14 @@ async function calculateProductInventory(): Promise<Record<string, number>> {
 
     const batches = await db.query.inventory_batches.findMany({
       where: eq(inventory_batches.is_archived, false),
+      orderBy: [desc(inventory_batches.created_at)],
       with: {
         pallets: {
+          orderBy: (table) => [desc(table.created_at)],
           with: {
-            items: true,
+            items: {
+              orderBy: (table) => [desc(table.created_at)],
+            },
           },
         },
       },
@@ -84,7 +88,7 @@ export const listPallets: RequestHandler = async (req: AuthRequest, res) => {
       with: {
         items: true,
       },
-      orderBy: (table) => [table.created_at],
+      orderBy: [desc(order_pallets.created_at)],
     });
 
     const pallets = dbPallets.map(formatPallet);

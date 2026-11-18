@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { eq, and } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "../db";
 import {
   receipts,
@@ -25,7 +25,7 @@ export const listReceipts: RequestHandler = async (_req, res) => {
       return res.json([]);
     }
 
-    const all = await db.select().from(receipts).orderBy(receipts.confirmed_at);
+    const all = await db.select().from(receipts).orderBy(desc(receipts.confirmed_at));
     res.json(all);
   } catch (error) {
     console.error("Error fetching receipts:", error);

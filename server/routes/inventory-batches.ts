@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { InventoryBatch, InventoryBatchItem, CreateInventoryBatchSchema, UpdateInventoryBatchSchema } from "../../shared/api";
 import { db } from "../db";
 import { inventory_batches, batch_pallets, pallet_items } from "../db/schema";
@@ -58,10 +58,14 @@ export const listInventoryBatches: RequestHandler = async (_req, res) => {
   try {
     const dbBatches = await db.query.inventory_batches.findMany({
       where: eq(inventory_batches.is_archived, false),
+      orderBy: [desc(inventory_batches.created_at)],
       with: {
         pallets: {
+          orderBy: (table) => [desc(table.created_at)],
           with: {
-            items: true,
+            items: {
+              orderBy: (table) => [desc(table.created_at)],
+            },
           },
         },
       },

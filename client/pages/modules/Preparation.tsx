@@ -11,10 +11,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { RefreshCw, Calendar } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Booking, Customer, Pallet } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 
 export function Preparation() {
   const [orders, setOrders] = useState<Booking[]>([]);
@@ -26,7 +27,6 @@ export function Preparation() {
   const navigate = useNavigate();
   const { state } = useLocation();
   const filters = state?.preparationFilters;
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState<string>(filters?.searchTerm ?? "");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "approved" | "prep" | "ready">(filters?.statusFilter ?? "approved");
   const [dateRangeFilter, setDateRangeFilter] = useState<"all" | "today" | "week" | "month" | "custom">(filters?.dateRangeFilter ?? "today");
@@ -60,17 +60,12 @@ export function Preparation() {
     }
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchAll();
-    setIsRefreshing(false);
-  };
-
   useEffect(() => {
     if (token) {
       fetchAll();
     }
   }, [token]);
+  useAutoRefresh(fetchAll, { enabled: Boolean(token) });
 
   const isDateInRange = (dateStr: string): boolean => {
     if (dateRangeFilter === "all") return true;
@@ -165,7 +160,7 @@ export function Preparation() {
         });
         if (!response.ok) throw new Error("Failed to mark pallet as prepared.");
       }
-      handleRefresh();
+      void fetchAll();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to mark pallets as prepared");
     }
@@ -185,7 +180,7 @@ export function Preparation() {
         });
         if (!response.ok) throw new Error("Failed to undo pallet preparation.");
       }
-      handleRefresh();
+      void fetchAll();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to undo prepared status");
     }
@@ -202,7 +197,7 @@ export function Preparation() {
           },
         });
       }
-      handleRefresh();
+      void fetchAll();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete pallets");
     }
@@ -215,14 +210,6 @@ export function Preparation() {
           <h1 className="page-title">Pallet Preparation</h1>
           <p className="page-subtitle">Build pallets for approved customer orders</p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="btn-ghost"
-        >
-          <RefreshCw size={15} className={isRefreshing ? "animate-spin" : ""} />
-          <span className="hidden sm:inline">Refresh</span>
-        </button>
       </div>
 
       {error && (

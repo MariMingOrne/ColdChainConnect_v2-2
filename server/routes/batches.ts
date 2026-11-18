@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { and, eq, inArray, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "../db";
 import { inventory_batches, batch_pallets, pallet_items, order_pallet_items, order_pallets } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
@@ -21,10 +21,13 @@ async function hasActiveReservations(executor: any, sourceItemIds: string[]) {
 export const listBatches: RequestHandler = async (_req, res) => {
   try {
     const allBatches = await db.query.inventory_batches.findMany({
+      orderBy: [desc(inventory_batches.created_at)],
       with: {
         pallets: {
+          orderBy: (table) => [desc(table.created_at)],
           with: {
             items: {
+              orderBy: (table) => [desc(table.created_at)],
               with: {
                 product: true,
               },

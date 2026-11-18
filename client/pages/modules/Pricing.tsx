@@ -7,7 +7,9 @@ import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Product } from "@shared/api";
-import { ArrowLeft, Download, Upload, RefreshCw, Search, MoreHorizontal } from "lucide-react";
+import { ArrowLeft, Search, MoreHorizontal } from "lucide-react";
+import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
@@ -329,7 +331,6 @@ export function Pricing({ onBack }: PricingProps) {
     weight: undefined,
   });
   const { token } = useAuth();
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const itemsPerPage = 10;
 
@@ -347,12 +348,6 @@ export function Pricing({ onBack }: PricingProps) {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchProducts();
-    setIsRefreshing(false);
   };
 
   const validateProductImportRow = (row: Record<string, unknown>) => {
@@ -397,6 +392,7 @@ export function Pricing({ onBack }: PricingProps) {
       fetchProducts();
     }
   }, [token]);
+  useAutoRefresh(fetchProducts, { enabled: Boolean(token) });
 
   const manufacturers = Array.from(new Set(products.map((product) => product.manufacturer).filter((manufacturer): manufacturer is string => Boolean(manufacturer)))).sort();
   const filteredProducts = products.filter((product) =>
@@ -423,6 +419,7 @@ export function Pricing({ onBack }: PricingProps) {
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
+  const selectedProducts = products.filter((product) => selectedProductIds.includes(product.id));
 
   const openAddModal = () => {
     setEditingProduct(null);
@@ -463,7 +460,7 @@ export function Pricing({ onBack }: PricingProps) {
       if (editingProduct) {
         setProducts(products.map((p) => (p.id === saved.id ? saved : p)));
       } else {
-        setProducts([...products, saved]);
+        setProducts((current) => [saved, ...current]);
       }
       setIsModalOpen(false);
     } catch (err) {
@@ -471,28 +468,17 @@ export function Pricing({ onBack }: PricingProps) {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this product?")) return;
-    try {
-      await fetch(`/api/products/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setProducts(products.filter((p) => p.id !== id));
-      setSelectedProductIds((ids) => ids.filter((selectedId) => selectedId !== id));
-    } catch {
-      alert("Failed to delete product");
-    }
-  };
-
   const handleDeleteSelected = async () => {
-    if (!confirm(`Delete ${selectedProductIds.length} selected products?`)) return;
+    if (selectedProducts.length === 0) return;
+    const noun = selectedProducts.length === 1 ? "product" : "products";
+    if (!confirm(`Delete ${selectedProducts.length} selected ${noun}?`)) return;
+    const selectedIds = selectedProducts.map((product) => product.id);
     try {
-      await Promise.all(selectedProductIds.map((id) => fetch(`/api/products/${id}`, {
+      await Promise.all(selectedIds.map((id) => fetch(`/api/products/${id}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       })));
-      setProducts((current) => current.filter((product) => !selectedProductIds.includes(product.id)));
+      setProducts((current) => current.filter((product) => !selectedIds.includes(product.id)));
       setSelectedProductIds([]);
     } catch {
       alert("Failed to delete selected products");
@@ -553,26 +539,15 @@ export function Pricing({ onBack }: PricingProps) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            title="Refresh data"
-          >
-            <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-            Refresh
-          </button>
-          <button
             onClick={openAddModal}
             className="px-4 py-2 bg-navy text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
           >
             ➕ Add Product
           </button>
-          <button onClick={() => setShowExcelImport(true)} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors">
-            ⬇ Import Excel
-          </button>
-          <button onClick={() => void handleProductExport()} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors">
-            <Download size={15} className="mr-1 inline" />Export Excel
-          </button>
+          <ExcelActionsDropdown
+            onImport={() => setShowExcelImport(true)}
+            onExport={handleProductExport}
+          />
         </div>
       </div>
 
@@ -593,14 +568,29 @@ export function Pricing({ onBack }: PricingProps) {
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        {selectedProductIds.length > 0 && (
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild><button className="inline-flex items-center gap-2 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white"><MoreHorizontal size={16} /> Actions ({selectedProductIds.length})</button></DropdownMenuTrigger>
-            <DropdownMenuContent align="start" className="bg-white text-navy">
-              <DropdownMenuItem className="text-red focus:text-red" onClick={() => void handleDeleteSelected()}>Delete selected products</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        )}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              disabled={selectedProducts.length === 0}
+              className="inline-flex items-center gap-2 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <MoreHorizontal size={16} /> Actions ({selectedProducts.length})
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="bg-white text-navy">
+            {selectedProducts.length === 1 && (
+              <>
+                <DropdownMenuItem onClick={() => setViewingProduct(selectedProducts[0])}>View product</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => openEditModal(selectedProducts[0])}>Edit product</DropdownMenuItem>
+              </>
+            )}
+            {selectedProducts.length > 0 && (
+              <DropdownMenuItem className="text-red focus:text-red" onClick={() => void handleDeleteSelected()}>
+                Delete selected {selectedProducts.length === 1 ? "product" : "products"}
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <div className="relative w-full sm:w-72">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
@@ -631,15 +621,12 @@ export function Pricing({ onBack }: PricingProps) {
                 <SortableHeader label="Reorder Level" sortKey="reorder" sort={productSort} onSort={setProductSort} />
                 <SortableHeader label="Weight" sortKey="weight" sort={productSort} onSort={setProductSort} />
                 <SortableHeader label="Status" sortKey="status" sort={productSort} onSort={setProductSort} className="hidden md:table-cell" />
-                <th style={{ width: '120px' }} className="sticky right-0 z-10 bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-center border-b border-border whitespace-nowrap shadow-left">
-                  Actions
-                </th>
               </tr>
             </thead>
             <tbody>
               {paginatedProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="px-3 py-6 text-center text-muted">
+                  <td colSpan={7} className="px-3 py-6 text-center text-muted">
                     {products.length === 0 ? "No products found" : "No results matching your search"}
                   </td>
                 </tr>
@@ -696,16 +683,6 @@ export function Pricing({ onBack }: PricingProps) {
                       <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${product.is_discontinued ? "bg-red text-white" : "bg-green text-white"}`}>
                         {product.is_discontinued ? "Discontinued" : "Active"}
                       </span>
-                    </td>
-                    <td className="sticky right-0 z-10 px-3 py-3 bg-white border-l border-border shadow-left">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild><button aria-label={`Actions for ${product.name}`} className="rounded-md p-2 hover:bg-off-white"><MoreHorizontal size={18} /></button></DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="bg-white text-navy">
-                          <DropdownMenuItem onClick={() => setViewingProduct(product)}>View</DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openEditModal(product)}>Edit</DropdownMenuItem>
-                          <DropdownMenuItem className="text-red focus:text-red" onClick={() => void handleDelete(product.id)}>Delete</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
                     </td>
                   </tr>
                 ))

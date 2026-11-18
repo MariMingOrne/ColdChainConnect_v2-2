@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { eq, and } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { db } from "../db";
 import {
   accounts_receivable,
@@ -24,7 +24,7 @@ export const listAccountsReceivable: RequestHandler = async (
 
     const records = await db.query.accounts_receivable.findMany({
       where: whereClause,
-      orderBy: accounts_receivable.created_at,
+      orderBy: [desc(accounts_receivable.created_at)],
     });
 
     res.json(records);
@@ -50,6 +50,7 @@ export const getCustomerBalance: RequestHandler = async (
         eq(accounts_receivable.customer_id, customerId),
         eq(accounts_receivable.status, "outstanding")
       ),
+      orderBy: [desc(accounts_receivable.created_at)],
     });
 
     const totalDue = records.reduce(

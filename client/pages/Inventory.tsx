@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useInventoryContext } from "../context/InventoryContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Download, Search } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
+import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
 import { ActionButtons } from "@/components/ActionButtons";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
@@ -23,6 +24,7 @@ interface InventoryProduct {
   imageFilename?: string;
   reorderPoint: number;
   lastUpdated: string;
+  createdAt: string;
   manufacturer: string;
   isDiscontinued: boolean;
 }
@@ -72,7 +74,7 @@ export function Inventory() {
     id: "", sku: "", description: "", unitPrice: 0, supplierId: "",
     weight: 0, quantity: 0, expiryDate: "", imageFilename: "",
     reorderPoint: 300, lastUpdated: new Date().toISOString().split("T")[0],
-    manufacturer: "", isDiscontinued: false,
+    createdAt: new Date().toISOString(), manufacturer: "", isDiscontinued: false,
   });
 
 
@@ -117,6 +119,7 @@ export function Inventory() {
         imageFilename: p.image_filename,
         reorderPoint: p.reorder_point ?? 300,
         lastUpdated: p.updated_at || new Date().toISOString(),
+        createdAt: p.created_at || p.updated_at || new Date().toISOString(),
         manufacturer: p.manufacturer || "",
         isDiscontinued: p.is_discontinued ?? false,
       }));
@@ -186,7 +189,7 @@ export function Inventory() {
   );
 
   const sortedBatchProducts = [...filteredBatchProducts].sort((a, b) => {
-    if (!inventorySort) return 0;
+    if (!inventorySort) return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     const direction = inventorySort.direction === "asc" ? 1 : -1;
     const value = (p: typeof a) => ({ name: p.description, cost: p.unitPrice, stock: p.batchQuantity, reorder: p.reorderPoint, expiry: p.batchExpiryDate }[inventorySort.key]);
     return compareValues(value(a), value(b)) * direction;
@@ -367,8 +370,10 @@ export function Inventory() {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <button onClick={() => { setNewBatchName(""); setStartBatchCreation(true); setIsBatchModalOpen(true); }} className="px-4 py-2 bg-green text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-colors">➕ Add Items</button>
-          <button onClick={() => setShowExcelImport(true)} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors">⬇ Import Excel</button>
-          <button onClick={() => void handleInventoryExport()} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors"><Download size={15} className="mr-1 inline" />Export Excel</button>
+          <ExcelActionsDropdown
+            onImport={() => setShowExcelImport(true)}
+            onExport={handleInventoryExport}
+          />
         </div>
       </div>
 

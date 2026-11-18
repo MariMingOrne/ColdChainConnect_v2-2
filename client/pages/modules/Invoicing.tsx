@@ -10,7 +10,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Printer, RefreshCw, Calendar, ArrowLeft } from "lucide-react";
+import { Printer, Calendar, ArrowLeft } from "lucide-react";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Invoice, InvoiceItem, BookingItem } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
@@ -239,7 +240,6 @@ export function Invoicing() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { token } = useAuth();
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "issued" | "paid">("all");
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "partial" | "unpaid">("all");
@@ -263,13 +263,8 @@ export function Invoicing() {
     }
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchInvoices();
-    setIsRefreshing(false);
-  };
-
   useEffect(() => { if (token) fetchInvoices(); }, [token]);
+  useAutoRefresh(fetchInvoices, { enabled: Boolean(token) });
 
   const getStatusColor = (status: string) => ({
     draft:  "bg-gray-100 text-gray-800",
@@ -298,7 +293,7 @@ export function Invoicing() {
     return true;
   };
 
-  if (isLoading && !isRefreshing) return <LoadingSpinner />;
+  if (isLoading) return <LoadingSpinner />;
 
   if (receiptInvoice) return <ReceiptModal invoice={receiptInvoice} onClose={() => setReceiptInvoice(null)} />;
 
@@ -321,14 +316,6 @@ export function Invoicing() {
           <h1 className="page-title">Receipts</h1>
           <p className="page-subtitle">Print and review delivery receipts</p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="btn-ghost"
-        >
-          <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-          Refresh
-        </button>
       </div>
 
       {error && (

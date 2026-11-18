@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { ArrowLeft, ChevronDown, ChevronUp, Package, RefreshCw, Search } from "lucide-react";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { ArrowLeft, ChevronDown, ChevronUp, Package, Search } from "lucide-react";
 import { Booking, Pallet, Product } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { Input } from "@/components/ui/input";
@@ -46,13 +47,11 @@ export function AgentPalletTracking() {
   const [filter, setFilter] = useState<PalletFilter>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [updatingPalletId, setUpdatingPalletId] = useState<string | null>(null);
   const [error, setError] = useState("");
 
   const fetchTracking = async () => {
     if (!token) return;
-    setIsLoading(true);
     setError("");
 
     try {
@@ -82,13 +81,13 @@ export function AgentPalletTracking() {
       setError(fetchError instanceof Error ? fetchError.message : "Could not load pallet tracking.");
     } finally {
       setIsLoading(false);
-      setIsRefreshing(false);
     }
   };
 
   useEffect(() => {
     void fetchTracking();
   }, [token]);
+  useAutoRefresh(fetchTracking, { enabled: Boolean(token) });
 
   useEffect(() => {
     if (isLoading || !scanCode || handledScanKeyRef.current === location.key) return;
@@ -127,11 +126,6 @@ export function AgentPalletTracking() {
 
   const totalUnits = (pallet: Pallet) =>
     (pallet.items ?? []).reduce((sum, item) => sum + item.qty_units, 0);
-
-  const handleRefresh = () => {
-    setIsRefreshing(true);
-    void fetchTracking();
-  };
 
   const handleAdvancePallet = async (pallet: TrackingPallet): Promise<boolean> => {
     if (!token) return false;
@@ -244,15 +238,6 @@ export function AgentPalletTracking() {
           <h1 className="font-rajdhani text-2xl font-bold text-navy">Pallet Tracking</h1>
           <p className="mt-0.5 text-sm text-muted">Track preparation and dispatch progress for your orders.</p>
         </div>
-        <button
-          type="button"
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          aria-label="Refresh pallets"
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-white text-navy transition hover:bg-off-white disabled:opacity-50"
-        >
-          <RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} />
-        </button>
       </header>
 
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">

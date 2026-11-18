@@ -430,7 +430,8 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
           const err = await res.json();
           throw new Error(err.error || "Failed to create agent");
         }
-        setAgents([...agents, await res.json()]);
+        const created = await res.json();
+        setAgents((current) => [created, ...current]);
       }
       setIsModalOpen(false);
     } catch (err) {

@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Customer, Truck, formatCustomerAddress, totalDiscountRate } from "@shared/api";
-import { ArrowLeft, Download, RefreshCw, Search } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
+import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
 import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
@@ -375,7 +377,6 @@ export function Customers({ onBack }: CustomersProps) {
     discounts: [],
   });
   const { token } = useAuth();
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const itemsPerPage = 10;
 
@@ -393,12 +394,6 @@ export function Customers({ onBack }: CustomersProps) {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchCustomers();
-    setIsRefreshing(false);
   };
 
   const validateCustomerImportRow = (row: Record<string, unknown>) => {
@@ -451,6 +446,7 @@ export function Customers({ onBack }: CustomersProps) {
       .then((trucks: Truck[]) => setTruckDistricts([...new Set(trucks.map((t) => t.district))].sort()))
       .catch(() => setTruckDistricts([]));
   }, [token]);
+  useAutoRefresh(fetchCustomers, { enabled: Boolean(token) });
 
   const customerDistricts = useMemo(
     () => [...new Set(customers.map((c) => c.district).filter((d): d is string => Boolean(d)))].sort(),
@@ -581,7 +577,7 @@ export function Customers({ onBack }: CustomersProps) {
       if (editingCustomer) {
         setCustomers(customers.map((customer) => (customer.id === saved.id ? saved : customer)));
       } else {
-        setCustomers([...customers, saved]);
+        setCustomers((current) => [saved, ...current]);
       }
 
       setIsModalOpen(false);
@@ -649,24 +645,13 @@ export function Customers({ onBack }: CustomersProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-navy transition-colors hover:bg-off-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
-            title="Refresh data"
-          >
-            <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-            Refresh
-          </button>
           <button onClick={openAddModal} className="flex items-center gap-2 rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90">
             ➕ Add Customer
           </button>
-          <button onClick={() => setShowExcelImport(true)} className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-navy transition-colors hover:bg-off-white">
-            ⬇ Import Excel
-          </button>
-          <button onClick={() => void handleCustomerExport()} className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-navy transition-colors hover:bg-off-white">
-            <Download size={15} className="mr-1 inline" />Export Excel
-          </button>
+          <ExcelActionsDropdown
+            onImport={() => setShowExcelImport(true)}
+            onExport={handleCustomerExport}
+          />
         </div>
       </div>
 

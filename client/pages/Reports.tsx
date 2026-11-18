@@ -13,12 +13,11 @@ import {
 import {
   Boxes,
   ChartNoAxesCombined,
-  Download,
   FileBarChart,
   TriangleAlert,
   Users,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Table } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
@@ -289,9 +288,10 @@ export function Reports() {
                   <h2 className="text-xl font-bold text-navy">{tabs.find((tab) => tab.id === activeTab)?.label}</h2>
                   <p className="mt-1 text-sm text-gray-600">{descriptions[activeTab]}</p>
                 </div>
-                <Button onClick={handleExport} disabled={isExporting || filteredRows.length === 0} className="gap-2 bg-accent text-white hover:bg-accent-dark">
-                  <Download size={16} aria-hidden="true" />{isExporting ? "Exporting…" : "Export Excel"}
-                </Button>
+                <ExcelActionsDropdown
+                  onExport={handleExport}
+                  exportDisabled={isExporting || filteredRows.length === 0}
+                />
               </div>
 
               <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(250px,0.8fr)]">

@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { asc, eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { users } from "../db/schema";
 import { hashPassword } from "../auth";
@@ -19,7 +19,7 @@ export const handleListManagedAccounts: RequestHandler = async (req: AuthRequest
     .select({ id: users.id, username: users.username, role: users.role, created_at: users.created_at, mfa_enabled: users.mfa_enabled, mfa_required: users.mfa_required, module_permissions: users.module_permissions })
     .from(users)
     .where(inArray(users.role, ["admin", "staff"]))
-    .orderBy(asc(users.username));
+    .orderBy(desc(users.created_at));
   res.json(accounts);
 };
 

@@ -3,10 +3,11 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, RefreshCw, Plus, Calendar, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, Plus, Calendar, CheckCircle, XCircle } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Booking, Truck, Customer, Product } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
@@ -26,7 +27,6 @@ export function BookingSummary() {
   const [error, setError] = useState<string | null>(null);
   const { token, logout, user, finishPostLoginLoading } = useAuth();
   const isAgent = user?.role === "agent";
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "approved" | "prep" | "ready">("all");
   const [approvalFilter, setApprovalFilter] = useState<"all" | "approved" | "unapproved">("all");
@@ -96,13 +96,8 @@ export function BookingSummary() {
     }
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchAll();
-    setIsRefreshing(false);
-  };
-
   useEffect(() => { if (token) fetchAll(); }, [token]);
+  useAutoRefresh(fetchAll, { enabled: Boolean(token) });
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -582,10 +577,6 @@ export function BookingSummary() {
         <div className="flex items-center gap-2">
           <Button type="button" onClick={() => setShowAddModal(true)}>
             <Plus size={16} /> Add Order
-          </Button>
-          <Button type="button" variant="ghost" onClick={handleRefresh} disabled={isRefreshing}>
-            <RefreshCw size={15} className={isRefreshing ? "animate-spin" : ""} />
-            <span className="hidden sm:inline">Refresh</span>
           </Button>
         </div>
       </div>

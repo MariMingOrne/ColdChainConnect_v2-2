@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { ArrowLeft, RefreshCw, RotateCcw, CheckCircle, XCircle, Search } from "lucide-react";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { ArrowLeft, RotateCcw, CheckCircle, XCircle, Search } from "lucide-react";
 import { AgentReturn, Invoice, Customer, Product } from "@shared/api";
 import { LogReturnForm } from "./LogReturnForm";
 import { Table } from "@/components/ui/table";
@@ -101,7 +102,6 @@ export function AgentReports() {
   const [products,  setProducts]  = useState<Product[]>([]);
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [processing, setProcessing] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "accepted" | "rejected">("all");
@@ -109,7 +109,6 @@ export function AgentReports() {
 
   const fetchAll = useCallback(async () => {
     if (!token) return;
-    setLoading(true);
     try {
       const [rRes, iRes, cRes, pRes] = await Promise.all([
         fetch("/api/agent-returns",  { headers: { Authorization: `Bearer ${token}` } }),
@@ -135,8 +134,8 @@ export function AgentReports() {
     }
   }, [token]);
 
-  const handleRefresh = async () => { setIsRefreshing(true); await fetchAll(); setIsRefreshing(false); };
   useEffect(() => { fetchAll(); }, [fetchAll]);
+  useAutoRefresh(fetchAll, { enabled: Boolean(token) });
 
   const handleAccept = async (id: string) => {
     if (!token) return;
@@ -219,11 +218,6 @@ export function AgentReports() {
           <p className="page-subtitle">Manage returned goods — restock or write off</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={handleRefresh} disabled={isRefreshing}
-            className="btn-ghost">
-            <RefreshCw size={15} className={isRefreshing ? "animate-spin" : ""} />
-            <span className="hidden sm:inline">Refresh</span>
-          </button>
           <button onClick={() => setShowCreate(true)}
             className="px-3 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90 flex items-center gap-2">
             <RotateCcw size={15} /> Log Return

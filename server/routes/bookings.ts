@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { and, eq, inArray, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "../db";
 import { bookings, booking_items, invoices, agents, trucks, users, order_pallets } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
@@ -39,6 +39,7 @@ export const listBookings: RequestHandler = async (req: AuthRequest, res) => {
     const [allBookings, agentProfiles] = await Promise.all([
       db.query.bookings.findMany({
         where: whereClause,
+        orderBy: [desc(bookings.created_at)],
         with: {
           booking_items: {
             with: {

@@ -45,9 +45,16 @@ export function Login() {
       }
       setChallenge(next);
     } catch (err) {
-      setError(err instanceof Error && /^Sign-in expired\./i.test(err.message)
-        ? "Your sign-in expired. Please enter your credentials again."
-        : "Invalid username or password");
+      const message = err instanceof Error ? err.message : "";
+      if (/^Sign-in expired\./i.test(message)) {
+        setError("Your sign-in expired. Please enter your credentials again.");
+      } else if (message === "Invalid credentials") {
+        setError("Invalid username or password");
+      } else if (message === "Internal server error" || message === "Login failed") {
+        setError("Sign-in is temporarily unavailable. Please try again later.");
+      } else {
+        setError(message || "Login failed");
+      }
     } finally {
       setIsLoading(false);
     }

@@ -377,7 +377,8 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
           const err = await res.json();
           throw new Error(err.error || "Failed to create driver");
         }
-        setDrivers([...drivers, await res.json()]);
+        const created = await res.json();
+        setDrivers((current) => [created, ...current]);
       }
       setIsModalOpen(false);
     } catch (err) {

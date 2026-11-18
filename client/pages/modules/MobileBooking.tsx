@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Send, RefreshCw } from "lucide-react";
+import { Plus, Trash2, Send } from "lucide-react";
 import { Customer, Product } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { describeCreditBlock, isCreditBlock, promptCreditOverride } from "@/lib/creditOverride";
@@ -34,7 +35,6 @@ export function MobileBooking() {
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const { token, logout } = useAuth();
 
   const fetchData = async () => {
@@ -61,17 +61,12 @@ export function MobileBooking() {
     }
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchData();
-    setIsRefreshing(false);
-  };
-
   useEffect(() => {
     if (token) {
       fetchData();
     }
   }, [token]);
+  useAutoRefresh(fetchData, { enabled: Boolean(token) });
 
   const addLineItem = () => {
     if (!selectedProduct || !quantity) {
@@ -151,7 +146,7 @@ export function MobileBooking() {
     }
   };
 
-  if (isLoading && !isRefreshing) return <LoadingSpinner />;
+  if (isLoading) return <LoadingSpinner />;
 
   const selectedCustomerName =
     customers.find((c) => c.id === selectedCustomer)?.store_name || "No customer";
@@ -163,15 +158,6 @@ export function MobileBooking() {
           <h1 className="text-2xl md:text-3xl font-bold text-navy">Create Order</h1>
           <p className="text-gray-600 text-sm">Add products and submit booking</p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-navy transition-colors hover:bg-off-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 w-fit"
-          title="Refresh data"
-        >
-          <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-          Refresh
-        </button>
       </div>
 
       {error && (

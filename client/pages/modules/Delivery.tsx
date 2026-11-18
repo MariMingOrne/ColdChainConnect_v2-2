@@ -3,7 +3,8 @@ import { useAuth } from "../../hooks/useAuth";
 import { Table } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { localScheduleDate } from "@/lib/agentSchedule";
-import { CalendarDays, Clock3, RefreshCw, ChevronLeft, Truck as TruckIcon, ChevronDown, ChevronUp, ArrowLeft, Search } from "lucide-react";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { CalendarDays, Clock3, ChevronLeft, Truck as TruckIcon, ChevronDown, ChevronUp, ArrowLeft, Search } from "lucide-react";
 import { Delivery, DeliveryItem, Truck, Invoice, Customer, Driver, Agent, formatCustomerAddress } from "@shared/api";
 
 // ─── Extended types ────────────────────────────────────────────────────────────
@@ -71,7 +72,6 @@ export function DeliveryDispatch() {
   const [customers,   setCustomers]   = useState<Customer[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState<string | null>(null);
-  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const [selectedTruck,        setSelectedTruck]        = useState<Truck | null>(null);
   const [selectedDelivery,     setSelectedDelivery]     = useState<DeliveryExt | null>(null);
@@ -93,7 +93,6 @@ export function DeliveryDispatch() {
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchAll = useCallback(async () => {
     if (!token) return;
-    setLoading(true);
     try {
       const [truckRes, driverRes, agentRes, deliveryRes, invoiceRes, customerRes] = await Promise.all([
         fetch("/api/trucks",     { headers: { Authorization: `Bearer ${token}` } }),
@@ -132,14 +131,8 @@ export function DeliveryDispatch() {
       }));
       setDeliveries(joined);
 
-      if (selectedTruck) {
-        const refreshed = (trucksData as Truck[]).find((t) => t.id === selectedTruck.id);
-        setSelectedTruck(refreshed ?? null);
-      }
-      if (selectedDelivery) {
-        const refreshed = joined.find((d) => d.id === selectedDelivery.id);
-        setSelectedDelivery(refreshed ?? null);
-      }
+      setSelectedTruck((current) => current ? (trucksData as Truck[]).find((truck) => truck.id === current.id) ?? null : null);
+      setSelectedDelivery((current) => current ? joined.find((delivery) => delivery.id === current.id) ?? null : null);
       setError(null);
     } catch {
       setError("Failed to load data. Check your connection.");
@@ -148,13 +141,8 @@ export function DeliveryDispatch() {
     }
   }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchAll();
-    setIsRefreshing(false);
-  };
-
   useEffect(() => { fetchAll(); }, [fetchAll]);
+  useAutoRefresh(fetchAll, { enabled: Boolean(token) });
 
   const truckDeliveries = selectedTruck
     ? deliveries.filter((d) => d.truck_id === selectedTruck.id)
@@ -697,14 +685,6 @@ export function DeliveryDispatch() {
           <p className="text-xs text-muted mt-0.5">Assign receipts to trucks and track each stop</p>
         </div>
         <div className="flex gap-2">
-          <button
-            onClick={handleRefresh}
-            disabled={isRefreshing}
-            className="rounded-lg border border-border bg-white px-3 py-2 text-sm font-semibold text-navy hover:bg-off-white disabled:opacity-50 flex items-center gap-2"
-          >
-            <RefreshCw size={15} className={isRefreshing ? "animate-spin" : ""} />
-            <span className="hidden sm:inline">Refresh</span>
-          </button>
           <button
             onClick={() => setShowAddTruckModal(true)}
             className="px-3 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90"

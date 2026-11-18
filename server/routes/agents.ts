@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "../db";
 import { agents, users } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
@@ -19,6 +19,7 @@ export const listAgents: RequestHandler = async (req: AuthRequest, res) => {
 
     const allAgents = await db.query.agents.findMany({
       with: { user: { columns: { password_hash: false, mfa_secret: false } } },
+      orderBy: [desc(agents.created_at)],
     });
     res.json(allAgents);
   } catch (error) {

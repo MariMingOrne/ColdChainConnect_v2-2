@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { RefreshCw, Package, Printer } from "lucide-react";
+import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { Package, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Pallet, Booking, Customer, Product, Truck, Invoice, Delivery, DeliveryItem, InventoryBatch, formatCustomerAddress } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
@@ -79,11 +80,7 @@ export function BookingInventory() {
   useEffect(() => {
     if (token) fetchAll();
   }, [token]);
-
-  const handleRefresh = async () => {
-    setIsLoading(true);
-    await fetchAll();
-  };
+  useAutoRefresh(fetchAll, { enabled: Boolean(token) });
 
   const handleStatusChange = async (palletId: string, status: Pallet["status"]) => {
     setIsUpdatingStatus(true);
@@ -212,10 +209,6 @@ export function BookingInventory() {
               </Button>
             </>
           )}
-          <Button onClick={handleRefresh} variant="outline" className="flex items-center gap-2">
-            <RefreshCw size={16} />
-            Refresh
-          </Button>
         </div>
       </div>
 
