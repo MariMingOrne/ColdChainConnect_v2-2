@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { and, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { deliveries, delivery_items, accounts_receivable, invoices, agents, customers, trucks } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
@@ -30,11 +30,13 @@ async function findAllDeliveries(whereClause: any) {
   try {
     return await db.query.deliveries.findMany({
       where: whereClause,
+      orderBy: [desc(deliveries.created_at)],
       with: { delivery_items: true, driver: true, agent: true },
     });
   } catch {
     return await db.query.deliveries.findMany({
       where: whereClause,
+      orderBy: [desc(deliveries.created_at)],
       with: { delivery_items: true },
     });
   }

@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "../db";
 import { drivers, users } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
@@ -41,7 +41,10 @@ async function validateLoginInput(
 
 export const listDrivers: RequestHandler = async (_req, res) => {
   try {
-    const allDrivers = await db.query.drivers.findMany({ with: driverWithUser });
+    const allDrivers = await db.query.drivers.findMany({
+      with: driverWithUser,
+      orderBy: [desc(drivers.created_at)],
+    });
     res.json(allDrivers);
   } catch (error) {
     console.error("Error fetching drivers:", error);

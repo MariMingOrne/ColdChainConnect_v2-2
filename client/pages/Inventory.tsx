@@ -23,6 +23,7 @@ interface InventoryProduct {
   imageFilename?: string;
   reorderPoint: number;
   lastUpdated: string;
+  createdAt: string;
   manufacturer: string;
   isDiscontinued: boolean;
 }
@@ -72,7 +73,7 @@ export function Inventory() {
     id: "", sku: "", description: "", unitPrice: 0, supplierId: "",
     weight: 0, quantity: 0, expiryDate: "", imageFilename: "",
     reorderPoint: 300, lastUpdated: new Date().toISOString().split("T")[0],
-    manufacturer: "", isDiscontinued: false,
+    createdAt: new Date().toISOString(), manufacturer: "", isDiscontinued: false,
   });
 
 
@@ -117,6 +118,7 @@ export function Inventory() {
         imageFilename: p.image_filename,
         reorderPoint: p.reorder_point ?? 300,
         lastUpdated: p.updated_at || new Date().toISOString(),
+        createdAt: p.created_at || p.updated_at || new Date().toISOString(),
         manufacturer: p.manufacturer || "",
         isDiscontinued: p.is_discontinued ?? false,
       }));
@@ -186,7 +188,7 @@ export function Inventory() {
   );
 
   const sortedBatchProducts = [...filteredBatchProducts].sort((a, b) => {
-    if (!inventorySort) return 0;
+    if (!inventorySort) return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     const direction = inventorySort.direction === "asc" ? 1 : -1;
     const value = (p: typeof a) => ({ name: p.description, cost: p.unitPrice, stock: p.batchQuantity, reorder: p.reorderPoint, expiry: p.batchExpiryDate }[inventorySort.key]);
     return compareValues(value(a), value(b)) * direction;

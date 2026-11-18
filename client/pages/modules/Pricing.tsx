@@ -463,7 +463,7 @@ export function Pricing({ onBack }: PricingProps) {
       if (editingProduct) {
         setProducts(products.map((p) => (p.id === saved.id ? saved : p)));
       } else {
-        setProducts([...products, saved]);
+        setProducts((current) => [saved, ...current]);
       }
       setIsModalOpen(false);
     } catch (err) {

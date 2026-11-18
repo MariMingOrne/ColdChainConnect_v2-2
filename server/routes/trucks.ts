@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "../db";
 import { trucks } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
@@ -12,10 +12,12 @@ export const listTrucks: RequestHandler = async (_req, res) => {
   try {
     // Use demo data if no database
     if (!process.env.DATABASE_URL) {
-      return res.json(demoTrucks);
+      return res.json([...demoTrucks].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
     }
 
-    const allTrucks = await db.query.trucks.findMany();
+    const allTrucks = await db.query.trucks.findMany({
+      orderBy: [desc(trucks.created_at)],
+    });
     res.json(allTrucks);
   } catch (error) {
     console.error("Error fetching trucks:", error);

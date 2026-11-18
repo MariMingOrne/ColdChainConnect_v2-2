@@ -581,7 +581,7 @@ export function Customers({ onBack }: CustomersProps) {
       if (editingCustomer) {
         setCustomers(customers.map((customer) => (customer.id === saved.id ? saved : customer)));
       } else {
-        setCustomers([...customers, saved]);
+        setCustomers((current) => [saved, ...current]);
       }
 
       setIsModalOpen(false);

@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db } from "../db";
 import { invoices } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
@@ -30,6 +30,7 @@ export const listInvoices: RequestHandler = async (req, res) => {
     const { status, payment_status, unpaid } = req.query;
 
     const allInvoices = await db.query.invoices.findMany({
+      orderBy: [desc(invoices.created_at)],
       with: {
         invoice_items: true,
         booking: {
