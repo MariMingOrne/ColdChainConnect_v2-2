@@ -1,6 +1,7 @@
 import { ChevronRight } from "lucide-react";
 import { Customer, Pallet, formatCustomerAddress } from "@shared/api";
 import { Table } from "@/components/ui/table";
+import { compareNewestFirst } from "@/components/SortableHeader";
 import { cn } from "@/lib/utils";
 import { formatMoney, palletStatusStyles, palletTotal } from "./palletUtils";
 
@@ -42,7 +43,7 @@ export function PalletTable({ entries, onSelect }: PalletTableProps) {
           </tr>
         </thead>
         <tbody>
-          {entries.map(({ pallet, customer }) => {
+          {[...entries].sort((a, b) => compareNewestFirst(a.pallet, b.pallet)).map(({ pallet, customer }) => {
             const items = pallet.items ?? [];
             const units = items.reduce((sum, item) => sum + item.qty_units, 0);
 

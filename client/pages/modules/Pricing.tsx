@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useInventoryContext } from "../../context/InventoryContext";
-import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
+import { SortableHeader, SortState, compareNewestFirst, compareValues } from "@/components/SortableHeader";
 import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -387,7 +387,7 @@ export function Pricing({ onBack }: PricingProps) {
   );
 
   const sortedProducts = [...filteredProducts].sort((a, b) => {
-    if (!productSort) return 0;
+    if (!productSort) return compareNewestFirst(a, b);
     const direction = productSort.direction === "asc" ? 1 : -1;
     const value = (p: Product) =>
       productSort.key === "image" ? p.image_filename

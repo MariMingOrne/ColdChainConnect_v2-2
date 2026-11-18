@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { ArrowLeft, Plus, Calendar, CheckCircle, XCircle } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { newestFirst } from "@/components/SortableHeader";
 import { Booking, Truck, Customer, Product } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { useSearchParams } from "react-router-dom";
@@ -548,7 +549,7 @@ export function BookingSummary() {
     );
   }
 
-  const filtered = bookings.filter((b) => {
+  const filtered = newestFirst(bookings.filter((b) => {
     const matchesSearch =
       b.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       b.customer_id.toLowerCase().includes(searchTerm.toLowerCase());
@@ -566,7 +567,7 @@ export function BookingSummary() {
     if (!isDateInRange(b.created_at)) return false;
 
     return true;
-  });
+  }));
 
   return (
     <div className="flex-1 flex flex-col p-6 gap-6">

@@ -102,7 +102,7 @@ export function DeliveryHistory() {
   });
 
   const sorted = [...filtered].sort((a, b) => {
-    if (!sort) return 0;
+    if (!sort) return (Date.parse(b.confirmed_at) || 0) - (Date.parse(a.confirmed_at) || 0);
     const value = (receipt: ReceiptExt) => ({ receipt: receipt.receipt_number, customer: receipt.customer?.store_name, truck: receipt.truck?.license_plate, confirmed: receipt.confirmed_at, notes: receipt.notes })[sort.key];
     return compareValues(value(a), value(b)) * (sort.direction === "asc" ? 1 : -1);
   });

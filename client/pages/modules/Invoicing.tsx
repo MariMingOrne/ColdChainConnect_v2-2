@@ -13,6 +13,7 @@ import {
 import { Printer, Calendar, ArrowLeft } from "lucide-react";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { newestFirst } from "@/components/SortableHeader";
 import { Invoice, InvoiceItem, BookingItem } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -297,7 +298,7 @@ export function Invoicing() {
 
   if (receiptInvoice) return <ReceiptModal invoice={receiptInvoice} onClose={() => setReceiptInvoice(null)} />;
 
-  const filtered = invoices.filter((inv) => {
+  const filtered = newestFirst(invoices.filter((inv) => {
     const matchSearch =
       inv.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       inv.booking_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -307,7 +308,7 @@ export function Invoicing() {
     if (paymentFilter !== "all" && inv.payment_status !== paymentFilter) return false;
     if (!isDateInRange(inv.created_at)) return false;
     return true;
-  });
+  }));
 
   return (
     <div className="flex-1 flex flex-col p-6 gap-6">
