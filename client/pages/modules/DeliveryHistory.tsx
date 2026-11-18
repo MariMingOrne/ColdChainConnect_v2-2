@@ -207,12 +207,12 @@ export function DeliveryHistory() {
                       </td>
                       <td className="px-3 py-3 text-muted-foreground">{r.notes ?? "—"}</td>
                       <td className="px-3 py-3">
-                        <button
+                        <Button
                           onClick={() => setViewReceipt(r)}
-                          className="px-3 py-1 border border-border rounded text-xs font-semibold whitespace-nowrap hover:bg-accent transition-colors"
+                          variant="outline" size="sm"
                         >
                           View OR
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   ))
@@ -229,21 +229,21 @@ export function DeliveryHistory() {
               {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length}
             </span>
             <div className="flex gap-2">
-              <button
+              <Button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
-                className="px-3 py-1 border border-border rounded text-xs font-semibold disabled:opacity-40 hover:bg-card"
+                variant="outline" size="sm"
               >
                 Previous
-              </button>
+              </Button>
               <span className="px-3 py-1 text-xs font-semibold text-foreground">{page} / {totalPages}</span>
-              <button
+              <Button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
-                className="px-3 py-1 border border-border rounded text-xs font-semibold disabled:opacity-40 hover:bg-card"
+                variant="outline" size="sm"
               >
                 Next
-              </button>
+              </Button>
             </div>
           </div>
         )}

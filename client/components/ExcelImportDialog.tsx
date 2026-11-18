@@ -102,10 +102,10 @@ export function ExcelImportDialog({ title, columns, validateRow, onImport, onClo
         </div>
 
         <footer className="flex justify-end gap-2 border-t border-border bg-muted px-5 py-4">
-          <button type="button" onClick={onClose} disabled={isImporting} className="rounded-lg border border-border px-4 py-2 text-sm font-semibold text-foreground hover:bg-card disabled:opacity-50">Cancel</button>
-          <button type="button" onClick={importedCount !== null ? onClose : () => void importRows()} disabled={isImporting || (importedCount === null && (!rows.length || invalidCount > 0))} className="inline-flex items-center gap-2 rounded-lg bg-accent-2 px-4 py-2 text-sm font-semibold text-white hover:opacity-90 disabled:opacity-50">
+          <Button type="button" onClick={onClose} disabled={isImporting} variant="outline">Cancel</Button>
+          <Button type="button" onClick={importedCount !== null ? onClose : () => void importRows()} disabled={isImporting || (importedCount === null && (!rows.length || invalidCount > 0))} variant="default">
             <Upload size={16} />{importedCount !== null ? "Done" : isImporting ? "Importing…" : `Import ${validCount} rows`}
-          </button>
+          </Button>
         </footer>
     </div>
   );

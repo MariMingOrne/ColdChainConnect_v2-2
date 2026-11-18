@@ -194,15 +194,15 @@ export function InventoryBatchesTab() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         {batch.status === "open" && (
-                          <button
+                          <Button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleCloseBatch(batch.id);
                             }}
-                            className="px-3 py-1 text-sm whitespace-nowrap bg-success text-white rounded hover:bg-success transition"
+                            variant="success" size="sm"
                           >
                             Close Batch
-                          </button>
+                          </Button>
                         )}
                         <button className="text-muted-foreground hover:text-foreground transition">
                           {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
@@ -283,12 +283,12 @@ export function InventoryBatchesTab() {
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-semibold text-foreground">Batch Items *</label>
-                  <button
+                  <Button
                     onClick={handleAddItem}
-                    className="text-xs text-accent-2 font-semibold hover:underline flex items-center gap-1"
+                    variant="link" className="h-auto p-0"
                   >
                     <Plus size={12} /> Add Item
-                  </button>
+                  </Button>
                 </div>
                 <div className="space-y-2">
                   {batchItems.map((item, idx) => (
@@ -328,19 +328,19 @@ export function InventoryBatchesTab() {
             </div>
 
             <div className="bg-muted px-6 py-4 flex justify-end gap-2 border-t border-border rounded-b-2xl">
-              <button
+              <Button
                 onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 border border-border rounded-lg font-semibold text-sm hover:bg-card"
+                variant="outline"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleCreateBatch}
                 disabled={isCreating}
-                className="px-4 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90 disabled:opacity-50"
+                variant="default"
               >
                 {isCreating ? "Creating…" : "Create Batch"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

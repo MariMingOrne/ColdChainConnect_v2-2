@@ -186,16 +186,16 @@ export function CustomerLocationPicker({ position, onSelect }: CustomerLocationP
     >
       <div className="flex h-11 shrink-0 items-center justify-between gap-3 px-1">
         <span className="font-semibold text-foreground">{expanded ? "Choose the customer’s exact location" : ""}</span>
-        <button
+        <Button
           type="button"
           onClick={() => setExpanded((value) => !value)}
           aria-label={expanded ? "Exit fullscreen map" : "Expand map"}
           title={expanded ? "Exit fullscreen map" : "Expand map"}
-          className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-md hover:bg-accent"
+          variant="outline" className="h-10 shrink-0"
         >
           {expanded ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
           <span>{expanded ? "Close map" : "Expand map"}</span>
-        </button>
+        </Button>
       </div>
       <MapContainer
         center={center}

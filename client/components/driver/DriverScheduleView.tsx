@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -55,26 +56,26 @@ export function DriverScheduleView({ driverId }: { driverId?: string }) {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
-        <button
+        <Button
           type="button"
           onClick={() => setDate((current) => shiftDate(current, -1))}
-          className="px-3 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-accent text-foreground"
+          variant="outline" size="sm"
         >
           Previous
-        </button>
+        </Button>
         <input
           type="date"
           value={date}
           onChange={(event) => event.target.value && setDate(event.target.value)}
           className="flex-1 px-3 py-1.5 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
         />
-        <button
+        <Button
           type="button"
           onClick={() => setDate((current) => shiftDate(current, 1))}
-          className="px-3 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-accent text-foreground"
+          variant="outline" size="sm"
         >
           Next
-        </button>
+        </Button>
       </div>
 
       {error && <p className="text-sm text-red">{error}</p>}

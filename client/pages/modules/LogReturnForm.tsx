@@ -131,14 +131,14 @@ export function LogReturnForm({
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <label className="block text-xs font-semibold text-foreground">Returned Items *</label>
-            <button
+            <Button
               type="button"
               onClick={() => setItems((current) => [...current, { product_id: "", qty_returned: 1 }])}
               disabled={!invoiceId || items.length >= invoiceProducts.length}
-              className="inline-flex items-center gap-1 text-xs font-semibold text-accent-2 disabled:opacity-50"
+              variant="link" className="h-auto p-0"
             >
               <Plus size={14} /> Add item
-            </button>
+            </Button>
           </div>
           {items.map((item, index) => {
             const selectedElsewhere = new Set(items.filter((_, itemIndex) => itemIndex !== index).map((entry) => entry.product_id));

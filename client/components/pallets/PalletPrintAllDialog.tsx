@@ -27,9 +27,9 @@ export function PalletPrintAllDialog({ entries, date, onClose }: {
             <p className="page-subtitle">{formattedDate} · {entries.length} pallet{entries.length === 1 ? "" : "s"}</p>
           </div>
           <div className="flex items-center gap-2">
-            <button type="button" onClick={() => window.print()} disabled={entries.length === 0} className="inline-flex items-center gap-2 rounded-lg bg-accent-2 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+            <Button type="button" onClick={() => window.print()} disabled={entries.length === 0} variant="default">
               <Printer size={16} /> Print all
-            </button>
+            </Button>
             <Button type="button" onClick={onClose} variant="outline">
               <ArrowLeft size={15} />
               Back

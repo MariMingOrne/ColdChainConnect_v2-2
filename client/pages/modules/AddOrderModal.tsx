@@ -220,12 +220,12 @@ export function AddOrderModal({
               {orderItems.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-muted-foreground text-sm mb-4">No items added yet. Browse products to add items.</p>
-                  <button
+                  <Button
                     onClick={() => setSelectedTab("products")}
-                    className="px-4 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90"
+                    variant="default"
                   >
                     Browse Products
-                  </button>
+                  </Button>
                 </div>
               ) : (
                 <>

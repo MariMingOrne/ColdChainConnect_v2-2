@@ -277,10 +277,10 @@ function AgentCard({
       )}
 
       <div className="flex gap-2 pt-1 border-t border-border">
-        <button onClick={onView} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-accent text-foreground transition-colors">View</button>
-        <button onClick={onEdit} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-accent text-foreground transition-colors">Edit</button>
+        <Button onClick={onView} variant="outline" size="sm" className="flex-1">View</Button>
+        <Button onClick={onEdit} variant="outline" size="sm" className="flex-1">Edit</Button>
         {showDelete && (
-          <button onClick={onDelete} className="flex-1 py-1.5 text-xs font-semibold bg-red/10 border border-red/30 rounded-lg hover:bg-red/20 text-red transition-colors">Delete</button>
+          <Button onClick={onDelete} variant="danger" size="sm" className="flex-1">Delete</Button>
         )}
       </div>
     </div>
@@ -589,23 +589,23 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
           Page {currentPage} of {Math.max(1, totalPages)} · {filteredAgents.length} agents
         </div>
         <div className="flex gap-2 items-center">
-          <button
+          <Button
             onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
-            className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="outline" size="sm"
           >
             Previous
-          </button>
+          </Button>
           <span className="px-3 py-1 text-xs font-semibold text-foreground bg-card rounded border border-border">
             {currentPage}
           </span>
-          <button
+          <Button
             onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages || totalPages === 0}
-            className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="outline" size="sm"
           >
             Next
-          </button>
+          </Button>
         </div>
       </div>
 

@@ -209,14 +209,14 @@ export function AgentPalletTracking() {
           {error && <p role="alert" className="mt-3 rounded-xl border border-red/20 bg-red/5 p-3 text-sm text-red">{error}</p>}
 
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <button
+            <Button
               type="button"
               onClick={() => setScanPalletId(null)}
               disabled={updatingPalletId !== null}
-              className="min-h-11 rounded-xl border border-border bg-card px-4 text-sm font-semibold text-foreground disabled:opacity-60"
+              variant="outline" className="min-h-11"
             >
               {nextActionLabels[scanPallet.status] ? "Cancel" : "Close"}
-            </button>
+            </Button>
             {nextActionLabels[scanPallet.status] && (
               <Button
                 type="button"

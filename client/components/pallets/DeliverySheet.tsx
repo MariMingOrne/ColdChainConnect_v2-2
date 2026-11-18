@@ -76,13 +76,13 @@ export function DeliverySheet({ order, pallets, batches, onClose }: DeliveryShee
             >
               {cardMode ? "Switch to letter" : "Switch to 5×3 card"}
             </Button>
-            <button
+            <Button
               type="button"
               onClick={() => window.print()}
-              className="flex items-center gap-2 rounded-lg bg-accent-2 px-4 py-2 text-sm font-semibold text-white hover:opacity-80"
+              variant="default"
             >
               <Printer size={16} /> Print
-            </button>
+            </Button>
             <Button type="button" onClick={onClose} variant="outline">
               <ArrowLeft size={15} />
               Back

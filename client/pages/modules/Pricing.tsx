@@ -681,23 +681,23 @@ export function Pricing({ onBack }: PricingProps) {
             Page {currentPage} of {Math.max(1, totalPages)} · {filteredProducts.length} products
           </div>
           <div className="flex gap-2 items-center">
-            <button
+            <Button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="outline" size="sm"
             >
               Previous
-            </button>
+            </Button>
             <span className="px-3 py-1 text-xs font-semibold text-foreground bg-card rounded border border-border">
               {currentPage}
             </span>
-            <button
+            <Button
               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="outline" size="sm"
             >
               Next
-            </button>
+            </Button>
           </div>
         </div>
       </div>

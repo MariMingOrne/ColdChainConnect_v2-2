@@ -157,9 +157,9 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
       <div className="mt-auto flex items-center justify-between px-2 py-2">
         <span className="text-xs text-muted-foreground">Page {currentPage} of {Math.max(1, totalPages)} · {filteredUsers.length} {role} accounts</span>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={currentPage === 1} className="rounded border border-border px-3 py-1 text-xs font-semibold hover:bg-card disabled:opacity-50">Previous</button>
+          <Button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={currentPage === 1} variant="outline" size="sm">Previous</Button>
           <span className="rounded border border-border bg-card px-3 py-1 text-xs font-semibold text-foreground">{currentPage}</span>
-          <button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={currentPage >= totalPages} className="rounded border border-border px-3 py-1 text-xs font-semibold hover:bg-card disabled:opacity-50">Next</button>
+          <Button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={currentPage >= totalPages} variant="outline" size="sm">Next</Button>
         </div>
       </div>
     </div>

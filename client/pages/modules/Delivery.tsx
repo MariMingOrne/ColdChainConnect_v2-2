@@ -310,12 +310,12 @@ export function DeliveryDispatch() {
   const DetailPanel = () => (
     <div className="space-y-4">
       {/* Mobile back button */}
-      <button
+      <Button
         onClick={() => setMobileView("trucks")}
-        className="md:hidden flex items-center gap-1 text-sm font-semibold text-accent-2 mb-1"
+        variant="link" className="h-auto p-0 md:hidden mb-1"
       >
         <ChevronLeft size={16} /> All Trucks
-      </button>
+      </Button>
 
       {/* Truck card */}
       <div className="bg-card rounded-xl border border-border p-4 space-y-4">
@@ -329,9 +329,9 @@ export function DeliveryDispatch() {
             <span className={`px-2 py-0.5 rounded text-xs font-semibold ${statusBadgeClass(selectedTruck!.status)}`}>
               {truckStatusLabel(selectedTruck!.status)}
             </span>
-            <button onClick={() => setShowEditTruckModal(true)} className="text-xs font-semibold text-accent-2 hover:opacity-70">
+            <Button onClick={() => setShowEditTruckModal(true)} variant="link" className="h-auto p-0">
               Edit
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -339,12 +339,12 @@ export function DeliveryDispatch() {
         <div className="border-t border-border pt-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold text-muted-foreground">Driver</p>
-            <button
+            <Button
               onClick={() => setShowChangeTruckDriverModal(true)}
-              className="text-xs font-semibold text-accent-2 hover:opacity-70"
+              variant="link" className="h-auto p-0"
             >
               {selectedTruck!.driver_id ? "Change" : "Assign"}
-            </button>
+            </Button>
           </div>
           {selectedTruck!.driver_id ? (() => {
             const d = drivers.find((dr) => dr.id === selectedTruck!.driver_id);
@@ -505,21 +505,21 @@ export function DeliveryDispatch() {
                             <span className="text-xs text-green font-semibold">Done</span>
                           ) : (
                             <>
-                              <button
+                              <Button
                                 disabled={confirmingItem === item.id}
                                 onClick={() => handleConfirm(delivery, item)}
-                                className="w-full mt-1 px-3 py-2 bg-green text-white rounded-lg text-xs font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
+                                variant="success" size="sm" className="w-full mt-1"
                               >
                                 {confirmingItem === item.id ? "Confirming…" : "✓ Confirm Delivery"}
-                              </button>
+                              </Button>
                               {item.status === "pending" && (
-                                <button
+                                <Button
                                   type="button"
                                   onClick={() => void handleRemoveStop(delivery, item)}
-                                  className="w-full px-3 py-2 border border-red/40 text-red rounded-lg text-xs font-semibold hover:bg-red/10"
+                                  variant="danger" size="sm" className="w-full"
                                 >
                                   Remove from run
-                                </button>
+                                </Button>
                               )}
                             </>
                           )}
@@ -577,13 +577,13 @@ export function DeliveryDispatch() {
                                   <span className="text-xs text-green font-semibold">Done</span>
                                 ) : (
                                   <div className="flex items-center gap-2">
-                                    <button
+                                    <Button
                                       disabled={confirmingItem === item.id}
                                       onClick={() => handleConfirm(delivery, item)}
-                                      className="px-3 py-1 bg-green text-white rounded text-xs font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
+                                      variant="success" size="sm"
                                     >
                                       {confirmingItem === item.id ? "Confirming…" : "✓ Confirm Delivery"}
-                                    </button>
+                                    </Button>
                                     {item.status === "pending" && (
                                       <button
                                         type="button"
@@ -688,12 +688,12 @@ export function DeliveryDispatch() {
           <p className="text-xs text-muted-foreground mt-0.5">Assign receipts to trucks and track each stop</p>
         </div>
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={() => setShowAddTruckModal(true)}
-            className="px-3 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90"
+            variant="default"
           >
             + Add Truck
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -847,16 +847,16 @@ function ChangeTruckDriverModal({ truck, drivers, token, onClose, onSave }: {
         })()}
       </div>
       <div className="flex justify-end gap-2 pt-4 border-t border-border">
-        <button onClick={onClose} className="px-4 py-2 border border-border rounded-lg text-sm font-semibold hover:bg-accent">
+        <Button onClick={onClose} variant="outline">
           Cancel
-        </button>
-        <button
+        </Button>
+        <Button
           onClick={handleSave}
           disabled={saving}
-          className="px-4 py-2 bg-accent-2 text-white rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50"
+          variant="default"
         >
           {saving ? "Saving…" : "Save Driver"}
-        </button>
+        </Button>
       </div>
     </ModalShell>
   );
@@ -927,11 +927,11 @@ function AddTruckModal({ drivers, token, onClose, onCreated }: {
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-4 border-t border-border">
-        <button onClick={onClose} className="px-4 py-2 border border-border rounded-lg text-sm font-semibold hover:bg-accent">Cancel</button>
-        <button onClick={handleSave} disabled={!PLATE_PATTERN.test(licensePlate) || !truckDistrict || saving}
-          className="px-4 py-2 bg-accent-2 text-white rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50">
+        <Button onClick={onClose} variant="outline">Cancel</Button>
+        <Button onClick={handleSave} disabled={!PLATE_PATTERN.test(licensePlate) || !truckDistrict || saving}
+          variant="default">
           {saving ? "Adding…" : "Add Truck"}
-        </button>
+        </Button>
       </div>
     </ModalShell>
   );
@@ -989,11 +989,11 @@ function EditTruckModal({ truck, token, onClose, onSaved }: {
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-4 border-t border-border">
-        <button onClick={onClose} className="px-4 py-2 border border-border rounded-lg text-sm font-semibold hover:bg-accent">Cancel</button>
-        <button onClick={handleSave} disabled={!PLATE_PATTERN.test(licensePlate) || !truckDistrict || saving}
-          className="px-4 py-2 bg-accent-2 text-white rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50">
+        <Button onClick={onClose} variant="outline">Cancel</Button>
+        <Button onClick={handleSave} disabled={!PLATE_PATTERN.test(licensePlate) || !truckDistrict || saving}
+          variant="default">
           {saving ? "Saving…" : "Save Changes"}
-        </button>
+        </Button>
       </div>
     </ModalShell>
   );
@@ -1164,7 +1164,7 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Showing {pickerInvoices.length} of {districtInvoices.length} orders</span>
             {(orderSearch || orderDate) && (
-              <button onClick={() => { setOrderSearch(""); setOrderDate(localScheduleDate(new Date())); }} className="font-semibold text-accent-2 hover:opacity-80">Clear</button>
+              <Button onClick={() => { setOrderSearch(""); setOrderDate(localScheduleDate(new Date())); }} variant="link" className="h-auto p-0">Clear</Button>
             )}
           </div>
           <Button
@@ -1183,7 +1183,7 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
 
         <div className="flex items-center justify-between">
           <label className="text-xs font-semibold text-foreground">Delivery Stops *</label>
-          <button onClick={addStop} className="text-xs text-accent-2 font-semibold hover:opacity-80">+ Add Stop</button>
+          <Button onClick={addStop} variant="link" className="h-auto p-0">+ Add Stop</Button>
         </div>
         {stops.map((stop, i) => {
           const selectedInv = districtInvoices.find((inv) => inv.id === stop.invoice_id);
@@ -1243,11 +1243,11 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
         })}
       </div>
       <div className="flex justify-end gap-2 pt-4 border-t border-border">
-        <button onClick={onClose} className="px-4 py-2 border border-border rounded-lg text-sm font-semibold hover:bg-accent">Cancel</button>
-        <button onClick={handleSave} disabled={!valid || saving}
-          className="px-4 py-2 bg-accent-2 text-white rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50">
+        <Button onClick={onClose} variant="outline">Cancel</Button>
+        <Button onClick={handleSave} disabled={!valid || saving}
+          variant="default">
           {saving ? "Saving…" : "Add Delivery"}
-        </button>
+        </Button>
       </div>
     </ModalShell>
   );
@@ -1393,13 +1393,13 @@ function PaymentConfirmationModal({
       </div>
 
       <div className="flex justify-end gap-2 pt-4 border-t border-border">
-        <button
+        <Button
           onClick={onClose}
           disabled={isConfirming}
-          className="px-4 py-2 border border-border rounded-lg text-sm font-semibold hover:bg-accent disabled:opacity-50"
+          variant="outline"
         >
           Cancel
-        </button>
+        </Button>
         <button
           onClick={handleConfirm}
           disabled={isConfirming}

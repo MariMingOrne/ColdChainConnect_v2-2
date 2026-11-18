@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -371,7 +372,7 @@ export function Preparation() {
                       <div className="flex gap-2 justify-end items-center whitespace-nowrap">
                         {/* Prepare: only show when no pallets created yet and not prepared */}
                         {draftPalletCount === 0 && !isPrepared && (
-                          <button
+                          <Button
                             onClick={() => {
                               const preparationFilters = { searchTerm, statusFilter, dateRangeFilter, customDateStart, customDateEnd };
                               navigate("/booking-dispatch/preparation", { replace: true, state: { preparationFilters } });
@@ -379,20 +380,20 @@ export function Preparation() {
                                 state: { fromPreparation: true },
                               });
                             }}
-                            className="px-3 py-2 text-sm font-semibold bg-accent-2 text-white rounded-lg hover:opacity-80 transition"
+                            variant="default"
                           >
                             Prepare
-                          </button>
+                          </Button>
                         )}
                         {/* Prepared: show when pallets are drafted but not yet marked prepared */}
                         {draftPalletCount > 0 && !isPrepared && (
                           <>
-                            <button
+                            <Button
                               onClick={() => navigate(`/booking-dispatch/inventory?order=${order.id}`)}
-                              className="px-3 py-2 text-sm font-semibold bg-green text-white rounded-lg hover:opacity-80 transition"
+                              variant="success"
                             >
                               Prepared
-                            </button>
+                            </Button>
                             <button
                               onClick={() => handleDeleteOrderPallets(order.id)}
                               className="px-3 py-2 text-sm font-semibold bg-gold text-foreground rounded-lg hover:opacity-80 transition"

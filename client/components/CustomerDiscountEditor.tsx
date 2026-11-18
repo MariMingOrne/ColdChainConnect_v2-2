@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { Plus, X } from "lucide-react";
 
 export interface DiscountRow {
@@ -60,13 +61,13 @@ export function CustomerDiscountEditor({
         </div>
       ))}
 
-      <button
+      <Button
         type="button"
         onClick={() => onChange([...rows, { label: "", percent: "" }])}
-        className="flex items-center gap-1 text-xs font-semibold text-accent-2 hover:opacity-80"
+        variant="link" className="h-auto p-0"
       >
         <Plus size={14} /> Add discount
-      </button>
+      </Button>
 
       <p className="text-xs text-muted-foreground">
         Discounts stack. Total discount: {formatPercent(totalPercent / 100)}%

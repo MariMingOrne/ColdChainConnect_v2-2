@@ -537,23 +537,23 @@ export function Inventory() {
             Page {currentPage} of {Math.max(1, totalPages)} · {filteredBatchProducts.length} items
           </div>
           <div className="flex gap-2 items-center">
-            <button
+            <Button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="outline" size="sm"
             >
               Previous
-            </button>
+            </Button>
             <span className="px-3 py-1 text-xs font-semibold text-foreground bg-card rounded border border-border">
               {currentPage}
             </span>
-            <button
+            <Button
               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="outline" size="sm"
             >
               Next
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -646,7 +646,7 @@ function ExtraInfoModal({ product, batches, onClose, onSelectPallet }: { product
         </div>
 
         <div className="sticky bottom-0 bg-muted px-6 py-4 border-t border-border flex justify-end">
-          <button onClick={onClose} className="px-4 py-2 border border-border rounded-lg font-semibold text-sm hover:bg-card">Close</button>
+          <Button onClick={onClose} variant="outline">Close</Button>
         </div>
       </div>
     </div>
@@ -748,9 +748,9 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                       ))}
                     </select>
                     {(batchQuery || createdSince || productFilter) && (
-                      <button onClick={() => { setBatchQuery(""); setCreatedSince(""); setProductFilter(""); }} className="px-3 py-2 text-sm font-semibold text-foreground border border-border rounded-lg hover:bg-accent">
+                      <Button onClick={() => { setBatchQuery(""); setCreatedSince(""); setProductFilter(""); }} variant="outline">
                         Clear
-                      </button>
+                      </Button>
                     )}
                   </div>
                   <div className="space-y-2 mb-6">
@@ -782,8 +782,8 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                     )}
                   </div>
                   <div className="flex gap-2 justify-between">
-                    <button onClick={() => setShowArchived(true)} className="px-4 py-2 bg-muted-foreground text-white rounded-lg font-semibold text-sm hover:opacity-90">View Archived ({archivedBatches.length})</button>
-                    <button onClick={() => { setIsCreatingBatch(true); setPallets([]); setNewBatchName(""); }} className="px-4 py-2 bg-green text-white rounded-lg font-semibold text-sm hover:opacity-90">Create New Batch</button>
+                    <Button onClick={() => setShowArchived(true)} variant="secondary">View Archived ({archivedBatches.length})</Button>
+                    <Button onClick={() => { setIsCreatingBatch(true); setPallets([]); setNewBatchName(""); }} variant="success">Create New Batch</Button>
                   </div>
                 </>
               ) : (
@@ -802,7 +802,7 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                               <div className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
                             </div>
                             <div className="flex gap-1">
-                              <button onClick={() => handleUnarchiveBatch(batch.id)} className="px-2 py-1 bg-green text-white rounded text-xs font-semibold hover:opacity-90" title="Restore batch"></button>
+                              <Button onClick={() => handleUnarchiveBatch(batch.id)} variant="success" size="sm" title="Restore batch"></Button>
                               <button onClick={() => onDeleteBatch(batch.id)} className="px-2 py-1 bg-red text-white rounded text-xs font-semibold hover:opacity-90"></button>
                             </div>
                           </div>

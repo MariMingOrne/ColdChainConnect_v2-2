@@ -48,13 +48,13 @@ export function PalletDetail({
 
   return (
     <div className="space-y-4">
-      <button
+      <Button
         onClick={onBack}
-        className="flex items-center gap-1 text-sm font-semibold text-accent-2 hover:text-accent-1"
+        variant="link" className="h-auto p-0"
       >
         <ArrowLeft size={16} />
         Back to deliveries
-      </button>
+      </Button>
 
       <Card className="bg-card p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -73,14 +73,14 @@ export function PalletDetail({
               Print delivery sheet
             </Button>
             <div className="flex items-center gap-2">
-              <button
+              <Button
                 type="button"
                 disabled={isUpdatingStatus || !nextStatus}
                 onClick={() => nextStatus && onStatusChange(nextStatus.value)}
-                className="rounded-lg bg-accent-2 px-4 py-2 text-sm font-semibold text-white hover:opacity-80 disabled:opacity-50"
+                variant="default"
               >
                 {nextStatus ? `Mark as ${nextStatus.label}` : "Completed"}
-              </button>
+              </Button>
               <div className="relative">
                 <button
                   type="button"

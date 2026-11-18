@@ -281,17 +281,17 @@ export function AgentDeliverySchedule() {
         </div>
         <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
           <span>{view === "history" && !historyDate ? "History date is optional; time filters show runs scheduled at or after that time." : "Time filters show runs scheduled at or after the selected time."} Runs without a saved time will not match a time filter.</span>
-          <button
+          <Button
             type="button"
             onClick={() => {
               setSearch("");
               if (view === "today") { setScheduleDate(today); setScheduleTime(""); }
               else { setHistoryDate(""); setHistoryTime(""); }
             }}
-            className="shrink-0 font-semibold text-accent-2 hover:underline"
+            variant="link" className="h-auto p-0 shrink-0"
           >
             Clear filters
-          </button>
+          </Button>
         </div>
       </div>
 

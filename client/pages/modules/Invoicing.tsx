@@ -68,12 +68,12 @@ function ReceiptModal({ invoice, onClose }: ReceiptModalProps) {
           <h1 className="page-title">Delivery Receipt</h1>
         </div>
         <div className="flex gap-2 items-center">
-          <button
+          <Button
             onClick={() => window.print()}
-            className="px-4 py-2 bg-accent-2 text-white text-sm font-semibold rounded-lg hover:opacity-80 flex items-center gap-2"
+            variant="default"
           >
             <Printer size={16} /> Print
-          </button>
+          </Button>
           <Button onClick={onClose} variant="outline">
             <ArrowLeft size={15} />
             Back
@@ -478,12 +478,12 @@ export function Invoicing() {
                       {new Date(inv.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      <button
+                      <Button
                         onClick={() => setReceiptInvoice(inv)}
-                        className="px-3 py-1.5 bg-accent-2 text-white text-xs font-semibold rounded-lg hover:opacity-80 flex items-center gap-1.5 ml-auto whitespace-nowrap"
+                        variant="default" size="sm" className="ml-auto"
                       >
                         <Printer size={14} /> Print
-                      </button>
+                      </Button>
                     </TableCell>
                   </TableRow>
                 );

@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
@@ -278,14 +279,14 @@ export function AccountsReceivable() {
                     )}
                     <TableCell className="text-right">
                       {ar.status !== "paid" && !isCredit ? (
-                        <button
+                        <Button
                           onClick={() => handleMarkPaid(ar.id)}
                           disabled={markingPaid === ar.id}
-                          className="flex items-center gap-1.5 ml-auto whitespace-nowrap px-3 py-1.5 bg-green text-white text-xs font-semibold rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
+                          variant="success" size="sm" className="ml-auto"
                         >
                           <CheckCircle size={13} />
                           {markingPaid === ar.id ? "Saving…" : "Mark Paid"}
-                        </button>
+                        </Button>
                       ) : ar.status === "paid" ? (
                         <span className="text-xs text-green font-semibold">Paid</span>
                       ) : (

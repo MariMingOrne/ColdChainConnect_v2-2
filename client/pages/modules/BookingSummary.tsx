@@ -696,12 +696,12 @@ export function BookingSummary() {
                 return (
                   <TableRow key={booking.id}>
                     <TableCell className="font-mono text-sm">
-                      <button
+                      <Button
                         onClick={() => openDetailModal(booking)}
-                        className="text-accent-2 hover:underline font-semibold transition"
+                        variant="link" className="h-auto p-0"
                       >
                         {booking.id.slice(0, 8)}
-                      </button>
+                      </Button>
                     </TableCell>
                     <TableCell className="text-sm">
                       {customer ? (

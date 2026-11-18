@@ -163,13 +163,13 @@ export function AgentOrderScreen({
           </div>
 
           <footer className="mt-auto flex shrink-0 items-center gap-3 border-t border-border bg-card px-4 py-3 shadow-md">
-            <button
+            <Button
               type="button"
               onClick={onCancel}
-              className="min-h-[52px] flex-[0.8] rounded-xl border border-border bg-muted px-4 font-semibold text-sm text-muted-foreground transition hover:bg-border/40 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2"
+              variant="outline" className="min-h-[52px] flex-[0.8]"
             >
               Cancel
-            </button>
+            </Button>
             <Button
               type="button"
               onClick={onCreateOrder}

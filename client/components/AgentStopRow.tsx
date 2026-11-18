@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 import { ChevronRight, MapPin, PackageCheck } from "lucide-react";
 import type { AgentScheduleStop } from "@shared/api";
@@ -70,24 +71,24 @@ export function AgentStopRow({ index, stop, isConfirming, onOpenDetails, onConfi
                 ? `Partially paid · ₱${stop.outstanding_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })} remaining`
                 : "Not paid · recorded in Accounts Receivable"}
             </p>
-            <button
+            <Button
               type="button"
               onClick={onRecordPayment}
               disabled={isConfirming}
-              className="min-h-10 rounded-lg bg-green px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:opacity-50"
+              variant="success" className="min-h-10"
             >
               Record payment
-            </button>
+            </Button>
           </div>
         ) : allShipped ? (
-          <button
+          <Button
             type="button"
             onClick={onConfirmPayment}
             disabled={isConfirming}
-            className="min-h-10 rounded-lg bg-green px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:opacity-90 disabled:opacity-50"
+            variant="success" className="min-h-10"
           >
             Confirm delivery & payment
-          </button>
+          </Button>
         ) : (
           <p className="text-xs text-muted-foreground">Delivery confirmation is available once all pallets are shipped.</p>
         )}

@@ -220,10 +220,10 @@ export function AgentReports() {
           <p className="page-subtitle">Manage returned goods — restock or write off</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setShowCreate(true)}
-            className="px-3 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90 flex items-center gap-2">
+          <Button onClick={() => setShowCreate(true)}
+            variant="default">
             <RotateCcw size={15} /> Log Return
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -333,13 +333,13 @@ export function AgentReports() {
                         <td className="px-3 py-3">
                           {ret.status === "pending" ? (
                             <div className="flex gap-1">
-                              <button
+                              <Button
                                 disabled={processing === ret.id}
                                 onClick={() => handleAccept(ret.id)}
-                                className="flex items-center gap-1 px-2 py-1 bg-green text-white text-xs font-semibold rounded hover:opacity-90 disabled:opacity-50"
+                                variant="success" size="sm"
                               >
                                 <CheckCircle size={12} /> Accept
-                              </button>
+                              </Button>
                               <button
                                 disabled={processing === ret.id}
                                 onClick={() => handleReject(ret.id)}
