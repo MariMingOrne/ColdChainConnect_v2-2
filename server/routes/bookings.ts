@@ -322,7 +322,7 @@ export const updateBookingStatus: RequestHandler = async (req: AuthRequest, res)
 
 export const updateBookingItems: RequestHandler = async (req: AuthRequest, res) => {
   const { id } = req.params;
-  const items = req.body?.items;
+  const { items, ar_override, ar_override_reason } = req.body ?? {};
   if (!Array.isArray(items) || items.some((item) =>
     !item || typeof item.id !== "string" || !Number.isInteger(item.qty_ordered) || item.qty_ordered <= 0,
   )) {
@@ -335,6 +335,35 @@ export const updateBookingItems: RequestHandler = async (req: AuthRequest, res) 
       with: { booking_items: true },
     });
     if (!before) return res.status(404).json({ error: "Booking not found" });
+    const existingItems = before.booking_items ?? [];
+    if (items.length !== existingItems.length || new Set(items.map((item) => item.id)).size !== items.length ||
+      items.some((item) => !existingItems.some((current) => current.id === item.id))) {
+      return res.status(400).json({ error: "The item list must match the order's current items." });
+    }
+
+    const credit = await loadCustomerCredit(before.customer_id);
+    if (!credit) return res.status(404).json({ error: "Customer not found" });
+    const updatedQuantities = existingItems.map((item) => ({
+      product_id: item.product_id,
+      qty_ordered: items.find((requested) => requested.id === item.id)!.qty_ordered as number,
+    }));
+    const newOrderAmount = await estimateOrderTotal(updatedQuantities, credit.discountRate);
+    const violations = evaluateCreditRules({ ...credit.state, newOrderAmount });
+    let creditOverrideReason: string | null = null;
+    if (violations.length > 0) {
+      const reason = typeof ar_override_reason === "string" ? ar_override_reason.trim() : "";
+      if (req.user?.role !== "admin" || ar_override !== true) {
+        const block: CreditBlockResponse = {
+          error: "This customer's credit terms or limit block this booking.",
+          code: "AR_CREDIT_BLOCKED",
+          violations,
+          canOverride: req.user?.role === "admin",
+        };
+        return res.status(409).json(block);
+      }
+      if (!reason) return res.status(400).json({ error: "An override reason is required" });
+      creditOverrideReason = reason;
+    }
 
     const result = await db.transaction(async (tx) => {
       const [booking] = await tx.select({ id: bookings.id, status: bookings.status })
@@ -400,6 +429,14 @@ export const updateBookingItems: RequestHandler = async (req: AuthRequest, res) 
       },
     });
     if (req.user) await logAction(req.user.userId, "update", "booking", id, before, updated);
+    if (req.user && creditOverrideReason) {
+      await logAction(req.user.userId, "ar_credit_override", "booking", id, undefined, {
+        customer_id: before.customer_id,
+        reason: creditOverrideReason,
+        violations,
+        new_order_amount: newOrderAmount,
+      });
+    }
     res.json(updated);
   } catch (error) {
     console.error("Error updating booking items:", error);

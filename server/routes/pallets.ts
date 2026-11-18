@@ -1,6 +1,6 @@
 import { sendRouteError } from "../utils";
 import { RequestHandler } from "express";
-import { desc, eq, inArray } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { Pallet, PalletItem, CreatePalletSchema, UpdatePalletStatusSchema } from "../../shared/api";
 import { db } from "../db";
@@ -10,11 +10,14 @@ import {
   getAvailableUnitsBySource,
   getAvailableUnitsBySourceForProducts,
   lockStockForProducts,
+  reserveBookingItemsTx,
 } from "../services/inventory-reservations";
 import { AuthRequest } from "../middleware/auth";
 import { getAgentOrderIds } from "../services/agent-bookings";
 import { createInvoiceAfterPicking } from "../services/booking-invoices";
 import { logAction } from "../middleware/audit-logger";
+
+class ReservationRestoreConflict extends Error {}
 
 export async function calculateProductInventory(): Promise<Record<string, number>> {
   try {
@@ -341,17 +344,37 @@ export const deletePalletForOrder: RequestHandler = async (req: AuthRequest, res
     if (!existing) return res.status(404).json({ error: "Pallet not found" });
 
     const deleteResult = await db.transaction(async (tx) => {
-      await tx.select({ id: bookings.id }).from(bookings).where(eq(bookings.id, existing.order_id)).for("update");
+      const [booking] = await tx.select({ id: bookings.id, status: bookings.status })
+        .from(bookings)
+        .where(eq(bookings.id, existing.order_id))
+        .for("update");
       const current = await tx.query.order_pallets.findFirst({ where: eq(order_pallets.id, id) });
-      if (!current) return "not_found";
+      if (!current || !booking) return "not_found" as const;
 
       const existingInvoice = await tx.query.invoices.findFirst({
         where: eq(invoices.booking_id, current.order_id),
       });
-      if (existingInvoice) return "invoiced";
+      if (existingInvoice) return "invoiced" as const;
 
       await tx.delete(order_pallets).where(eq(order_pallets.id, id));
-      return "deleted";
+
+      if (booking.status === "approved") {
+        const bookingItems = await tx.query.booking_items.findMany({ where: eq(booking_items.booking_id, current.order_id) });
+        const pickedRows = await tx
+          .select({ productId: order_pallet_items.product_id, quantity: sql<number>`sum(${order_pallet_items.qty_units})::int` })
+          .from(order_pallet_items)
+          .innerJoin(order_pallets, eq(order_pallet_items.pallet_id, order_pallets.id))
+          .where(eq(order_pallets.order_id, current.order_id))
+          .groupBy(order_pallet_items.product_id);
+        const pickedByProduct = new Map(pickedRows.map((row) => [row.productId, row.quantity]));
+        const unpicked = bookingItems.map((item) => ({
+          ...item,
+          qty_ordered: Math.max(0, item.qty_ordered - (pickedByProduct.get(item.product_id) ?? 0)),
+        })).filter((item) => item.qty_ordered > 0);
+        const reservation = await reserveBookingItemsTx(tx, current.order_id, unpicked, req.user!.userId);
+        if (reservation.status === "insufficient_stock") throw new ReservationRestoreConflict();
+      }
+      return "deleted" as const;
     });
 
     if (deleteResult === "not_found") return res.status(404).json({ error: "Pallet not found" });
@@ -360,6 +383,9 @@ export const deletePalletForOrder: RequestHandler = async (req: AuthRequest, res
     }
     res.json({ message: "Pallet deleted" });
   } catch (error) {
+    if (error instanceof ReservationRestoreConflict) {
+      return res.status(409).json({ error: "The remaining stock cannot satisfy this order's reservation, so the pallet was not deleted." });
+    }
     console.error("Error deleting pallet:", error);
     res.status(500).json({ error: "Internal server error" });
   }

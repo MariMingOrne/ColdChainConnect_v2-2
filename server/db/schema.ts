@@ -12,6 +12,7 @@ import {
   primaryKey,
   date,
   jsonb,
+  check,
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
@@ -257,6 +258,8 @@ export const order_item_reservations = pgTable("order_item_reservations", {
   index("order_item_reservations_booking_id_idx").on(table.booking_id),
   index("order_item_reservations_product_status_idx").on(table.product_id, table.status),
   uniqueIndex("order_item_reservations_active_booking_item_idx").on(table.booking_item_id).where(sql`${table.status} = 'reserved'`),
+  check("order_item_reservations_qty_positive", sql`${table.qty_reserved} > 0`),
+  check("order_item_reservations_status_check", sql`${table.status} IN ('reserved', 'released', 'converted', 'superseded')`),
 ]);
 
 // Order pallets table (pallets created for order fulfillment)
@@ -557,10 +560,10 @@ export const bookingsRelations = relations(bookings, ({ one, many }) => ({
   invoices: many(invoices),
 }));
 
-export const bookingItemsRelations = relations(booking_items, ({ one }) => ({
+export const bookingItemsRelations = relations(booking_items, ({ one, many }) => ({
   booking: one(bookings, { fields: [booking_items.booking_id], references: [bookings.id] }),
   product: one(products, { fields: [booking_items.product_id], references: [products.id] }),
-  reservation: one(order_item_reservations, { fields: [booking_items.id], references: [order_item_reservations.booking_item_id] }),
+  reservations: many(order_item_reservations),
 }));
 
 export const orderItemReservationsRelations = relations(order_item_reservations, ({ one }) => ({

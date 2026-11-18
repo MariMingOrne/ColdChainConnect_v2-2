@@ -279,19 +279,32 @@ export function BookingSummary() {
 
   const handleSaveBookingItems = async (items: Array<{ id: string; qty_ordered: number }>) => {
     if (!detailBooking) return null;
-    try {
+    const save = async (override?: { reason: string }): Promise<Booking | null> => {
       const res = await fetch(`/api/bookings/${detailBooking.id}/items`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ items }),
+        body: JSON.stringify({
+          items,
+          ...(override && { ar_override: true, ar_override_reason: override.reason }),
+        }),
       });
       const result = await res.json();
+      if (res.status === 409 && isCreditBlock(result)) {
+        const reason = override ? null : promptCreditOverride(result);
+        if (reason) return save({ reason });
+        toast.error(describeCreditBlock(result));
+        return null;
+      }
       if (!res.ok) throw new Error(result.error || "Failed to update order quantities");
       setBookings((prev) => prev.map((booking) => booking.id === result.id ? result : booking));
       setDetailBooking(result);
       void fetchAll();
       toast.success("Order quantities updated.");
       return result as Booking;
+    };
+
+    try {
+      return await save();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to update order quantities");
       return null;
