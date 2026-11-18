@@ -111,6 +111,7 @@ import {
   suggestBatches,
 } from "./routes/pallets";
 import { getSalesForecast } from "./routes/forecast";
+import { getDashboardSummary } from "./routes/dashboard";
 import { postSalesForecastChat } from "./routes/sales-forecast-chat";
 import { getCustomerReport, getSalesReport, getStockReport } from "./routes/reports";
 import { authMiddleware, requireRole, type AuthRequest } from "./middleware/auth";
@@ -163,6 +164,7 @@ export function createServer() {
       [["manage-accounts", "delivery-operations"], ["/drivers"]],
       [["delivery-operations"], ["/trucks", "/deliveries", "/receipts", "/accounts-receivable", "/agent-returns"]],
       [["manage-accounts"], ["/agents"]],
+      [["dashboard"], ["/dashboard"]],
       [["reports"], ["/reports", "/sales/forecast"]],
       [["administration"], ["/audit-logs", "/backup"]],
     ];
@@ -229,6 +231,9 @@ export function createServer() {
   app.post("/api/invoices", authMiddleware, requireRole("admin"), createInvoice);
   app.patch("/api/invoices/:id/status", authMiddleware, requireRole("admin"), updateInvoiceStatus);
   app.patch("/api/invoices/:id/payment-status", authMiddleware, requireRole("admin"), updateInvoicePaymentStatus);
+
+  // Dashboard summary (admin, and staff with the dashboard module)
+  app.get("/api/dashboard/summary", authMiddleware, requireRole("admin", "staff"), getDashboardSummary);
 
   // Sales forecast routes
   app.get("/api/sales/forecast", authMiddleware, getSalesForecast);

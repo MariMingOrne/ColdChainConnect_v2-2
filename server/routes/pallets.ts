@@ -10,7 +10,7 @@ import { getAgentOrderIds } from "../services/agent-bookings";
 import { createInvoiceAfterPicking } from "../services/booking-invoices";
 import { logAction } from "../middleware/audit-logger";
 
-async function calculateProductInventory(): Promise<Record<string, number>> {
+export async function calculateProductInventory(): Promise<Record<string, number>> {
   try {
     if (!process.env.DATABASE_URL) {
       return {};

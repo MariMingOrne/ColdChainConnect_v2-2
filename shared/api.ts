@@ -742,3 +742,26 @@ export interface ReportCustomerRow {
   lastPurchaseDate: string;
   purchasesPerWeek: number;
 }
+
+// Dashboard: one small payload of server-side aggregates (replaces five full-list downloads)
+export interface DashboardLowStockItem {
+  id: string;
+  name: string;
+  available: number;
+  reorderPoint: number;
+}
+
+export interface DashboardSummary {
+  pendingOrders: number;
+  activeDeliveries: number;
+  availableUnits: number;
+  lowStock: DashboardLowStockItem[];
+  receivables: {
+    /** Decimal string, e.g. "191520.00" */
+    outstandingTotal: string;
+    outstandingCount: number;
+    /** Age in whole days of the oldest outstanding balance, or null when none. */
+    oldestDays: number | null;
+  };
+  generatedAt: string;
+}
