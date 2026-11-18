@@ -19,18 +19,18 @@ export function PlaceholderPanel({
           <h1 className="font-rajdhani text-3xl font-bold text-white letter-spacing-tight">
             {title}
           </h1>
-          <p className="text-xs text-muted mt-1">{description}</p>
+          <p className="text-xs text-muted-foreground mt-1">{description}</p>
         </div>
       </div>
 
       {/* Placeholder Content */}
-      <div className="bg-white rounded-2xl border border-border p-12 flex flex-col items-center justify-center min-h-96 text-center">
+      <div className="bg-card rounded-2xl border border-border p-12 flex flex-col items-center justify-center min-h-96 text-center">
         <div className="text-6xl mb-4">{icon}</div>
-        <h2 className="font-rajdhani text-2xl font-bold text-navy mb-2">
+        <h2 className="font-rajdhani text-2xl font-bold text-foreground mb-2">
           {title} Module
         </h2>
-        <p className="text-muted max-w-md mb-6">{description}</p>
-        <p className="text-sm text-gray-400">
+        <p className="text-muted-foreground max-w-md mb-6">{description}</p>
+        <p className="text-sm text-muted-foreground">
           This module is coming soon. Continue prompting to fill in the contents
           of this section.
         </p>

@@ -1,6 +1,7 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
 import { and, desc, eq } from "drizzle-orm";
+import { agentInvoiceFilter } from "../services/agent-bookings";
 import { db } from "../db";
 import {
   receipts,
@@ -19,13 +20,18 @@ import { logAction } from "../middleware/audit-logger";
 // Returns all receipts (joined data is resolved on the client via separate
 // /api/customers, /api/trucks, /api/invoices calls — same pattern as deliveries).
 
-export const listReceipts: RequestHandler = async (_req, res) => {
+export const listReceipts: RequestHandler = async (req: AuthRequest, res) => {
   try {
     if (!process.env.DATABASE_URL) {
       return res.json([]);
     }
 
-    const all = await db.select().from(receipts).orderBy(desc(receipts.confirmed_at));
+    const scope = await agentInvoiceFilter(req, receipts.invoice_id);
+    if (scope.none) return res.json([]);
+
+    const all = await db.select().from(receipts)
+      .where(scope.where)
+      .orderBy(desc(receipts.confirmed_at));
     res.json(all);
   } catch (error) {
     console.error("Error fetching receipts:", error);
@@ -256,6 +262,13 @@ export const confirmDeliveryItem: RequestHandler = async (
 //   2. Marks the outstanding accounts_receivable entry for this stop as paid
 //   3. Sets invoice.status = "paid", payment_status = "paid"
 
+/** A business-rule rejection raised inside the payment transaction. */
+class PaymentConflict extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
 export const recordDeliveryItemPayment: RequestHandler = async (
   req: AuthRequest,
   res
@@ -291,23 +304,6 @@ export const recordDeliveryItemPayment: RequestHandler = async (
       return res.status(409).json({ error: "Payment is already recorded for this delivery item" });
     }
 
-    const outstanding = await db.query.accounts_receivable.findFirst({
-      where: and(
-        eq(accounts_receivable.delivery_item_id, itemId),
-        eq(accounts_receivable.status, "outstanding")
-      ),
-    });
-    if (!outstanding) {
-      return res.status(409).json({ error: "No outstanding balance was found for this delivery item" });
-    }
-    const paymentCents = Math.round(Number(payment_amount) * 100);
-    const outstandingCents = Math.round(Number(outstanding.amount_due) * 100);
-    if (paymentCents <= 0 || paymentCents > outstandingCents) {
-      return res.status(400).json({ error: "Payment amount must be greater than zero and no more than the outstanding balance" });
-    }
-    const remainingCents = outstandingCents - paymentCents;
-    const isFullyPaid = remainingCents === 0;
-
     const delivery = await db.query.deliveries.findFirst({
       where: eq(deliveries.id, deliveryId),
       with: { truck: { columns: { driver_id: true } } },
@@ -337,40 +333,59 @@ export const recordDeliveryItemPayment: RequestHandler = async (
       return res.status(403).json({ error: "Not authorized to record payment for this delivery" });
     }
 
-    const now = new Date();
+    let result: { paymentCents: number; remainingCents: number; isFullyPaid: boolean };
+    try {
+      // One transaction with the AR row locked: two simultaneous submissions
+      // (double tap, agent + admin) cannot both spend the same balance, and a
+      // failure part-way leaves no half-updated invoice/AR state.
+      result = await db.transaction(async (tx) => {
+        const [lockedItem] = await tx.select({ is_paid: delivery_items.is_paid }).from(delivery_items)
+          .where(eq(delivery_items.id, itemId)).for("update");
+        if (lockedItem?.is_paid) throw new PaymentConflict(409, "Payment is already recorded for this delivery item");
 
-    await db
-      .update(delivery_items)
-      .set({
-        is_paid: isFullyPaid,
-        payment_method,
-        payment_reference: payment_reference ?? null,
-        paid_at: isFullyPaid ? now : null,
-        updated_at: now,
-      })
-      .where(eq(delivery_items.id, itemId));
+        const [outstanding] = await tx.select().from(accounts_receivable)
+          .where(and(eq(accounts_receivable.delivery_item_id, itemId), eq(accounts_receivable.status, "outstanding")))
+          .limit(1).for("update");
+        if (!outstanding) throw new PaymentConflict(409, "No outstanding balance was found for this delivery item");
 
-    await db
-      .update(receipts)
-      .set({ payment_reference: payment_reference ?? null })
-      .where(eq(receipts.delivery_item_id, itemId));
+        const paymentCents = Math.round(Number(payment_amount) * 100);
+        const outstandingCents = Math.round(Number(outstanding.amount_due) * 100);
+        if (paymentCents <= 0 || paymentCents > outstandingCents) {
+          throw new PaymentConflict(400, "Payment amount must be greater than zero and no more than the outstanding balance");
+        }
+        const remainingCents = outstandingCents - paymentCents;
+        const isFullyPaid = remainingCents === 0;
+        const now = new Date();
 
-    await db
-      .update(accounts_receivable)
-      .set({
-        amount_due: (remainingCents / 100).toFixed(2),
-        status: isFullyPaid ? "paid" : "outstanding",
-        updated_at: now,
-      })
-      .where(eq(accounts_receivable.id, outstanding.id));
+        await tx.update(delivery_items).set({
+          is_paid: isFullyPaid,
+          payment_method,
+          payment_reference: payment_reference ?? null,
+          paid_at: isFullyPaid ? now : null,
+          updated_at: now,
+        }).where(eq(delivery_items.id, itemId));
 
-    await db
-      .update(invoices)
-      .set({
-        ...(isFullyPaid ? { status: "paid" as const, payment_status: "paid" } : { payment_status: "partial" }),
-        updated_at: now,
-      })
-      .where(eq(invoices.id, item.invoice_id));
+        await tx.update(receipts).set({ payment_reference: payment_reference ?? null })
+          .where(eq(receipts.delivery_item_id, itemId));
+
+        await tx.update(accounts_receivable).set({
+          amount_due: (remainingCents / 100).toFixed(2),
+          status: isFullyPaid ? "paid" : "outstanding",
+          updated_at: now,
+        }).where(eq(accounts_receivable.id, outstanding.id));
+
+        await tx.update(invoices).set({
+          ...(isFullyPaid ? { status: "paid" as const, payment_status: "paid" } : { payment_status: "partial" }),
+          updated_at: now,
+        }).where(eq(invoices.id, item.invoice_id));
+
+        return { paymentCents, remainingCents, isFullyPaid };
+      });
+    } catch (error) {
+      if (error instanceof PaymentConflict) return res.status(error.status).json({ error: error.message });
+      throw error;
+    }
+    const { paymentCents, remainingCents, isFullyPaid } = result;
 
     if (req.user) {
       await logAction(

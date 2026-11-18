@@ -77,12 +77,15 @@ export function useNotifications() {
       let assignments: string[] = [];
 
       if (role === "admin") {
-        const [bookings, products, stock, deliveries] = await Promise.all([
+        // Only runs still open: completed deliveries were most of a ~200 KB payload.
+        const [bookings, products, stock, pendingRuns, inTransitRuns] = await Promise.all([
           fetchJson<Booking[]>("/api/bookings?status=pending", token),
           fetchJson<Product[]>("/api/products", token),
           fetchJson<Record<string, number>>("/api/products/inventory", token),
-          fetchJson<AdminDelivery[]>("/api/deliveries", token),
+          fetchJson<AdminDelivery[]>("/api/deliveries?status=pending", token),
+          fetchJson<AdminDelivery[]>("/api/deliveries?status=in_transit", token),
         ]);
+        const deliveries = [...pendingRuns, ...inTransitRuns];
 
         for (const booking of bookings) {
           next.push({

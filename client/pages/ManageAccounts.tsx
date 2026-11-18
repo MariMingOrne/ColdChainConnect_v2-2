@@ -1,3 +1,4 @@
+import NotFound from "./NotFound";
 import { useState } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 import { CreateAccountDialog } from "@/components/CreateAccountDialog";
@@ -23,6 +24,7 @@ export function ManageAccounts() {
             <Route path="/admin" element={<ManagedUsers role="admin" onCreateAccount={openCreateAccount} />} />
             <Route path="/staff" element={<ManagedUsers role="staff" onCreateAccount={openCreateAccount} />} />
             <Route path="/" element={<Agents onCreateAccount={openCreateAccount} />} />
+            <Route path="*" element={<NotFound embedded />} />
           </Routes>
         </div>
       </div>

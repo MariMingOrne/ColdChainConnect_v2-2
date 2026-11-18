@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -34,7 +36,7 @@ function ViewAgentModal({ agent, onClose }: { agent: Agent; onClose: () => void 
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-border">
+      <div className="bg-card rounded-2xl border border-border">
 
         <div className="p-6 space-y-4">
           {[
@@ -47,20 +49,20 @@ function ViewAgentModal({ agent, onClose }: { agent: Agent; onClose: () => void 
             ["Address", agent.address],
           ].map(([label, value]) => (
             <div key={label as string}>
-              <label className="block text-xs font-semibold text-muted mb-1">{label}</label>
-              <div className="text-sm text-navy font-medium">{value || "—"}</div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">{label}</label>
+              <div className="text-sm text-foreground font-medium">{value || "—"}</div>
             </div>
           ))}
           <div>
-            <label className="block text-xs font-semibold text-muted mb-1">Status</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Status</label>
             <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${agent.is_active ? "badge-green" : "badge-red"}`}>
               {agent.is_active ? "Active" : "Inactive"}
             </span>
           </div>
         </div>
 
-        <div className="sticky bottom-0 bg-off-white px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
-          <button onClick={onClose} className="px-4 py-2 bg-navy text-white rounded-lg font-semibold text-sm hover:opacity-90">
+        <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
+          <button onClick={onClose} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90">
             Close
           </button>
         </div>
@@ -103,7 +105,7 @@ function AgentModal({
     type = "text"
   ) => (
     <div>
-      <label className="block text-xs font-semibold text-navy mb-1">{label}</label>
+      <label className="block text-xs font-semibold text-foreground mb-1">{label}</label>
       <Input
         type={type}
         value={formData[key] as string}
@@ -126,17 +128,17 @@ function AgentModal({
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-border">
+      <div className="bg-card rounded-2xl border border-border">
 
         <div className="p-6 space-y-4">
           {/* Account Credentials */}
-          <div className="bg-off-white rounded-xl p-4 space-y-3 border border-border">
-            <p className="text-xs font-bold text-muted uppercase tracking-wider">Account Credentials</p>
+          <div className="bg-muted rounded-xl p-4 space-y-3 border border-border">
+            <p className="text-xs font-bold text-muted-foreground">Account Credentials</p>
             {field("Username", "username", "e.g., jdelacruz")}
 
             <div>
-              <label className="block text-xs font-semibold text-navy mb-1">
-                Password{isEdit && <span className="text-muted font-normal ml-1">(leave blank to keep current)</span>}
+              <label className="block text-xs font-semibold text-foreground mb-1">
+                Password{isEdit && <span className="text-muted-foreground font-normal ml-1">(leave blank to keep current)</span>}
               </label>
               <div className="relative">
                 <Input
@@ -149,7 +151,7 @@ function AgentModal({
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-navy"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
                   {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
@@ -173,12 +175,12 @@ function AgentModal({
               onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
               className="w-4 h-4 accent-navy"
             />
-            <label htmlFor="is_active" className="text-sm font-semibold text-navy">Active Agent</label>
+            <label htmlFor="is_active" className="text-sm font-semibold text-foreground">Active Agent</label>
           </div>
 
           {isEdit && (
-            <div className="bg-off-white rounded-xl p-4 space-y-3 border border-border">
-              <p className="text-xs font-bold text-muted uppercase tracking-wider">Authenticator (MFA)</p>
+            <div className="bg-muted rounded-xl p-4 space-y-3 border border-border">
+              <p className="text-xs font-bold text-muted-foreground">Authenticator (MFA)</p>
               <div className="flex items-center justify-between gap-3">
                 <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${mfaEnabled ? "badge-green" : "badge-red"}`}>
                   {mfaEnabled ? "Enabled" : "Not set up"}
@@ -189,12 +191,12 @@ function AgentModal({
                   </Button>
                 )}
               </div>
-              {mfaMessage && <p className="text-xs text-muted">{mfaMessage}</p>}
+              {mfaMessage && <p className="text-xs text-muted-foreground">{mfaMessage}</p>}
             </div>
           )}
         </div>
 
-        <div className="sticky bottom-0 flex justify-end gap-2 rounded-b-2xl border-t border-border bg-off-white px-6 py-4">
+        <div className="sticky bottom-0 flex justify-end gap-2 rounded-b-2xl border-t border-border bg-muted px-6 py-4">
           <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
           <Button type="button" variant="accent" onClick={onSave}>Save Agent</Button>
         </div>
@@ -232,16 +234,16 @@ function AgentCard({
     .toUpperCase();
 
   return (
-    <div className="bg-white border border-border rounded-2xl p-4 flex flex-col gap-3 hover:shadow-sm transition-shadow">
+    <div className="bg-card border border-border rounded-2xl p-4 flex flex-col gap-3 hover:shadow-sm transition-shadow">
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 rounded-full bg-navy-mid flex items-center justify-center shrink-0">
           <span className="font-rajdhani font-bold text-sm text-white">{initials}</span>
         </div>
         <div className="flex-1 min-w-0">
-          <div className="font-semibold text-navy text-sm truncate">
+          <div className="font-semibold text-foreground text-sm truncate">
             {agent.full_name || agent.user?.username || "—"}
           </div>
-          <div className="text-xs text-muted truncate">@{agent.user?.username || "—"}</div>
+          <div className="text-xs text-muted-foreground truncate">@{agent.user?.username || "—"}</div>
         </div>
         <span className={`shrink-0 inline-block px-2 py-0.5 rounded text-xs font-bold ${agent.is_active ? "badge-green" : "badge-red"}`}>
           {agent.is_active ? "Active" : "Inactive"}
@@ -250,33 +252,33 @@ function AgentCard({
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
         <div>
-          <span className="text-muted block">Email</span>
-          <span className="text-navy font-medium truncate">{agent.email || "—"}</span>
+          <span className="text-muted-foreground block">Email</span>
+          <span className="text-foreground font-medium truncate">{agent.email || "—"}</span>
         </div>
         <div>
-          <span className="text-muted block">Contact</span>
-          <span className="text-navy font-medium">{agent.contact_info || "—"}</span>
+          <span className="text-muted-foreground block">Contact</span>
+          <span className="text-foreground font-medium">{agent.contact_info || "—"}</span>
         </div>
         <div>
-          <span className="text-muted block">Hired</span>
-          <span className="text-navy font-medium">{agent.hire_date || "—"}</span>
+          <span className="text-muted-foreground block">Hired</span>
+          <span className="text-foreground font-medium">{agent.hire_date || "—"}</span>
         </div>
         <div>
-          <span className="text-muted block">Address</span>
-          <span className="text-navy font-medium truncate">{agent.address || "—"}</span>
+          <span className="text-muted-foreground block">Address</span>
+          <span className="text-foreground font-medium truncate">{agent.address || "—"}</span>
         </div>
       </div>
 
       {canManageMfa && agent.user && (
-        <label className="flex items-center justify-between gap-3 border-t border-border pt-2 text-xs font-semibold text-navy">
+        <label className="flex items-center justify-between gap-3 border-t border-border pt-2 text-xs font-semibold text-foreground">
           <span>Require MFA at sign-in</span>
           <input type="checkbox" checked={agent.user.mfa_required} disabled={isSavingMfa} onChange={(event) => onMfaRequirementChange(event.target.checked)} className="h-4 w-4 accent-navy" />
         </label>
       )}
 
       <div className="flex gap-2 pt-1 border-t border-border">
-        <button onClick={onView} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-off-white text-navy transition-colors">View</button>
-        <button onClick={onEdit} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-off-white text-navy transition-colors">Edit</button>
+        <button onClick={onView} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-accent text-foreground transition-colors">View</button>
+        <button onClick={onEdit} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-accent text-foreground transition-colors">Edit</button>
         {showDelete && (
           <button onClick={onDelete} className="flex-1 py-1.5 text-xs font-semibold bg-red/10 border border-red/30 rounded-lg hover:bg-red/20 text-red transition-colors">Delete</button>
         )}
@@ -408,7 +410,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
       } else {
         // Create new agent (account + profile in one call)
         if (!formData.username || !formData.password) {
-          alert("Username and password are required for new agents");
+          toast.error("Username and password are required for new agents");
           return;
         }
         const res = await fetch("/api/agents", {
@@ -435,7 +437,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
       }
       setIsModalOpen(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to save agent");
+      toast.error(err instanceof Error ? err.message : "Failed to save agent");
     }
   };
 
@@ -451,7 +453,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
       if (!response.ok) throw new Error("Failed to update MFA requirement");
       setAgents((current) => current.map((item) => item.id === agent.id && item.user ? { ...item, user: { ...item.user, mfa_required: required } } : item));
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to update MFA requirement");
+      toast.error(error instanceof Error ? error.message : "Failed to update MFA requirement");
     } finally {
       setMfaSavingAgentId(null);
     }
@@ -460,7 +462,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
   const handleResetMfa = async () => {
     if (!editingAgent?.user_id) return;
     const username = editingAgent.user?.username;
-    if (!confirm(`Reset MFA for ${username}? They will need to set up their authenticator app again at next sign-in.`)) return;
+    if (!(await confirmAction(`Reset MFA for ${username}? They will need to set up their authenticator app again at next sign-in.`))) return;
 
     setIsResettingMfa(true);
     setMfaMessage(null);
@@ -487,7 +489,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this agent? This will also remove their login account.")) return;
+    if (!(await confirmAction("Delete this agent? This will also remove their login account."))) return;
     try {
       await fetch(`/api/agents/${id}`, {
         method: "DELETE",
@@ -495,7 +497,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
       });
       setAgents(agents.filter((a) => a.id !== id));
     } catch {
-      alert("Failed to delete agent");
+      toast.error("Failed to delete agent");
     }
   };
 
@@ -533,13 +535,13 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="font-rajdhani text-3xl font-bold text-navy letter-spacing-tight">
+          <h1 className="font-rajdhani text-3xl font-bold text-foreground letter-spacing-tight">
             Agent Management
           </h1>
-          <p className="text-xs text-muted mt-1">Manage agents — account-linked field staff</p>
+          <p className="text-xs text-muted-foreground mt-1">Manage agents — account-linked field staff</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Create Accounts</button>
+          <button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">Create Accounts</button>
         </div>
       </div>
 
@@ -560,7 +562,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
 
       {/* Cards grid */}
       {paginatedAgents.length === 0 ? (
-        <div className="text-center text-muted text-sm py-12">
+        <div className="text-center text-muted-foreground text-sm py-12">
           {agents.length === 0 ? "No agents found" : "No results matching your search"}
         </div>
       ) : (
@@ -583,26 +585,26 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
 
       {/* Pagination */}
       <div className="mt-auto flex items-center justify-between px-2 py-2">
-        <div className="text-xs text-muted">
+        <div className="text-xs text-muted-foreground">
           Page {currentPage} of {Math.max(1, totalPages)} · {filteredAgents.length} agents
         </div>
         <div className="flex gap-2 items-center">
           <button
             onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
-            className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            ← Prev
+            Previous
           </button>
-          <span className="px-3 py-1 text-xs font-semibold text-navy bg-white rounded border border-border">
+          <span className="px-3 py-1 text-xs font-semibold text-foreground bg-card rounded border border-border">
             {currentPage}
           </span>
           <button
             onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages || totalPages === 0}
-            className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Next →
+            Next
           </button>
         </div>
       </div>

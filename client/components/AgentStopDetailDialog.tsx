@@ -14,8 +14,8 @@ interface AgentStopDetailDialogProps {
 function DetailSection({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="space-y-2">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-muted">{title}</h3>
-      <div className="rounded-lg bg-off-white p-3 text-sm">{children}</div>
+      <h3 className="text-xs font-semibold text-muted-foreground">{title}</h3>
+      <div className="rounded-lg bg-muted p-3 text-sm">{children}</div>
     </section>
   );
 }
@@ -23,8 +23,8 @@ function DetailSection({ title, children }: { title: string; children: ReactNode
 function DetailRow({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex items-start justify-between gap-4 py-1">
-      <span className="text-muted">{label}</span>
-      <span className="text-right font-medium text-navy">{children}</span>
+      <span className="text-muted-foreground">{label}</span>
+      <span className="text-right font-medium text-foreground">{children}</span>
     </div>
   );
 }
@@ -72,27 +72,27 @@ export function AgentStopDetailDialog({ stop, onBack, onShowOnMap }: AgentStopDe
 
       <DetailSection title="Pallets">
         {stop.pallets.length === 0 ? (
-          <p className="text-muted">No pallets created for this order yet.</p>
+          <p className="text-muted-foreground">No pallets created for this order yet.</p>
         ) : (
           <>
-            <p className="mb-2 text-xs text-muted">
+            <p className="mb-2 text-xs text-muted-foreground">
               {stop.pallets.length} pallet{stop.pallets.length === 1 ? "" : "s"} · {totals.products} product{totals.products === 1 ? "" : "s"} · {totals.units} units
             </p>
             <ul className="space-y-2">
               {stop.pallets.map((pallet, palletIndex) => (
-                <li key={pallet.id} className="rounded-lg border border-border bg-white p-3">
+                <li key={pallet.id} className="rounded-lg border border-border bg-card p-3">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-navy">Pallet {palletIndex + 1}</span>
-                    <span className="rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted">{palletStatusLabel(pallet.status)}</span>
+                    <span className="font-semibold text-foreground">Pallet {palletIndex + 1}</span>
+                    <span className="rounded-full border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground">{palletStatusLabel(pallet.status)}</span>
                   </div>
                   <ul className="mt-2 divide-y divide-border">
                     {pallet.items.map((item) => (
                       <li key={item.id} className="flex items-center justify-between gap-3 py-1.5">
-                        <span className="min-w-0 truncate text-navy">
+                        <span className="min-w-0 truncate text-foreground">
                           {item.product?.name ?? "Unknown product"}
-                          {item.product?.sku && <span className="text-xs text-muted"> · {item.product.sku}</span>}
+                          {item.product?.sku && <span className="text-xs text-muted-foreground"> · {item.product.sku}</span>}
                         </span>
-                        <span className="shrink-0 font-semibold text-navy">{item.qty_units} units</span>
+                        <span className="shrink-0 font-semibold text-foreground">{item.qty_units} units</span>
                       </li>
                     ))}
                   </ul>

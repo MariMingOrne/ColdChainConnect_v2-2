@@ -90,7 +90,7 @@ export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScanner
             }}
             disabled={isDecodingImage}
             aria-label={`Switch to ${facingMode === "environment" ? "front" : "rear"} camera`}
-            className="flex items-center gap-2 rounded-lg bg-white/10 px-3 py-2 text-sm font-semibold text-white"
+            className="flex items-center gap-2 rounded-lg bg-card/10 px-3 py-2 text-sm font-semibold text-white"
           >
             <SwitchCamera size={18} />
             {facingMode === "environment" ? "Rear" : "Front"}
@@ -103,19 +103,19 @@ export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScanner
       <div className="flex flex-1 flex-col items-center justify-center gap-5 overflow-y-auto px-6 py-4">
         <div className="relative w-full max-w-md overflow-hidden rounded-xl border-2 border-accent-2 bg-black">
           <video ref={videoRef} autoPlay muted playsInline className="aspect-[4/3] w-full object-cover" />
-          <div className="pointer-events-none absolute inset-[15%] rounded-xl border-2 border-white/90 shadow-[0_0_0_999px_rgba(0,0,0,0.25)]" />
+          <div className="pointer-events-none absolute inset-[15%] rounded-xl border-2 border-white/90 shadow-[0_0_0_999px_hsl(var(--foreground)/0.25)]" />
         </div>
         <p className="max-w-md text-center text-sm text-white/80">
           {isDecodingImage ? "Scanning selected image…" : `Point the ${facingMode === "environment" ? "rear" : "front"} camera at a pallet or order barcode.`}
         </p>
-        {scanError && <p role="alert" className="max-w-md text-center text-sm text-red-300">{scanError}</p>}
+        {scanError && <p role="alert" className="max-w-md text-center text-sm text-destructive">{scanError}</p>}
         <form onSubmit={submitManualCode} className="flex w-full max-w-md items-center gap-2">
           <Input
             value={manualCode}
             onChange={(event) => setManualCode(event.target.value)}
             aria-label="Enter barcode manually"
             placeholder="Enter barcode or order code"
-            className="min-w-0 flex-1 rounded-lg border border-white/30 bg-white px-3 py-2 text-sm text-navy placeholder:text-muted"
+            className="min-w-0 flex-1 rounded-lg border border-white/30 bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
           />
           <Input
             type="file"
@@ -129,7 +129,7 @@ export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScanner
           <label
             htmlFor="barcode-image-input"
             title="Choose barcode image"
-            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/30 peer-focus-visible:ring-2 peer-focus-visible:ring-accent-2 ${isDecodingImage ? "pointer-events-none opacity-50" : "cursor-pointer hover:bg-white/10"}`}
+            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/30 peer-focus-visible:ring-2 peer-focus-visible:ring-accent-2 ${isDecodingImage ? "pointer-events-none opacity-50" : "cursor-pointer hover:bg-card/10"}`}
           >
             <Folder size={18} aria-hidden="true" />
             <span className="sr-only">Choose barcode image</span>

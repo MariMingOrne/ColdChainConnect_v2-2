@@ -21,7 +21,11 @@ import {
   MfaSetupResponse,
   MfaVerifyRequest,
 } from "@shared/api";
+// Runtime value: relative path because vite.config bundles the server before the @shared alias exists.
+import { MIN_PASSWORD_LENGTH } from "../../shared/api";
+import { sendTooManyAttempts } from "../utils";
 import { AuthRequest } from "../middleware/auth";
+import { loginIpLimiter, loginLimiter, mfaLimiter } from "../middleware/rate-limit";
 import { logAction } from "../middleware/audit-logger";
 
 export const handleLogin: RequestHandler<{}, LoginResponse | object> = async (
@@ -34,9 +38,19 @@ export const handleLogin: RequestHandler<{}, LoginResponse | object> = async (
     return res.status(400).json({ error: "Username and password required" });
   }
 
+  const ip = req.ip ?? "unknown";
+  const userKey = `user:${String(username).trim().toLowerCase()}`;
+  const wait = Math.max(loginLimiter.retryAfter(userKey), loginIpLimiter.retryAfter(ip));
+  if (wait > 0) return sendTooManyAttempts(res, wait, "failed sign-in attempts");
+
   try {
-    // Demo mode: allow any login with username
     if (!process.env.DATABASE_URL) {
+      // Demo login must be switched on explicitly and never in production:
+      // a missing env var on a real server must not mean "everyone is admin".
+      const demoAllowed = process.env.DEMO_MODE === "true" && process.env.NODE_ENV !== "production";
+      if (!demoAllowed) {
+        return res.status(503).json({ error: "Sign-in is unavailable: the server has no database configured." });
+      }
       const token = signToken({
         userId: "demo-" + username,
         username: username,
@@ -58,8 +72,11 @@ export const handleLogin: RequestHandler<{}, LoginResponse | object> = async (
     });
 
     if (!user || !(await verifyPassword(password, user.password_hash))) {
+      loginLimiter.recordFailure(userKey);
+      loginIpLimiter.recordFailure(ip);
       return res.status(401).json({ error: "Invalid credentials" });
     }
+    loginLimiter.reset(userKey);
 
     if (!user.mfa_required) {
       const token = signToken({ userId: user.id, username: user.username, role: user.role });
@@ -121,17 +138,26 @@ export const handleMfaVerify: RequestHandler = async (req, res) => {
     return res.status(400).json({ error: "Enter the 6-digit code from your authenticator app" });
   }
 
+  const mfaKey = `mfa:${userId}`;
+  const wait = mfaLimiter.retryAfter(mfaKey);
+  if (wait > 0) return sendTooManyAttempts(res, wait, "wrong codes");
+
   try {
     const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
-    if (!user) return res.status(401).json({ error: "Sign-in expired. Please log in again." });
+    if (!user) {
+      mfaLimiter.recordFailure(mfaKey);
+      return res.status(401).json({ error: "Sign-in expired. Please log in again." });
+    }
     if (!user.mfa_secret) {
       return res.status(400).json({ error: "MFA is not set up for this account" });
     }
 
     const result = await verify({ secret: user.mfa_secret, token: code });
     if (!result.valid) {
+      mfaLimiter.recordFailure(mfaKey);
       return res.status(401).json({ error: "Invalid code. Check your authenticator app and try again." });
     }
+    mfaLimiter.reset(mfaKey);
 
     if (!user.mfa_enabled) {
       await db.update(users).set({ mfa_enabled: true }).where(eq(users.id, userId));
@@ -180,8 +206,8 @@ export const updateUserPassword: RequestHandler = async (req: AuthRequest, res) 
   const { userId } = req.params;
   const { password } = req.body;
 
-  if (!password || typeof password !== "string" || password.trim().length < 4) {
-    return res.status(400).json({ error: "Password must be at least 4 characters" });
+  if (!password || typeof password !== "string" || password.trim().length < MIN_PASSWORD_LENGTH) {
+    return res.status(400).json({ error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters` });
   }
 
   try {

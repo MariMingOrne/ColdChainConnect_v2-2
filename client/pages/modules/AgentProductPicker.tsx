@@ -36,7 +36,7 @@ export function AgentProductPicker({
 
         return (
           <li key={product.id} className="flex items-center gap-3 py-3">
-            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border bg-off-white">
+            <div className="h-14 w-14 shrink-0 overflow-hidden rounded-lg border border-border bg-muted">
               <img
                 src={getProductImageUrl(product.image_filename)}
                 alt={product.name}
@@ -47,10 +47,10 @@ export function AgentProductPicker({
               />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[11px] text-muted">SKU: {product.sku || "—"}</p>
-              <p className="text-sm font-semibold text-navy truncate">{product.name}</p>
+              <p className="text-xs text-muted-foreground">SKU: {product.sku || "—"}</p>
+              <p className="text-sm font-semibold text-foreground truncate">{product.name}</p>
               <p className="text-sm font-bold text-accent-2">₱{product.price}</p>
-              {isOutOfStock && <p className="text-xs text-red-600">Out of stock</p>}
+              {isOutOfStock && <p className="text-xs text-destructive">Out of stock</p>}
             </div>
             <button
               type="button"

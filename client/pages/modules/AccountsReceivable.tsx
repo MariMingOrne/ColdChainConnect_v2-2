@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -64,7 +66,7 @@ export function AccountsReceivable() {
   };
 
   const handleMarkPaid = async (id: string) => {
-    if (!confirm("Mark this AR record as paid?")) return;
+    if (!(await confirmAction("Mark this AR record as paid?"))) return;
     setMarkingPaid(id);
     try {
       const res = await fetch(`/api/accounts-receivable/${id}/status`, {
@@ -77,7 +79,7 @@ export function AccountsReceivable() {
       setActiveTab("paid");
       await fetchData();
     } catch (err) {
-      alert("Failed to mark as paid: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Failed to mark as paid: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setMarkingPaid(null);
     }
@@ -99,10 +101,10 @@ export function AccountsReceivable() {
   };
 
   const getAgeColor = (days: number) => {
-    if (days <= 7)  return "bg-green-100 text-green-800";
-    if (days <= 30) return "bg-yellow-100 text-yellow-800";
-    if (days <= 60) return "bg-orange-100 text-orange-800";
-    return "bg-red-100 text-red-800";
+    if (days <= 7)  return "bg-success-soft text-success";
+    if (days <= 30) return "bg-warning-soft text-warning";
+    if (days <= 60) return "bg-warning-soft text-warning";
+    return "bg-destructive-soft text-destructive";
   };
 
   const getStatusColor = (status: string) => {
@@ -160,28 +162,28 @@ export function AccountsReceivable() {
       </div>
 
       {error && (
-        <Card className="p-4 bg-red-50 border-red-200">
-          <p className="text-red-700 text-sm">{error}</p>
+        <Card className="p-4 bg-destructive-soft border-destructive/30">
+          <p className="text-destructive text-sm">{error}</p>
         </Card>
       )}
 
       {/* Summary Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="p-4">
-          <div className="text-2xl font-bold text-navy">{outstandingRecords.length}</div>
-          <p className="text-xs text-muted font-semibold uppercase tracking-tight mt-1">Outstanding</p>
+          <div className="text-2xl font-bold text-foreground">{outstandingRecords.length}</div>
+          <p className="text-xs text-muted-foreground font-semibold tracking-tight mt-1">Outstanding</p>
         </Card>
         <Card className="p-4">
           <div className="text-2xl font-bold text-green">{paidRecords.length}</div>
-          <p className="text-xs text-muted font-semibold uppercase tracking-tight mt-1">Paid</p>
+          <p className="text-xs text-muted-foreground font-semibold tracking-tight mt-1">Paid</p>
         </Card>
         <Card className="p-4">
           <div className="text-2xl font-bold text-accent-2">{creditRecords.length}</div>
-          <p className="text-xs text-muted font-semibold uppercase tracking-tight mt-1">Credits</p>
+          <p className="text-xs text-muted-foreground font-semibold tracking-tight mt-1">Credits</p>
         </Card>
-        <Card className="p-4 bg-blue-50">
-          <div className="text-xs text-muted mb-1">Total Outstanding</div>
-          <div className="text-xl font-bold text-navy">₱{totalOutstanding.toFixed(2)}</div>
+        <Card className="p-4 bg-info-soft">
+          <div className="text-xs text-muted-foreground mb-1">Total Outstanding</div>
+          <div className="text-xl font-bold text-foreground">₱{totalOutstanding.toFixed(2)}</div>
         </Card>
       </div>
 
@@ -192,20 +194,20 @@ export function AccountsReceivable() {
           placeholder="Search by customer or AR ID…"
           className="!flex-none"
         />
-        <div className="inline-flex w-fit rounded-full border border-border bg-white p-1">
+        <div className="inline-flex w-fit rounded-full border border-border bg-card p-1">
           {TABS.map((tab) => (
             <button
               key={tab.key}
               onClick={() => { setActiveTab(tab.key); setSearchTerm(""); }}
               className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition ${
                 activeTab === tab.key
-                  ? "bg-navy text-white"
-                  : "text-muted hover:text-navy"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {tab.label}
               <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
-                activeTab === tab.key ? "bg-white/20 text-white" : "bg-off-white text-muted"
+                activeTab === tab.key ? "bg-card/20 text-white" : "bg-muted text-muted-foreground"
               }`}>
                 {tabCounts[tab.key]}
               </span>
@@ -232,7 +234,7 @@ export function AccountsReceivable() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-10 text-muted text-sm">
+                <TableCell colSpan={8} className="text-center py-10 text-muted-foreground text-sm">
                   {activeTab === "outstanding" && "No outstanding balances — great job! 🎉"}
                   {activeTab === "paid"        && "No paid records yet."}
                   {activeTab === "credits"     && "No return credits yet."}
@@ -245,14 +247,14 @@ export function AccountsReceivable() {
                 const amountNum = parseFloat(ar.amount_due);
                 const isCredit = amountNum < 0;
                 return (
-                  <TableRow key={ar.id} className="hover:bg-off-white/40 transition-colors">
-                    <TableCell className="font-mono text-xs text-muted">{ar.id.slice(0, 8)}…</TableCell>
-                    <TableCell className="text-sm font-semibold text-navy">
+                  <TableRow key={ar.id} className="hover:bg-accent/40 transition-colors">
+                    <TableCell className="font-mono text-xs text-muted-foreground">{ar.id.slice(0, 8)}…</TableCell>
+                    <TableCell className="text-sm font-semibold text-foreground">
                       {getCustomerName(ar.customer_id)}
                     </TableCell>
-                    <TableCell className={`text-sm font-bold ${isCredit ? "text-green-600" : ""}`}>
+                    <TableCell className={`text-sm font-bold ${isCredit ? "text-success" : ""}`}>
                       {isCredit
-                        ? <span>−₱{Math.abs(amountNum).toFixed(2)} <span className="text-xs font-normal text-green-600">(credit)</span></span>
+                        ? <span>−₱{Math.abs(amountNum).toFixed(2)} <span className="text-xs font-normal text-success">(credit)</span></span>
                         : `₱${amountNum.toFixed(2)}`
                       }
                     </TableCell>
@@ -261,10 +263,10 @@ export function AccountsReceivable() {
                         {ar.status}
                       </span>
                     </TableCell>
-                    <TableCell className="text-xs text-muted max-w-[180px] truncate" title={ar.notes ?? ""}>
+                    <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate" title={ar.notes ?? ""}>
                       {ar.notes || "—"}
                     </TableCell>
-                    <TableCell className="text-xs text-muted whitespace-nowrap">
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                       {new Date(ar.created_at).toLocaleDateString("en-PH")}
                     </TableCell>
                     {activeTab !== "paid" && (
@@ -285,9 +287,9 @@ export function AccountsReceivable() {
                           {markingPaid === ar.id ? "Saving…" : "Mark Paid"}
                         </button>
                       ) : ar.status === "paid" ? (
-                        <span className="text-xs text-green font-semibold">✅ Paid</span>
+                        <span className="text-xs text-green font-semibold">Paid</span>
                       ) : (
-                        <span className="text-xs text-muted">—</span>
+                        <span className="text-xs text-muted-foreground">—</span>
                       )}
                     </TableCell>
                   </TableRow>

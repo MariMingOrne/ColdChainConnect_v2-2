@@ -1,3 +1,4 @@
+import { sendRouteError } from "../utils";
 import { RequestHandler } from "express";
 import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
@@ -10,7 +11,7 @@ import { getAgentOrderIds } from "../services/agent-bookings";
 import { createInvoiceAfterPicking } from "../services/booking-invoices";
 import { logAction } from "../middleware/audit-logger";
 
-async function calculateProductInventory(): Promise<Record<string, number>> {
+export async function calculateProductInventory(): Promise<Record<string, number>> {
   try {
     if (!process.env.DATABASE_URL) {
       return {};
@@ -212,9 +213,8 @@ export const createPallet: RequestHandler = async (req: AuthRequest, res) => {
       with: { items: true },
     });
     res.status(201).json(createdPallets.map(formatPallet));
-  } catch (error: any) {
-    console.error("Error creating pallet:", error);
-    res.status(400).json({ error: error.message });
+  } catch (error) {
+    sendRouteError(res, error, "Error creating pallet");
   }
 };
 
@@ -304,9 +304,8 @@ export const updatePalletStatus: RequestHandler = async (req: AuthRequest, res) 
       ? "Invoice not created: picked quantities must exactly match the booking."
       : undefined;
     res.json({ ...formatPallet(updated), invoice_pending_reason: invoicePendingReason });
-  } catch (error: any) {
-    console.error("Error updating pallet status:", error);
-    res.status(400).json({ error: error.message });
+  } catch (error) {
+    sendRouteError(res, error, "Error updating pallet status");
   }
 };
 

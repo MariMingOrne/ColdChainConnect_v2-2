@@ -34,9 +34,9 @@ export function RecordDetailsDialog({ details, onClose }: RecordDetailsDialogPro
       </div>
       <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {details.fields.map((field) => (
-          <div key={field.label} className="rounded-lg border border-border bg-off-white/50 px-3 py-2">
-            <dt className="text-xs font-semibold uppercase tracking-wide text-muted">{field.label}</dt>
-            <dd className="mt-1 break-words text-sm font-semibold text-navy">{field.value ?? "—"}</dd>
+          <div key={field.label} className="rounded-lg border border-border bg-muted/50 px-3 py-2">
+            <dt className="text-xs font-semibold text-muted-foreground">{field.label}</dt>
+            <dd className="mt-1 break-words text-sm font-semibold text-foreground">{field.value ?? "—"}</dd>
           </div>
         ))}
       </dl>

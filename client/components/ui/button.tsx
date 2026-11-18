@@ -5,21 +5,22 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98] [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-lg text-sm font-semibold ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
-        default: "bg-navy text-white hover:opacity-90",
-        primary: "bg-navy text-white hover:opacity-90",
-        accent: "bg-accent-2 text-white hover:opacity-90",
-        destructive: "bg-red text-white hover:bg-red/90",
-        danger: "border-2 border-red bg-white text-red hover:bg-red hover:text-white",
-        warning: "bg-gold text-white hover:opacity-90",
-        success: "bg-green text-white hover:opacity-90",
-        outline: "border border-border bg-white text-navy hover:bg-off-white",
-        secondary: "border-2 border-navy bg-white text-navy hover:bg-navy hover:text-white",
-        ghost: "border border-border bg-white text-navy hover:bg-off-white",
-        link: "text-accent-2 underline-offset-4 hover:underline",
+        default: "bg-primary text-primary-foreground hover:bg-primary/90",
+        // `primary` and `accent` are legacy aliases of `default`, kept for existing callers.
+        primary: "bg-primary text-primary-foreground hover:bg-primary/90",
+        accent: "bg-primary text-primary-foreground hover:bg-primary/90",
+        destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        danger: "border border-destructive/40 bg-card text-destructive hover:bg-destructive hover:text-destructive-foreground",
+        warning: "bg-brand-gold text-brand-gold-foreground hover:bg-brand-gold/90",
+        success: "bg-success text-white hover:bg-success/90 dark:text-background",
+        outline: "border border-input bg-card text-foreground hover:bg-accent hover:text-accent-foreground",
+        secondary: "bg-secondary text-secondary-foreground hover:bg-secondary/80",
+        ghost: "text-foreground hover:bg-accent hover:text-accent-foreground",
+        link: "text-link underline-offset-4 hover:underline",
       },
       size: {
         default: "h-10 px-4 py-2",

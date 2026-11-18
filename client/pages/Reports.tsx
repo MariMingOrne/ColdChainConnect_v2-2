@@ -81,12 +81,12 @@ function formatValue(key: string, value: string | number) {
 
 function MetricCard({ label, value, detail, icon: Icon }: { label: string; value: string; detail: string; icon: typeof FileBarChart }) {
   return (
-    <div className="rounded-2xl border border-border bg-white p-4 shadow-sm md:p-5">
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
-          <p className="mt-2 text-2xl font-bold text-navy md:text-3xl">{value}</p>
-          <p className="mt-1 text-xs text-gray-500">{detail}</p>
+          <p className="text-xs font-semibold text-muted-foreground">{label}</p>
+          <p className="mt-2 text-2xl font-bold text-foreground md:text-3xl">{value}</p>
+          <p className="mt-1 text-xs text-muted-foreground">{detail}</p>
         </div>
         <span className="rounded-xl bg-accent-2/10 p-2.5 text-accent-2"><Icon size={19} aria-hidden="true" /></span>
       </div>
@@ -97,7 +97,7 @@ function MetricCard({ label, value, detail, icon: Icon }: { label: string; value
 function ReportDataTable({ rows }: { rows: ReportRow[] }) {
   const columns = Object.keys(rows[0] ?? {});
   if (columns.length === 0) {
-    return <p className="px-4 py-8 text-center text-sm text-gray-500">No rows match your search.</p>;
+    return <p className="px-4 py-8 text-center text-sm text-muted-foreground">No rows match your search.</p>;
   }
 
   return (
@@ -105,9 +105,9 @@ function ReportDataTable({ rows }: { rows: ReportRow[] }) {
       <Table className="w-full min-w-[640px] text-sm">
         <caption className="sr-only">Raw report data</caption>
         <thead>
-          <tr className="border-b border-border bg-off-white">
+          <tr className="border-b border-border bg-muted">
             {columns.map((key) => (
-              <th key={key} scope="col" className={`px-4 py-3 font-semibold text-navy ${typeof getValue(rows[0], key) === "number" ? "text-right" : "text-left"}`}>
+              <th key={key} scope="col" className={`px-4 py-3 font-semibold text-foreground ${typeof getValue(rows[0], key) === "number" ? "text-right" : "text-left"}`}>
                 {formatHeader(key)}
               </th>
             ))}
@@ -115,9 +115,9 @@ function ReportDataTable({ rows }: { rows: ReportRow[] }) {
         </thead>
         <tbody>
           {rows.map((row, rowIndex) => (
-            <tr key={rowIndex} className="border-b border-border last:border-0 hover:bg-off-white/70">
+            <tr key={rowIndex} className="border-b border-border last:border-0 hover:bg-accent/70">
               {columns.map((key) => (
-                <td key={key} className={`px-4 py-3 text-gray-700 ${typeof getValue(row, key) === "number" ? "text-right tabular-nums" : "text-left"}`}>
+                <td key={key} className={`px-4 py-3 text-foreground ${typeof getValue(row, key) === "number" ? "text-right tabular-nums" : "text-left"}`}>
                   {formatValue(key, getValue(row, key))}
                 </td>
               ))}
@@ -165,8 +165,8 @@ export function Reports() {
     return (
       <main className="flex-1 overflow-y-auto px-4 py-5 md:px-6 md:py-7">
         <div className="mx-auto max-w-7xl">
-          <h1 className="text-3xl font-bold text-navy">Reports</h1>
-          <p className="mt-4 text-sm text-gray-600" role="status">
+          <h1 className="text-3xl font-bold text-foreground">Reports</h1>
+          <p className="mt-4 text-sm text-muted-foreground" role="status">
             {loadError ?? "Loading reports…"}
           </p>
         </div>
@@ -241,11 +241,10 @@ export function Reports() {
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent-2">Analytics</p>
-            <h1 className="mt-1 text-3xl font-bold text-navy">Reports</h1>
-            <p className="mt-1 text-sm text-gray-600">A clear snapshot of sales, customers, and inventory.</p>
+            <h1 className="mt-1 text-3xl font-bold text-foreground">Reports</h1>
+            <p className="mt-1 text-sm text-muted-foreground">A clear snapshot of sales, customers, and inventory.</p>
           </div>
-          <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800">
+          <span className="inline-flex items-center rounded-full border border-success/30 bg-success-soft px-3 py-1.5 text-xs font-semibold text-success">
             Live data
           </span>
         </header>
@@ -273,7 +272,7 @@ export function Reports() {
                   tabIndex={activeTab === tab.id ? 0 : -1}
                   onClick={() => setActiveTab(tab.id)}
                   onKeyDown={(event) => handleTabKeyDown(event, index)}
-                  className={`inline-flex shrink-0 items-center gap-2 rounded-t-lg border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-2 ${activeTab === tab.id ? "border-accent-2 text-navy" : "border-transparent text-gray-500 hover:text-navy"}`}
+                  className={`inline-flex shrink-0 items-center gap-2 rounded-t-lg border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-2 ${activeTab === tab.id ? "border-accent-2 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
                 >
                   <Icon size={16} aria-hidden="true" />{tab.label}
                 </button>
@@ -282,11 +281,11 @@ export function Reports() {
           </div>
 
           <div id="report-panel" role="tabpanel" aria-labelledby={`report-tab-${activeTab}`} tabIndex={0} className="space-y-4 outline-none">
-            <section className="rounded-2xl border border-border bg-white p-4 shadow-sm md:p-5">
+            <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5">
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
-                  <h2 className="text-xl font-bold text-navy">{tabs.find((tab) => tab.id === activeTab)?.label}</h2>
-                  <p className="mt-1 text-sm text-gray-600">{descriptions[activeTab]}</p>
+                  <h2 className="text-xl font-bold text-foreground">{tabs.find((tab) => tab.id === activeTab)?.label}</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">{descriptions[activeTab]}</p>
                 </div>
                 <ExcelActionsDropdown
                   onExport={handleExport}
@@ -295,29 +294,43 @@ export function Reports() {
               </div>
 
               <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(250px,0.8fr)]">
-                <div className="min-w-0 rounded-xl bg-off-white/70 p-3 md:p-4">
-                  {activeTab === "profit" ? (
-                    <p className="p-4 text-sm text-gray-600">
+                <div className="min-w-0 rounded-xl bg-muted/70 p-3 md:p-4">
+                  {activeTab === "overview" || activeTab === "sales" ? (
+                    <>
+                      {/* Today, last 7 days and month to date overlap (today is inside all three),
+                          so they are listed as figures, not drawn as comparable bars. */}
+                      <h3 className="mb-3 text-sm font-semibold text-foreground">Revenue by period</h3>
+                      <dl className="grid gap-3 sm:grid-cols-3">
+                        {salesReports.map((report) => (
+                          <div key={report.period} className="rounded-lg border border-border bg-card p-4">
+                            <dt className="text-xs text-muted-foreground">{report.period}</dt>
+                            <dd className="mt-1 font-rajdhani text-2xl font-bold tabular-nums text-foreground">{peso(report.totalRevenue)}</dd>
+                            <dd className="mt-0.5 text-xs text-muted-foreground">{report.totalTransactions.toLocaleString()} transactions</dd>
+                          </div>
+                        ))}
+                      </dl>
+                    </>
+                  ) : activeTab === "profit" ? (
+                    <p className="p-4 text-sm text-muted-foreground">
                       Profit cannot be calculated yet because products do not have recorded cost prices.
                     </p>
                   ) : (
                     <>
-                      <h3 className="mb-2 text-sm font-semibold text-navy">{activeTab === "inventory" ? "Stock vs. reorder level" : activeTab === "customers" ? "Spend by customer" : activeTab === "products" ? "Units sold by product" : "Revenue by period"}</h3>
+                      <h3 className="mb-2 text-sm font-semibold text-foreground">{activeTab === "inventory" ? "Stock vs. reorder level" : activeTab === "customers" ? "Spend by customer" : "Units sold by product"}</h3>
                       <div role="img" aria-label={`${tabs.find((tab) => tab.id === activeTab)?.label} chart; use the data table below for exact values`} className="h-64 w-full">
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={chartData} margin={{ top: 22, right: 12, left: 4, bottom: 8 }}>
-                            <CartesianGrid stroke="#dce3ec" strokeDasharray="3 3" vertical={false} />
-                            <XAxis dataKey={activeTab === "overview" || activeTab === "sales" ? "period" : activeTab === "inventory" ? "productName" : activeTab === "customers" ? "customerName" : "productName"} tick={{ fontSize: 11, fill: "#536174" }} interval={0} angle={-12} textAnchor="end" height={54} />
-                            <YAxis width={70} tick={{ fontSize: 11, fill: "#536174" }} tickFormatter={(value) => activeTab === "overview" || activeTab === "sales" || activeTab === "customers" ? `₱${Number(value) >= 1000 ? `${(Number(value) / 1000).toFixed(0)}k` : value}` : String(value)} />
-                            <Tooltip formatter={(value) => activeTab === "inventory" || activeTab === "products" ? Number(value).toLocaleString() : peso(Number(value))} />
-                            <Legend wrapperStyle={{ fontSize: 12 }} />
-                            {(activeTab === "overview" || activeTab === "sales") && <Bar dataKey="totalRevenue" name="Revenue (₱)" fill="#142955" radius={[5, 5, 0, 0]}><LabelList dataKey="totalRevenue" position="top" formatter={(value) => `₱${(Number(value) / 1000).toFixed(0)}k`} style={{ fill: "#142955", fontSize: 10 }} /></Bar>}
+                            <CartesianGrid stroke="hsl(var(--border))" vertical={false} />
+                            <XAxis dataKey={activeTab === "customers" ? "customerName" : "productName"} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} interval={0} angle={-12} textAnchor="end" height={54} />
+                            <YAxis width={70} tick={{ fontSize: 12, fill: "hsl(var(--muted-foreground))" }} tickFormatter={(value) => activeTab === "customers" ? `₱${Number(value) >= 1000 ? `${(Number(value) / 1000).toFixed(0)}k` : value}` : String(value)} />
+                            <Tooltip cursor={{ fill: "hsl(var(--accent))" }} contentStyle={{ background: "hsl(var(--popover))", border: "1px solid hsl(var(--border))", borderRadius: 8, color: "hsl(var(--popover-foreground))", fontSize: 12 }} formatter={(value) => activeTab === "inventory" || activeTab === "products" ? Number(value).toLocaleString() : peso(Number(value))} />
+                            {activeTab === "inventory" && <Legend wrapperStyle={{ fontSize: 12, color: "hsl(var(--muted-foreground))" }} />}
                             {activeTab === "inventory" && <>
-                              <Bar dataKey="currentStock" name="Available stock" fill="#1c6b8f" radius={[5, 5, 0, 0]}><LabelList dataKey="currentStock" position="top" style={{ fill: "#142955", fontSize: 10 }} /></Bar>
-                              <Bar dataKey="reorderLevel" name="Reorder level" fill="#e3a72f" radius={[5, 5, 0, 0]} />
+                              <Bar dataKey="currentStock" name="Available stock" fill="var(--chart-1)" radius={[4, 4, 0, 0]} maxBarSize={48}><LabelList dataKey="currentStock" position="top" style={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} /></Bar>
+                              <Bar dataKey="reorderLevel" name="Reorder level" fill="var(--chart-2)" radius={[4, 4, 0, 0]} maxBarSize={48} />
                             </>}
-                            {activeTab === "customers" && <Bar dataKey="totalSpent" name="Total spent (₱)" fill="#1c6b8f" radius={[5, 5, 0, 0]}><LabelList dataKey="totalSpent" position="top" formatter={(value) => `₱${(Number(value) / 1000).toFixed(0)}k`} style={{ fill: "#142955", fontSize: 10 }} /></Bar>}
-                            {activeTab === "products" && <Bar dataKey="unitsSold" name="Units sold" fill="#1c6b8f" radius={[5, 5, 0, 0]}><LabelList dataKey="unitsSold" position="top" style={{ fill: "#142955", fontSize: 10 }} /></Bar>}
+                            {activeTab === "customers" && <Bar dataKey="totalSpent" name="Total spent (₱)" fill="var(--chart-1)" radius={[4, 4, 0, 0]} maxBarSize={48}><LabelList dataKey="totalSpent" position="top" formatter={(value) => `₱${(Number(value) / 1000).toFixed(0)}k`} style={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} /></Bar>}
+                            {activeTab === "products" && <Bar dataKey="unitsSold" name="Units sold" fill="var(--chart-1)" radius={[4, 4, 0, 0]} maxBarSize={48}><LabelList dataKey="unitsSold" position="top" style={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} /></Bar>}
                           </BarChart>
                         </ResponsiveContainer>
                       </div>
@@ -326,35 +339,35 @@ export function Reports() {
                 </div>
 
                 <aside className="rounded-xl border border-border p-4">
-                  <h3 className="text-sm font-semibold text-navy">Highlights</h3>
+                  <h3 className="text-sm font-semibold text-foreground">Highlights</h3>
                   {activeTab === "overview" || activeTab === "inventory" ? (
                     <div className="mt-3 space-y-3">
                       {inventoryReports.filter((item) => item.status !== "in-stock").map((item) => (
                         <div key={item.sku} className="flex items-start justify-between gap-3 border-b border-border pb-3 last:border-0 last:pb-0">
-                          <div><p className="text-sm font-medium text-navy">{item.productName}</p><p className="mt-0.5 text-xs text-gray-500">{item.currentStock} units · reorder at {item.reorderLevel}</p></div>
-                          <span className={`rounded-full px-2 py-1 text-[11px] font-semibold ${item.status === "low-stock" ? "bg-amber-100 text-amber-800" : "bg-orange-100 text-orange-800"}`}>{item.status === "low-stock" ? "Low stock" : "Expiry flag"}</span>
+                          <div><p className="text-sm font-medium text-foreground">{item.productName}</p><p className="mt-0.5 text-xs text-muted-foreground">{item.currentStock} units · reorder at {item.reorderLevel}</p></div>
+                          <span className={`rounded-full px-2 py-1 text-xs font-semibold ${item.status === "low-stock" ? "bg-warning-soft text-warning" : "bg-warning-soft text-warning"}`}>{item.status === "low-stock" ? "Low stock" : "Expiry flag"}</span>
                         </div>
                       ))}
-                      {attentionCount === 0 && <p className="text-sm text-gray-500">No items need attention.</p>}
+                      {attentionCount === 0 && <p className="text-sm text-muted-foreground">No items need attention.</p>}
                     </div>
                   ) : activeTab === "sales" ? (
-                    <div className="mt-3 space-y-3"><p className="text-xs uppercase tracking-wide text-gray-500">Top item by period</p>{salesReports.map((report) => <div key={report.period} className="flex justify-between gap-3 border-b border-border pb-2 last:border-0"><span className="text-sm text-gray-600">{report.period}</span><span className="text-right text-sm font-semibold text-navy">{report.topProduct}<br />{peso(report.topProductSales)}</span></div>)}</div>
+                    <div className="mt-3 space-y-3"><p className="text-xs text-muted-foreground">Top item by period</p>{salesReports.map((report) => <div key={report.period} className="flex justify-between gap-3 border-b border-border pb-2 last:border-0"><span className="text-sm text-muted-foreground">{report.period}</span><span className="text-right text-sm font-semibold text-foreground">{report.topProduct}<br />{peso(report.topProductSales)}</span></div>)}</div>
                   ) : activeTab === "customers" ? (
-                    <div className="mt-3 space-y-3">{customerReports.map((customer, index) => <div key={customer.customerId} className="flex items-center justify-between gap-3 border-b border-border pb-2 last:border-0"><span className="text-sm text-gray-700">{index + 1}. {customer.customerName}</span><span className="text-sm font-semibold text-navy">{peso(customer.totalSpent)}</span></div>)}</div>
+                    <div className="mt-3 space-y-3">{customerReports.map((customer, index) => <div key={customer.customerId} className="flex items-center justify-between gap-3 border-b border-border pb-2 last:border-0"><span className="text-sm text-foreground">{index + 1}. {customer.customerName}</span><span className="text-sm font-semibold text-foreground">{peso(customer.totalSpent)}</span></div>)}</div>
                   ) : activeTab === "products" ? (
-                    <div className="mt-3 space-y-3">{performanceMetrics.map((product) => <div key={product.productName} className="flex justify-between gap-3 border-b border-border pb-2 last:border-0"><span className="text-sm text-gray-700">#{product.ranking} {product.productName}</span><span className="text-sm font-semibold text-navy">{product.growth}% growth</span></div>)}</div>
+                    <div className="mt-3 space-y-3">{performanceMetrics.map((product) => <div key={product.productName} className="flex justify-between gap-3 border-b border-border pb-2 last:border-0"><span className="text-sm text-foreground">#{product.ranking} {product.productName}</span><span className="text-sm font-semibold text-foreground">{product.growth}% growth</span></div>)}</div>
                   ) : (
-                    <p className="mt-3 text-sm text-gray-500">Cost prices are not recorded yet, so margins are unavailable.</p>
+                    <p className="mt-3 text-sm text-muted-foreground">Cost prices are not recorded yet, so margins are unavailable.</p>
                   )}
                 </aside>
               </div>
             </section>
 
-            <section className="rounded-2xl border border-border bg-white p-4 shadow-sm md:p-5">
+            <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5">
               <div className="flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <h3 className="text-lg font-bold text-navy">{tableTitles[activeTab]}</h3>
-                  <p className="mt-1 text-xs text-gray-500">Underlying figures for the chart · {filteredRows.length} of {rows.length} rows</p>
+                  <h3 className="text-lg font-bold text-foreground">{tableTitles[activeTab]}</h3>
+                  <p className="mt-1 text-xs text-muted-foreground">Underlying figures for the chart · {filteredRows.length} of {rows.length} rows</p>
                 </div>
                 <div className="w-full sm:w-72">
                   <SearchFilterBar

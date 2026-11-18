@@ -166,8 +166,8 @@ export function Settings() {
       <div className="max-w-4xl">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-3xl font-bold text-navy mb-2">Settings</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-foreground mb-2">Settings</h1>
+          <p className="text-muted-foreground">
             Manage your profile, security, and view system activities
           </p>
         </div>
@@ -176,30 +176,30 @@ export function Settings() {
         <div className="flex gap-2 mb-6 border-b border-border">
           <button
             onClick={() => setActiveTab("personal")}
-            className={`px-4 py-3 font-semibold transition-all border-b-2 ${
+            className={`px-4 py-3 font-semibold transition border-b-2 ${
               activeTab === "personal"
-                ? "border-accent text-accent"
-                : "border-transparent text-muted hover:text-navy"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             Personal Details
           </button>
           <button
             onClick={() => setActiveTab("security")}
-            className={`px-4 py-3 font-semibold transition-all border-b-2 ${
+            className={`px-4 py-3 font-semibold transition border-b-2 ${
               activeTab === "security"
-                ? "border-accent text-accent"
-                : "border-transparent text-muted hover:text-navy"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             Security
           </button>
           <button
             onClick={() => setActiveTab("audit")}
-            className={`px-4 py-3 font-semibold transition-all border-b-2 ${
+            className={`px-4 py-3 font-semibold transition border-b-2 ${
               activeTab === "audit"
-                ? "border-accent text-accent"
-                : "border-transparent text-muted hover:text-navy"
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             Audit Log
@@ -211,7 +211,7 @@ export function Settings() {
           <div className="space-y-6">
             {/* Profile Picture Section */}
             <Card className="p-6">
-              <h2 className="text-xl font-bold text-navy mb-4">
+              <h2 className="text-xl font-bold text-foreground mb-4">
                 Profile Picture
               </h2>
               <div className="flex items-center gap-4">
@@ -224,12 +224,12 @@ export function Settings() {
 
             {/* Contact Information */}
             <Card className="p-6">
-              <h2 className="text-xl font-bold text-navy mb-4">
+              <h2 className="text-xl font-bold text-foreground mb-4">
                 Contact Information
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="block text-sm font-semibold text-navy mb-2">
+                  <label className="block text-sm font-semibold text-foreground mb-2">
                     First Name
                   </label>
                   <Input
@@ -241,7 +241,7 @@ export function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-navy mb-2">
+                  <label className="block text-sm font-semibold text-foreground mb-2">
                     Last Name
                   </label>
                   <Input
@@ -255,7 +255,7 @@ export function Settings() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="block text-sm font-semibold text-navy mb-2">
+                  <label className="block text-sm font-semibold text-foreground mb-2">
                     Email Address
                   </label>
                   <Input
@@ -268,7 +268,7 @@ export function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-navy mb-2">
+                  <label className="block text-sm font-semibold text-foreground mb-2">
                     Phone Number
                   </label>
                   <Input
@@ -284,12 +284,12 @@ export function Settings() {
 
             {/* Work Information */}
             <Card className="p-6">
-              <h2 className="text-xl font-bold text-navy mb-4">
+              <h2 className="text-xl font-bold text-foreground mb-4">
                 Work Information
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="block text-sm font-semibold text-navy mb-2">
+                  <label className="block text-sm font-semibold text-foreground mb-2">
                     Department
                   </label>
                   <Input
@@ -301,7 +301,7 @@ export function Settings() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-navy mb-2">
+                  <label className="block text-sm font-semibold text-foreground mb-2">
                     Job Title
                   </label>
                   <Input
@@ -320,7 +320,7 @@ export function Settings() {
               <Button
                 onClick={handleSavePersonalDetails}
                 disabled={isSaving}
-                className="bg-accent hover:bg-accent-dark text-white"
+                className="bg-primary hover:bg-accent-dark text-primary-foreground"
               >
                 {isSaving ? "Saving..." : "Save Changes"}
               </Button>
@@ -332,10 +332,10 @@ export function Settings() {
         {activeTab === "security" && (
           <div className="space-y-6">
             <Card className="p-6">
-              <h2 className="text-xl font-bold text-navy mb-4">
+              <h2 className="text-xl font-bold text-foreground mb-4">
                 Password Management
               </h2>
-              <p className="text-gray-600 mb-6">
+              <p className="text-muted-foreground mb-6">
                 Ensure your account is secure by using a strong password
               </p>
 
@@ -351,7 +351,7 @@ export function Settings() {
               {showChangePassword && (
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-foreground mb-2">
                       Current Password
                     </label>
                     <Input
@@ -367,7 +367,7 @@ export function Settings() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-foreground mb-2">
                       New Password
                     </label>
                     <Input
@@ -383,7 +383,7 @@ export function Settings() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-semibold text-navy mb-2">
+                    <label className="block text-sm font-semibold text-foreground mb-2">
                       Confirm New Password
                     </label>
                     <Input
@@ -408,7 +408,7 @@ export function Settings() {
                     <Button
                       onClick={handleChangePassword}
                       disabled={isSaving}
-                      className="bg-accent hover:bg-accent-dark text-white"
+                      className="bg-primary hover:bg-accent-dark text-primary-foreground"
                     >
                       {isSaving ? "Updating..." : "Update Password"}
                     </Button>
@@ -419,31 +419,31 @@ export function Settings() {
 
             {/* Security Info */}
             <Card className="p-6">
-              <h2 className="text-xl font-bold text-navy mb-4">
+              <h2 className="text-xl font-bold text-foreground mb-4">
                 Security Information
               </h2>
               <div className="space-y-3">
-                <div className="flex justify-between items-center p-3 bg-off-white rounded border border-border">
-                  <span className="text-sm text-navy font-semibold">
+                <div className="flex justify-between items-center p-3 bg-muted rounded border border-border">
+                  <span className="text-sm text-foreground font-semibold">
                     Last Login
                   </span>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-muted-foreground">
                     Today at 2:32 PM
                   </span>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-off-white rounded border border-border">
-                  <span className="text-sm text-navy font-semibold">
+                <div className="flex justify-between items-center p-3 bg-muted rounded border border-border">
+                  <span className="text-sm text-foreground font-semibold">
                     Last Password Change
                   </span>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-muted-foreground">
                     30 days ago
                   </span>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-off-white rounded border border-border">
-                  <span className="text-sm text-navy font-semibold">
+                <div className="flex justify-between items-center p-3 bg-muted rounded border border-border">
+                  <span className="text-sm text-foreground font-semibold">
                     Account Status
                   </span>
-                  <span className="text-sm text-green-600 font-semibold">
+                  <span className="text-sm text-success font-semibold">
                     Active
                   </span>
                 </div>
@@ -458,8 +458,8 @@ export function Settings() {
             <Card className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <div>
-                  <h2 className="text-xl font-bold text-navy">Audit Log</h2>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <h2 className="text-xl font-bold text-foreground">Audit Log</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
                     Complete activity trail of all user actions and system
                     changes
                   </p>
@@ -471,22 +471,22 @@ export function Settings() {
                 <Table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border">
-                      <th className="text-left py-3 px-3 font-semibold text-navy">
+                      <th className="text-left py-3 px-3 font-semibold text-foreground">
                         Timestamp
                       </th>
-                      <th className="text-left py-3 px-3 font-semibold text-navy">
+                      <th className="text-left py-3 px-3 font-semibold text-foreground">
                         User
                       </th>
-                      <th className="text-left py-3 px-3 font-semibold text-navy">
+                      <th className="text-left py-3 px-3 font-semibold text-foreground">
                         Action
                       </th>
-                      <th className="text-left py-3 px-3 font-semibold text-navy">
+                      <th className="text-left py-3 px-3 font-semibold text-foreground">
                         Resource
                       </th>
-                      <th className="text-left py-3 px-3 font-semibold text-navy">
+                      <th className="text-left py-3 px-3 font-semibold text-foreground">
                         Details
                       </th>
-                      <th className="text-left py-3 px-3 font-semibold text-navy">
+                      <th className="text-left py-3 px-3 font-semibold text-foreground">
                         Status
                       </th>
                     </tr>
@@ -495,29 +495,29 @@ export function Settings() {
                     {mockAuditLog.map((entry) => (
                       <tr
                         key={entry.id}
-                        className="border-b border-border hover:bg-off-white transition-colors"
+                        className="border-b border-border hover:bg-accent transition-colors"
                       >
-                        <td className="py-3 px-3 text-gray-600">
+                        <td className="py-3 px-3 text-muted-foreground">
                           {entry.timestamp}
                         </td>
-                        <td className="py-3 px-3 text-gray-700 font-medium">
+                        <td className="py-3 px-3 text-foreground font-medium">
                           {entry.user}
                         </td>
-                        <td className="py-3 px-3 text-gray-700 font-medium">
+                        <td className="py-3 px-3 text-foreground font-medium">
                           {entry.action}
                         </td>
-                        <td className="py-3 px-3 text-gray-700">
+                        <td className="py-3 px-3 text-foreground">
                           {entry.resource}
                         </td>
-                        <td className="py-3 px-3 text-gray-600">
+                        <td className="py-3 px-3 text-muted-foreground">
                           {entry.details}
                         </td>
                         <td className="py-3 px-3">
                           <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                               entry.status === "success"
-                                ? "bg-green-100 text-green-800"
-                                : "bg-red-100 text-red-800"
+                                ? "bg-success-soft text-success"
+                                : "bg-destructive-soft text-destructive"
                             }`}
                           >
                             {entry.status === "success" ? "✓" : "✗"}{" "}
@@ -533,7 +533,7 @@ export function Settings() {
 
               {/* Pagination */}
               <div className="flex justify-between items-center mt-6 pt-4 border-t border-border">
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-muted-foreground">
                   Showing {mockAuditLog.length} entries
                 </span>
                 <div className="flex gap-2">

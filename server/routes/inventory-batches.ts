@@ -1,3 +1,4 @@
+import { sendRouteError } from "../utils";
 import { RequestHandler } from "express";
 import { desc, eq } from "drizzle-orm";
 import { InventoryBatch, InventoryBatchItem, CreateInventoryBatchSchema, UpdateInventoryBatchSchema } from "../../shared/api";
@@ -134,8 +135,8 @@ export const createInventoryBatch: RequestHandler = (req, res) => {
 
     inventoryBatches.push(newBatch);
     res.status(201).json(newBatch);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+  } catch (error) {
+    sendRouteError(res, error, "Inventory batch request failed");
   }
 };
 
@@ -157,8 +158,8 @@ export const updateInventoryBatch: RequestHandler = (req, res) => {
     batch.updated_at = new Date().toISOString();
 
     res.json(batch);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+  } catch (error) {
+    sendRouteError(res, error, "Inventory batch request failed");
   }
 };
 
@@ -196,8 +197,8 @@ export const addInventoryBatchItem: RequestHandler = (req, res) => {
     batch.updated_at = new Date().toISOString();
 
     res.status(201).json(newItem);
-  } catch (error: any) {
-    res.status(400).json({ error: error.message });
+  } catch (error) {
+    sendRouteError(res, error, "Inventory batch request failed");
   }
 };
 

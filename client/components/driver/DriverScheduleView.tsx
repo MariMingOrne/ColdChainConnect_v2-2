@@ -58,9 +58,9 @@ export function DriverScheduleView({ driverId }: { driverId?: string }) {
         <button
           type="button"
           onClick={() => setDate((current) => shiftDate(current, -1))}
-          className="px-3 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-off-white text-navy"
+          className="px-3 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-accent text-foreground"
         >
-          ‹ Prev
+          Previous
         </button>
         <input
           type="date"
@@ -71,9 +71,9 @@ export function DriverScheduleView({ driverId }: { driverId?: string }) {
         <button
           type="button"
           onClick={() => setDate((current) => shiftDate(current, 1))}
-          className="px-3 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-off-white text-navy"
+          className="px-3 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-accent text-foreground"
         >
-          Next ›
+          Next
         </button>
       </div>
 
@@ -82,11 +82,11 @@ export function DriverScheduleView({ driverId }: { driverId?: string }) {
 
       {schedule && !error && (
         <>
-          <p className="text-xs text-muted">
+          <p className="text-xs text-muted-foreground">
             {stops.length} {stops.length === 1 ? "stop" : "stops"} scheduled for {schedule.date}
           </p>
           {stops.length === 0 ? (
-            <div className="bg-white border border-border rounded-2xl p-8 text-center text-sm text-muted">
+            <div className="bg-card border border-border rounded-2xl p-8 text-center text-sm text-muted-foreground">
               No deliveries scheduled for this day.
             </div>
           ) : (

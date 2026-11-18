@@ -1,5 +1,6 @@
 import { RequestHandler } from "express";
 import { and, desc, eq } from "drizzle-orm";
+import { agentInvoiceFilter } from "../services/agent-bookings";
 import { db } from "../db";
 import {
   accounts_receivable,
@@ -20,7 +21,13 @@ export const listAccountsReceivable: RequestHandler = async (
 
     const { status } = req.query;
 
-    const whereClause = status ? eq(accounts_receivable.status, status as any) : undefined;
+    const scope = await agentInvoiceFilter(req, accounts_receivable.invoice_id);
+    if (scope.none) return res.json([]);
+
+    const whereClause = and(
+      status ? eq(accounts_receivable.status, status as any) : undefined,
+      scope.where,
+    );
 
     const records = await db.query.accounts_receivable.findMany({
       where: whereClause,
@@ -45,10 +52,12 @@ export const getCustomerBalance: RequestHandler = async (
   }
 
   try {
-    const records = await db.query.accounts_receivable.findMany({
+    const scope = await agentInvoiceFilter(req, accounts_receivable.invoice_id);
+    const records = scope.none ? [] : await db.query.accounts_receivable.findMany({
       where: and(
         eq(accounts_receivable.customer_id, customerId),
-        eq(accounts_receivable.status, "outstanding")
+        eq(accounts_receivable.status, "outstanding"),
+        scope.where,
       ),
       orderBy: [desc(accounts_receivable.created_at)],
     });

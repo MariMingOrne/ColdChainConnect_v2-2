@@ -10,8 +10,8 @@ interface AuditLogDetailDialogProps {
 function DetailField({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
   return (
     <div>
-      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
-      <p className={`mt-1 break-all text-sm text-navy ${mono ? "font-mono" : "font-medium"}`}>{value}</p>
+      <p className="text-xs font-semibold text-muted-foreground">{label}</p>
+      <p className={`mt-1 break-all text-sm text-foreground ${mono ? "font-mono" : "font-medium"}`}>{value}</p>
     </div>
   );
 }
@@ -19,8 +19,8 @@ function DetailField({ label, value, mono = false }: { label: string; value: str
 function ValueBlock({ label, value }: { label: string; value: unknown }) {
   return (
     <div className="min-w-0">
-      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
-      <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-off-white p-2 font-sans text-sm text-navy">
+      <p className="text-xs font-semibold text-muted-foreground">{label}</p>
+      <pre className="mt-1 max-h-40 overflow-auto whitespace-pre-wrap break-words rounded bg-muted p-2 font-sans text-sm text-foreground">
         {formatFieldValue(value)}
       </pre>
     </div>
@@ -49,7 +49,7 @@ export function AuditLogDetailDialog({ log, onClose }: AuditLogDetailDialogProps
         </button>
       </div>
 
-        <div className="grid grid-cols-1 gap-4 rounded-lg border border-border bg-off-white p-4 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 rounded-lg border border-border bg-muted p-4 sm:grid-cols-2">
           <DetailField label="Performed by (user ID)" value={log.user_id} mono />
           <DetailField label="Timestamp" value={new Date(log.created_at).toLocaleString()} />
           <DetailField label="Action" value={log.action} />
@@ -59,14 +59,14 @@ export function AuditLogDetailDialog({ log, onClose }: AuditLogDetailDialogProps
         </div>
 
         <section className="space-y-2">
-          <h3 className="text-sm font-bold text-navy">Field changes</h3>
+          <h3 className="text-sm font-bold text-foreground">Field changes</h3>
           {changes.length === 0 ? (
-            <p className="text-sm text-gray-500">No field-level changes were recorded for this entry.</p>
+            <p className="text-sm text-muted-foreground">No field-level changes were recorded for this entry.</p>
           ) : (
             <div className="space-y-3">
               {changes.map((change) => (
                 <div key={change.field} className="rounded-lg border border-border">
-                  <div className="border-b border-border bg-off-white px-3 py-2 text-sm font-semibold capitalize text-navy">
+                  <div className="border-b border-border bg-muted px-3 py-2 text-sm font-semibold capitalize text-foreground">
                     {change.field.replace(/_/g, " ")}
                   </div>
                   <div className="grid grid-cols-1 gap-3 p-3 sm:grid-cols-2">
@@ -77,19 +77,19 @@ export function AuditLogDetailDialog({ log, onClose }: AuditLogDetailDialogProps
               ))}
             </div>
           )}
-          <p className="text-xs text-gray-500">Password hashes and last-updated timestamps are hidden.</p>
+          <p className="text-xs text-muted-foreground">Password hashes and last-updated timestamps are hidden.</p>
         </section>
 
         {Object.keys(snapshot).length > 0 && (
           <section className="space-y-2">
-            <h3 className="text-sm font-bold text-navy">{snapshotLabel}</h3>
+            <h3 className="text-sm font-bold text-foreground">{snapshotLabel}</h3>
             <dl className="grid grid-cols-1 gap-x-6 gap-y-2 rounded-lg border border-border p-4 sm:grid-cols-2">
               {Object.entries(snapshot)
                 .filter(([field]) => field !== "password_hash" && field !== "password" && field !== "updated_at")
                 .map(([field, value]) => (
                   <div key={field} className="flex justify-between gap-3 border-b border-border/60 pb-1 text-sm">
-                    <dt className="capitalize text-gray-500">{field.replace(/_/g, " ")}</dt>
-                    <dd className="text-right text-navy break-all">{formatFieldValue(value)}</dd>
+                    <dt className="capitalize text-muted-foreground">{field.replace(/_/g, " ")}</dt>
+                    <dd className="text-right text-foreground break-all">{formatFieldValue(value)}</dd>
                   </div>
                 ))}
             </dl>

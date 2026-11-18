@@ -80,7 +80,7 @@ function ReceiptModal({ invoice, onClose }: ReceiptModalProps) {
         </div>
       </div>
 
-      <div className="max-w-3xl w-full bg-white rounded-2xl border border-border">
+      <div className="max-w-3xl w-full bg-card rounded-2xl border border-border">
         {/* Receipt body */}
         <div id="receipt-print-area" className="p-6 font-sans text-black">
           <style>{`
@@ -98,22 +98,22 @@ function ReceiptModal({ invoice, onClose }: ReceiptModalProps) {
               <div className="text-2xl font-black tracking-wide uppercase leading-tight">
                 ACDP CONSUMER GOODS TRADING
               </div>
-              <div className="text-xs text-gray-600 mt-0.5">
+              <div className="text-xs text-muted-foreground mt-0.5">
                 Seniorita St. Saguin 2000 City of San Fernando (Capital) Pampanga Philippines
               </div>
             </div>
             {/* Logo placeholder matching reference */}
-            <div className="ml-4 shrink-0 border border-gray-300 px-3 py-1 text-center">
-              <div className="text-sm font-black tracking-widest text-gray-800">ACDP</div>
-              <div className="text-[9px] text-gray-500 uppercase tracking-wide">Consumer Goods Trading</div>
+            <div className="ml-4 shrink-0 border border-border px-3 py-1 text-center">
+              <div className="text-sm font-black tracking-widest text-foreground">ACDP</div>
+              <div className="text-2xs text-muted-foreground">Consumer Goods Trading</div>
             </div>
           </div>
 
           {/* ── Receipt number / title ── */}
           <div className="flex justify-end mt-1 mb-2">
             <div className="text-right">
-              <div className="text-xs font-bold uppercase tracking-wide">DELIVERY RECEIPT</div>
-              <div className="text-sm font-bold text-red-600">
+              <div className="text-xs font-bold">DELIVERY RECEIPT</div>
+              <div className="text-sm font-bold text-destructive">
                 No. {invoice.receipt_number || invoice.id.slice(0, 8).toUpperCase()}
               </div>
             </div>
@@ -267,10 +267,10 @@ export function Invoicing() {
   useAutoRefresh(fetchInvoices, { enabled: Boolean(token) });
 
   const getStatusColor = (status: string) => ({
-    draft:  "bg-gray-100 text-gray-800",
-    issued: "bg-blue-100 text-blue-800",
-    paid:   "bg-green-100 text-green-800",
-  }[status] || "bg-gray-100 text-gray-800");
+    draft:  "bg-muted text-foreground",
+    issued: "bg-info-soft text-link",
+    paid:   "bg-success-soft text-success",
+  }[status] || "bg-muted text-foreground");
 
   const isDateInRange = (dateStr: string): boolean => {
     if (dateRangeFilter === "all") return true;
@@ -319,8 +319,8 @@ export function Invoicing() {
       </div>
 
       {error && (
-        <Card className="p-4 bg-red-50 border-red-200">
-          <p className="text-red-700">{error}</p>
+        <Card className="p-4 bg-destructive-soft border-destructive/30">
+          <p className="text-destructive">{error}</p>
         </Card>
       )}
 
@@ -367,19 +367,19 @@ export function Invoicing() {
       {dateRangeFilter === "custom" && (
         <div className="flex flex-col sm:flex-row gap-3 items-end">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-            <div className="flex items-center gap-2 rounded-full border border-border bg-white px-4">
-              <Calendar size={16} className="text-muted" />
+            <label className="block text-sm font-medium text-foreground mb-1">Start Date</label>
+            <div className="flex items-center gap-2 rounded-full border border-border bg-card px-4">
+              <Calendar size={16} className="text-muted-foreground" />
               <Input type="date" value={customDateStart} onChange={(e) => setCustomDateStart(e.target.value)}
-                className="flex-1 bg-transparent border-none py-2 text-sm text-navy outline-none" />
+                className="flex-1 bg-transparent border-none py-2 text-sm text-foreground outline-none" />
             </div>
           </div>
           <div className="flex-1">
-            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-            <div className="flex items-center gap-2 rounded-full border border-border bg-white px-4">
-              <Calendar size={16} className="text-muted" />
+            <label className="block text-sm font-medium text-foreground mb-1">End Date</label>
+            <div className="flex items-center gap-2 rounded-full border border-border bg-card px-4">
+              <Calendar size={16} className="text-muted-foreground" />
               <Input type="date" value={customDateEnd} onChange={(e) => setCustomDateEnd(e.target.value)}
-                className="flex-1 bg-transparent border-none py-2 text-sm text-navy outline-none" />
+                className="flex-1 bg-transparent border-none py-2 text-sm text-foreground outline-none" />
             </div>
           </div>
         </div>
@@ -404,7 +404,7 @@ export function Invoicing() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                   {invoices.length === 0 ? "No invoices found" : "No invoices match your search"}
                 </TableCell>
               </TableRow>
@@ -429,34 +429,34 @@ export function Invoicing() {
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-0.5">
-                        <span className="font-mono text-xs font-semibold text-navy bg-off-white px-1.5 py-0.5 rounded w-fit">
+                        <span className="font-mono text-xs font-semibold text-foreground bg-muted px-1.5 py-0.5 rounded w-fit">
                           {inv.booking_id.slice(0, 8).toUpperCase()}
                         </span>
                         {inv.booking?.customer?.store_name && !inv.customer_name && (
-                          <span className="text-xs text-muted">{inv.booking.customer.store_name}</span>
+                          <span className="text-xs text-muted-foreground">{inv.booking.customer.store_name}</span>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col">
-                        <span className="text-sm font-semibold text-navy">
+                        <span className="text-sm font-semibold text-foreground">
                           {inv.customer_name || inv.booking?.customer?.store_name || "—"}
                         </span>
                         {(inv.customer_address || inv.booking?.customer?.location) && (
-                          <span className="text-xs text-muted">
+                          <span className="text-xs text-muted-foreground">
                             {inv.customer_address || inv.booking?.customer?.location}
                           </span>
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm text-gray-600">
+                    <TableCell className="text-sm text-muted-foreground">
                       {(() => {
                         const count = itemCount > 0 ? itemCount : legacyItems.length;
                         return <>{count} item{count !== 1 ? "s" : ""}</>;
                       })()}
                     </TableCell>
                     <TableCell className="text-sm">₱ {fmt(gross)}</TableCell>
-                    <TableCell className="text-sm font-semibold text-navy">₱ {fmt(total)}</TableCell>
+                    <TableCell className="text-sm font-semibold text-foreground">₱ {fmt(total)}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(inv.status)}`}>
                         {inv.status}
@@ -465,10 +465,10 @@ export function Invoicing() {
                     <TableCell>
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${
                         inv.payment_status === "paid"
-                          ? "bg-green-100 text-green-800"
+                          ? "bg-success-soft text-success"
                           : inv.payment_status === "partial"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-orange-100 text-orange-800"
+                            ? "bg-info-soft text-link"
+                            : "bg-warning-soft text-warning"
                       }`}>
                         {inv.payment_status}
                       </span>

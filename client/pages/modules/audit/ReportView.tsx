@@ -49,18 +49,18 @@ export function ReportView<T>({ title, subtitle, chart, rows, columns }: ReportV
     <Card className="space-y-4 p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-navy">{title}</h2>
-          {subtitle && <p className="mt-1 text-sm text-gray-500">{subtitle}</p>}
+          <h2 className="text-xl font-bold text-foreground">{title}</h2>
+          {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setShowTable((value) => !value)}
-            className="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-1.5 text-sm font-semibold text-navy hover:bg-off-white"
+            className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-semibold text-foreground hover:bg-accent"
           >
             <TableIcon className="h-4 w-4" />
             {showTable ? "Hide table" : "Show table"}
           </button>
-          <Button onClick={handleExport} className="bg-accent text-sm text-white hover:bg-accent-dark">
+          <Button onClick={handleExport} className="bg-primary text-sm text-primary-foreground hover:bg-accent-dark">
             Export CSV
           </Button>
         </div>
@@ -72,9 +72,9 @@ export function ReportView<T>({ title, subtitle, chart, rows, columns }: ReportV
         <div className="data-table-frame overflow-x-auto">
           <Table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-off-white">
+              <tr className="border-b border-border bg-muted">
                 {columns.map((column) => (
-                  <th key={column.header} className={`px-3 py-2 font-semibold text-navy ${column.align === "right" ? "text-right" : "text-left"}`}>
+                  <th key={column.header} className={`px-3 py-2 font-semibold text-foreground ${column.align === "right" ? "text-right" : "text-left"}`}>
                     {column.header}
                   </th>
                 ))}
@@ -82,9 +82,9 @@ export function ReportView<T>({ title, subtitle, chart, rows, columns }: ReportV
             </thead>
             <tbody>
               {rows.map((row, rowIndex) => (
-                <tr key={rowIndex} className="border-b border-border last:border-b-0 hover:bg-off-white">
+                <tr key={rowIndex} className="border-b border-border last:border-b-0 hover:bg-accent">
                   {columns.map((column) => (
-                    <td key={column.header} className={`px-3 py-2 text-gray-700 ${column.align === "right" ? "text-right" : "text-left"}`}>
+                    <td key={column.header} className={`px-3 py-2 text-foreground ${column.align === "right" ? "text-right" : "text-left"}`}>
                       {column.cell ? column.cell(row) : column.value(row)}
                     </td>
                   ))}

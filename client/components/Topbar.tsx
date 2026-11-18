@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
-import { ChevronLeft, Search, Truck } from "lucide-react";
+import { Bell, ChevronLeft, LogOut, Monitor, Moon, Search, Settings, Sun, Truck } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useAuth } from "@/hooks/useAuth";
 import { NotificationPanel } from "./NotificationPanel";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -11,6 +12,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 
@@ -23,6 +28,7 @@ interface TopbarProps {
 export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { theme, setTheme } = useTheme();
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState(() => searchParams.get("q") ?? "");
   const [showNotifications, setShowNotifications] = useState(false);
@@ -150,7 +156,7 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
             <div className="flex min-w-0 flex-1 items-center gap-2 border-l border-white/20 pl-3 sm:pl-4" aria-label="Assigned truck and district">
               <Truck size={16} className="shrink-0 text-white/80" />
               <div className="flex min-w-0 flex-col leading-tight">
-                <span className="text-[9px] font-semibold uppercase tracking-wide text-white/60">Assigned truck · district</span>
+                <span className="text-2xs font-semibold text-white/60">Assigned truck · district</span>
                 <span className="truncate text-xs font-semibold text-white" title={truckAssignments.join(" / ")}>
                   {truckAssignments.length ? truckAssignments.join(" / ") : "No active truck assignment"}
                 </span>
@@ -179,7 +185,7 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
               value={searchTerm}
               onFocus={() => setIsSearchFocused(true)}
               onChange={(event) => handleSearchTermChange(event.target.value)}
-              className="w-full pl-4 pr-11 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all"
+              className="w-full pl-4 pr-11 py-2 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition"
             />
             <button
               type="submit"
@@ -189,9 +195,9 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
               <Search className="w-4 h-4" />
             </button>
             {isSearchFocused && searchTerm.trim() && (
-              <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[min(70vh,420px)] overflow-y-auto rounded-lg border border-border bg-white p-1.5 text-navy shadow-xl">
+              <div className="absolute left-0 right-0 top-full z-50 mt-2 max-h-[min(70vh,420px)] overflow-y-auto rounded-lg border border-border bg-card p-1.5 text-foreground shadow-xl">
                 {isFetchingSearch && searchData === EMPTY_SEARCH_DATA ? (
-                  <p className="px-3 py-3 text-sm text-navy/60">Searching…</p>
+                  <p className="px-3 py-3 text-sm text-foreground/60">Searching…</p>
                 ) : suggestions.length ? (
                   <>
                     {suggestions.map((hit) => (
@@ -203,25 +209,25 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
                         onMouseLeave={() => updateHoveredSuggestion(null)}
                         onFocus={() => updateHoveredSuggestion(hit.id)}
                         onClick={() => handleSuggestionSelect(hit)}
-                        className={`w-full rounded-md border-l-2 px-3 py-2 text-left transition-colors ${hoveredSuggestionId === hit.id ? "border-accent-2 bg-accent-2/10" : "border-transparent hover:bg-off-white focus-visible:bg-off-white"}`}
+                        className={`w-full rounded-md border-l-2 px-3 py-2 text-left transition-colors ${hoveredSuggestionId === hit.id ? "border-accent-2 bg-accent-2/10" : "border-transparent hover:bg-accent focus-visible:bg-background"}`}
                       >
                         <span className="flex items-center justify-between gap-3">
                           <span className="truncate text-sm font-semibold">{hit.title}</span>
-                          <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-navy/50">{hit.group}</span>
+                          <span className="shrink-0 text-2xs font-semibold text-foreground/50">{hit.group}</span>
                         </span>
-                        {hit.subtitle && <span className="block truncate text-xs text-navy/60">{hit.subtitle}</span>}
+                        {hit.subtitle && <span className="block truncate text-xs text-foreground/60">{hit.subtitle}</span>}
                       </button>
                     ))}
                     <button
                       type="submit"
                       onMouseDown={(event) => event.preventDefault()}
-                      className="mt-1 w-full rounded-md border-t border-border px-3 py-2 text-left text-xs font-semibold text-accent-2 hover:bg-off-white"
+                      className="mt-1 w-full rounded-md border-t border-border px-3 py-2 text-left text-xs font-semibold text-accent-2 hover:bg-accent"
                     >
                       See all results for “{searchTerm.trim()}”
                     </button>
                   </>
                 ) : (
-                  <p className="px-3 py-3 text-sm text-navy/60">No matching results.</p>
+                  <p className="px-3 py-3 text-sm text-foreground/60">No matching results.</p>
                 )}
               </div>
             )}
@@ -234,11 +240,13 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
         {/* Notification button */}
         <button
           onClick={() => setShowNotifications(!showNotifications)}
-          className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 cursor-pointer text-white transition-all hover:bg-white/20"
+          aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
+          aria-expanded={showNotifications}
+          className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 cursor-pointer text-white transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold"
         >
-          <span className="text-lg">🔔</span>
+          <Bell className="h-[18px] w-[18px]" aria-hidden="true" />
           {unreadCount > 0 && (
-            <div className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-red rounded-full text-[10px] flex items-center justify-center text-white font-bold">
+            <div className="absolute -top-1 -right-1 min-w-4 h-4 px-1 bg-brand-gold rounded-full text-2xs flex items-center justify-center text-brand-gold-foreground font-bold">
               {unreadCount > 9 ? "9+" : unreadCount}
             </div>
           )}
@@ -248,12 +256,24 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
         {/* Settings dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 cursor-pointer text-white transition-all hover:bg-white/20">
-              <span className="text-lg">⚙️</span>
+            <button
+              aria-label="Settings"
+              className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/20 bg-white/10 cursor-pointer text-white transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold"
+            >
+              <Settings className="h-[18px] w-[18px]" aria-hidden="true" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-navy text-white border-white/20">
-            <DropdownMenuItem onClick={onLogout} className="focus:bg-white/10 focus:text-white cursor-pointer">Log Out</DropdownMenuItem>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuLabel className="text-xs font-medium text-muted-foreground">Appearance</DropdownMenuLabel>
+            <DropdownMenuRadioGroup value={theme ?? "system"} onValueChange={setTheme}>
+              <DropdownMenuRadioItem value="light"><Sun className="mr-2 h-4 w-4" aria-hidden="true" />Light</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="dark"><Moon className="mr-2 h-4 w-4" aria-hidden="true" />Dark</DropdownMenuRadioItem>
+              <DropdownMenuRadioItem value="system"><Monitor className="mr-2 h-4 w-4" aria-hidden="true" />System</DropdownMenuRadioItem>
+            </DropdownMenuRadioGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onLogout} className="cursor-pointer">
+              <LogOut className="mr-2 h-4 w-4" aria-hidden="true" />Log out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
 

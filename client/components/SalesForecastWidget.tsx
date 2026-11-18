@@ -22,9 +22,9 @@ const formatPeso = (value: number) =>
   `₱${value.toLocaleString("en-PH", { maximumFractionDigits: 0 })}`;
 
 const TREND_STYLES = {
-  up: { icon: TrendingUp, className: "text-green-600", label: "Upward" },
-  down: { icon: TrendingDown, className: "text-red-600", label: "Downward" },
-  flat: { icon: Minus, className: "text-gray-500", label: "Flat" },
+  up: { icon: TrendingUp, className: "text-success", label: "Upward" },
+  down: { icon: TrendingDown, className: "text-destructive", label: "Downward" },
+  flat: { icon: Minus, className: "text-muted-foreground", label: "Flat" },
 } as const;
 
 function ForecastSummary({ data }: { data: SalesForecastResponse }) {
@@ -34,11 +34,11 @@ function ForecastSummary({ data }: { data: SalesForecastResponse }) {
   return (
     <div className="grid grid-cols-2 gap-3">
       <div className="rounded-md border p-3">
-        <p className="text-xs text-gray-500">Projected next 7 days</p>
+        <p className="text-xs text-muted-foreground">Projected next 7 days</p>
         <p className="text-lg font-semibold">{formatPeso(data.projected_7_day_total)}</p>
       </div>
       <div className="rounded-md border p-3">
-        <p className="text-xs text-gray-500">Weekly trend</p>
+        <p className="text-xs text-muted-foreground">Weekly trend</p>
         <p className={`flex items-center gap-1 text-lg font-semibold ${trend.className}`}>
           <TrendIcon className="h-4 w-4" />
           {trend.label} {data.trend_percent > 0 ? "+" : ""}
@@ -58,12 +58,12 @@ function ForecastBody({ isLoading, isError, data }: {
     return <LoadingSpinner className="py-10" />;
   }
   if (isError || !data) {
-    return <p className="py-10 text-center text-sm text-red-600">Could not load the forecast.</p>;
+    return <p className="py-10 text-center text-sm text-destructive">Could not load the forecast.</p>;
   }
   if (!data.has_enough_data) {
     return (
       <div className="space-y-4">
-        <p className="py-6 text-center text-sm text-gray-500">{data.note}</p>
+        <p className="py-6 text-center text-sm text-muted-foreground">{data.note}</p>
         <SalesForecastProducts insights={data.product_insights} />
       </div>
     );
@@ -72,10 +72,10 @@ function ForecastBody({ isLoading, isError, data }: {
     <div className="space-y-4">
       <SalesForecastChart data={data} />
       <ForecastSummary data={data} />
-      <p className="text-xs text-gray-500">{data.note}</p>
+      <p className="text-xs text-muted-foreground">{data.note}</p>
       {data.ai_summary && (
-        <div className="rounded-md border bg-gray-50 p-3">
-          <p className="mb-1 text-xs font-semibold text-gray-500">AI summary</p>
+        <div className="rounded-md border bg-muted p-3">
+          <p className="mb-1 text-xs font-semibold text-muted-foreground">AI summary</p>
           <p className="text-sm">{data.ai_summary}</p>
         </div>
       )}
@@ -123,7 +123,7 @@ export function SalesForecastWidget() {
       <button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-semibold text-navy shadow-sm transition-colors hover:bg-off-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-2"
+        className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-2"
         aria-label="Open sales forecast"
       >
         <TrendingUp className="h-4 w-4" />
@@ -133,16 +133,16 @@ export function SalesForecastWidget() {
   }
 
   return (
-    <div className="absolute right-0 top-full z-50 mt-2 max-h-[min(75vh,640px)] w-[min(440px,calc(100vw-2rem))] overflow-y-auto rounded-xl border border-border bg-white p-4 shadow-xl animate-fade-in-up">
+    <div className="absolute right-0 top-full z-50 mt-2 max-h-[min(75vh,640px)] w-[min(440px,calc(100vw-2rem))] overflow-y-auto rounded-xl border border-border bg-card p-4 shadow-xl animate-fade-in-up">
       <div className="mb-3 flex items-start justify-between gap-2">
         <div>
           <h2 className="text-base font-semibold">Sales Forecast</h2>
-          <p className="text-xs text-gray-500">Estimate based on recent invoices</p>
+          <p className="text-xs text-muted-foreground">Estimate based on recent invoices</p>
         </div>
         <button
           type="button"
           onClick={() => setIsOpen(false)}
-          className="rounded-md p-1 text-gray-500 hover:bg-muted"
+          className="rounded-md p-1 text-muted-foreground hover:bg-muted"
           aria-label="Close sales forecast"
         >
           <X className="h-4 w-4" />

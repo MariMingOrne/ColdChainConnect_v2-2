@@ -85,13 +85,13 @@ export function CreatePalletPage() {
       {isLoading ? (
         <LoadingSpinner slow />
       ) : error ? (
-        <Card className="p-4 bg-red-50 border-red-200"><p className="text-red-700">{error}</p></Card>
+        <Card className="p-4 bg-destructive-soft border-destructive/30"><p className="text-destructive">{error}</p></Card>
       ) : !order ? (
-        <Card className="p-6"><p className="text-navy">Order not found. Return to preparation and select an order.</p></Card>
+        <Card className="p-6"><p className="text-foreground">Order not found. Return to preparation and select an order.</p></Card>
       ) : hasDraftPallets ? (
         <Card className="p-6 space-y-2">
-          <h2 className="font-rajdhani text-lg font-bold text-navy">Pallets Already Created</h2>
-          <p className="text-sm text-navy">This order already has draft pallets. Return to preparation to review or undo them.</p>
+          <h2 className="font-rajdhani text-lg font-bold text-foreground">Pallets Already Created</h2>
+          <p className="text-sm text-foreground">This order already has draft pallets. Return to preparation to review or undo them.</p>
         </Card>
       ) : token && (
         <CreatePalletForm order={order} batches={batches} token={token} isPrepared={isPrepared} onCreated={goBack} />

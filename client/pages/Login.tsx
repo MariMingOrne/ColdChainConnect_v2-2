@@ -1,3 +1,6 @@
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
@@ -89,7 +92,7 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-off-white flex flex-col md:flex-row">
+    <div className="min-h-screen bg-background flex flex-col md:flex-row">
       {/* Left Side - Branding */}
       <div className="w-full md:w-5/12 bg-navy flex flex-col items-center justify-center gap-6 px-8 py-12 relative overflow-hidden">
 
@@ -99,28 +102,28 @@ export function Login() {
         </div>
 
         {/* Brand Box */}
-        <div className="bg-white text-navy px-7 py-2.5 rounded-lg text-center relative z-10">
-          <h1 className="font-rajdhani text-5xl font-bold letter-spacing-widest text-navy">
+        <div className="bg-card text-foreground px-7 py-2.5 rounded-lg text-center relative z-10">
+          <h1 className="font-rajdhani text-5xl font-bold letter-spacing-widest text-foreground">
             ACDP
           </h1>
-          <p className="font-barlow-cond text-xs letter-spacing-wider text-gray-600 mt-0.5">
+          <p className="font-barlow-cond text-xs letter-spacing-wider text-muted-foreground mt-0.5">
             CONSUMER GOODS TRADING
           </p>
         </div>
 
         {/* Tagline */}
-        <div className="text-center text-off-white relative z-10">
+        <div className="text-center text-chrome-foreground relative z-10">
           <div className="font-rajdhani text-lg tracking-wider whitespace-nowrap">Cold Chain Connect</div>
-          <div className="mt-1 text-[10px] font-semibold uppercase tracking-[0.3em] text-white/65">System</div>
+          
         </div>
       </div>
 
       {/* Right Side - Login Form */}
       <div className="w-full md:flex-1 flex items-center justify-center px-6 py-8 md:py-12">
-        <div className="bg-white rounded-2xl px-8 md:px-10 py-6 md:py-7 w-full max-w-sm md:max-w-md flex flex-col items-center gap-5 shadow-lg md:shadow-xl border border-border">
+        <div className="bg-card rounded-2xl px-8 md:px-10 py-6 md:py-7 w-full max-w-sm md:max-w-md flex flex-col items-center gap-5 shadow-lg md:shadow-xl border border-border">
           <div className="text-center">
-            <h2 className="font-rajdhani text-2xl font-semibold text-navy">Welcome Back</h2>
-            <p className="mt-1 text-sm text-gray-500">Sign in to continue</p>
+            <h2 className="font-rajdhani text-2xl font-semibold text-foreground">Welcome back</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Sign in to continue</p>
           </div>
 
           {challenge ? (
@@ -133,67 +136,63 @@ export function Login() {
               onBack={resetToCredentials}
             />
           ) : (
-            <form className="w-full flex flex-col gap-3.5" onSubmit={handleSubmit}>
+            <form className="flex w-full flex-col gap-4" onSubmit={handleSubmit} noValidate={false}>
               {error && (
-                <div className="w-full px-3.5 py-2.5 bg-red-50 border-2 border-red-200 rounded-lg text-sm text-red-700">
+                <div role="alert" className="w-full rounded-lg border border-destructive/30 bg-destructive-soft px-3.5 py-2.5 text-sm text-destructive">
                   {error}
                 </div>
               )}
 
-              {/* Username Field */}
-              <div>
-                <label className="block text-xs font-semibold text-navy mb-1.5 letter-spacing-tight">
-                  Username
-                </label>
-                <input
-                  type="text"
-                  placeholder="Enter your username"
+              <div className="space-y-1.5">
+                <Label htmlFor="login-username">Username</Label>
+                <Input
+                  id="login-username"
+                  name="username"
+                  autoComplete="username"
+                  autoCapitalize="none"
+                  spellCheck={false}
+                  autoFocus
+                  required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   disabled={isLoading}
-                  className="w-full px-3.5 py-2.5 border border-[#CBD5E1] rounded-lg text-sm text-navy bg-white transition-colors focus:outline-none focus:border-accent disabled:opacity-50"
+                  aria-invalid={Boolean(error) || undefined}
                 />
               </div>
 
-              {/* Password Field */}
-              <div>
-                <label className="block text-xs font-semibold text-navy mb-1.5 letter-spacing-tight">
-                  Password
-                </label>
+              <div className="space-y-1.5">
+                <Label htmlFor="login-password">Password</Label>
                 <div className="relative">
-                  <input
+                  <Input
+                    id="login-password"
+                    name="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
+                    autoComplete="current-password"
+                    required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isLoading}
-                    className="w-full px-3.5 py-2.5 pr-11 border border-[#CBD5E1] rounded-lg text-sm text-navy bg-white transition-colors focus:outline-none focus:border-accent disabled:opacity-50"
+                    aria-invalid={Boolean(error) || undefined}
+                    className="pr-11"
                   />
                   <button
                     type="button"
                     aria-label={showPassword ? "Hide password" : "Show password"}
-                    title={showPassword ? "Hide password" : "Show password"}
+                    aria-pressed={showPassword}
                     onClick={() => setShowPassword((visible) => !visible)}
                     disabled={isLoading}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-navy disabled:opacity-50"
+                    className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                   >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
                   </button>
                 </div>
               </div>
 
-              {/* Login Button */}
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="w-full py-3.5 bg-navy text-white rounded-xl font-rajdhani text-xl letter-spacing-widest font-semibold cursor-pointer transition-colors hover:bg-navy-mid mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isLoading ? "Logging in..." : "Login"}
-              </button>
+              <Button type="submit" size="lg" disabled={isLoading} className="mt-1 w-full">
+                {isLoading ? "Signing in…" : "Sign in"}
+              </Button>
 
-              <div className="text-center text-xs text-gray-500">
-                Forgot credentials? Contact Administrator
-              </div>
+              <p className="text-center text-xs text-muted-foreground">Forgot your password? Ask an administrator to reset it.</p>
             </form>
           )}
         </div>

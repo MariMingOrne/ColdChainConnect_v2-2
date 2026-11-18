@@ -27,7 +27,7 @@ export function AgentOrderItems({
   if (orderItems.length === 0) {
     return (
       <div className="text-center py-12 space-y-4">
-        <p className="text-sm text-muted">No items added yet.</p>
+        <p className="text-sm text-muted-foreground">No items added yet.</p>
         <button
           type="button"
           onClick={onBrowseProducts}
@@ -49,8 +49,8 @@ export function AgentOrderItems({
         return (
           <li key={`${item.product_id}-${idx}`} className="flex items-center gap-3 py-3">
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-navy truncate">{product.name}</p>
-              <p className="text-xs text-muted">
+              <p className="text-sm font-semibold text-foreground truncate">{product.name}</p>
+              <p className="text-xs text-muted-foreground">
                 ₱{product.price} · {maxQty} available
               </p>
             </div>
@@ -64,7 +64,7 @@ export function AgentOrderItems({
               type="button"
               onClick={() => onRemoveItem(idx)}
               aria-label="Remove item"
-              className="p-2 text-red-500 hover:bg-red-50 rounded"
+              className="p-2 text-destructive hover:bg-destructive-soft rounded"
             >
               <Trash2 size={16} />
             </button>

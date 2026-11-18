@@ -1,3 +1,5 @@
+import { toast } from "sonner";
+import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -101,13 +103,13 @@ export function BookingSummary() {
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
-      pending: "bg-yellow-100 text-yellow-800",
-      approved: "bg-blue-100 text-blue-800",
-      rejected: "bg-red-100 text-red-800",
-      prep: "bg-purple-100 text-purple-800",
-      ready: "bg-green-100 text-green-800",
+      pending: "bg-warning-soft text-warning",
+      approved: "bg-info-soft text-link",
+      rejected: "bg-destructive-soft text-destructive",
+      prep: "bg-info-soft text-link",
+      ready: "bg-success-soft text-success",
     };
-    return colors[status] || "bg-gray-100 text-navy";
+    return colors[status] || "bg-muted text-foreground";
   };
 
   const isDateInRange = (dateStr: string): boolean => {
@@ -177,16 +179,16 @@ export function BookingSummary() {
 
   const submitOrder = async (override?: { reason: string }) => {
     if (!newCustomerId) {
-      alert("Please select a customer");
+      toast.error("Please select a customer");
       return;
     }
     const emptyItems = orderItems.filter((i) => !i.product_id);
     if (emptyItems.length > 0) {
-      alert(`Please select a product for ${emptyItems.length} item${emptyItems.length > 1 ? "s" : ""}`);
+      toast.error(`Please select a product for ${emptyItems.length} item${emptyItems.length > 1 ? "s" : ""}`);
       return;
     }
     if (orderItems.length === 0) {
-      alert("Please add at least one item to the order");
+      toast.error("Please add at least one item to the order");
       return;
     }
     setIsCreating(true);
@@ -202,7 +204,7 @@ export function BookingSummary() {
         }),
       });
       if (res.status === 401) {
-        alert("Your session has expired or your account was not found. Please log in again.");
+        toast.error("Your session has expired or your account was not found. Please log in again.");
         await logout();
         return;
       }
@@ -211,7 +213,7 @@ export function BookingSummary() {
         if (isCreditBlock(block)) {
           const reason = override ? null : promptCreditOverride(block);
           if (reason) return await submitOrder({ reason });
-          alert(describeCreditBlock(block));
+          toast.error(describeCreditBlock(block));
           return;
         }
       }
@@ -226,7 +228,7 @@ export function BookingSummary() {
       setPreparedDeliveryDate("");
       setOrderItems([]);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to create order");
+      toast.error(err instanceof Error ? err.message : "Failed to create order");
     } finally {
       setIsCreating(false);
     }
@@ -241,7 +243,7 @@ export function BookingSummary() {
   };
 
   const handleRollbackOrder = async (booking: Booking) => {
-    if (!window.confirm("Roll back this order? It will be permanently deleted.")) return;
+    if (!(await confirmAction("Roll back this order? It will be permanently deleted."))) return;
     setRollingBackId(booking.id);
     try {
       const res = await fetch(`/api/bookings/${booking.id}`, {
@@ -254,7 +256,7 @@ export function BookingSummary() {
       }
       setBookings((prev) => prev.filter((b) => b.id !== booking.id));
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to roll back order");
+      toast.error(err instanceof Error ? err.message : "Failed to roll back order");
     } finally {
       setRollingBackId(null);
     }
@@ -285,7 +287,7 @@ export function BookingSummary() {
   };
 
   const handleApproveBooking = async () => {
-    if (!selectedBooking) return alert("No booking selected");
+    if (!selectedBooking) return void toast.error("No booking selected");
     setIsApproving(true);
     try {
       const res = await fetch(`/api/bookings/${selectedBooking.id}/status`, {
@@ -301,14 +303,14 @@ export function BookingSummary() {
       setBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
       setApproveSuccess("Order approved. The invoice will be created after stock picking is complete.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to approve booking");
+      toast.error(err instanceof Error ? err.message : "Failed to approve booking");
     } finally {
       setIsApproving(false);
     }
   };
 
   const handleUnapproveBooking = async (booking: Booking) => {
-    if (!window.confirm("Are you sure you want to unapprove this order? It will return to pending status.")) return;
+    if (!(await confirmAction("Are you sure you want to unapprove this order? It will return to pending status."))) return;
     try {
       const res = await fetch(`/api/bookings/${booking.id}/status`, {
         method: "PATCH",
@@ -321,9 +323,9 @@ export function BookingSummary() {
       }
       const updated = await res.json();
       setBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
-      alert("Order moved back to pending status.");
+      toast.success("Order moved back to pending status.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to unapprove booking");
+      toast.error(err instanceof Error ? err.message : "Failed to unapprove booking");
     }
   };
 
@@ -340,7 +342,7 @@ export function BookingSummary() {
   };
 
   const handleRejectBooking = async () => {
-    if (!selectedBooking) return alert("No booking selected");
+    if (!selectedBooking) return void toast.error("No booking selected");
     setIsRejecting(true);
     try {
       const res = await fetch(`/api/bookings/${selectedBooking.id}/status`, {
@@ -355,9 +357,9 @@ export function BookingSummary() {
       const updated = await res.json();
       setBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
       closeRejectModal();
-      alert("Order rejected successfully.");
+      toast.success("Order rejected successfully.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to reject booking");
+      toast.error(err instanceof Error ? err.message : "Failed to reject booking");
     } finally {
       setIsRejecting(false);
     }
@@ -430,35 +432,35 @@ export function BookingSummary() {
           </button>
         </div>
 
-        <div className="bg-white rounded-2xl border border-border p-6 space-y-4 max-w-2xl">
+        <div className="bg-card rounded-2xl border border-border p-6 space-y-4 max-w-2xl">
           <div>
-            <label className="block text-xs font-semibold text-navy mb-1">Order ID</label>
-            <div className="px-3 py-2 bg-off-white rounded-lg text-sm font-mono text-navy">
+            <label className="block text-xs font-semibold text-foreground mb-1">Order ID</label>
+            <div className="px-3 py-2 bg-muted rounded-lg text-sm font-mono text-foreground">
               {selectedBooking.id.slice(0, 8)}
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-navy mb-1">Customer</label>
-            <div className="px-3 py-2 bg-off-white rounded-lg text-sm text-navy">
+            <label className="block text-xs font-semibold text-foreground mb-1">Customer</label>
+            <div className="px-3 py-2 bg-muted rounded-lg text-sm text-foreground">
               <span className="font-semibold">{selectedBooking.customer?.store_name || "Unknown"}</span>
               {selectedBooking.customer?.contact_info && (
-                <span className="text-xs text-muted block">{selectedBooking.customer.contact_info}</span>
+                <span className="text-xs text-muted-foreground block">{selectedBooking.customer.contact_info}</span>
               )}
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-navy mb-1">Location</label>
-            <div className="px-3 py-2 bg-off-white rounded-lg text-sm text-navy">
+            <label className="block text-xs font-semibold text-foreground mb-1">Location</label>
+            <div className="px-3 py-2 bg-muted rounded-lg text-sm text-foreground">
               {selectedBooking.customer?.location || "Unknown"}
             </div>
           </div>
 
           {approveSuccess ? (
-            <div className="px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800 font-semibold">
+            <div className="px-4 py-3 bg-success-soft border border-success/30 rounded-lg text-sm text-success font-semibold">
               ✓ {approveSuccess}
             </div>
           ) : (
-            <div className="px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+            <div className="px-4 py-3 bg-info-soft border border-link/30 rounded-lg text-sm text-link">
               The truck will be automatically assigned based on the customer's truck district.
             </div>
           )}
@@ -496,24 +498,24 @@ export function BookingSummary() {
           </button>
         </div>
 
-        <div className="bg-white rounded-2xl border border-border p-6 space-y-4 max-w-2xl">
+        <div className="bg-card rounded-2xl border border-border p-6 space-y-4 max-w-2xl">
           <div>
-            <label className="block text-xs font-semibold text-navy mb-1">Order ID</label>
-            <div className="px-3 py-2 bg-off-white rounded-lg text-sm font-mono text-navy">
+            <label className="block text-xs font-semibold text-foreground mb-1">Order ID</label>
+            <div className="px-3 py-2 bg-muted rounded-lg text-sm font-mono text-foreground">
               {selectedBooking.id.slice(0, 8)}
             </div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-navy mb-1">Customer</label>
-            <div className="px-3 py-2 bg-off-white rounded-lg text-sm text-navy">
+            <label className="block text-xs font-semibold text-foreground mb-1">Customer</label>
+            <div className="px-3 py-2 bg-muted rounded-lg text-sm text-foreground">
               <span className="font-semibold">{selectedBooking.customer?.store_name || "Unknown"}</span>
               {selectedBooking.customer?.contact_info && (
-                <span className="text-xs text-muted block">{selectedBooking.customer.contact_info}</span>
+                <span className="text-xs text-muted-foreground block">{selectedBooking.customer.contact_info}</span>
               )}
             </div>
           </div>
-          <div className="bg-red-50 p-3 rounded-lg border border-red-200">
-            <p className="text-xs text-red-800">
+          <div className="bg-destructive-soft p-3 rounded-lg border border-destructive/30">
+            <p className="text-xs text-destructive">
               This order will be marked as rejected and cannot be processed further. This action cannot be undone easily.
             </p>
           </div>
@@ -582,8 +584,8 @@ export function BookingSummary() {
       </div>
 
       {error && (
-        <Card className="p-4 bg-red-50 border-red-200">
-          <p className="text-red-700">{error}</p>
+        <Card className="p-4 bg-destructive-soft border-destructive/30">
+          <p className="text-destructive">{error}</p>
         </Card>
       )}
 
@@ -634,30 +636,30 @@ export function BookingSummary() {
       {dateRangeFilter === "custom" && (
         <div className="flex flex-col sm:flex-row gap-3 items-end">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-navy mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Start Date
             </label>
-            <div className="flex items-center rounded-full border border-border bg-white px-4 gap-2">
-              <Calendar size={16} className="text-muted" />
+            <div className="flex items-center rounded-full border border-border bg-card px-4 gap-2">
+              <Calendar size={16} className="text-muted-foreground" />
               <Input
                 type="date"
                 value={customDateStart}
                 onChange={(e) => setCustomDateStart(e.target.value)}
-                className="flex-1 bg-transparent border-none text-navy py-2 outline-none text-sm"
+                className="flex-1 bg-transparent border-none text-foreground py-2 outline-none text-sm"
               />
             </div>
           </div>
           <div className="flex-1">
-            <label className="block text-sm font-medium text-navy mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               End Date
             </label>
-            <div className="flex items-center rounded-full border border-border bg-white px-4 gap-2">
-              <Calendar size={16} className="text-muted" />
+            <div className="flex items-center rounded-full border border-border bg-card px-4 gap-2">
+              <Calendar size={16} className="text-muted-foreground" />
               <Input
                 type="date"
                 value={customDateEnd}
                 onChange={(e) => setCustomDateEnd(e.target.value)}
-                className="flex-1 bg-transparent border-none text-navy py-2 outline-none text-sm"
+                className="flex-1 bg-transparent border-none text-foreground py-2 outline-none text-sm"
               />
             </div>
           </div>
@@ -682,7 +684,7 @@ export function BookingSummary() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   {bookings.length === 0 ? "No orders found" : "No orders match your search"}
                 </TableCell>
               </TableRow>
@@ -704,27 +706,27 @@ export function BookingSummary() {
                     <TableCell className="text-sm">
                       {customer ? (
                         <div className="flex flex-col">
-                          <span className="font-semibold text-navy">{customer.store_name}</span>
+                          <span className="font-semibold text-foreground">{customer.store_name}</span>
                           {customer.contact_info && (
-                            <span className="text-xs text-muted">{customer.contact_info}</span>
+                            <span className="text-xs text-muted-foreground">{customer.contact_info}</span>
                           )}
                         </div>
                       ) : (
-                        <span className="text-muted">Unknown customer</span>
+                        <span className="text-muted-foreground">Unknown customer</span>
                       )}
                     </TableCell>
                     <TableCell className="text-sm">
                       {creator ? (
-                        <span className="font-semibold text-navy">{creator.username}</span>
+                        <span className="font-semibold text-foreground">{creator.username}</span>
                       ) : (
-                        <span className="text-muted italic">Unknown</span>
+                        <span className="text-muted-foreground italic">Unknown</span>
                       )}
                     </TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded text-sm ${
                         isApproved
-                          ? "bg-green-100 text-green-800"
-                          : "bg-yellow-100 text-yellow-800"
+                          ? "bg-success-soft text-success"
+                          : "bg-warning-soft text-warning"
                       }`}>
                         {isApproved ? "Approved" : "Pending"}
                       </span>
@@ -737,7 +739,7 @@ export function BookingSummary() {
                     <TableCell className="text-sm whitespace-nowrap">
                       {booking.prepared_delivery_date
                         ? new Date(`${booking.prepared_delivery_date}T00:00:00`).toLocaleDateString()
-                        : <span className="text-muted">—</span>}
+                        : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell className="text-sm">
                       {new Date(booking.created_at).toLocaleDateString()}
@@ -771,7 +773,7 @@ export function BookingSummary() {
                           </button>
                         </div>
                       ) : (
-                        <span className="px-3 py-1.5 text-xs font-semibold text-muted bg-off-white rounded-lg capitalize border border-border">{booking.status}</span>
+                        <span className="px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-muted rounded-lg capitalize border border-border">{booking.status}</span>
                       )}
                     </TableCell>
                   </TableRow>

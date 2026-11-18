@@ -40,7 +40,7 @@ export function ActivityReport({ logs }: ActivityReportProps) {
 
   if (logs.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border bg-white p-10 text-center text-sm text-gray-500">
+      <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center text-sm text-muted-foreground">
         No activity recorded yet. Charts will appear once changes are made in the system.
       </div>
     );
@@ -50,22 +50,22 @@ export function ActivityReport({ logs }: ActivityReportProps) {
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {[
-          { label: "Total events", value: logs.length, color: "text-navy" },
-          { label: "Created", value: count("create"), color: "text-green-700" },
-          { label: "Updated", value: count("update"), color: "text-blue-700" },
-          { label: "Deleted", value: count("delete"), color: "text-red-700" },
+          { label: "Total events", value: logs.length, color: "text-foreground" },
+          { label: "Created", value: count("create"), color: "text-success" },
+          { label: "Updated", value: count("update"), color: "text-link" },
+          { label: "Deleted", value: count("delete"), color: "text-destructive" },
         ].map((stat) => (
-          <div key={stat.label} className="rounded-xl border border-border bg-white p-4">
-            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{stat.label}</p>
+          <div key={stat.label} className="rounded-xl border border-border bg-card p-4">
+            <p className="text-xs font-semibold text-muted-foreground">{stat.label}</p>
             <p className={`mt-1 font-rajdhani text-2xl font-bold ${stat.color}`}>{stat.value.toLocaleString()}</p>
           </div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-white p-6 xl:col-span-2">
-          <h2 className="text-lg font-bold text-navy">Activity by day</h2>
-          <p className="mb-4 text-sm text-gray-500">Number of recorded changes per day</p>
+        <div className="rounded-2xl border border-border bg-card p-6 xl:col-span-2">
+          <h2 className="text-lg font-bold text-foreground">Activity by day</h2>
+          <p className="mb-4 text-sm text-muted-foreground">Number of recorded changes per day</p>
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={dailyActivity}>
@@ -79,9 +79,9 @@ export function ActivityReport({ logs }: ActivityReportProps) {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-border bg-white p-6">
-          <h2 className="text-lg font-bold text-navy">Actions</h2>
-          <p className="mb-4 text-sm text-gray-500">Share of each action type</p>
+        <div className="rounded-2xl border border-border bg-card p-6">
+          <h2 className="text-lg font-bold text-foreground">Actions</h2>
+          <p className="mb-4 text-sm text-muted-foreground">Share of each action type</p>
           <div className="h-72 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -98,9 +98,9 @@ export function ActivityReport({ logs }: ActivityReportProps) {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-border bg-white p-6">
-        <h2 className="text-lg font-bold text-navy">Changes by resource</h2>
-        <p className="mb-4 text-sm text-gray-500">Which parts of the system change most often</p>
+      <div className="rounded-2xl border border-border bg-card p-6">
+        <h2 className="text-lg font-bold text-foreground">Changes by resource</h2>
+        <p className="mb-4 text-sm text-muted-foreground">Which parts of the system change most often</p>
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={resourceBreakdown} layout="vertical" margin={{ left: 24 }}>
