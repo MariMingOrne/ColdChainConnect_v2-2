@@ -1,15 +1,16 @@
 import { ArrowLeft } from "lucide-react";
 import { Booking, Product } from "@shared/api";
 import { OrderTotalsBreakdown } from "@/components/OrderTotalsBreakdown";
+import { StatusBadge, StatusTone } from "@/components/StatusBadge";
 
 interface BookingDetailPageProps {
   booking: Booking;
   products: Product[];
-  getStatusColor: (status: string) => string;
+  getStatusTone: (status: string) => StatusTone;
   onBack: () => void;
 }
 
-export function BookingDetailPage({ booking, products, getStatusColor, onBack }: BookingDetailPageProps) {
+export function BookingDetailPage({ booking, products, getStatusTone, onBack }: BookingDetailPageProps) {
   return (
     <div className="flex-1 flex flex-col p-6 gap-6">
       <div className="page-header">
@@ -35,9 +36,7 @@ export function BookingDetailPage({ booking, products, getStatusColor, onBack }:
           <div>
             <label className="block text-xs font-semibold text-foreground mb-1">Status</label>
             <div className="px-3 py-2 bg-muted rounded-lg text-sm">
-              <span className={`px-2 py-1 rounded text-sm font-semibold ${getStatusColor(booking.status)}`}>
-                {booking.status}
-              </span>
+              <StatusBadge label={booking.status} tone={getStatusTone(booking.status)} />
             </div>
           </div>
         </div>

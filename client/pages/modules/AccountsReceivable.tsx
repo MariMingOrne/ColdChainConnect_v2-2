@@ -3,6 +3,7 @@ import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { StatusBadge, StatusTone } from "@/components/StatusBadge";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import {
   Table,
@@ -13,7 +14,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CheckCircle } from "lucide-react";
-import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { TableBulkAction, TableToolbar } from "@/components/TableToolbar";
 import { newestFirst } from "@/components/SortableHeader";
 import { AccountsReceivable as ARType, Customer } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
@@ -36,6 +37,7 @@ export function AccountsReceivable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("outstanding");
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const fetchData = async () => {
     if (!token) return;
@@ -86,6 +88,29 @@ export function AccountsReceivable() {
     }
   };
 
+  const handleMarkSelectedPaid = async () => {
+    const eligible = arRecords.filter((ar) => selectedIds.includes(ar.id) && ar.status !== "paid" && parseFloat(ar.amount_due) >= 0);
+    if (eligible.length === 0) return void toast.error("Select unpaid records to mark as paid");
+    if (!(await confirmAction(`Mark ${eligible.length} selected AR ${eligible.length === 1 ? "record" : "records"} as paid?`))) return;
+
+    const results = await Promise.all(eligible.map(async (ar) => {
+      try {
+        const res = await fetch(`/api/accounts-receivable/${ar.id}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ status: "paid" }),
+        });
+        return res.ok;
+      } catch {
+        return false;
+      }
+    }));
+    const failed = results.filter((ok) => !ok).length;
+    setSelectedIds([]);
+    await fetchData();
+    if (failed > 0) toast.error(`${failed} record(s) could not be marked as paid.`);
+  };
+
   useEffect(() => {
     if (token) fetchData();
   }, [token]);
@@ -108,10 +133,10 @@ export function AccountsReceivable() {
     return "bg-destructive-soft text-destructive";
   };
 
-  const getStatusColor = (status: string) => {
-    if (status === "paid")    return "badge-green";
-    if (status === "partial") return "badge-gold";
-    return "badge-blue";
+  const getStatusTone = (status: string): StatusTone => {
+    if (status === "paid")    return "success";
+    if (status === "partial") return "info";
+    return "warning";
   };
 
   // ── Derived counts ──────────────────────────────────────────────────────────
@@ -148,6 +173,17 @@ export function AccountsReceivable() {
       getCustomerName(ar.customer_id).toLowerCase().includes(q)
     );
   }));
+
+  const filteredIds = filtered.map((ar) => ar.id);
+  const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedIds.includes(id));
+  const selectedRecords = arRecords.filter((ar) => selectedIds.includes(ar.id));
+  const toggleRecordSelection = (id: string, checked: boolean) =>
+    setSelectedIds((current) => (checked ? [...current, id] : current.filter((selectedId) => selectedId !== id)));
+  const toggleFilteredSelection = (checked: boolean) =>
+    setSelectedIds((current) => (checked ? Array.from(new Set([...current, ...filteredIds])) : current.filter((id) => !filteredIds.includes(id))));
+  const bulkActions: TableBulkAction[] = [
+    { label: "Mark selected as paid", onSelect: () => void handleMarkSelectedPaid() },
+  ];
 
   if (isLoading) return <LoadingSpinner />;
 
@@ -188,18 +224,12 @@ export function AccountsReceivable() {
         </Card>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <SearchFilterBar
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          placeholder="Search by customer or AR ID…"
-          className="!flex-none"
-        />
+      <div className="flex flex-col gap-3">
         <div className="inline-flex w-fit rounded-full border border-border bg-card p-1">
           {TABS.map((tab) => (
             <button
               key={tab.key}
-              onClick={() => { setActiveTab(tab.key); setSearchTerm(""); }}
+              onClick={() => { setActiveTab(tab.key); setSearchTerm(""); setSelectedIds([]); }}
               className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition ${
                 activeTab === tab.key
                   ? "bg-primary text-primary-foreground"
@@ -215,6 +245,13 @@ export function AccountsReceivable() {
             </button>
           ))}
         </div>
+        <TableToolbar
+          selectedCount={selectedRecords.length}
+          bulkActions={bulkActions}
+          searchValue={searchTerm}
+          onSearchChange={setSearchTerm}
+          searchPlaceholder="Search by customer or AR ID…"
+        />
       </div>
 
       {/* Table */}
@@ -222,6 +259,9 @@ export function AccountsReceivable() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10 px-3">
+                <input aria-label="Select all AR records" type="checkbox" checked={allFilteredSelected} onChange={(event) => toggleFilteredSelection(event.target.checked)} />
+              </TableHead>
               <TableHead>AR ID</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Amount</TableHead>
@@ -235,7 +275,7 @@ export function AccountsReceivable() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-10 text-muted-foreground text-sm">
+                <TableCell colSpan={9} className="text-center py-10 text-muted-foreground text-sm">
                   {activeTab === "outstanding" && "No outstanding balances — great job! 🎉"}
                   {activeTab === "paid"        && "No paid records yet."}
                   {activeTab === "credits"     && "No return credits yet."}
@@ -249,6 +289,9 @@ export function AccountsReceivable() {
                 const isCredit = amountNum < 0;
                 return (
                   <TableRow key={ar.id} className="hover:bg-accent/40 transition-colors">
+                    <TableCell className="w-10 px-3">
+                      <input aria-label={`Select AR ${ar.id.slice(0, 8)}`} type="checkbox" checked={selectedIds.includes(ar.id)} onChange={(event) => toggleRecordSelection(ar.id, event.target.checked)} />
+                    </TableCell>
                     <TableCell className="font-mono text-xs text-muted-foreground">{ar.id.slice(0, 8)}…</TableCell>
                     <TableCell className="text-sm font-semibold text-foreground">
                       {getCustomerName(ar.customer_id)}
@@ -260,9 +303,7 @@ export function AccountsReceivable() {
                       }
                     </TableCell>
                     <TableCell>
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(ar.status)}`}>
-                        {ar.status}
-                      </span>
+                      <StatusBadge label={ar.status} tone={getStatusTone(ar.status)} />
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate" title={ar.notes ?? ""}>
                       {ar.notes || "—"}

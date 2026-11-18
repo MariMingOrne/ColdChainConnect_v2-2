@@ -4,7 +4,8 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { ArrowLeft } from "lucide-react";
-import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { RecordTitleButton } from "@/components/RecordTitleButton";
+import { TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
 import { Customer, Truck, Invoice } from "@shared/api";
 import { Table } from "@/components/ui/table";
 import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
@@ -145,26 +146,18 @@ export function DeliveryHistory() {
       </div>
 
       {/* Search and Filters */}
-      <SearchFilterBar
-        searchTerm={search}
+      <TableToolbar
+        searchValue={search}
         onSearchChange={(value) => { setSearch(value); setPage(1); }}
-        placeholder="Search by receipt #, customer, truck, or invoice…"
-        className="!justify-start"
-        filters={[
-          {
-            name: "customerFilter",
-            value: customerFilter,
-            onChange: (value) => { setCustomerFilter(value); setPage(1); },
-            options: [
-              { label: "All Customers", value: "all" },
-              ...customers.map((c) => ({
-                label: c.store_name || c.id.slice(0, 8),
-                value: c.id,
-              })),
-            ],
-          },
-        ]}
-      />
+        searchPlaceholder="Search by receipt #, customer, truck, or invoice…"
+      >
+        <TableFilterSelect label="Customer" value={customerFilter} onChange={(value) => { setCustomerFilter(value); setPage(1); }}>
+          <option value="">All Customers</option>
+          {customers.map((c) => (
+            <option key={c.id} value={c.id}>{c.store_name || c.id.slice(0, 8)}</option>
+          ))}
+        </TableFilterSelect>
+      </TableToolbar>
 
       {/* Table */}
       <div className="data-table-frame overflow-hidden">
@@ -193,7 +186,9 @@ export function DeliveryHistory() {
                 ) : (
                   paginated.map((r) => (
                     <tr key={r.id} className="border-b border-border hover:bg-accent/50 transition-colors">
-                      <td className="px-3 py-3 font-mono font-semibold text-accent-2">{r.receipt_number}</td>
+                      <td className="px-3 py-3 font-mono font-semibold">
+                        <RecordTitleButton onClick={() => setViewReceipt(r)}>{r.receipt_number}</RecordTitleButton>
+                      </td>
                       <td className="px-3 py-3 text-foreground font-semibold">
                         {r.customer?.store_name ?? <span className="text-muted-foreground font-normal">{r.customer_id.slice(0, 8)}…</span>}
                         {r.customer?.location && <p className="text-muted-foreground font-normal text-xs">{r.customer.location}</p>}

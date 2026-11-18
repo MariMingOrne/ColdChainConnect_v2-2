@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Booking, InventoryBatch } from "@shared/api";
+import { PALLET_CAPACITY, PalletDraft, buildAutomaticPallets, isCompletePick } from "@/lib/automaticPicking";
 
 interface CreatePalletFormProps {
   order: Booking;
@@ -9,19 +10,6 @@ interface CreatePalletFormProps {
   token: string;
   isPrepared?: boolean;
 }
-
-type PalletDraft = {
-  items: Array<{
-    product_id: string;
-    product_name?: string;
-    product_sku?: string;
-    qty_units: number;
-    batch_item_id: string;
-    batch_name: string;
-    expiry_note?: string;
-  }>;
-  totalQty: number;
-};
 
 export function CreatePalletForm({
   order,
@@ -38,86 +26,10 @@ export function CreatePalletForm({
   ]);
   const [error, setError] = useState<string | null>(null);
 
-  const PALLET_CAPACITY = 50;
-
   useEffect(() => {
-    // Auto-find matching items from inventory sorted by expiry date, splitting into multiple pallets
-    const orderItems = order.booking_items || [];
-    const pallets: PalletDraft[] = [];
-    const assignedBySource = new Map<string, number>();
-    let currentPallet: PalletDraft = { items: [], totalQty: 0 };
-
-    for (const orderItem of orderItems) {
-      const neededQty = orderItem.qty_ordered;
-      let remainingQty = neededQty;
-
-      // Collect all matching inventory items and sort by expiry (nearest first)
-      const matchingItems = batches
-        .flatMap((batch) =>
-          (batch.items || [])
-            .filter((item) => item.product_id === orderItem.product_id)
-            .map((item) => ({
-              batchId: batch.id,
-              batchName: batch.name,
-              item,
-              expiryNote: batch.items?.find(i => i.id === item.id)?.created_at || "",
-            }))
-        )
-        .sort((a, b) => {
-          // Sort by expiry date (closer dates first - FIFO)
-          const dateA = new Date(a.expiryNote).getTime();
-          const dateB = new Date(b.expiryNote).getTime();
-          return dateA - dateB;
-        });
-
-      // Fill pallets with matching items, creating new pallets when capacity is exceeded
-      for (const { batchId, batchName, item } of matchingItems) {
-        if (remainingQty <= 0) break;
-
-        const available = Math.max(0, (item.available_units ?? item.qty_units) - (assignedBySource.get(item.id) ?? 0));
-        const qtyToTake = Math.min(remainingQty, available);
-        if (qtyToTake <= 0) continue;
-        assignedBySource.set(item.id, (assignedBySource.get(item.id) ?? 0) + qtyToTake);
-        let qtyAdded = 0;
-
-        while (qtyAdded < qtyToTake) {
-          const spaceInCurrentPallet = PALLET_CAPACITY - currentPallet.totalQty;
-          const qtyForThisPallet = Math.min(qtyToTake - qtyAdded, spaceInCurrentPallet);
-
-          currentPallet.items.push({
-            product_id: item.product_id,
-            product_name: orderItem.product?.name,
-            product_sku: orderItem.product?.sku,
-            qty_units: qtyForThisPallet,
-            batch_item_id: item.id,
-            batch_name: batchName,
-            expiry_note: item.created_at,
-          });
-
-          currentPallet.totalQty += qtyForThisPallet;
-          qtyAdded += qtyForThisPallet;
-
-          if (currentPallet.totalQty >= PALLET_CAPACITY) {
-            pallets.push(currentPallet);
-            currentPallet = { items: [], totalQty: 0 };
-          }
-        }
-
-        remainingQty -= qtyToTake;
-      }
-
-      if (remainingQty > 0) {
-        const productName = orderItem.product?.name || orderItem.product_id;
-        setError(`Insufficient inventory for ${productName}: need ${remainingQty} more units`);
-      }
-    }
-
-    // Add the last pallet if it has items
-    if (currentPallet.items.length > 0) {
-      pallets.push(currentPallet);
-    }
-
-    setSuggestedPallets(pallets.length > 0 ? pallets : [{ items: [], totalQty: 0 }]);
+    const { pallets, shortages } = buildAutomaticPallets(order, batches);
+    if (shortages.length > 0) setError(shortages[shortages.length - 1]);
+    setSuggestedPallets(pallets);
   }, [order, batches]);
 
   const handleCreatePallet = async () => {
@@ -318,21 +230,7 @@ export function CreatePalletForm({
       .map(([productId, { name, qty }]) => ({ productId, name, qty }));
   };
 
-  const hasCompletePick = () => {
-    const requested = new Map<string, number>();
-    for (const item of order.booking_items || []) {
-      requested.set(item.product_id, (requested.get(item.product_id) ?? 0) + item.qty_ordered);
-    }
-    const selected = new Map<string, number>();
-    const selectedPallets = mode === "automatic" ? suggestedPallets : manualPallets;
-    for (const pallet of selectedPallets) {
-      for (const item of pallet.items) {
-        selected.set(item.product_id, (selected.get(item.product_id) ?? 0) + item.qty_units);
-      }
-    }
-    return requested.size === selected.size &&
-      [...requested].every(([productId, quantity]) => selected.get(productId) === quantity);
-  };
+  const hasCompletePick = () => isCompletePick(order, mode === "automatic" ? suggestedPallets : manualPallets);
 
   if (isPrepared) {
     return (

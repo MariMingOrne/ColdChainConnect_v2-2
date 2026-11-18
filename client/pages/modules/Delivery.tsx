@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { Table } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { StatusBadge, StatusTone } from "@/components/StatusBadge";
 import { localScheduleDate } from "@/lib/agentSchedule";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { CalendarDays, Clock3, ChevronLeft, Truck as TruckIcon, ChevronDown, ChevronUp, ArrowLeft, Search } from "lucide-react";
@@ -42,6 +43,14 @@ function statusBadgeClass(status: string) {
 function statusLabel(status: string) {
   return status === "in_transit" ? "In Transit" :
          status === "completed"  ? "Completed"  : "Pending";
+}
+
+function runStatusTone(status: string): StatusTone {
+  return status === "completed" ? "success" : status === "in_transit" ? "info" : "warning";
+}
+
+function invoiceStatusTone(status: string): StatusTone {
+  return status === "paid" ? "success" : "warning";
 }
 
 function formatRunDate(delivery: Delivery) {
@@ -413,9 +422,7 @@ export function DeliveryDispatch() {
               onClick={() => setSelectedDelivery(selectedDelivery?.id === delivery.id ? null : delivery)}
             >
               <div className="flex items-center gap-2 min-w-0">
-                <span className={`px-2 py-0.5 rounded text-xs font-semibold flex-shrink-0 ${statusBadgeClass(delivery.status)}`}>
-                  {statusLabel(delivery.status)}
-                </span>
+                <StatusBadge label={statusLabel(delivery.status)} tone={runStatusTone(delivery.status)} className="flex-shrink-0" />
                 <span className="font-mono text-xs text-muted-foreground truncate">{delivery.id.slice(0, 8)}…</span>
                 <span className="text-xs text-muted-foreground flex-shrink-0">{delivery.delivery_items.length} stop{delivery.delivery_items.length !== 1 ? "s" : ""}</span>
               </div>
@@ -475,9 +482,7 @@ export function DeliveryDispatch() {
                             <span className="font-semibold text-foreground text-sm">
                               {item.customer?.store_name ?? item.destination_customer_id.slice(0, 8)}
                             </span>
-                            <span className={`px-2 py-0.5 rounded text-xs font-semibold ${statusBadgeClass(item.status)}`}>
-                              {statusLabel(item.status)}
-                            </span>
+                            <StatusBadge label={statusLabel(item.status)} tone={runStatusTone(item.status)} />
                           </div>
                           {item.customer && (
                             <p className="text-xs text-muted-foreground">{formatCustomerAddress(item.customer)}</p>
@@ -485,11 +490,7 @@ export function DeliveryDispatch() {
                           <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
                             <span className="font-mono">Invoice: {item.invoice_id.slice(0, 8)}…</span>
                             {item.invoice && (
-                              <span className={`px-1.5 py-0.5 rounded font-semibold ${
-                                item.invoice.status === "paid" ? "badge-green" : "badge-gold"
-                              }`}>
-                                {item.invoice.status}
-                              </span>
+                              <StatusBadge label={item.invoice.status} tone={invoiceStatusTone(item.invoice.status)} />
                             )}
                           </div>
                           {item.receipt_number && (
@@ -544,11 +545,7 @@ export function DeliveryDispatch() {
                               <td className="px-3 py-3 font-mono text-foreground">
                                 {item.invoice_id.slice(0, 8)}…
                                 {item.invoice && (
-                                  <span className={`ml-2 px-1.5 py-0.5 rounded text-xs font-semibold ${
-                                    item.invoice.status === "paid" ? "badge-green" : "badge-gold"
-                                  }`}>
-                                    {item.invoice.status}
-                                  </span>
+                                  <StatusBadge label={item.invoice.status} tone={invoiceStatusTone(item.invoice.status)} className="ml-2" />
                                 )}
                               </td>
                               <td className="px-3 py-3 text-foreground font-semibold">
@@ -558,9 +555,7 @@ export function DeliveryDispatch() {
                                 )}
                               </td>
                               <td className="px-3 py-3 whitespace-nowrap">
-                                <span className={`px-2 py-0.5 rounded text-xs font-semibold ${statusBadgeClass(item.status)}`}>
-                                  {statusLabel(item.status)}
-                                </span>
+                                <StatusBadge label={statusLabel(item.status)} tone={runStatusTone(item.status)} />
                               </td>
                               <td className="px-3 py-3 font-mono text-foreground">
                                 {item.receipt_number ?? <span className="text-muted-foreground">—</span>}
