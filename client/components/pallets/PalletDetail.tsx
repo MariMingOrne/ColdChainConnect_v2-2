@@ -1,16 +1,18 @@
 import { confirmAction } from "@/lib/confirm";
-import { useState } from "react";
-import { ArrowLeft, MoreVertical } from "lucide-react";
-import { Booking, Customer, Pallet, formatCustomerAddress, totalDiscountRate } from "@shared/api";
+import { Fragment, useState } from "react";
+import { ArrowLeft, ChevronDown, ChevronRight, MoreVertical } from "lucide-react";
+import { Booking, Customer, InventoryBatch, Pallet, formatCustomerAddress, totalDiscountRate } from "@shared/api";
 import { Card } from "@/components/ui/card";
 import { Table } from "@/components/ui/table";
-import { formatMoney, palletItemTotal, palletTotal, palletStatusOptions } from "./palletUtils";
+import { batchSummary, formatMoney, groupPalletItemsByProduct, palletTotal, palletStatusOptions } from "./palletUtils";
 import { PalletStatusBadge } from "./PalletTable";
+import { PalletBatchBreakdown } from "./PalletBatchBreakdown";
 
 interface PalletDetailProps {
   pallet: Pallet;
   order: Booking | null;
   customer: Customer | null;
+  batches: InventoryBatch[];
   getProductName: (productId: string) => string;
   onStatusChange: (status: Pallet["status"]) => void;
   onPrintSheet: () => void;
@@ -22,6 +24,7 @@ export function PalletDetail({
   pallet,
   order,
   customer,
+  batches,
   getProductName,
   onStatusChange,
   onPrintSheet,
@@ -29,10 +32,20 @@ export function PalletDetail({
   onBack,
 }: PalletDetailProps) {
   const items = pallet.items ?? [];
+  const productGroups = groupPalletItemsByProduct(items, batches);
   const units = items.reduce((sum, item) => sum + item.qty_units, 0);
   const discountRate = totalDiscountRate(order?.customer?.discounts);
   const totalValue = palletTotal(pallet);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [expandedProductIds, setExpandedProductIds] = useState<Set<string>>(() => new Set());
+
+  const toggleProduct = (productId: string) =>
+    setExpandedProductIds((current) => {
+      const next = new Set(current);
+      if (next.has(productId)) next.delete(productId);
+      else next.add(productId);
+      return next;
+    });
   const statusIndex = palletStatusOptions.findIndex((option) => option.value === pallet.status);
   const nextStatus = palletStatusOptions[statusIndex + 1];
   const previousStatus = statusIndex > 0 ? palletStatusOptions[statusIndex - 1] : undefined;
@@ -135,16 +148,41 @@ export function PalletDetail({
               </tr>
             </thead>
             <tbody>
-              {items.map((item) => (
-                <tr key={item.id} className="border-b border-border last:border-0">
-                  <td className="px-4 py-3 font-medium text-foreground">{getProductName(item.product_id)}</td>
-                  <td className="px-4 py-3 text-right tabular-nums">{item.qty_units}</td>
-                  <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{formatMoney(Number(item.unit_cost))}</td>
-                  <td className="px-4 py-3 text-right font-semibold tabular-nums text-foreground">
-                    {formatMoney(palletItemTotal(item))}
-                  </td>
-                </tr>
-              ))}
+              {productGroups.map((group) => {
+                const isExpanded = expandedProductIds.has(group.productId);
+                return (
+                  <Fragment key={group.productId}>
+                    <tr className="border-b border-border">
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          onClick={() => toggleProduct(group.productId)}
+                          aria-expanded={isExpanded}
+                          className="flex items-start gap-2 text-left"
+                        >
+                          {isExpanded ? <ChevronDown size={16} className="mt-0.5 shrink-0" /> : <ChevronRight size={16} className="mt-0.5 shrink-0" />}
+                          <span>
+                            <span className="block font-medium text-foreground">{getProductName(group.productId)}</span>
+                            <span className="block text-xs text-muted-foreground">{batchSummary(group.batches)}</span>
+                          </span>
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums">{group.qty}</td>
+                      <td className="px-4 py-3 text-right tabular-nums text-muted-foreground">{formatMoney(Number(group.unitCost))}</td>
+                      <td className="px-4 py-3 text-right font-semibold tabular-nums text-foreground">
+                        {formatMoney(group.value)}
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr className="border-b border-border bg-muted/40 last:border-0">
+                        <td colSpan={4} className="px-4 py-3 pl-10">
+                          <PalletBatchBreakdown lines={group.batches} />
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                );
+              })}
               {items.length === 0 && (
                 <tr>
                   <td colSpan={4} className="px-4 py-8 text-center text-muted-foreground">
@@ -176,7 +214,7 @@ export function PalletDetail({
           <div className="grid grid-cols-2 gap-4 border-t border-border pt-4">
             <div>
               <p className="text-xs font-semibold text-muted-foreground">Products</p>
-              <p className="mt-1 text-lg font-bold tabular-nums text-foreground">{items.length}</p>
+              <p className="mt-1 text-lg font-bold tabular-nums text-foreground">{productGroups.length}</p>
             </div>
             <div>
               <p className="text-xs font-semibold text-muted-foreground">Units</p>

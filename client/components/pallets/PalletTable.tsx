@@ -46,6 +46,7 @@ export function PalletTable({ entries, onSelect }: PalletTableProps) {
           {[...entries].sort((a, b) => compareNewestFirst(a.pallet, b.pallet)).map(({ pallet, customer }) => {
             const items = pallet.items ?? [];
             const units = items.reduce((sum, item) => sum + item.qty_units, 0);
+            const productCount = new Set(items.map((item) => item.product_id)).size;
 
             return (
               <tr
@@ -68,7 +69,7 @@ export function PalletTable({ entries, onSelect }: PalletTableProps) {
                   )}
                 </td>
                 <td className="px-4 py-3 text-right">
-                  <p className="font-medium tabular-nums text-foreground">{items.length} product{items.length === 1 ? "" : "s"}</p>
+                  <p className="font-medium tabular-nums text-foreground">{productCount} product{productCount === 1 ? "" : "s"}</p>
                   <p className="text-xs text-muted-foreground tabular-nums">{units} units</p>
                 </td>
                 <td className="px-4 py-3 text-right font-semibold tabular-nums text-foreground">

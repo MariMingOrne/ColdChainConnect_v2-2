@@ -4,9 +4,11 @@ import { useLocation, useSearchParams } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { ArrowLeft, ChevronDown, ChevronUp, Package, Search } from "lucide-react";
-import { Booking, Pallet, Product } from "@shared/api";
+import { Booking, InventoryBatch, Pallet, Product } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { Input } from "@/components/ui/input";
+import { batchSummary, groupPalletItemsByProduct } from "@/components/pallets/palletUtils";
+import { PalletBatchBreakdown } from "@/components/pallets/PalletBatchBreakdown";
 
 interface TrackingPallet extends Pallet {
   order?: Booking;
@@ -44,9 +46,11 @@ export function AgentPalletTracking() {
   const [scanPalletId, setScanPalletId] = useState<string | null>(null);
   const [pallets, setPallets] = useState<TrackingPallet[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [batches, setBatches] = useState<InventoryBatch[]>([]);
   const [search, setSearch] = useState(searchParams.get("order") ?? "");
   const [filter, setFilter] = useState<PalletFilter>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [expandedProductKeys, setExpandedProductKeys] = useState<Set<string>>(() => new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [updatingPalletId, setUpdatingPalletId] = useState<string | null>(null);
   const [error, setError] = useState("");
@@ -57,10 +61,11 @@ export function AgentPalletTracking() {
 
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const [bookingRes, palletRes, productRes] = await Promise.all([
+      const [bookingRes, palletRes, productRes, batchRes] = await Promise.all([
         fetch("/api/bookings", { headers }),
         fetch("/api/pallets", { headers }),
         fetch("/api/products", { headers }),
+        fetch("/api/inventory-batches", { headers }),
       ]);
 
       if (!bookingRes.ok || !palletRes.ok || !productRes.ok) {
@@ -75,6 +80,7 @@ export function AgentPalletTracking() {
       const bookingsById = new Map(bookings.map((booking) => [booking.id, booking]));
 
       setProducts(productList);
+      setBatches(batchRes.ok ? await batchRes.json() : []);
       setPallets(allPallets
         .filter((pallet) => bookingsById.has(pallet.order_id))
         .map((pallet) => ({ ...pallet, order: bookingsById.get(pallet.order_id) })));
@@ -124,6 +130,14 @@ export function AgentPalletTracking() {
 
   const productNameFor = (productId: string) =>
     products.find((product) => product.id === productId)?.name ?? productId;
+
+  const toggleProductBatches = (key: string) =>
+    setExpandedProductKeys((current) => {
+      const next = new Set(current);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
 
   const totalUnits = (pallet: Pallet) =>
     (pallet.items ?? []).reduce((sum, item) => sum + item.qty_units, 0);
@@ -300,6 +314,7 @@ export function AgentPalletTracking() {
             const isExpanded = expandedId === pallet.id;
             const customer = pallet.order?.customer;
             const items = pallet.items ?? [];
+            const productGroups = groupPalletItemsByProduct(items, batches);
 
             return (
               <article key={pallet.id} className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
@@ -326,7 +341,7 @@ export function AgentPalletTracking() {
                   </div>
 
                   <div className="flex items-center justify-between border-t border-border pt-3 text-xs text-muted-foreground">
-                    <span>{items.length} product{items.length === 1 ? "" : "s"} · {totalUnits(pallet)} units</span>
+                    <span>{productGroups.length} product{productGroups.length === 1 ? "" : "s"} · {totalUnits(pallet)} units</span>
                     <span className="flex items-center gap-1 font-semibold text-accent-2">
                       {isExpanded ? "Hide items" : "View items"}
                       {isExpanded ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
@@ -339,12 +354,34 @@ export function AgentPalletTracking() {
                     {customer?.location && <p className="mb-2 text-xs text-muted-foreground">{customer.location}</p>}
                     {items.length ? (
                       <ul className="divide-y divide-border">
-                        {items.map((item) => (
-                          <li key={item.id} className="flex items-center justify-between gap-3 py-2 text-sm">
-                            <span className="text-foreground">{productNameFor(item.product_id)}</span>
-                            <span className="shrink-0 font-semibold text-foreground">× {item.qty_units}</span>
-                          </li>
-                        ))}
+                        {productGroups.map((group) => {
+                          const key = `${pallet.id}|${group.productId}`;
+                          const isOpen = expandedProductKeys.has(key);
+                          return (
+                            <li key={group.productId} className="py-2 text-sm">
+                              <button
+                                type="button"
+                                onClick={() => toggleProductBatches(key)}
+                                aria-expanded={isOpen}
+                                className="flex w-full items-center justify-between gap-3 text-left"
+                              >
+                                <span className="min-w-0">
+                                  <span className="block text-foreground">{productNameFor(group.productId)}</span>
+                                  <span className="block text-xs text-muted-foreground">{batchSummary(group.batches)}</span>
+                                </span>
+                                <span className="flex shrink-0 items-center gap-2 font-semibold text-foreground">
+                                  × {group.qty}
+                                  {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                                </span>
+                              </button>
+                              {isOpen && (
+                                <div className="mt-2 pl-1">
+                                  <PalletBatchBreakdown lines={group.batches} />
+                                </div>
+                              )}
+                            </li>
+                          );
+                        })}
                       </ul>
                     ) : (
                       <p className="text-sm text-muted-foreground">No pallet items recorded.</p>
