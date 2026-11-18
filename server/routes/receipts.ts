@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { and, desc, eq, inArray } from "drizzle-orm";
-import { agentInvoiceScope } from "../services/agent-bookings";
+import { and, desc, eq } from "drizzle-orm";
+import { agentInvoiceFilter } from "../services/agent-bookings";
 import { db } from "../db";
 import {
   receipts,
@@ -26,11 +26,11 @@ export const listReceipts: RequestHandler = async (req: AuthRequest, res) => {
       return res.json([]);
     }
 
-    const scope = await agentInvoiceScope(req);
-    if (scope?.length === 0) return res.json([]);
+    const scope = await agentInvoiceFilter(req, receipts.invoice_id);
+    if (scope.none) return res.json([]);
 
     const all = await db.select().from(receipts)
-      .where(scope ? inArray(receipts.invoice_id, scope) : undefined)
+      .where(scope.where)
       .orderBy(desc(receipts.confirmed_at));
     res.json(all);
   } catch (error) {
@@ -262,6 +262,13 @@ export const confirmDeliveryItem: RequestHandler = async (
 //   2. Marks the outstanding accounts_receivable entry for this stop as paid
 //   3. Sets invoice.status = "paid", payment_status = "paid"
 
+/** A business-rule rejection raised inside the payment transaction. */
+class PaymentConflict extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
 export const recordDeliveryItemPayment: RequestHandler = async (
   req: AuthRequest,
   res
@@ -324,10 +331,6 @@ export const recordDeliveryItemPayment: RequestHandler = async (
       }
     } else if (req.user?.role !== "admin") {
       return res.status(403).json({ error: "Not authorized to record payment for this delivery" });
-    }
-
-    class PaymentConflict extends Error {
-      constructor(public status: number, message: string) { super(message); }
     }
 
     let result: { paymentCents: number; remainingCents: number; isFullyPaid: boolean };

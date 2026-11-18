@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { eq, desc, inArray, sql } from "drizzle-orm";
-import { agentInvoiceScope } from "../services/agent-bookings";
+import { eq, desc, sql } from "drizzle-orm";
+import { agentInvoiceFilter } from "../services/agent-bookings";
 import { db } from "../db";
 import {
   agent_returns,
@@ -18,10 +18,10 @@ import { logAction } from "../middleware/audit-logger";
 export const listAgentReturns: RequestHandler = async (req: AuthRequest, res) => {
   try {
     if (!process.env.DATABASE_URL) return res.json([]);
-    const scope = await agentInvoiceScope(req);
-    if (scope?.length === 0) return res.json([]);
+    const scope = await agentInvoiceFilter(req, agent_returns.invoice_id);
+    if (scope.none) return res.json([]);
     const all = await db.query.agent_returns.findMany({
-      where: scope ? inArray(agent_returns.invoice_id, scope) : undefined,
+      where: scope.where,
       with: { invoice: true, customer: true, product: true, creator: true },
       orderBy: [desc(agent_returns.created_at)],
     });

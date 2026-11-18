@@ -16,7 +16,7 @@ export default {
       fontFamily: {
         rajdhani: ["Rajdhani", "Barlow", "system-ui", "sans-serif"],
         barlow: ["Barlow", "system-ui", "sans-serif"],
-        "barlow-cond": ["Barlow", "system-ui", "sans-serif"],
+        "barlow-cond": ["Barlow", "system-ui", "sans-serif"], // legacy alias: condensed face retired for legibility
       },
       // px type scale (ratio ~1.15) on a 14px root: rem spacing stays as it was,
       // while the smallest text is 12px instead of 10.5px.
@@ -44,7 +44,7 @@ export default {
         accent: {
           DEFAULT: "hsl(var(--accent))",
           foreground: "hsl(var(--accent-foreground))",
-          "2": "hsl(var(--link))",
+          "2": "hsl(var(--link))", // legacy name for `link`, still used by un-migrated classes
         },
         link: "hsl(var(--link))",
         destructive: {
@@ -55,9 +55,6 @@ export default {
         success: { DEFAULT: "hsl(var(--success))", soft: "hsl(var(--success-soft))" },
         warning: { DEFAULT: "hsl(var(--warning))", soft: "hsl(var(--warning-soft))" },
         "info-soft": "hsl(var(--info-soft))",
-        "destructive-soft": "hsl(var(--destructive-soft))",
-        "success-soft": "hsl(var(--success-soft))",
-        "warning-soft": "hsl(var(--warning-soft))",
         "brand-gold": { DEFAULT: "hsl(var(--brand-gold))", foreground: "hsl(var(--brand-gold-foreground))" },
         chrome: {
           DEFAULT: "hsl(var(--chrome))",
