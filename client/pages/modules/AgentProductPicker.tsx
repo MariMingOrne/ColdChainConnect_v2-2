@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { Product } from "@shared/api";
 
 interface OrderItem {
@@ -52,18 +53,12 @@ export function AgentProductPicker({
               <p className="text-sm font-bold text-accent-2">₱{product.price}</p>
               {isOutOfStock && <p className="text-xs text-destructive">Out of stock</p>}
             </div>
-            <button
+            <Button
               type="button"
               disabled={isOutOfStock && !isAdded}
-              onClick={() => (isAdded ? onRemoveItem(itemIdx) : onAddItem(product.id))}
-              className={
-                isAdded
-                  ? "px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap bg-accent-2 text-white disabled:opacity-40"
-                  : "px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap border border-accent-2 text-accent-2 disabled:opacity-40"
-              }
-            >
+              onClick={() => (isAdded ? onRemoveItem(itemIdx) : onAddItem(product.id))} variant={isAdded ? "default" : "outline"} size="sm" className="rounded-full px-4 text-xs disabled:opacity-40">
               {isAdded ? "✓ Added" : "Add"}
-            </button>
+            </Button>
           </li>
         );
       })}

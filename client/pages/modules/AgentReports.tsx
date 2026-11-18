@@ -1,3 +1,4 @@
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -259,16 +260,19 @@ export function AgentReports() {
             className="w-full"
           />
         </div>
-        <div className="inline-flex w-fit rounded-full border border-border bg-card p-1">
+        <ToggleGroup
+          type="single"
+          value={statusFilter}
+          onValueChange={(value) => value && setStatusFilter(value as typeof statusFilter)}
+          aria-label="Filter returns by status"
+          className="w-fit flex-wrap justify-start rounded-full border border-border bg-card p-1"
+        >
           {(["all", "pending", "accepted", "rejected"] as const).map((s) => (
-            <button key={s} onClick={() => setStatusFilter(s)}
-              className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold capitalize transition ${
-                statusFilter === s ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}>
+            <ToggleGroupItem key={s} value={s} variant="pill" size="sm" className="capitalize">
               {s}
-            </button>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
       </div>
 
       <div className="data-table-frame overflow-hidden">
@@ -341,13 +345,11 @@ export function AgentReports() {
                               >
                                 <CheckCircle size={12} /> Accept
                               </Button>
-                              <button
+                              <Button
                                 disabled={processing === ret.id}
-                                onClick={() => handleReject(ret.id)}
-                                className="flex items-center gap-1 px-2 py-1 border border-red text-red text-xs font-semibold rounded hover:bg-red/10 disabled:opacity-50"
-                              >
+                                onClick={() => handleReject(ret.id)} variant="danger" size="sm" className="h-8 gap-1 px-2 text-xs">
                                 <XCircle size={12} /> Reject
-                              </button>
+                              </Button>
                             </div>
                           ) : (
                             <span className="text-xs text-muted-foreground">

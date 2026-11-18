@@ -9,7 +9,7 @@ import { Table } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { localScheduleDate } from "@/lib/agentSchedule";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
-import { CalendarDays, Clock3, ChevronLeft, Truck as TruckIcon, ChevronDown, ChevronUp, ArrowLeft, Search } from "lucide-react";
+import { CalendarDays, Clock3, ChevronLeft, Truck as TruckIcon, ChevronDown, ChevronUp, ArrowLeft, Search, X } from "lucide-react";
 import { Delivery, DeliveryItem, Truck, Invoice, Customer, Driver, Agent, formatCustomerAddress } from "@shared/api";
 
 // ─── Extended types ────────────────────────────────────────────────────────────
@@ -587,13 +587,11 @@ export function DeliveryDispatch() {
                                       {confirmingItem === item.id ? "Confirming…" : "✓ Confirm Delivery"}
                                     </Button>
                                     {item.status === "pending" && (
-                                      <button
+                                      <Button
                                         type="button"
-                                        onClick={() => void handleRemoveStop(delivery, item)}
-                                        className="px-2 py-1 text-red text-xs font-semibold hover:opacity-70"
-                                      >
+                                        onClick={() => void handleRemoveStop(delivery, item)} variant="ghost" size="sm" className="h-8 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive">
                                         Remove
-                                      </button>
+                                      </Button>
                                     )}
                                   </div>
                                 )}
@@ -1196,7 +1194,7 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-foreground">Stop {i + 1}</p>
                 {stops.length > 1 && (
-                  <button onClick={() => removeStop(i)} className="text-xs text-red hover:opacity-70">✕ Remove</button>
+                  <Button onClick={() => removeStop(i)} type="button" variant="ghost" size="sm" className="h-8 gap-1 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive"><X size={14} aria-hidden="true" /> Remove</Button>
                 )}
               </div>
 
@@ -1402,15 +1400,11 @@ function PaymentConfirmationModal({
         >
           Cancel
         </Button>
-        <button
+        <Button
           onClick={handleConfirm}
-          disabled={isConfirming}
-          className={`px-4 py-2 text-white rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50 ${
-            isPaid ? "bg-green" : "bg-accent-2"
-          }`}
-        >
+          disabled={isConfirming} variant={isPaid ? "success" : "default"}>
           {isConfirming ? "Processing…" : (isPaid ? "✓ Confirm Paid" : "✓ Confirm Not Paid")}
-        </button>
+        </Button>
       </div>
     </ModalShell>
   );

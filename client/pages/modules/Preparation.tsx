@@ -394,13 +394,11 @@ export function Preparation() {
                             >
                               Prepared
                             </Button>
-                            <button
+                            <Button
                               onClick={() => handleDeleteOrderPallets(order.id)}
-                              className="px-3 py-2 text-sm font-semibold bg-gold text-foreground rounded-lg hover:opacity-80 transition"
-                              title={`Remove ${draftPalletCount} pallet(s) for this order`}
-                            >
+                              title={`Remove ${draftPalletCount} pallet(s) for this order`} type="button" variant="warning" size="sm">
                               Undo
-                            </button>
+                            </Button>
                           </>
                         )}
                         {/* After marked prepared: show badge + Undo */}
@@ -409,12 +407,10 @@ export function Preparation() {
                             <span className="px-3 py-2 text-xs font-semibold text-green bg-green/10 rounded-lg">
                               ✓ Prepared
                             </span>
-                            <button
-                              onClick={() => handleUndoPrepared(order.id)}
-                              className="px-3 py-2 text-sm font-semibold bg-gold text-foreground rounded-lg hover:opacity-80 transition"
-                            >
+                            <Button
+                              onClick={() => handleUndoPrepared(order.id)} type="button" variant="warning" size="sm">
                               Undo
-                            </button>
+                            </Button>
                           </>
                         )}
                       </div>

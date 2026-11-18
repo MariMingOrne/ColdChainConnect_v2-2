@@ -171,15 +171,13 @@ export function LogReturnForm({
                     onChange={(e) => setItems((current) => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, qty_returned: Number(e.target.value) } : entry))}
                   />
                 </div>
-                <button
+                <Button
                   type="button"
                   onClick={() => setItems((current) => current.filter((_, itemIndex) => itemIndex !== index))}
                   disabled={items.length === 1}
-                  aria-label="Remove item"
-                  className="h-[42px] px-2 text-muted-foreground hover:text-red disabled:opacity-30"
-                >
+                  aria-label="Remove item" variant="ghost" size="icon" className="h-10 w-10 text-muted-foreground hover:bg-destructive/10 hover:text-destructive disabled:opacity-30">
                   <Trash2 size={16} />
-                </button>
+                </Button>
               </div>
             );
           })}

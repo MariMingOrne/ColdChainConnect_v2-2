@@ -1,7 +1,7 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Booking, Customer, Product } from "@shared/api";
-import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AgentProductPicker } from "./AgentProductPicker";
@@ -75,22 +75,16 @@ export function AgentOrderScreen({
         </div>
       </header>
 
-      <div className="flex bg-card border-b border-border">
+      <Tabs value={view} onValueChange={(value) => setView(value as typeof view)} className="flex flex-1 flex-col">
+      <TabsList variant="underline" aria-label="Orders">
         {(["new", "pending"] as const).map((key) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setView(key)}
-            className={cn(
-              "flex-1 py-3 text-sm font-semibold transition",
-              view === key ? "border-b-2 border-accent-2 text-accent-2" : "text-muted-foreground"
-            )}
-          >
+          <TabsTrigger key={key} variant="underline" value={key} className="flex-1">
             {key === "new" ? "New Order" : `Pending (${pendingOrders.length})`}
-          </button>
+          </TabsTrigger>
         ))}
-      </div>
+      </TabsList>
 
+      <TabsContent value={view} className="mt-0 flex flex-1 flex-col focus-visible:ring-inset focus-visible:ring-offset-0">
       {view === "new" ? (
         <>
           <div className="flex-1 p-4 space-y-4">
@@ -123,23 +117,16 @@ export function AgentOrderScreen({
             </section>
 
             <section className="bg-card rounded-xl border border-border overflow-hidden">
-              <div className="flex border-b border-border">
+              <Tabs value={tab} onValueChange={(value) => setTab(value as typeof tab)}>
+              <TabsList variant="underline" aria-label="Order items">
                 {(["products", "items"] as const).map((key) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => setTab(key)}
-                    className={cn(
-                      "flex-1 py-3 text-sm font-semibold transition",
-                      tab === key ? "border-b-2 border-accent-2 text-accent-2" : "text-muted-foreground"
-                    )}
-                  >
+                  <TabsTrigger key={key} variant="underline" value={key} className="flex-1">
                     {key === "products" ? "Products" : `Order Items (${totalQty})`}
-                  </button>
+                  </TabsTrigger>
                 ))}
-              </div>
+              </TabsList>
 
-              <div className="p-4">
+              <TabsContent value={tab} className="mt-0 p-4 focus-visible:ring-inset focus-visible:ring-offset-0">
                 {tab === "products" ? (
                   <AgentProductPicker
                     products={products}
@@ -158,7 +145,8 @@ export function AgentOrderScreen({
                     onBrowseProducts={() => setTab("products")}
                   />
                 )}
-              </div>
+              </TabsContent>
+              </Tabs>
             </section>
           </div>
 
@@ -190,6 +178,8 @@ export function AgentOrderScreen({
           />
         </div>
       )}
+      </TabsContent>
+      </Tabs>
     </div>
   );
 }

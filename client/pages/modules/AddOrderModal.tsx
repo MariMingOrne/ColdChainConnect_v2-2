@@ -1,3 +1,4 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { NativeSelect } from "@/components/ui/native-select";
 import { useState } from "react";
 import { ArrowLeft, Plus, Trash2 } from "lucide-react";
@@ -109,32 +110,13 @@ export function AddOrderModal({
           />
         </div>
 
-        {/* Tabs */}
-        <div className="flex border-b border-border bg-card">
-          <button
-            onClick={() => setSelectedTab("products")}
-            className={`flex-1 px-4 py-3 text-sm font-semibold transition ${
-              selectedTab === "products"
-                ? "border-b-2 border-accent-2 text-accent-2"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Browse Products
-          </button>
-          <button
-            onClick={() => setSelectedTab("cart")}
-            className={`flex-1 px-4 py-3 text-sm font-semibold transition ${
-              selectedTab === "cart"
-                ? "border-b-2 border-accent-2 text-accent-2"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Order Items ({getTotalQuantity()})
-          </button>
-        </div>
+        <Tabs value={selectedTab} onValueChange={(value) => setSelectedTab(value as typeof selectedTab)} className="flex flex-1 flex-col">
+        <TabsList variant="underline" aria-label="Order builder">
+          <TabsTrigger variant="underline" value="products" className="flex-1">Browse Products</TabsTrigger>
+          <TabsTrigger variant="underline" value="cart" className="flex-1">Order Items ({getTotalQuantity()})</TabsTrigger>
+        </TabsList>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 min-h-[400px]">
+        <TabsContent value={selectedTab} className="mt-0 flex-1 overflow-y-auto p-6 min-h-[400px] focus-visible:ring-inset focus-visible:ring-offset-0">
           {selectedTab === "products" ? (
             <div className="space-y-4">
               <Input
@@ -262,12 +244,10 @@ export function AddOrderModal({
                           />
                           <span className="text-xs text-muted-foreground">{maxQty} available</span>
                         </div>
-                        <button
-                          onClick={() => onRemoveItem(idx)}
-                          className="p-2 text-destructive hover:text-destructive hover:bg-destructive-soft rounded transition"
-                        >
+                        <Button
+                          onClick={() => onRemoveItem(idx)} type="button" variant="ghost" size="icon" aria-label="Remove item" className="h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
                           <Trash2 size={16} />
-                        </button>
+                        </Button>
                       </div>
                     );
                   })}
@@ -275,7 +255,8 @@ export function AddOrderModal({
               )}
             </div>
           )}
-        </div>
+        </TabsContent>
+        </Tabs>
 
         {/* Footer */}
         <div className="bg-muted px-6 py-4 flex justify-between items-center border-t border-border">

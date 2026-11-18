@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useMemo, useState } from "react";
 import { Check, Copy, Eye } from "lucide-react";
 import { AuditLog } from "@shared/api";
@@ -137,25 +138,21 @@ export function AuditLogTable({ logs, onView }: AuditLogTableProps) {
                       {log.resource_id ? (
                         <span className="inline-flex items-center gap-1.5" title={log.resource_id}>
                           <span>#{log.resource_id.slice(0, 6).toUpperCase()}</span>
-                          <button
+                          <Button
                             type="button"
                             onClick={() => void copyResourceId(log)}
-                            aria-label={`Copy full ID ${log.resource_id}`}
-                            className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2"
-                          >
+                            aria-label={`Copy full ID ${log.resource_id}`} variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground">
                             {copiedId === log.id ? <Check size={13} aria-hidden="true" /> : <Copy size={13} aria-hidden="true" />}
-                          </button>
+                          </Button>
                         </span>
                       ) : "-"}
                     </td>
                     <td className="px-3 py-3 text-right">
-                      <button
+                      <Button
                         onClick={() => onView(log)}
-                        aria-label="View details"
-                        className="inline-flex items-center justify-center rounded-lg border border-border bg-card p-2 text-foreground transition-colors hover:bg-accent"
-                      >
+                        aria-label="View details" variant="outline" size="icon" className="h-8 w-8">
                         <Eye className="h-4 w-4" />
-                      </button>
+                      </Button>
                     </td>
                   </tr>
                 ))

@@ -74,14 +74,12 @@ export function MfaStep({ mode, setupInfo, error, isLoading, onSubmit, onBack }:
         {isLoading ? "Verifying..." : mode === "setup" ? "Finish setup" : "Verify"}
       </Button>
 
-      <button
+      <Button
         type="button"
         onClick={onBack}
-        disabled={isLoading}
-        className="text-center text-xs text-muted-foreground hover:text-foreground"
-      >
+        disabled={isLoading} variant="link" size="sm" className="h-auto text-xs text-muted-foreground hover:text-foreground">
         Back to login
-      </button>
+      </Button>
     </form>
   );
 }

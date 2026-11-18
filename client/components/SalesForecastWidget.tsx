@@ -140,14 +140,12 @@ export function SalesForecastWidget() {
           <h2 className="text-base font-semibold">Sales Forecast</h2>
           <p className="text-xs text-muted-foreground">Estimate based on recent invoices</p>
         </div>
-        <button
+        <Button
           type="button"
           onClick={() => setIsOpen(false)}
-          className="rounded-md p-1 text-muted-foreground hover:bg-muted"
-          aria-label="Close sales forecast"
-        >
+          aria-label="Close sales forecast" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
           <X className="h-4 w-4" />
-        </button>
+        </Button>
       </div>
       <ForecastBody isLoading={isLoading} isError={isError} data={data} />
       {data && <SalesForecastChat token={token} forecast={data} />}

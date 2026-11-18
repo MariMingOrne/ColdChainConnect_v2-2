@@ -1,8 +1,8 @@
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { Pallet } from "@shared/api";
-import { cn } from "@/lib/utils";
 import { DatePresetFilter, datePresetOptions } from "./palletUtils";
 
 export type PalletStatusFilter = "all" | Pallet["status"];
@@ -57,20 +57,19 @@ export function PalletToolbar({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="inline-flex rounded-full border border-border bg-card p-1">
+        <ToggleGroup
+          type="single"
+          value={statusFilter}
+          onValueChange={(value) => value && onStatusChange(value as PalletStatusFilter)}
+          aria-label="Filter pallets by status"
+          className="flex-wrap justify-start rounded-full border border-border bg-card p-1"
+        >
           {statusTabs.map((tab) => (
-            <button
-              key={tab.value}
-              onClick={() => onStatusChange(tab.value)}
-              className={cn(
-                "whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition",
-                statusFilter === tab.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-              )}
-            >
+            <ToggleGroupItem key={tab.value} value={tab.value} variant="pill" size="sm">
               {tab.label}
-            </button>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
 
         <NativeSelect
           aria-label="Truck"

@@ -12,6 +12,8 @@ const toggleVariants = cva(
         default: "bg-transparent",
         outline:
           "border border-input bg-transparent hover:bg-accent hover:text-accent-foreground",
+        // Filter-chip strip: matches TabsTrigger, for filters that narrow a list in place.
+        pill: "whitespace-nowrap rounded-full px-4 font-semibold text-muted-foreground hover:bg-transparent hover:text-foreground data-[state=on]:bg-primary data-[state=on]:text-primary-foreground",
       },
       size: {
         default: "h-10 px-3",
@@ -19,6 +21,10 @@ const toggleVariants = cva(
         lg: "h-11 px-5",
       },
     },
+    compoundVariants: [
+      { variant: "pill", size: "sm", class: "h-8 px-4" },
+      { variant: "pill", size: "default", class: "px-4" },
+    ],
     defaultVariants: {
       variant: "default",
       size: "default",

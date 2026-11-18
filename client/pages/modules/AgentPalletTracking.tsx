@@ -1,3 +1,4 @@
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import { confirmAction } from "@/lib/confirm";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -266,7 +267,13 @@ export function AgentPalletTracking() {
         />
       </label>
 
-      <div className="flex gap-2 overflow-x-auto px-4 pb-1 sm:-mx-4">
+      <ToggleGroup
+        type="single"
+        value={filter}
+        onValueChange={(value) => value && setFilter(value as typeof filter)}
+        aria-label="Filter pallets by status"
+        className="justify-start gap-2 overflow-x-auto px-4 pb-1 sm:-mx-4"
+      >
         {([
           ["all", "All"],
           ["draft", "Preparing"],
@@ -274,16 +281,11 @@ export function AgentPalletTracking() {
           ["approved", "Ready"],
           ["shipped", "Shipped"],
         ] as const).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setFilter(value)}
-            className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-semibold transition ${filter === value ? "bg-primary text-primary-foreground" : "border border-border bg-card text-muted-foreground"}`}
-          >
+          <ToggleGroupItem key={value} value={value} variant="pill" className="min-h-10 shrink-0 border border-border bg-card data-[state=on]:border-primary">
             {label}
-          </button>
+          </ToggleGroupItem>
         ))}
-      </div>
+      </ToggleGroup>
 
       {error && <p role="alert" className="rounded-xl border border-red/20 bg-red/5 p-3 text-sm text-red">{error}</p>}
 

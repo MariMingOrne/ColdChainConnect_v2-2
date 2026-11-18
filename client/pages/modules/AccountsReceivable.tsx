@@ -1,3 +1,4 @@
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
@@ -195,26 +196,24 @@ export function AccountsReceivable() {
           placeholder="Search by customer or AR ID…"
           className="!flex-none"
         />
-        <div className="inline-flex w-fit rounded-full border border-border bg-card p-1">
+        <ToggleGroup
+          type="single"
+          value={activeTab}
+          onValueChange={(value) => { if (value) { setActiveTab(value as typeof activeTab); setSearchTerm(""); } }}
+          aria-label="Filter receivables"
+          className="w-fit flex-wrap justify-start rounded-full border border-border bg-card p-1"
+        >
           {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => { setActiveTab(tab.key); setSearchTerm(""); }}
-              className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition ${
-                activeTab === tab.key
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
+            <ToggleGroupItem key={tab.key} value={tab.key} variant="pill" size="sm" className="gap-1.5">
               {tab.label}
               <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
-                activeTab === tab.key ? "bg-card/20 text-white" : "bg-muted text-muted-foreground"
+                activeTab === tab.key ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"
               }`}>
                 {tabCounts[tab.key]}
               </span>
-            </button>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
       </div>
 
       {/* Table */}

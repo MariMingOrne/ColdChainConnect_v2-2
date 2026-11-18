@@ -55,15 +55,13 @@ export function SalesForecastChat({ token, forecast }: { token: string; forecast
       {messages.length === 0 ? (
         <div className="mb-3 flex flex-wrap gap-2">
           {["What is driving the trend?", "What should I stock up on?"].map((suggestion) => (
-            <button
+            <Button
               key={suggestion}
               type="button"
               onClick={() => void ask(suggestion)}
-              disabled={isSending}
-              className="rounded-full border border-border px-3 py-1.5 text-xs text-foreground transition hover:border-accent-2 hover:bg-accent disabled:opacity-50"
-            >
+              disabled={isSending} variant="outline" size="sm" className="h-auto rounded-full px-3 py-1.5 text-xs font-normal">
               {suggestion}
-            </button>
+            </Button>
           ))}
         </div>
       ) : (

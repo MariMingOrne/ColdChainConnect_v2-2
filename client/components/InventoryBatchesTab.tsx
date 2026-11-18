@@ -206,9 +206,9 @@ export function InventoryBatchesTab() {
                             Close Batch
                           </Button>
                         )}
-                        <button className="text-muted-foreground hover:text-foreground transition">
+                        <span className="inline-flex h-9 w-9 items-center justify-center text-muted-foreground" aria-hidden="true">
                           {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                        </button>
+                        </span>
                       </div>
                     </TableCell>
                   </TableRow>,
@@ -316,12 +316,8 @@ export function InventoryBatchesTab() {
                         placeholder="Qty"
                       />
                       {batchItems.length > 1 && (
-                        <button
-                          onClick={() => handleRemoveItem(idx)}
-                          className="text-destructive hover:text-destructive text-lg font-bold px-1"
-                        >
-                          ×
-                        </button>
+                        <Button
+                          onClick={() => handleRemoveItem(idx)} type="button" variant="ghost" size="icon" aria-label="Remove product" className="h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><X size={16} aria-hidden="true" /></Button>
                       )}
                     </div>
                   ))}

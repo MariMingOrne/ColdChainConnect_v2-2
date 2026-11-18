@@ -51,14 +51,12 @@ export function CustomerDiscountEditor({
               %
             </span>
           </div>
-          <button
+          <Button
             type="button"
             onClick={() => removeRow(index)}
-            aria-label="Remove discount"
-            className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-red"
-          >
+            aria-label="Remove discount" variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
             <X size={16} />
-          </button>
+          </Button>
         </div>
       ))}
 

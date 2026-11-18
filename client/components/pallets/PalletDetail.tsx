@@ -1,6 +1,6 @@
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { confirmAction } from "@/lib/confirm";
-import { useState } from "react";
 import { ArrowLeft, MoreVertical } from "lucide-react";
 import { Booking, Customer, Pallet, formatCustomerAddress, totalDiscountRate } from "@shared/api";
 import { Card } from "@/components/ui/card";
@@ -33,13 +33,11 @@ export function PalletDetail({
   const units = items.reduce((sum, item) => sum + item.qty_units, 0);
   const discountRate = totalDiscountRate(order?.customer?.discounts);
   const totalValue = palletTotal(pallet);
-  const [menuOpen, setMenuOpen] = useState(false);
   const statusIndex = palletStatusOptions.findIndex((option) => option.value === pallet.status);
   const nextStatus = palletStatusOptions[statusIndex + 1];
   const previousStatus = statusIndex > 0 ? palletStatusOptions[statusIndex - 1] : undefined;
 
   const handleRevert = async () => {
-    setMenuOpen(false);
     if (!previousStatus) return;
     if (await confirmAction(`Revert this pallet from ${palletStatusOptions[statusIndex].label} to ${previousStatus.label}?`)) {
       onStatusChange(previousStatus.value);
@@ -81,28 +79,26 @@ export function PalletDetail({
               >
                 {nextStatus ? `Mark as ${nextStatus.label}` : "Completed"}
               </Button>
-              <div className="relative">
-                <button
-                  type="button"
-                  aria-label="More status actions"
-                  disabled={isUpdatingStatus || !previousStatus}
-                  onClick={() => setMenuOpen((open) => !open)}
-                  className="rounded-lg border border-border bg-card p-2 text-foreground hover:bg-accent disabled:opacity-50"
-                >
-                  <MoreVertical size={16} />
-                </button>
-                {menuOpen && previousStatus && (
-                  <div className="absolute right-0 z-10 mt-1 w-56 rounded-lg border border-border bg-card py-1 shadow-lg">
-                    <button
-                      type="button"
-                      onClick={handleRevert}
-                      className="block w-full px-4 py-2 text-left text-sm text-foreground hover:bg-accent"
-                    >
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="More status actions"
+                    disabled={isUpdatingStatus || !previousStatus}
+                  >
+                    <MoreVertical size={16} aria-hidden="true" />
+                  </Button>
+                </DropdownMenuTrigger>
+                {previousStatus && (
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onSelect={() => void handleRevert()}>
                       Revert to {previousStatus.label}
-                    </button>
-                  </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
                 )}
-              </div>
+              </DropdownMenu>
             </div>
           </div>
         </div>

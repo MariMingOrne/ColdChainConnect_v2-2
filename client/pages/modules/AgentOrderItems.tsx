@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
 import { Product } from "@shared/api";
 import { QuantityStepper } from "./QuantityStepper";
@@ -28,13 +29,11 @@ export function AgentOrderItems({
     return (
       <div className="text-center py-12 space-y-4">
         <p className="text-sm text-muted-foreground">No items added yet.</p>
-        <button
+        <Button
           type="button"
-          onClick={onBrowseProducts}
-          className="px-4 py-2 rounded-full border border-accent-2 text-accent-2 text-sm font-semibold"
-        >
+          onClick={onBrowseProducts} variant="outline" className="rounded-full border-accent-2 text-accent-2 hover:text-accent-2">
           Browse Products
-        </button>
+        </Button>
       </div>
     );
   }
@@ -60,14 +59,12 @@ export function AgentOrderItems({
               max={maxQty}
               onChange={(qty) => onItemChange(idx, "qty_ordered", qty)}
             />
-            <button
+            <Button
               type="button"
               onClick={() => onRemoveItem(idx)}
-              aria-label="Remove item"
-              className="p-2 text-destructive hover:bg-destructive-soft rounded"
-            >
+              aria-label="Remove item" variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
               <Trash2 size={16} />
-            </button>
+            </Button>
           </li>
         );
       })}

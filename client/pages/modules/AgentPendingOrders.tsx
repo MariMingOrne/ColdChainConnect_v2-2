@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { Booking } from "@shared/api";
 
 interface AgentPendingOrdersProps {
@@ -40,18 +41,16 @@ export function AgentPendingOrders({
                 Pending
               </span>
             </div>
-            <button
+            <Button
               type="button"
               onClick={() => onRollback(order)}
-              disabled={!isOwn || rollingBackId === order.id}
-              className="w-full py-2 rounded-full border border-destructive/30 text-destructive text-xs font-semibold disabled:opacity-40"
-            >
+              disabled={!isOwn || rollingBackId === order.id} variant="danger" size="sm" className="w-full rounded-full text-xs disabled:opacity-40">
               {rollingBackId === order.id
                 ? "Rolling back…"
                 : isOwn
                   ? "Roll back order"
                   : "Created by another agent"}
-            </button>
+            </Button>
           </li>
         );
       })}
