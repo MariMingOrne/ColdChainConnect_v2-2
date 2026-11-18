@@ -31,8 +31,8 @@ export function SearchFilterBar({
 }: SearchFilterBarProps) {
   return (
     <div className={`flex min-w-0 flex-1 flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between ${className}`}>
-      <div className="group relative flex w-full items-center gap-2 rounded-full border border-border bg-white px-4 focus-within:border-accent-2 focus-within:ring-2 focus-within:ring-accent-2/20 sm:w-72">
-        <Search size={16} className="shrink-0 text-muted" aria-hidden="true" />
+      <div className="group relative flex w-full items-center gap-2 rounded-full border border-border bg-card px-4 focus-within:border-accent-2 focus-within:ring-2 focus-within:ring-accent-2/20 sm:w-72">
+        <Search size={16} className="shrink-0 text-muted-foreground" aria-hidden="true" />
         <Input
           type="search"
           placeholder={placeholder}
@@ -47,7 +47,7 @@ export function SearchFilterBar({
             size="icon"
             aria-label="Clear search"
             onClick={() => onSearchChange("")}
-            className="h-8 w-8 shrink-0 border-0 bg-transparent p-0 shadow-none hover:bg-off-white"
+            className="h-8 w-8 shrink-0 border-0 bg-transparent p-0 shadow-none hover:bg-accent"
           >
             <X className="h-4 w-4" />
           </Button>
@@ -57,7 +57,7 @@ export function SearchFilterBar({
         <div className="flex flex-wrap items-center gap-3">
           {filters.map((filter) => (
             <Select key={filter.name} value={filter.value} onValueChange={filter.onChange}>
-              <SelectTrigger aria-label={filter.name} className="h-10 w-full rounded-full border-border bg-white px-4 text-sm font-semibold text-navy sm:w-auto">
+              <SelectTrigger aria-label={filter.name} className="h-10 w-full rounded-full border-border bg-card px-4 text-sm font-semibold text-foreground sm:w-auto">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

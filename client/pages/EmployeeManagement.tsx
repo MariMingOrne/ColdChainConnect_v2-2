@@ -24,9 +24,9 @@ const positionPrefixes: Record<string, string> = {
 };
 
 const positionColors: Record<string, string> = {
-  Administrator: "bg-blue-100 text-blue-700",
+  Administrator: "bg-info-soft text-link",
   Assistant: "bg-pink-100 text-pink-700",
-  "Field Employee": "bg-green-100 text-green-700",
+  "Field Employee": "bg-success-soft text-success",
 };
 
 export function EmployeeManagement() {
@@ -222,20 +222,20 @@ export function EmployeeManagement() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="font-rajdhani text-3xl font-bold text-navy letter-spacing-tight">
+          <h1 className="font-rajdhani text-3xl font-bold text-foreground letter-spacing-tight">
             Employee Management
           </h1>
-          <p className="text-xs text-muted mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             Manage staff accounts and access levels
           </p>
         </div>
-        <div className="text-xs text-muted">
+        <div className="text-xs text-muted-foreground">
           Total Employees: {employees.length}
         </div>
       </div>
 
       {/* Search and Actions Bar */}
-      <div className="bg-white rounded-2xl border border-border p-4 flex flex-col md:flex-row md:items-center gap-3">
+      <div className="bg-card rounded-2xl border border-border p-4 flex flex-col md:flex-row md:items-center gap-3">
         <div className="flex-1 relative">
           <input
             type="text"
@@ -252,7 +252,7 @@ export function EmployeeManagement() {
           <Plus size={16} />
           Add Employee
         </button>
-        <button className="px-4 py-2 bg-navy text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity whitespace-nowrap">
+        <button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity whitespace-nowrap">
           Database
         </button>
       </div>
@@ -262,11 +262,11 @@ export function EmployeeManagement() {
         {filteredEmployees.map((employee) => (
           <div
             key={employee.id}
-            className="bg-white border-2 border-navy rounded-2xl p-4 flex flex-col gap-3 hover:shadow-lg transition-shadow"
+            className="bg-card border-2 border-primary rounded-2xl p-4 flex flex-col gap-3 hover:shadow-lg transition-shadow"
           >
             {/* Card Header with ID and Actions */}
             <div className="flex items-start justify-between gap-2">
-              <div className="font-rajdhani text-lg font-bold text-navy">
+              <div className="font-rajdhani text-lg font-bold text-foreground">
                 {employee.id}
               </div>
               <div className="flex gap-2">
@@ -275,7 +275,7 @@ export function EmployeeManagement() {
                     setSelectedEmployee(employee);
                     setShowModal(true);
                   }}
-                  className="p-1.5 rounded-lg hover:bg-navy/10 transition-colors text-navy"
+                  className="p-1.5 rounded-lg hover:bg-primary/10 transition-colors text-foreground"
                   title="View details"
                 >
                   <Info size={18} />
@@ -292,11 +292,11 @@ export function EmployeeManagement() {
 
             {/* Employee Info */}
             <div>
-              <div className="font-semibold text-navy text-sm">
+              <div className="font-semibold text-foreground text-sm">
                 {employee.firstName} {employee.middleName && employee.middleName + " "}
                 {employee.lastName}
               </div>
-              <div className="text-xs text-muted mt-0.5">{employee.username}</div>
+              <div className="text-xs text-muted-foreground mt-0.5">{employee.username}</div>
             </div>
 
             {/* Badges */}
@@ -323,7 +323,7 @@ export function EmployeeManagement() {
       {/* No Results */}
       {filteredEmployees.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-muted">No employees found matching your search.</p>
+          <p className="text-muted-foreground">No employees found matching your search.</p>
         </div>
       )}
 
@@ -342,38 +342,38 @@ export function EmployeeManagement() {
               Back
             </button>
           </div>
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+          <div className="bg-card rounded-2xl p-6 max-w-md w-full">
 
             <div className="space-y-3 text-sm">
               <div>
-                <p className="text-xs text-muted font-semibold uppercase">
+                <p className="text-xs text-muted-foreground font-semibold">
                   Employee ID
                 </p>
-                <p className="text-navy font-semibold">{selectedEmployee.id}</p>
+                <p className="text-foreground font-semibold">{selectedEmployee.id}</p>
               </div>
               <div>
-                <p className="text-xs text-muted font-semibold uppercase">
+                <p className="text-xs text-muted-foreground font-semibold">
                   Full Name
                 </p>
-                <p className="text-navy">
+                <p className="text-foreground">
                   {selectedEmployee.firstName} {selectedEmployee.middleName && selectedEmployee.middleName + " "}
                   {selectedEmployee.lastName}
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted font-semibold uppercase">
+                <p className="text-xs text-muted-foreground font-semibold">
                   Username
                 </p>
-                <p className="text-navy">{selectedEmployee.username}</p>
+                <p className="text-foreground">{selectedEmployee.username}</p>
               </div>
               <div>
-                <p className="text-xs text-muted font-semibold uppercase">
+                <p className="text-xs text-muted-foreground font-semibold">
                   Position
                 </p>
-                <p className="text-navy">{selectedEmployee.position}</p>
+                <p className="text-foreground">{selectedEmployee.position}</p>
               </div>
               <div>
-                <p className="text-xs text-muted font-semibold uppercase">
+                <p className="text-xs text-muted-foreground font-semibold">
                   Status
                 </p>
                 <p
@@ -387,40 +387,40 @@ export function EmployeeManagement() {
                 </p>
               </div>
               <div>
-                <p className="text-xs text-muted font-semibold uppercase">
+                <p className="text-xs text-muted-foreground font-semibold">
                   Email
                 </p>
-                <p className="text-navy">{selectedEmployee.email}</p>
+                <p className="text-foreground">{selectedEmployee.email}</p>
               </div>
               <div>
-                <p className="text-xs text-muted font-semibold uppercase">
+                <p className="text-xs text-muted-foreground font-semibold">
                   Phone
                 </p>
-                <p className="text-navy">{selectedEmployee.phone}</p>
+                <p className="text-foreground">{selectedEmployee.phone}</p>
               </div>
               <div>
-                <p className="text-xs text-muted font-semibold uppercase">
+                <p className="text-xs text-muted-foreground font-semibold">
                   Address
                 </p>
-                <p className="text-navy">{selectedEmployee.address}</p>
+                <p className="text-foreground">{selectedEmployee.address}</p>
               </div>
               <div>
-                <p className="text-xs text-muted font-semibold uppercase">
+                <p className="text-xs text-muted-foreground font-semibold">
                   Age
                 </p>
-                <p className="text-navy">{selectedEmployee.age}</p>
+                <p className="text-foreground">{selectedEmployee.age}</p>
               </div>
               <div>
-                <p className="text-xs text-muted font-semibold uppercase">
+                <p className="text-xs text-muted-foreground font-semibold">
                   Date of Birth
                 </p>
-                <p className="text-navy">{selectedEmployee.dateOfBirth}</p>
+                <p className="text-foreground">{selectedEmployee.dateOfBirth}</p>
               </div>
               <div>
-                <p className="text-xs text-muted font-semibold uppercase">
+                <p className="text-xs text-muted-foreground font-semibold">
                   Sex
                 </p>
-                <p className="text-navy">{selectedEmployee.sex}</p>
+                <p className="text-foreground">{selectedEmployee.sex}</p>
               </div>
             </div>
 
@@ -447,7 +447,7 @@ export function EmployeeManagement() {
               )}
               <button
                 onClick={() => setShowModal(false)}
-                className="flex-1 px-4 py-2 bg-off-white text-navy rounded-lg font-semibold text-sm hover:bg-navy/10 transition-colors"
+                className="flex-1 px-4 py-2 bg-muted text-foreground rounded-lg font-semibold text-sm hover:bg-primary/10 transition-colors"
               >
                 Close
               </button>
@@ -468,7 +468,7 @@ export function EmployeeManagement() {
               Back
             </button>
           </div>
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+          <div className="bg-card rounded-2xl p-6 max-w-md w-full">
 
             <div className="space-y-3 text-sm">
               <input
@@ -618,7 +618,7 @@ export function EmployeeManagement() {
               </button>
               <button
                 onClick={() => setShowAddForm(false)}
-                className="flex-1 px-4 py-2 bg-off-white text-navy rounded-lg font-semibold text-sm hover:bg-navy/10 transition-colors"
+                className="flex-1 px-4 py-2 bg-muted text-foreground rounded-lg font-semibold text-sm hover:bg-primary/10 transition-colors"
               >
                 Cancel
               </button>

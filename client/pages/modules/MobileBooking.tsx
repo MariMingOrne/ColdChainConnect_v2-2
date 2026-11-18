@@ -155,20 +155,20 @@ export function MobileBooking() {
     <div className="flex-1 flex flex-col p-4 md:p-6 gap-4 max-w-2xl mx-auto w-full">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-navy">Create Order</h1>
-          <p className="text-gray-600 text-sm">Add products and submit booking</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Create Order</h1>
+          <p className="text-muted-foreground text-sm">Add products and submit booking</p>
         </div>
       </div>
 
       {error && (
-        <Card className="p-4 bg-red-50 border-red-200">
-          <p className="text-red-700 text-sm whitespace-pre-line">{error}</p>
+        <Card className="p-4 bg-destructive-soft border-destructive/30">
+          <p className="text-destructive text-sm whitespace-pre-line">{error}</p>
         </Card>
       )}
 
       {success && (
-        <Card className="p-4 bg-green-50 border-green-200">
-          <p className="text-green-700 text-sm">✓ Booking created successfully!</p>
+        <Card className="p-4 bg-success-soft border-success/30">
+          <p className="text-success text-sm">✓ Booking created successfully!</p>
         </Card>
       )}
 
@@ -193,7 +193,7 @@ export function MobileBooking() {
 
       {/* Current Selection */}
       {selectedCustomer && (
-        <Card className="p-4 bg-blue-50 border-blue-200">
+        <Card className="p-4 bg-info-soft border-link/30">
           <p className="text-sm">
             <span className="font-semibold">Store:</span> {selectedCustomerName}
           </p>
@@ -202,7 +202,7 @@ export function MobileBooking() {
 
       {/* Add Items */}
       <Card className="p-4 border-2 border-dashed">
-        <h3 className="font-semibold text-navy mb-3 text-sm">Add Products</h3>
+        <h3 className="font-semibold text-foreground mb-3 text-sm">Add Products</h3>
 
         <div className="space-y-3">
           <div>
@@ -251,22 +251,22 @@ export function MobileBooking() {
       {/* Line Items */}
       {lineItems.length > 0 && (
         <Card className="p-4">
-          <h3 className="font-semibold text-navy mb-3 text-sm">Order Items</h3>
+          <h3 className="font-semibold text-foreground mb-3 text-sm">Order Items</h3>
           <div className="space-y-2">
             {lineItems.map((item, idx) => (
               <div
                 key={item.id}
-                className="flex justify-between items-center p-3 bg-gray-50 rounded"
+                className="flex justify-between items-center p-3 bg-muted rounded"
               >
                 <div className="flex-1">
                   <p className="text-sm font-medium">{item.product_name}</p>
-                  <p className="text-xs text-gray-600">Qty: {item.qty_ordered}</p>
+                  <p className="text-xs text-muted-foreground">Qty: {item.qty_ordered}</p>
                 </div>
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => removeLineItem(item.id)}
-                  className="text-red-600"
+                  className="text-destructive"
                 >
                   <Trash2 className="w-4 h-4" />
                 </Button>
@@ -288,7 +288,7 @@ export function MobileBooking() {
         <Button
           onClick={() => submitBooking()}
           disabled={isSending}
-          className="w-full gap-2 bg-green-600 hover:bg-green-700"
+          className="w-full gap-2 bg-success hover:bg-success"
           size="lg"
         >
           <Send className="w-4 h-4" />

@@ -93,7 +93,7 @@ export function LogReturnForm({
     <>
       <div className="p-5 space-y-4 flex-1 overflow-y-auto">
         <div>
-          <label className="block text-xs font-semibold text-navy mb-1">Customer *</label>
+          <label className="block text-xs font-semibold text-foreground mb-1">Customer *</label>
           <Select value={customerId} onValueChange={handleCustomerChange}>
             <SelectTrigger aria-label="Select customer">
               <SelectValue placeholder="Select customer…" />
@@ -109,7 +109,7 @@ export function LogReturnForm({
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-navy mb-1">Order / Invoice *</label>
+          <label className="block text-xs font-semibold text-foreground mb-1">Order / Invoice *</label>
           <Select value={invoiceId} onValueChange={handleInvoiceChange} disabled={!customerId}>
             <SelectTrigger aria-label="Select order or invoice">
               <SelectValue placeholder={customerId ? "Select order…" : "Select a customer first"} />
@@ -129,7 +129,7 @@ export function LogReturnForm({
 
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <label className="block text-xs font-semibold text-navy">Returned Items *</label>
+            <label className="block text-xs font-semibold text-foreground">Returned Items *</label>
             <button
               type="button"
               onClick={() => setItems((current) => [...current, { product_id: "", qty_returned: 1 }])}
@@ -144,7 +144,7 @@ export function LogReturnForm({
             return (
               <div key={index} className="grid grid-cols-[minmax(0,1fr)_6rem_auto] gap-2 items-end">
                 <div>
-                  <label className="block text-xs text-muted mb-1">Product</label>
+                  <label className="block text-xs text-muted-foreground mb-1">Product</label>
                   <Select
                     value={item.product_id}
                     onValueChange={(productId) => setItems((current) => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, product_id: productId } : entry))}
@@ -161,7 +161,7 @@ export function LogReturnForm({
                   </Select>
                 </div>
                 <div>
-                  <label className="block text-xs text-muted mb-1">Quantity</label>
+                  <label className="block text-xs text-muted-foreground mb-1">Quantity</label>
                   <Input
                     type="number"
                     min={1}
@@ -175,7 +175,7 @@ export function LogReturnForm({
                   onClick={() => setItems((current) => current.filter((_, itemIndex) => itemIndex !== index))}
                   disabled={items.length === 1}
                   aria-label="Remove item"
-                  className="h-[42px] px-2 text-muted hover:text-red disabled:opacity-30"
+                  className="h-[42px] px-2 text-muted-foreground hover:text-red disabled:opacity-30"
                 >
                   <Trash2 size={16} />
                 </button>
@@ -185,25 +185,25 @@ export function LogReturnForm({
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-navy mb-2">Return Type *</label>
+          <label className="block text-xs font-semibold text-foreground mb-2">Return Type *</label>
           <div className="grid grid-cols-2 gap-2">
             {returnTypeOptions.map((opt) => (
               <label key={opt.value}
-                className={`flex flex-col gap-1 p-3 border-2 rounded-lg cursor-pointer transition-all bg-white ${
+                className={`flex flex-col gap-1 p-3 border-2 rounded-lg cursor-pointer transition bg-card ${
                   returnType === opt.value ? "border-accent-2 bg-accent-2/5" : "border-border"
                 }`}>
                 <input type="radio" className="sr-only" checked={returnType === opt.value} onChange={() => setReturnType(opt.value)} />
-                <span className="flex items-center gap-1.5 text-sm font-semibold text-navy">
+                <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
                   <opt.Icon size={14} className={opt.iconClass} /> {opt.label}
                 </span>
-                <span className="text-xs text-muted">{opt.desc}</span>
+                <span className="text-xs text-muted-foreground">{opt.desc}</span>
               </label>
             ))}
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-navy mb-1">Reason / Notes</label>
+          <label className="block text-xs font-semibold text-foreground mb-1">Reason / Notes</label>
           <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2}
             placeholder="Describe why the goods are being returned…"
             className="min-h-16 resize-none" />

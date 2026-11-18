@@ -17,8 +17,8 @@ export function partitionAgentSchedule(deliveries: AgentScheduleDelivery[], toda
 
 export function statusClasses(status: DeliveryItem["status"]) {
   if (status === "completed") return "border-green/20 bg-green/10 text-green";
-  if (status === "in_transit") return "border-gold/30 bg-gold/10 text-navy";
-  return "border-blue-200 bg-blue-50 text-navy";
+  if (status === "in_transit") return "border-gold/30 bg-gold/10 text-foreground";
+  return "border-link/30 bg-info-soft text-foreground";
 }
 
 export function palletStatusLabel(status: AgentSchedulePallet["status"]) {

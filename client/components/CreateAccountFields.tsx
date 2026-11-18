@@ -84,9 +84,9 @@ export function CreateAccountFields({ accountType, form, onChange, modulePermiss
       <div className="space-y-4">
         {credentials}
         <fieldset className="space-y-2 rounded-xl border border-border p-4">
-          <legend className="px-1 text-sm font-semibold text-navy">Module access</legend>
+          <legend className="px-1 text-sm font-semibold text-foreground">Module access</legend>
           {modulePermissionKeys.map((permission) => (
-            <label key={permission} className="flex items-start gap-2 text-sm text-navy">
+            <label key={permission} className="flex items-start gap-2 text-sm text-foreground">
               <input type="checkbox" checked={modulePermissions.includes(permission)} onChange={() => togglePermission(permission)} className="mt-0.5 accent-navy" />
               <span>{modulePermissionLabels[permission]}</span>
             </label>

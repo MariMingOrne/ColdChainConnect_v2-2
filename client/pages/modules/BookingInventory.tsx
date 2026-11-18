@@ -199,9 +199,9 @@ export function BookingInventory() {
         <div className="flex flex-wrap items-center gap-2">
           {isAdmin && (
             <>
-              <label className="flex items-center gap-2 rounded-lg border border-border bg-white px-3 py-2 text-sm text-muted">
+              <label className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
                 <span>Date</span>
-                <input type="date" value={printDate} onChange={(event) => setPrintDate(event.target.value)} className="bg-transparent text-navy outline-none" />
+                <input type="date" value={printDate} onChange={(event) => setPrintDate(event.target.value)} className="bg-transparent text-foreground outline-none" />
               </label>
               <Button onClick={() => setShowPrintAll(true)} variant="outline" className="flex items-center gap-2">
                 <Printer size={16} />
@@ -213,7 +213,7 @@ export function BookingInventory() {
       </div>
 
       {loadError && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">{loadError}</div>
+        <div className="rounded-lg border border-warning/30 bg-warning-soft p-3 text-sm text-warning">{loadError}</div>
       )}
 
       <PalletStats pallets={visiblePallets} />
@@ -244,7 +244,7 @@ export function BookingInventory() {
           />
 
           {filteredEntries.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-border bg-white p-10 text-center text-muted">
+            <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center text-muted-foreground">
               <Package size={32} className="mx-auto mb-2 opacity-40" />
               <p>
                 {pallets.length === 0
@@ -255,7 +255,7 @@ export function BookingInventory() {
           ) : (
             <div className="flex flex-col gap-6">
               {visiblePalletGroups.length === 0 && (
-                <div className="rounded-xl border border-dashed border-border bg-white p-10 text-center text-muted">
+                <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center text-muted-foreground">
                   No pallets for this truck.
                 </div>
               )}
@@ -263,10 +263,10 @@ export function BookingInventory() {
                 <section key={group.truck?.id ?? "unassigned"} className="space-y-2">
                   <div className="flex flex-wrap items-baseline justify-between gap-2">
                     <div>
-                      <h2 className="font-semibold text-navy">{group.truck?.license_plate ?? "Unassigned"}</h2>
-                      <p className="text-xs text-muted">{group.truck?.district ?? "Pallets not yet on a truck"}</p>
+                      <h2 className="font-semibold text-foreground">{group.truck?.license_plate ?? "Unassigned"}</h2>
+                      <p className="text-xs text-muted-foreground">{group.truck?.district ?? "Pallets not yet on a truck"}</p>
                     </div>
-                    <span className="text-sm text-muted">
+                    <span className="text-sm text-muted-foreground">
                       {group.entries.length} pallet{group.entries.length === 1 ? "" : "s"}
                     </span>
                   </div>

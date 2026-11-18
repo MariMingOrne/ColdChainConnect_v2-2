@@ -315,12 +315,12 @@ export function DeliveryDispatch() {
       </button>
 
       {/* Truck card */}
-      <div className="bg-white rounded-xl border border-border p-4 space-y-4">
+      <div className="bg-card rounded-xl border border-border p-4 space-y-4">
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs font-semibold text-muted uppercase tracking-wider">Truck</p>
-            <p className="font-rajdhani font-bold text-navy text-lg mt-0.5">{selectedTruck!.license_plate}</p>
-            <p className="text-xs text-muted">{selectedTruck!.district}</p>
+            <p className="text-xs font-semibold text-muted-foreground">Truck</p>
+            <p className="font-rajdhani font-bold text-foreground text-lg mt-0.5">{selectedTruck!.license_plate}</p>
+            <p className="text-xs text-muted-foreground">{selectedTruck!.district}</p>
           </div>
           <div className="flex items-center gap-3">
             <span className={`px-2 py-0.5 rounded text-xs font-semibold ${statusBadgeClass(selectedTruck!.status)}`}>
@@ -335,7 +335,7 @@ export function DeliveryDispatch() {
         {/* Driver — assigned to the truck for this run */}
         <div className="border-t border-border pt-3">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold text-muted uppercase tracking-wider">Driver</p>
+            <p className="text-xs font-semibold text-muted-foreground">Driver</p>
             <button
               onClick={() => setShowChangeTruckDriverModal(true)}
               className="text-xs font-semibold text-accent-2 hover:opacity-70"
@@ -346,20 +346,20 @@ export function DeliveryDispatch() {
           {selectedTruck!.driver_id ? (() => {
             const d = drivers.find((dr) => dr.id === selectedTruck!.driver_id);
             return (
-              <div className="bg-off-white rounded-lg p-3">
-                <p className="font-semibold text-navy text-sm">{d?.full_name || selectedTruck!.driver_id.slice(0, 8)}</p>
-                {d?.contact_info && <p className="text-xs text-muted mt-0.5">{d.contact_info}</p>}
-                {d?.license      && <p className="text-xs text-muted mt-0.5">License: {d.license}</p>}
+              <div className="bg-muted rounded-lg p-3">
+                <p className="font-semibold text-foreground text-sm">{d?.full_name || selectedTruck!.driver_id.slice(0, 8)}</p>
+                {d?.contact_info && <p className="text-xs text-muted-foreground mt-0.5">{d.contact_info}</p>}
+                {d?.license      && <p className="text-xs text-muted-foreground mt-0.5">License: {d.license}</p>}
               </div>
             );
           })() : (
-            <div className="bg-off-white rounded-lg p-3 text-center text-xs text-muted">No driver assigned</div>
+            <div className="bg-muted rounded-lg p-3 text-center text-xs text-muted-foreground">No driver assigned</div>
           )}
         </div>
 
         <button
           onClick={() => setShowAddDeliveryModal(true)}
-          className="w-full px-3 py-2.5 bg-navy text-white rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity"
+          className="w-full px-3 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity"
         >
           + Add Delivery
         </button>
@@ -367,77 +367,77 @@ export function DeliveryDispatch() {
 
       <div className="space-y-5">
         <div className="flex items-center justify-between gap-3">
-          <h2 className="font-rajdhani text-xl font-bold text-navy">Truck Schedule</h2>
-          <span className="text-xs text-muted">{filteredTruckDeliveries.length} scheduled run{filteredTruckDeliveries.length === 1 ? "" : "s"}</span>
+          <h2 className="font-rajdhani text-xl font-bold text-foreground">Truck Schedule</h2>
+          <span className="text-xs text-muted-foreground">{filteredTruckDeliveries.length} scheduled run{filteredTruckDeliveries.length === 1 ? "" : "s"}</span>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-white p-3">
+        <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3">
           <div className="relative w-full sm:w-64">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-            <input type="search" aria-label="Search truck schedule" placeholder="Search runs, customers, agents…" value={scheduleSearch} onChange={(event) => setScheduleSearch(event.target.value)} className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm text-navy focus:border-accent-2 focus:outline-none" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input type="search" aria-label="Search truck schedule" placeholder="Search runs, customers, agents…" value={scheduleSearch} onChange={(event) => setScheduleSearch(event.target.value)} className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
           </div>
-          <input type="datetime-local" aria-label="Scheduled from date and time" title="Show runs scheduled from this date and time" value={scheduleFromDateTime} onChange={(event) => setScheduleFromDateTime(event.target.value)} className="rounded-full border border-border bg-white px-3 py-2 text-sm text-navy" />
-          <select aria-label="Filter by driver" value={scheduleDriverFilter} onChange={(event) => setScheduleDriverFilter(event.target.value)} className="rounded-full border border-border bg-white px-4 py-2 text-sm text-navy">
+          <input type="datetime-local" aria-label="Scheduled from date and time" title="Show runs scheduled from this date and time" value={scheduleFromDateTime} onChange={(event) => setScheduleFromDateTime(event.target.value)} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground" />
+          <select aria-label="Filter by driver" value={scheduleDriverFilter} onChange={(event) => setScheduleDriverFilter(event.target.value)} className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground">
             <option value="all">All drivers</option>
             {drivers.map((driver) => <option key={driver.id} value={driver.id}>{driver.full_name || driver.id.slice(0, 8)}</option>)}
           </select>
-          <select aria-label="Filter by agent" value={scheduleAgentFilter} onChange={(event) => setScheduleAgentFilter(event.target.value)} className="rounded-full border border-border bg-white px-4 py-2 text-sm text-navy">
+          <select aria-label="Filter by agent" value={scheduleAgentFilter} onChange={(event) => setScheduleAgentFilter(event.target.value)} className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground">
             <option value="all">All agents</option>
             {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.full_name || agent.user?.username || agent.id.slice(0, 8)}</option>)}
           </select>
         </div>
 
         {sortedScheduleDays.length === 0 ? (
-          <div className="bg-white rounded-xl border border-border p-6 text-center text-sm text-muted">
+          <div className="bg-card rounded-xl border border-border p-6 text-center text-sm text-muted-foreground">
             {truckDeliveries.length === 0 ? "No deliveries scheduled for this truck." : "No runs match your search or filters."}
           </div>
         ) : (
           sortedScheduleDays.map(([date, dayDeliveries]) => (
             <section key={date} className="space-y-3">
-              <h3 className="flex items-center gap-2 font-semibold text-navy">
+              <h3 className="flex items-center gap-2 font-semibold text-foreground">
                 <CalendarDays size={16} />
                 {formatRunDate(dayDeliveries[0])}
               </h3>
               {dayDeliveries.map((delivery) => (
                 <div
                   key={delivery.id}
-                  className={`bg-white rounded-xl border-2 overflow-hidden transition-all ${
+                  className={`bg-card rounded-xl border-2 overflow-hidden transition ${
                     selectedDelivery?.id === delivery.id ? "border-accent-2" : "border-border"
                   }`}
                 >
             {/* Delivery header */}
             <div
-              className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-off-white/50 transition-colors"
+              className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-accent/50 transition-colors"
               onClick={() => setSelectedDelivery(selectedDelivery?.id === delivery.id ? null : delivery)}
             >
               <div className="flex items-center gap-2 min-w-0">
                 <span className={`px-2 py-0.5 rounded text-xs font-semibold flex-shrink-0 ${statusBadgeClass(delivery.status)}`}>
                   {statusLabel(delivery.status)}
                 </span>
-                <span className="font-mono text-xs text-muted truncate">{delivery.id.slice(0, 8)}…</span>
-                <span className="text-xs text-muted flex-shrink-0">{delivery.delivery_items.length} stop{delivery.delivery_items.length !== 1 ? "s" : ""}</span>
+                <span className="font-mono text-xs text-muted-foreground truncate">{delivery.id.slice(0, 8)}…</span>
+                <span className="text-xs text-muted-foreground flex-shrink-0">{delivery.delivery_items.length} stop{delivery.delivery_items.length !== 1 ? "s" : ""}</span>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0 ml-2">
-                <span className="text-xs text-muted hidden sm:block">
+                <span className="text-xs text-muted-foreground hidden sm:block">
                   {formatRunDate(delivery)} · {formatRunTime(delivery.scheduled_time)}
                 </span>
                 {selectedDelivery?.id === delivery.id
-                  ? <ChevronUp size={14} className="text-muted" />
-                  : <ChevronDown size={14} className="text-muted" />
+                  ? <ChevronUp size={14} className="text-muted-foreground" />
+                  : <ChevronDown size={14} className="text-muted-foreground" />
                 }
               </div>
             </div>
 
             <div className="flex items-center gap-3 px-4 pb-3 flex-wrap">
-              <span className="text-xs font-semibold text-muted">
-                Agent: <span className="font-medium text-navy">{delivery.agent?.full_name || "No linked agent"}</span>
+              <span className="text-xs font-semibold text-muted-foreground">
+                Agent: <span className="font-medium text-foreground">{delivery.agent?.full_name || "No linked agent"}</span>
               </span>
-              <label className="inline-flex items-center gap-2 text-xs font-semibold text-muted">
+              <label className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                 Driver
                 <select
                   value={delivery.driver_id ?? delivery.truck?.driver_id ?? ""}
                   onChange={(event) => void handleAssignDriver(delivery.id, event.target.value)}
-                  className="rounded-md border border-border bg-white px-2 py-1 text-xs font-normal text-navy"
+                  className="rounded-md border border-border bg-card px-2 py-1 text-xs font-normal text-foreground"
                 >
                   <option value="">Unassigned</option>
                   {drivers.filter((driver) => driver.is_active).map((driver) => (
@@ -451,7 +451,7 @@ export function DeliveryDispatch() {
                 <button
                   type="button"
                   onClick={() => void handleStartRun(delivery.id)}
-                  className="ml-auto px-3 py-1 bg-navy text-white rounded text-xs font-semibold hover:opacity-90"
+                  className="ml-auto px-3 py-1 bg-primary text-primary-foreground rounded text-xs font-semibold hover:opacity-90"
                 >
                   Start run
                 </button>
@@ -462,7 +462,7 @@ export function DeliveryDispatch() {
             {selectedDelivery?.id === delivery.id && (
               <div className="border-t border-border">
                 {delivery.delivery_items.length === 0 ? (
-                  <p className="px-4 py-4 text-xs text-muted">No stops assigned yet.</p>
+                  <p className="px-4 py-4 text-xs text-muted-foreground">No stops assigned yet.</p>
                 ) : (
                   <>
                     {/* Mobile: card per stop */}
@@ -470,7 +470,7 @@ export function DeliveryDispatch() {
                       {delivery.delivery_items.map((item) => (
                         <div key={item.id} className="p-4 space-y-2">
                           <div className="flex items-center justify-between">
-                            <span className="font-semibold text-navy text-sm">
+                            <span className="font-semibold text-foreground text-sm">
                               {item.customer?.store_name ?? item.destination_customer_id.slice(0, 8)}
                             </span>
                             <span className={`px-2 py-0.5 rounded text-xs font-semibold ${statusBadgeClass(item.status)}`}>
@@ -478,9 +478,9 @@ export function DeliveryDispatch() {
                             </span>
                           </div>
                           {item.customer && (
-                            <p className="text-xs text-muted">{formatCustomerAddress(item.customer)}</p>
+                            <p className="text-xs text-muted-foreground">{formatCustomerAddress(item.customer)}</p>
                           )}
-                          <div className="flex items-center gap-2 flex-wrap text-xs text-muted">
+                          <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
                             <span className="font-mono">Invoice: {item.invoice_id.slice(0, 8)}…</span>
                             {item.invoice && (
                               <span className={`px-1.5 py-0.5 rounded font-semibold ${
@@ -491,10 +491,10 @@ export function DeliveryDispatch() {
                             )}
                           </div>
                           {item.receipt_number && (
-                            <p className="text-xs text-muted">Receipt: {item.receipt_number}</p>
+                            <p className="text-xs text-muted-foreground">Receipt: {item.receipt_number}</p>
                           )}
                           {item.completed_at && (
-                            <p className="text-xs text-muted">
+                            <p className="text-xs text-muted-foreground">
                               Confirmed: {new Date(item.completed_at).toLocaleString("en-PH")}
                             </p>
                           )}
@@ -530,7 +530,7 @@ export function DeliveryDispatch() {
                         <thead>
                           <tr>
                             {["Invoice", "Customer", "Status", "Receipt #", "Confirmed At", "Action"].map((h) => (
-                              <th key={h} className="bg-navy-mid text-muted font-semibold text-xs uppercase tracking-wider px-3 py-2.5 text-left border-b border-border whitespace-nowrap">
+                              <th key={h} className="bg-navy-mid text-muted-foreground font-semibold text-xs px-3 py-2.5 text-left border-b border-border whitespace-nowrap">
                                 {h}
                               </th>
                             ))}
@@ -538,8 +538,8 @@ export function DeliveryDispatch() {
                         </thead>
                         <tbody>
                           {delivery.delivery_items.map((item) => (
-                            <tr key={item.id} className="border-b border-border hover:bg-off-white/40 transition-colors">
-                              <td className="px-3 py-3 font-mono text-navy">
+                            <tr key={item.id} className="border-b border-border hover:bg-accent/40 transition-colors">
+                              <td className="px-3 py-3 font-mono text-foreground">
                                 {item.invoice_id.slice(0, 8)}…
                                 {item.invoice && (
                                   <span className={`ml-2 px-1.5 py-0.5 rounded text-xs font-semibold ${
@@ -549,10 +549,10 @@ export function DeliveryDispatch() {
                                   </span>
                                 )}
                               </td>
-                              <td className="px-3 py-3 text-navy font-semibold">
+                              <td className="px-3 py-3 text-foreground font-semibold">
                                 {item.customer?.store_name ?? item.destination_customer_id.slice(0, 8)}
                                 {item.customer && (
-                                  <p className="text-muted font-normal">{formatCustomerAddress(item.customer)}</p>
+                                  <p className="text-muted-foreground font-normal">{formatCustomerAddress(item.customer)}</p>
                                 )}
                               </td>
                               <td className="px-3 py-3 whitespace-nowrap">
@@ -560,13 +560,13 @@ export function DeliveryDispatch() {
                                   {statusLabel(item.status)}
                                 </span>
                               </td>
-                              <td className="px-3 py-3 font-mono text-navy">
-                                {item.receipt_number ?? <span className="text-muted">—</span>}
+                              <td className="px-3 py-3 font-mono text-foreground">
+                                {item.receipt_number ?? <span className="text-muted-foreground">—</span>}
                               </td>
-                              <td className="px-3 py-3 text-muted">
+                              <td className="px-3 py-3 text-muted-foreground">
                                 {item.completed_at
                                   ? new Date(item.completed_at).toLocaleString("en-PH")
-                                  : <span className="text-muted">—</span>
+                                  : <span className="text-muted-foreground">—</span>
                                 }
                               </td>
                               <td className="px-3 py-3">
@@ -681,8 +681,8 @@ export function DeliveryDispatch() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 flex-shrink-0">
         <div>
-          <h1 className="font-rajdhani text-2xl md:text-3xl font-bold text-navy">Truck Dispatch</h1>
-          <p className="text-xs text-muted mt-0.5">Assign receipts to trucks and track each stop</p>
+          <h1 className="font-rajdhani text-2xl md:text-3xl font-bold text-foreground">Truck Dispatch</h1>
+          <p className="text-xs text-muted-foreground mt-0.5">Assign receipts to trucks and track each stop</p>
         </div>
         <div className="flex gap-2">
           <button
@@ -704,9 +704,9 @@ export function DeliveryDispatch() {
       <div className="md:hidden flex-1 overflow-y-auto">
         {mobileView === "trucks" ? (
           <div className="space-y-3">
-            <p className="text-xs font-semibold text-muted uppercase tracking-wider">Trucks</p>
+            <p className="text-xs font-semibold text-muted-foreground">Trucks</p>
             {trucks.length === 0 ? (
-              <p className="text-sm text-muted">No trucks registered yet.</p>
+              <p className="text-sm text-muted-foreground">No trucks registered yet.</p>
             ) : (
               trucks.map((truck) => {
                 const td = deliveries.filter((d) => d.truck_id === truck.id);
@@ -714,23 +714,23 @@ export function DeliveryDispatch() {
                   <div
                     key={truck.id}
                     onClick={() => selectTruck(truck)}
-                    className="bg-white rounded-xl border-2 border-border p-4 cursor-pointer active:bg-off-white transition-colors flex items-center justify-between"
+                    className="bg-card rounded-xl border-2 border-border p-4 cursor-pointer active:bg-muted transition-colors flex items-center justify-between"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-navy/10 flex items-center justify-center flex-shrink-0">
-                        <TruckIcon size={18} className="text-navy" />
+                      <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <TruckIcon size={18} className="text-foreground" />
                       </div>
                       <div>
-                        <p className="font-rajdhani font-bold text-navy">{truck.license_plate}</p>
-                        <p className="text-xs text-muted">{truck.district}</p>
-                        <p className="text-xs text-muted mt-0.5">{td.length} scheduled run{td.length === 1 ? "" : "s"}</p>
+                        <p className="font-rajdhani font-bold text-foreground">{truck.license_plate}</p>
+                        <p className="text-xs text-muted-foreground">{truck.district}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{td.length} scheduled run{td.length === 1 ? "" : "s"}</p>
                       </div>
                     </div>
                     <div className="flex flex-col items-end gap-1">
                       <span className={`px-2 py-0.5 rounded text-xs font-semibold ${statusBadgeClass(truck.status)}`}>
                         {truckStatusLabel(truck.status)}
                       </span>
-                      <ChevronLeft size={14} className="text-muted rotate-180" />
+                      <ChevronLeft size={14} className="text-muted-foreground rotate-180" />
                     </div>
                   </div>
                 );
@@ -746,9 +746,9 @@ export function DeliveryDispatch() {
       <div className="hidden md:flex gap-5 flex-1 min-h-0 overflow-hidden">
         {/* Truck list */}
         <div className="w-64 lg:w-72 flex-shrink-0 overflow-y-auto space-y-3 pr-1">
-          <p className="text-xs font-semibold text-muted uppercase tracking-wider">Trucks</p>
+          <p className="text-xs font-semibold text-muted-foreground">Trucks</p>
           {trucks.length === 0 ? (
-            <p className="text-xs text-muted">No trucks registered yet.</p>
+            <p className="text-xs text-muted-foreground">No trucks registered yet.</p>
           ) : (
             trucks.map((truck) => {
               const td = deliveries.filter((d) => d.truck_id === truck.id);
@@ -757,20 +757,20 @@ export function DeliveryDispatch() {
                 <div
                   key={truck.id}
                   onClick={() => selectTruck(truck)}
-                  className={`bg-white rounded-xl border-2 p-4 cursor-pointer transition-all hover:shadow-md ${
+                  className={`bg-card rounded-xl border-2 p-4 cursor-pointer transition hover:shadow-md ${
                     isSelected ? "border-accent-2 shadow-md" : "border-border"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="font-rajdhani font-bold text-navy leading-tight truncate">{truck.license_plate}</p>
-                      <p className="text-xs text-muted mt-0.5">{truck.district}</p>
+                      <p className="font-rajdhani font-bold text-foreground leading-tight truncate">{truck.license_plate}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{truck.district}</p>
                     </div>
                     <span className={`px-2 py-0.5 rounded text-xs font-semibold flex-shrink-0 ${statusBadgeClass(truck.status)}`}>
                       {truckStatusLabel(truck.status)}
                     </span>
                   </div>
-                  <p className="text-xs text-muted mt-2">
+                  <p className="text-xs text-muted-foreground mt-2">
                     {td.length} scheduled run{td.length === 1 ? "" : "s"}
                   </p>
                 </div>
@@ -782,7 +782,7 @@ export function DeliveryDispatch() {
         {/* Detail panel */}
         <div className="flex-1 overflow-y-auto">
           {!selectedTruck ? (
-            <div className="flex items-center justify-center h-full text-sm text-muted gap-2">
+            <div className="flex items-center justify-center h-full text-sm text-muted-foreground gap-2">
               <TruckIcon size={18} className="opacity-40" />
               Select a truck to view its deliveries
             </div>
@@ -812,7 +812,7 @@ function ChangeTruckDriverModal({ truck, drivers, token, onClose, onSave }: {
   return (
     <ModalShell title={`Assign Driver — ${truck.license_plate}`} onClose={onClose}>
       <div>
-        <label className="block text-xs font-semibold text-navy mb-2">Select Driver</label>
+        <label className="block text-xs font-semibold text-foreground mb-2">Select Driver</label>
         <select
           value={selectedDriverId}
           onChange={(e) => setSelectedDriverId(e.target.value)}
@@ -832,19 +832,19 @@ function ChangeTruckDriverModal({ truck, drivers, token, onClose, onSave }: {
         {selectedDriverId && (() => {
           const d = drivers.find((dr) => dr.id === selectedDriverId);
           return d ? (
-            <div className="mt-3 bg-off-white rounded-lg p-3 text-xs space-y-0.5">
-              <p className="font-semibold text-navy text-sm">{d.full_name || "—"}</p>
-              {d.contact_info && <p className="text-muted">📞 {d.contact_info}</p>}
-              {d.license      && <p className="text-muted">🪪 {d.license}</p>}
+            <div className="mt-3 bg-muted rounded-lg p-3 text-xs space-y-0.5">
+              <p className="font-semibold text-foreground text-sm">{d.full_name || "—"}</p>
+              {d.contact_info && <p className="text-muted-foreground">📞 {d.contact_info}</p>}
+              {d.license      && <p className="text-muted-foreground">🪪 {d.license}</p>}
               {d.employment_type && (
-                <p className="text-muted capitalize">{d.employment_type.replace("_", " ")}</p>
+                <p className="text-muted-foreground capitalize">{d.employment_type.replace("_", " ")}</p>
               )}
             </div>
           ) : null;
         })()}
       </div>
       <div className="flex justify-end gap-2 pt-4 border-t border-border">
-        <button onClick={onClose} className="px-4 py-2 border border-border rounded-lg text-sm font-semibold hover:bg-off-white">
+        <button onClick={onClose} className="px-4 py-2 border border-border rounded-lg text-sm font-semibold hover:bg-accent">
           Cancel
         </button>
         <button
@@ -898,13 +898,13 @@ function AddTruckModal({ drivers, token, onClose, onCreated }: {
           { label: "District *",   value: truckDistrict, onChange: setTruckDistrict, placeholder: "e.g., Metro Manila" },
         ].map(({ label, value, onChange, placeholder }) => (
           <div key={label}>
-            <label className="block text-xs font-semibold text-navy mb-1">{label}</label>
+            <label className="block text-xs font-semibold text-foreground mb-1">{label}</label>
             <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
               className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2" />
           </div>
         ))}
         <div>
-          <label className="block text-xs font-semibold text-navy mb-1">Status</label>
+          <label className="block text-xs font-semibold text-foreground mb-1">Status</label>
           <select value={truckStatus} onChange={(e) => setTruckStatus(e.target.value as any)}
             className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2">
             <option value="available">Available</option>
@@ -913,7 +913,7 @@ function AddTruckModal({ drivers, token, onClose, onCreated }: {
           </select>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-navy mb-1">Assign Driver (Optional)</label>
+          <label className="block text-xs font-semibold text-foreground mb-1">Assign Driver (Optional)</label>
           <select value={selectedDriverId} onChange={(e) => setSelectedDriverId(e.target.value)}
             className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2">
             <option value="">No agent assigned</option>
@@ -924,7 +924,7 @@ function AddTruckModal({ drivers, token, onClose, onCreated }: {
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-4 border-t border-border">
-        <button onClick={onClose} className="px-4 py-2 border border-border rounded-lg text-sm font-semibold hover:bg-off-white">Cancel</button>
+        <button onClick={onClose} className="px-4 py-2 border border-border rounded-lg text-sm font-semibold hover:bg-accent">Cancel</button>
         <button onClick={handleSave} disabled={!PLATE_PATTERN.test(licensePlate) || !truckDistrict || saving}
           className="px-4 py-2 bg-accent-2 text-white rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50">
           {saving ? "Adding…" : "Add Truck"}
@@ -970,13 +970,13 @@ function EditTruckModal({ truck, token, onClose, onSaved }: {
           { label: "District *", value: truckDistrict, onChange: setTruckDistrict, placeholder: "e.g., Metro Manila" },
         ].map(({ label, value, onChange, placeholder }) => (
           <div key={label}>
-            <label className="block text-xs font-semibold text-navy mb-1">{label}</label>
+            <label className="block text-xs font-semibold text-foreground mb-1">{label}</label>
             <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
               className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2" />
           </div>
         ))}
         <div>
-          <label className="block text-xs font-semibold text-navy mb-1">Status</label>
+          <label className="block text-xs font-semibold text-foreground mb-1">Status</label>
           <select value={truckStatus} onChange={(e) => setTruckStatus(e.target.value as Truck["status"])}
             className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2">
             <option value="available">Available</option>
@@ -986,7 +986,7 @@ function EditTruckModal({ truck, token, onClose, onSaved }: {
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-4 border-t border-border">
-        <button onClick={onClose} className="px-4 py-2 border border-border rounded-lg text-sm font-semibold hover:bg-off-white">Cancel</button>
+        <button onClick={onClose} className="px-4 py-2 border border-border rounded-lg text-sm font-semibold hover:bg-accent">Cancel</button>
         <button onClick={handleSave} disabled={!PLATE_PATTERN.test(licensePlate) || !truckDistrict || saving}
           className="px-4 py-2 bg-accent-2 text-white rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50">
           {saving ? "Saving…" : "Save Changes"}
@@ -1100,36 +1100,36 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
     <ModalShell title={`Add Delivery — ${truck.license_plate}`} onClose={onClose}>
       <div className="space-y-3">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <label className="block text-xs font-semibold text-navy">
+          <label className="block text-xs font-semibold text-foreground">
             Scheduled Date *
             <input
               type="date"
               value={scheduledDate}
               onChange={(event) => setScheduledDate(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-navy focus:outline-none focus:border-accent-2"
+              className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:border-accent-2"
             />
           </label>
-          <label className="block text-xs font-semibold text-navy">
+          <label className="block text-xs font-semibold text-foreground">
             Scheduled Time *
             <input
               type="time"
               value={scheduledTime}
               onChange={(event) => setScheduledTime(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-navy focus:outline-none focus:border-accent-2"
+              className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:border-accent-2"
             />
           </label>
         </div>
-        <div className="rounded-lg bg-off-white px-3 py-2.5">
-          <p className="text-xs font-semibold text-muted">Sale owner · automatically assigned</p>
-          <p className="mt-1 text-sm font-semibold text-navy">{saleAgent?.full_name || (saleOwnerId ? "No linked agent profile" : "Select an order")}</p>
+        <div className="rounded-lg bg-muted px-3 py-2.5">
+          <p className="text-xs font-semibold text-muted-foreground">Sale owner · automatically assigned</p>
+          <p className="mt-1 text-sm font-semibold text-foreground">{saleAgent?.full_name || (saleOwnerId ? "No linked agent profile" : "Select an order")}</p>
           {saleOwnerIds.size > 1 && <p className="mt-1 text-xs text-red">One delivery run can include sales from only one agent.</p>}
         </div>
         <div>
-          <label className="block text-xs font-semibold text-navy mb-1">Assign Driver (Optional)</label>
+          <label className="block text-xs font-semibold text-foreground mb-1">Assign Driver (Optional)</label>
           <select
             value={selectedDriverId}
             onChange={(event) => setSelectedDriverId(event.target.value)}
-            className="w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-navy focus:outline-none focus:border-accent-2"
+            className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:border-accent-2"
           >
             <option value="">No driver assigned</option>
             {drivers.filter((driver) => driver.is_active).map((driver) => (
@@ -1140,7 +1140,7 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
           </select>
         </div>
 
-        <div className="rounded-lg border border-border bg-white p-3 space-y-2">
+        <div className="rounded-lg border border-border bg-card p-3 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <input
               type="search"
@@ -1148,17 +1148,17 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
               onChange={(event) => setOrderSearch(event.target.value)}
               aria-label="Search orders"
               placeholder="Search store, contact, address, receipt"
-              className="min-w-0 flex-1 rounded-lg border border-border px-3 py-2 text-xs text-navy focus:outline-none focus:border-accent-2"
+              className="min-w-0 flex-1 rounded-lg border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-accent-2"
             />
             <input
               type="date"
               value={orderDate}
               onChange={(event) => setOrderDate(event.target.value)}
               aria-label="Filter orders by date"
-              className="rounded-lg border border-border px-3 py-2 text-xs text-navy focus:outline-none focus:border-accent-2"
+              className="rounded-lg border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-accent-2"
             />
           </div>
-          <div className="flex items-center justify-between text-xs text-muted">
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>Showing {pickerInvoices.length} of {districtInvoices.length} orders</span>
             {(orderSearch || orderDate) && (
               <button onClick={() => { setOrderSearch(""); setOrderDate(localScheduleDate(new Date())); }} className="font-semibold text-accent-2 hover:opacity-80">Clear</button>
@@ -1167,19 +1167,19 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
           <button
             onClick={addMatchingStops}
             disabled={!orderDate || matchingStopsForRun.length === 0}
-            className="w-full px-3 py-2 bg-navy text-white rounded-lg text-xs font-semibold hover:opacity-90 disabled:opacity-50"
+            className="w-full px-3 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:opacity-90 disabled:opacity-50"
           >
             {orderDate
               ? `Add all delivery stops for ${new Date(`${orderDate}T00:00:00`).toLocaleDateString("en-PH")} (${matchingStopsForRun.length})`
               : "Choose a date to add delivery stops"}
           </button>
           {otherMatchingAgentCount > 0 && (
-            <p className="text-xs text-muted">{otherMatchingAgentCount} matching orders belong to other agents and need a separate run.</p>
+            <p className="text-xs text-muted-foreground">{otherMatchingAgentCount} matching orders belong to other agents and need a separate run.</p>
           )}
         </div>
 
         <div className="flex items-center justify-between">
-          <label className="text-xs font-semibold text-navy">Delivery Stops *</label>
+          <label className="text-xs font-semibold text-foreground">Delivery Stops *</label>
           <button onClick={addStop} className="text-xs text-accent-2 font-semibold hover:opacity-80">+ Add Stop</button>
         </div>
         {stops.map((stop, i) => {
@@ -1187,20 +1187,20 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
           const resolvedCustomer = selectedInv ? customerFor(selectedInv) : null;
           const stopOptions = selectedInv && !pickerInvoices.includes(selectedInv) ? [selectedInv, ...pickerInvoices] : pickerInvoices;
           return (
-            <div key={i} className="bg-off-white rounded-lg p-3 space-y-2">
+            <div key={i} className="bg-muted rounded-lg p-3 space-y-2">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-navy">Stop {i + 1}</p>
+                <p className="text-xs font-semibold text-foreground">Stop {i + 1}</p>
                 {stops.length > 1 && (
                   <button onClick={() => removeStop(i)} className="text-xs text-red hover:opacity-70">✕ Remove</button>
                 )}
               </div>
 
               <div>
-                <label className="block text-xs text-muted mb-1">Order (Customer — Contact)</label>
+                <label className="block text-xs text-muted-foreground mb-1">Order (Customer — Contact)</label>
                 <select
                   value={stop.invoice_id}
                   onChange={(e) => updateStop(i, e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg text-xs focus:outline-none focus:border-accent-2 bg-white"
+                  className="w-full px-3 py-2 border border-border rounded-lg text-xs focus:outline-none focus:border-accent-2 bg-card"
                 >
                   <option value="">Select order…</option>
                   {stopOptions.map((inv) => {
@@ -1217,8 +1217,8 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
 
               {/* Preview card once an order is selected */}
               {selectedInv && (
-                <div className="text-xs text-muted bg-white rounded-md px-3 py-2 border border-border space-y-0.5">
-                  <p className="font-semibold text-navy">
+                <div className="text-xs text-muted-foreground bg-card rounded-md px-3 py-2 border border-border space-y-0.5">
+                  <p className="font-semibold text-foreground">
                     {resolvedCustomer?.store_name || selectedInv.customer_name || "—"}
                   </p>
                   {resolvedCustomer?.contact_person && (
@@ -1240,7 +1240,7 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
         })}
       </div>
       <div className="flex justify-end gap-2 pt-4 border-t border-border">
-        <button onClick={onClose} className="px-4 py-2 border border-border rounded-lg text-sm font-semibold hover:bg-off-white">Cancel</button>
+        <button onClick={onClose} className="px-4 py-2 border border-border rounded-lg text-sm font-semibold hover:bg-accent">Cancel</button>
         <button onClick={handleSave} disabled={!valid || saving}
           className="px-4 py-2 bg-accent-2 text-white rounded-lg text-sm font-semibold hover:opacity-90 disabled:opacity-50">
           {saving ? "Saving…" : "Add Delivery"}
@@ -1266,7 +1266,7 @@ function ModalShell({ title, onClose, children }: {
           Back
         </button>
       </div>
-      <div className="max-w-2xl w-full bg-white rounded-xl border border-border p-5 space-y-4">{children}</div>
+      <div className="max-w-2xl w-full bg-card rounded-xl border border-border p-5 space-y-4">{children}</div>
     </div>
   );
 }
@@ -1310,63 +1310,63 @@ function PaymentConfirmationModal({
     >
       <div className="space-y-5">
         {/* Delivery Summary */}
-        <div className="bg-off-white rounded-lg p-4 space-y-2">
-          <p className="text-xs font-semibold text-muted uppercase tracking-wider">Delivery Details</p>
-          <p className="font-semibold text-navy">{customer?.store_name || "Customer"}</p>
-          <p className="text-xs text-muted">{customer ? formatCustomerAddress(customer) : "—"}</p>
+        <div className="bg-muted rounded-lg p-4 space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground">Delivery Details</p>
+          <p className="font-semibold text-foreground">{customer?.store_name || "Customer"}</p>
+          <p className="text-xs text-muted-foreground">{customer ? formatCustomerAddress(customer) : "—"}</p>
           {invoice && (
-            <p className="text-xs text-muted">Invoice: {invoice.id.slice(0, 8)}…</p>
+            <p className="text-xs text-muted-foreground">Invoice: {invoice.id.slice(0, 8)}…</p>
           )}
         </div>
 
         {/* Payment Status Question */}
         <div className="space-y-3">
-          <p className="text-sm font-semibold text-navy">Was payment received at delivery?</p>
+          <p className="text-sm font-semibold text-foreground">Was payment received at delivery?</p>
 
           <div className="space-y-2">
-            <label className="flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all"
-              style={{ borderColor: !isPaid ? '#006699' : '#e0e0e0', backgroundColor: !isPaid ? '#e6f2ff' : 'transparent' }}>
+            <label className="flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition"
+              style={{ borderColor: !isPaid ? 'hsl(var(--link))' : 'hsl(var(--border))', backgroundColor: !isPaid ? 'hsl(var(--info-soft))' : 'transparent' }}>
               <input
                 type="radio"
                 checked={!isPaid}
                 onChange={() => setIsPaid(false)}
                 className="w-4 h-4"
               />
-              <span className="text-sm font-semibold text-navy">Not Paid</span>
+              <span className="text-sm font-semibold text-foreground">Not Paid</span>
             </label>
 
-            <label className="flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all"
-              style={{ borderColor: isPaid ? '#10b981' : '#e0e0e0', backgroundColor: isPaid ? '#d1fae5' : 'transparent' }}>
+            <label className="flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition"
+              style={{ borderColor: isPaid ? 'hsl(var(--success))' : 'hsl(var(--border))', backgroundColor: isPaid ? 'hsl(var(--success-soft))' : 'transparent' }}>
               <input
                 type="radio"
                 checked={isPaid}
                 onChange={() => setIsPaid(true)}
                 className="w-4 h-4"
               />
-              <span className="text-sm font-semibold text-navy">Paid</span>
+              <span className="text-sm font-semibold text-foreground">Paid</span>
             </label>
           </div>
         </div>
 
         {/* Payment Method Selection (only if paid) */}
         {isPaid && (
-          <div className="space-y-3 p-4 bg-green-50 rounded-lg border border-green-200">
-            <p className="text-xs font-semibold text-muted uppercase tracking-wider">Payment Method</p>
+          <div className="space-y-3 p-4 bg-success-soft rounded-lg border border-success/30">
+            <p className="text-xs font-semibold text-muted-foreground">Payment Method</p>
             <div className="space-y-2">
               {PAYMENT_METHODS.map((method) => (
-                <label key={method.value} className="flex items-center gap-3 p-3 border border-border rounded-lg cursor-pointer hover:bg-white transition-colors">
+                <label key={method.value} className="flex items-center gap-3 p-3 border border-border rounded-lg cursor-pointer hover:bg-card transition-colors">
                   <input
                     type="radio"
                     checked={paymentMethod === method.value}
                     onChange={() => setPaymentMethod(method.value)}
                     className="w-4 h-4"
                   />
-                  <span className="text-sm font-semibold text-navy">{method.label}</span>
+                  <span className="text-sm font-semibold text-foreground">{method.label}</span>
                 </label>
               ))}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-navy mb-1">Reference / Receipt No. (optional)</label>
+              <label className="block text-xs font-semibold text-foreground mb-1">Reference / Receipt No. (optional)</label>
               <input
                 type="text"
                 value={paymentReference}
@@ -1380,9 +1380,9 @@ function PaymentConfirmationModal({
 
         {/* Warning if not paid */}
         {!isPaid && (
-          <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-            <p className="text-xs font-semibold text-amber-900 mb-1">⚠️ Accounts Receivable</p>
-            <p className="text-xs text-amber-800">
+          <div className="p-4 bg-warning-soft rounded-lg border border-warning/30">
+            <p className="text-xs font-semibold text-warning mb-1">⚠️ Accounts Receivable</p>
+            <p className="text-xs text-warning">
               Since payment was not received, this amount will be recorded in Accounts Receivable. {customer?.store_name} will show as owing this amount.
             </p>
           </div>
@@ -1393,7 +1393,7 @@ function PaymentConfirmationModal({
         <button
           onClick={onClose}
           disabled={isConfirming}
-          className="px-4 py-2 border border-border rounded-lg text-sm font-semibold hover:bg-off-white disabled:opacity-50"
+          className="px-4 py-2 border border-border rounded-lg text-sm font-semibold hover:bg-accent disabled:opacity-50"
         >
           Cancel
         </button>

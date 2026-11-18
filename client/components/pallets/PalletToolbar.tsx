@@ -44,25 +44,25 @@ export function PalletToolbar({
   return (
     <div className="flex flex-wrap items-center justify-start gap-3">
       <div className="relative w-full sm:w-72">
-        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+        <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
         <input
           type="text"
           placeholder="Search order, pallet, customer…"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
+          className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
         />
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <div className="inline-flex rounded-full border border-border bg-white p-1">
+        <div className="inline-flex rounded-full border border-border bg-card p-1">
           {statusTabs.map((tab) => (
             <button
               key={tab.value}
               onClick={() => onStatusChange(tab.value)}
               className={cn(
                 "whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition",
-                statusFilter === tab.value ? "bg-navy text-white" : "text-muted hover:text-navy"
+                statusFilter === tab.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
               )}
             >
               {tab.label}
@@ -74,7 +74,7 @@ export function PalletToolbar({
           aria-label="Truck"
           value={truckFilter}
           onChange={(e) => onTruckChange(e.target.value)}
-          className="rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-navy focus:border-accent-2 focus:outline-none"
+          className="rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground focus:border-accent-2 focus:outline-none"
         >
           {truckOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -87,7 +87,7 @@ export function PalletToolbar({
           aria-label="Date range"
           value={datePreset}
           onChange={(e) => onDatePresetChange(e.target.value as DatePresetFilter)}
-          className="rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-navy focus:border-accent-2 focus:outline-none"
+          className="rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground focus:border-accent-2 focus:outline-none"
         >
           {datePresetOptions.map((option) => (
             <option key={option.value} value={option.value}>

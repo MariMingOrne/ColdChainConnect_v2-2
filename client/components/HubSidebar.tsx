@@ -65,19 +65,19 @@ export function HubSidebar({ modules, basePath, agentMode = false }: HubSidebarP
           to={fullPath}
           onClick={() => setIsScanning(false)}
           className={cn(
-            "group relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 text-[10px] font-bold transition-colors duration-200 focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-white",
+            "group relative flex h-full min-w-0 flex-1 flex-col items-center justify-center gap-1 px-0.5 text-2xs font-bold transition-colors duration-200 focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-white",
             isActive
               ? "bg-white/10 text-white"
               : "text-white/85 hover:bg-white/10 hover:text-white"
           )}
         >
           <span className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-xl transition-all duration-200 group-active:scale-95",
+            "flex h-8 w-8 items-center justify-center rounded-xl transition duration-200 group-active:scale-95",
             isActive ? "bg-accent-2 shadow-md shadow-black/20" : "bg-white/10 group-hover:bg-white/20 group-focus-visible:bg-white/20"
           )}>
             <Icon size={19} strokeWidth={isActive ? 2.5 : 2.2} />
           </span>
-          <span className="max-w-full truncate text-center text-[9px] leading-tight">
+          <span className="max-w-full truncate text-center text-2xs leading-tight">
             {module.label}
           </span>
         </Link>
@@ -100,7 +100,7 @@ export function HubSidebar({ modules, basePath, agentMode = false }: HubSidebarP
             >
               <ScanBarcode size={22} className="transition-transform duration-200 group-hover:scale-110 group-focus-visible:scale-110 group-active:scale-105" />
             </button>
-            <span className="text-[9px] font-bold leading-tight text-white">Scan</span>
+            <span className="text-2xs font-bold leading-tight text-white">Scan</span>
           </div>
           {modules.slice(half).map(renderModule)}
         </nav>
@@ -126,7 +126,7 @@ export function HubSidebar({ modules, basePath, agentMode = false }: HubSidebarP
               key={module.path}
               to={fullPath}
               className={cn(
-                "flex items-center px-4 py-3 rounded-full text-sm font-semibold transition-all",
+                "flex items-center px-4 py-3 rounded-full text-sm font-semibold transition",
                 isActive
                   ? "bg-accent-2 text-white shadow-lg"
                   : "text-white/70 bg-white/5 hover:bg-white/15 hover:text-white"

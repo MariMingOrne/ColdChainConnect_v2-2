@@ -69,8 +69,8 @@ export function AuditLogPage() {
     <div className="flex-1 flex flex-col p-6 gap-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-navy">Audit Log</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-foreground">Audit Log</h1>
+          <p className="text-muted-foreground">
             Every create, update, and delete is recorded with who made it, when, and exactly which fields changed.
           </p>
         </div>
@@ -78,7 +78,7 @@ export function AuditLogPage() {
           <button
             onClick={handleBackup}
             disabled={isBackingUp}
-            className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-navy transition-colors hover:bg-off-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             <Download size={16} className={isBackingUp ? "animate-pulse" : ""} />
             {isBackingUp ? "Preparing backup…" : "Backup all data"}
@@ -94,10 +94,10 @@ export function AuditLogPage() {
           <button
             key={tab.id}
             onClick={() => setPageTab(tab.id as PageTab)}
-            className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition-all ${
+            className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition ${
               pageTab === tab.id
-                ? "bg-white border-border text-navy -mb-px"
-                : "bg-off-white border-transparent text-gray-500 hover:text-navy"
+                ? "bg-card border-border text-foreground -mb-px"
+                : "bg-muted border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             <span className="mr-2">{tab.icon}</span>{tab.label}
@@ -108,8 +108,8 @@ export function AuditLogPage() {
       {pageTab === "activity" && (
         <>
           {error && (
-            <Card className="p-4 bg-red-50 border-red-200">
-              <p className="text-red-700">{error}</p>
+            <Card className="p-4 bg-destructive-soft border-destructive/30">
+              <p className="text-destructive">{error}</p>
             </Card>
           )}
           {isLoading ? (

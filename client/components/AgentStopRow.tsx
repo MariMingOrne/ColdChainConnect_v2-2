@@ -27,12 +27,12 @@ export function AgentStopRow({ index, stop, isConfirming, onOpenDetails, onConfi
         onClick={onOpenDetails}
         className="flex w-full min-w-0 items-start gap-3 text-left sm:gap-4"
       >
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-navy text-sm font-bold text-white">{index + 1}</span>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">{index + 1}</span>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0">
-              <h3 className="font-semibold text-navy">{customer?.store_name ?? "Destination unavailable"}</h3>
-              <p className="mt-1 flex items-start gap-1.5 text-sm text-muted">
+              <h3 className="font-semibold text-foreground">{customer?.store_name ?? "Destination unavailable"}</h3>
+              <p className="mt-1 flex items-start gap-1.5 text-sm text-muted-foreground">
                 <MapPin size={15} className="mt-0.5 shrink-0" />
                 <span className="truncate">{address}</span>
               </p>
@@ -41,7 +41,7 @@ export function AgentStopRow({ index, stop, isConfirming, onOpenDetails, onConfi
               {stop.status.replace("_", " ")}
             </span>
           </div>
-          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted">
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1"><PackageCheck size={14} /> Invoice {invoiceLabel}</span>
             <span>Pallets · {stop.pallets.length}</span>
             {totals.units > 0 && <span>{totals.products} product{totals.products === 1 ? "" : "s"} · {totals.units} units</span>}
@@ -56,7 +56,7 @@ export function AgentStopRow({ index, stop, isConfirming, onOpenDetails, onConfi
         {stop.invoice && (
           <Link
             to={`/booking-dispatch/preparation?order=${stop.invoice.booking_id}`}
-            className="text-xs font-semibold text-accent hover:underline"
+            className="text-xs font-semibold text-primary hover:underline"
           >
             Track pallets
           </Link>
@@ -65,7 +65,7 @@ export function AgentStopRow({ index, stop, isConfirming, onOpenDetails, onConfi
           <p className="text-xs font-semibold text-green">Paid</p>
         ) : stop.status === "completed" ? (
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-xs font-semibold text-amber-700">
+            <p className="text-xs font-semibold text-warning">
               {stop.outstanding_amount != null && stop.invoice && stop.outstanding_amount < Number(stop.invoice.total_amount ?? 0)
                 ? `Partially paid · ₱${stop.outstanding_amount.toLocaleString(undefined, { minimumFractionDigits: 2 })} remaining`
                 : "Not paid · recorded in Accounts Receivable"}
@@ -89,7 +89,7 @@ export function AgentStopRow({ index, stop, isConfirming, onOpenDetails, onConfi
             Confirm delivery & payment
           </button>
         ) : (
-          <p className="text-xs text-muted">Delivery confirmation is available once all pallets are shipped.</p>
+          <p className="text-xs text-muted-foreground">Delivery confirmation is available once all pallets are shipped.</p>
         )}
       </div>
     </li>

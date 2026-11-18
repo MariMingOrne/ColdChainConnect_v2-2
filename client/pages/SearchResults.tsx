@@ -22,18 +22,18 @@ export function SearchResults() {
 
   return (
     <div className="flex flex-col gap-6 p-6 md:p-8 max-w-3xl w-full mx-auto">
-      <h1 className="text-2xl font-bold text-navy">
+      <h1 className="text-2xl font-bold text-foreground">
         {query.trim() ? `Results for “${query.trim()}”` : "Search"}
       </h1>
 
       {!query.trim() && (
-        <p className="text-navy/60">Type a term in the search bar above to search all modules.</p>
+        <p className="text-foreground/60">Type a term in the search bar above to search all modules.</p>
       )}
 
       {query.trim() && isLoading && <LoadingSpinner className="min-h-24" />}
 
       {query.trim() && !isLoading && groups.length === 0 && (
-        <p className="text-navy/60">No results found.</p>
+        <p className="text-foreground/60">No results found.</p>
       )}
 
       {!isLoading && groups.map((group) => (

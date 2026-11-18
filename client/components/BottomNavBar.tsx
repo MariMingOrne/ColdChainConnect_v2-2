@@ -118,13 +118,13 @@ export function BottomNavBar({ onLogout }: BottomNavBarProps) {
               <Link
                 key={fullPath}
                 to={fullPath}
-                className={`flex-shrink-0 flex flex-col items-center justify-center px-3 py-2 rounded-full text-[10px] font-semibold transition-all min-w-max gap-0.5 ${
+                className={`flex-shrink-0 flex flex-col items-center justify-center px-3 py-2 rounded-full text-2xs font-semibold transition min-w-max gap-0.5 ${
                   isActive
                     ? "bg-accent-2 text-white"
                     : "text-white/60 hover:text-white hover:bg-white/10"
                 }`}
               >
-                <span className="relative"><Icon size={16} />{countForPath(path) > 0 && <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-red px-1 text-center text-[9px] font-bold leading-4 text-white">{countForPath(path) > 99 ? "99+" : countForPath(path)}</span>}</span>
+                <span className="relative"><Icon size={16} />{countForPath(path) > 0 && <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-red px-1 text-center text-2xs font-bold leading-4 text-white">{countForPath(path) > 99 ? "99+" : countForPath(path)}</span>}</span>
                 <span className="truncate">{label}</span>
               </Link>
             );
@@ -149,13 +149,13 @@ export function BottomNavBar({ onLogout }: BottomNavBarProps) {
             <Link
               key={path}
               to={path}
-              className={`flex-shrink-0 flex flex-col items-center justify-center px-3 py-2 rounded-full text-[10px] font-semibold transition-all min-w-max gap-0.5 ${
+              className={`flex-shrink-0 flex flex-col items-center justify-center px-3 py-2 rounded-full text-2xs font-semibold transition min-w-max gap-0.5 ${
                 isActive
                   ? "bg-accent-2 text-white"
                   : "text-white/60 hover:text-white hover:bg-white/10"
               }`}
             >
-              <span className="relative"><Icon size={16} />{countForPath(path) > 0 && <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-red px-1 text-center text-[9px] font-bold leading-4 text-white">{countForPath(path) > 99 ? "99+" : countForPath(path)}</span>}</span>
+              <span className="relative"><Icon size={16} />{countForPath(path) > 0 && <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-red px-1 text-center text-2xs font-bold leading-4 text-white">{countForPath(path) > 99 ? "99+" : countForPath(path)}</span>}</span>
               <span>{label}</span>
             </Link>
           );

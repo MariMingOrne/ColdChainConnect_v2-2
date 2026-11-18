@@ -336,12 +336,12 @@ export function CreatePalletForm({
 
   if (isPrepared) {
     return (
-      <div className="bg-white rounded-2xl border border-border w-full shadow-sm p-6 space-y-4">
-        <h2 className="font-rajdhani text-lg font-bold text-navy">Order Prepared</h2>
-        <p className="text-sm text-navy">
+      <div className="bg-card rounded-2xl border border-border w-full shadow-sm p-6 space-y-4">
+        <h2 className="font-rajdhani text-lg font-bold text-foreground">Order Prepared</h2>
+        <p className="text-sm text-foreground">
           This order has already been marked as prepared. You cannot create additional pallets for this order.
         </p>
-        <p className="text-sm text-muted">
+        <p className="text-sm text-muted-foreground">
           Click the "Undo" button in the orders table to revert the prepared status if you need to make changes.
         </p>
       </div>
@@ -349,26 +349,26 @@ export function CreatePalletForm({
   }
 
   return (
-    <div className="bg-white rounded-2xl border border-border w-full shadow-sm">
+    <div className="bg-card rounded-2xl border border-border w-full shadow-sm">
       <div className="p-6 space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-navy mb-1">Order ID</label>
-          <div className="px-3 py-2 bg-off-white rounded-lg text-sm font-mono text-navy">
+          <label className="block text-xs font-semibold text-foreground mb-1">Order ID</label>
+          <div className="px-3 py-2 bg-muted rounded-lg text-sm font-mono text-foreground">
             {order.id.slice(0, 8)}
           </div>
         </div>
 
-        <div className="bg-gray-50 p-3 rounded-lg border border-gray-200">
-          <p className="text-xs font-semibold text-navy mb-2">Products Needed:</p>
+        <div className="bg-muted p-3 rounded-lg border border-border">
+          <p className="text-xs font-semibold text-foreground mb-2">Products Needed:</p>
           <div className="space-y-1">
             {order.booking_items && order.booking_items.length > 0 ? (
               order.booking_items.map((item) => (
-                <p key={item.id} className="text-xs text-navy">
-                  • {item.product?.name || item.product_id} <span className="text-muted">({item.qty_ordered} units)</span>
+                <p key={item.id} className="text-xs text-foreground">
+                  • {item.product?.name || item.product_id} <span className="text-muted-foreground">({item.qty_ordered} units)</span>
                 </p>
               ))
             ) : (
-              <p className="text-xs text-muted">No items in order</p>
+              <p className="text-xs text-muted-foreground">No items in order</p>
             )}
           </div>
         </div>
@@ -380,7 +380,7 @@ export function CreatePalletForm({
             className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
               mode === "automatic"
                 ? "border-accent-2 text-accent-2"
-                : "border-transparent text-muted hover:text-navy"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             Automatic (by Expiry)
@@ -390,7 +390,7 @@ export function CreatePalletForm({
             className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
               mode === "manual"
                 ? "border-accent-2 text-accent-2"
-                : "border-transparent text-muted hover:text-navy"
+                : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
             Manual Selection
@@ -398,8 +398,8 @@ export function CreatePalletForm({
         </div>
 
         {error && (
-          <div className="bg-orange-50 p-3 rounded-lg border border-orange-200">
-            <p className="text-xs text-orange-700">{error}</p>
+          <div className="bg-warning-soft p-3 rounded-lg border border-warning/30">
+            <p className="text-xs text-warning">{error}</p>
           </div>
         )}
 
@@ -408,24 +408,24 @@ export function CreatePalletForm({
           <div className="space-y-3">
             {suggestedPallets.length > 0 && suggestedPallets[0].items.length > 0 ? (
               suggestedPallets.map((pallet, palletIdx) => (
-                <div key={palletIdx} className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                  <p className="text-xs font-semibold text-blue-800 mb-2">
+                <div key={palletIdx} className="bg-info-soft p-3 rounded-lg border border-link/30">
+                  <p className="text-xs font-semibold text-link mb-2">
                     Pallet {palletIdx + 1} (Auto-matched by expiry):
                   </p>
                   <div className="space-y-1">
                     {pallet.items.map((item, idx) => (
-                      <p key={idx} className="text-xs text-blue-700">
+                      <p key={idx} className="text-xs text-link">
                         • {item.product_name || item.product_id}: {item.qty_units} units (from {item.batch_name})
                       </p>
                     ))}
-                    <p className="text-xs font-semibold text-blue-800 mt-2 pt-2 border-t border-blue-200">
+                    <p className="text-xs font-semibold text-link mt-2 pt-2 border-t border-link/30">
                       Total: {pallet.totalQty}/{PALLET_CAPACITY} items
                     </p>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-xs text-blue-600">Finding best matches from inventory…</p>
+              <p className="text-xs text-link">Finding best matches from inventory…</p>
             )}
           </div>
         )}
@@ -434,13 +434,13 @@ export function CreatePalletForm({
         {mode === "manual" && (
           <div className="space-y-4">
             {manualPallets.map((pallet, palletIdx) => (
-              <div key={palletIdx} className="border border-gray-200 rounded-lg p-3 bg-gray-50">
+              <div key={palletIdx} className="border border-border rounded-lg p-3 bg-muted">
                 <div className="flex items-center justify-between mb-3">
-                  <p className="text-xs font-semibold text-navy">Pallet {palletIdx + 1}</p>
+                  <p className="text-xs font-semibold text-foreground">Pallet {palletIdx + 1}</p>
                   <div className="flex gap-2">
                     <button
                       onClick={() => duplicatePallet(palletIdx)}
-                      className="text-xs text-blue-600 hover:text-blue-800 font-semibold"
+                      className="text-xs text-link hover:text-link font-semibold"
                       title="Duplicate this pallet"
                     >
                       Duplicate
@@ -448,7 +448,7 @@ export function CreatePalletForm({
                     {manualPallets.length > 1 && (
                       <button
                         onClick={() => removePallet(palletIdx)}
-                        className="text-xs text-red-600 hover:text-red-800 font-semibold"
+                        className="text-xs text-destructive hover:text-destructive font-semibold"
                       >
                         Remove
                       </button>
@@ -467,12 +467,12 @@ export function CreatePalletForm({
                       return (
                         <div
                           key={orderItem.id}
-                          className="p-2 bg-white rounded border border-gray-100"
+                          className="p-2 bg-card rounded border border-border"
                         >
-                          <p className="text-xs font-semibold text-navy mb-2">
+                          <p className="text-xs font-semibold text-foreground mb-2">
                             {orderItem.product?.name || orderItem.product_id}{" "}
                             {orderItem.product?.sku && (
-                              <span className="text-muted">({orderItem.product.sku})</span>
+                              <span className="text-muted-foreground">({orderItem.product.sku})</span>
                             )}
                           </p>
                           {availableItems.length > 0 ? (
@@ -491,9 +491,9 @@ export function CreatePalletForm({
                                 return (
                                   <div key={batch.batch_item_id} className="flex items-center gap-2">
                                     <div className="flex-1">
-                                      <p className="text-xs text-navy">
+                                      <p className="text-xs text-foreground">
                                         {batch.batch_name}
-                                        <span className="text-muted">
+                                        <span className="text-muted-foreground">
                                           {" "}
                                           ({availableForThisPallet} available)
                                         </span>
@@ -523,7 +523,7 @@ export function CreatePalletForm({
                               })}
                             </div>
                           ) : (
-                            <p className="text-xs text-orange-600">
+                            <p className="text-xs text-warning">
                               No inventory available for this product
                             </p>
                           )}
@@ -532,14 +532,14 @@ export function CreatePalletForm({
                     })}
                   </div>
                 ) : (
-                  <p className="text-xs text-muted">No items to select</p>
+                  <p className="text-xs text-muted-foreground">No items to select</p>
                 )}
 
-                <div className="mt-2 pt-2 border-t border-gray-200">
-                  <p className="text-xs font-semibold text-navy">
+                <div className="mt-2 pt-2 border-t border-border">
+                  <p className="text-xs font-semibold text-foreground">
                     Total: {pallet.totalQty}/{PALLET_CAPACITY} items
                     {pallet.totalQty === PALLET_CAPACITY && (
-                      <span className="text-orange-600 ml-1">(at capacity)</span>
+                      <span className="text-warning ml-1">(at capacity)</span>
                     )}
                   </p>
                 </div>
@@ -548,14 +548,14 @@ export function CreatePalletForm({
 
             <button
               onClick={addNewPallet}
-              className="w-full px-3 py-2 border border-dashed border-gray-300 rounded-lg text-xs font-semibold text-navy hover:bg-white transition-colors"
+              className="w-full px-3 py-2 border border-dashed border-border rounded-lg text-xs font-semibold text-foreground hover:bg-card transition-colors"
             >
               + Add Another Pallet
             </button>
 
             {/* Total Quantities Summary */}
-            <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 space-y-2">
-              <p className="text-xs font-semibold text-blue-800">Total Quantities Across All Pallets:</p>
+            <div className="bg-info-soft p-3 rounded-lg border border-link/30 space-y-2">
+              <p className="text-xs font-semibold text-link">Total Quantities Across All Pallets:</p>
               {Object.entries(getTotalQuantityByProduct()).length > 0 ? (
                 <div className="space-y-2">
                   {/* Needed items from order */}
@@ -563,23 +563,23 @@ export function CreatePalletForm({
                     const status = getProductQuantityStatus(orderItem.product_id);
                     return (
                       <div key={orderItem.id} className="flex items-center justify-between">
-                        <p className="text-xs text-blue-700">
+                        <p className="text-xs text-link">
                           {orderItem.product?.name || orderItem.product_id}:{" "}
                           <span className="font-semibold">{status.selected} units</span>
-                          <span className="text-muted"> (need {status.needed})</span>
+                          <span className="text-muted-foreground"> (need {status.needed})</span>
                         </p>
                         {status.isOver && (
-                          <span className="text-xs font-semibold text-red-600 bg-red-100 px-2 py-0.5 rounded">
+                          <span className="text-xs font-semibold text-destructive bg-destructive-soft px-2 py-0.5 rounded">
                             +{status.difference} over
                           </span>
                         )}
                         {!status.isOver && status.selected > 0 && status.selected === status.needed && (
-                          <span className="text-xs font-semibold text-green-600 bg-green-100 px-2 py-0.5 rounded">
+                          <span className="text-xs font-semibold text-success bg-success-soft px-2 py-0.5 rounded">
                             ✓ Complete
                           </span>
                         )}
                         {!status.isOver && status.selected > 0 && status.selected < status.needed && (
-                          <span className="text-xs font-semibold text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded">
+                          <span className="text-xs font-semibold text-warning bg-warning-soft px-2 py-0.5 rounded">
                             -{status.difference} needed
                           </span>
                         )}
@@ -589,10 +589,10 @@ export function CreatePalletForm({
 
                   {/* Items not needed in order */}
                   {getUnneededItems().length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-blue-200">
-                      <p className="text-xs font-semibold text-red-700 mb-1">&#9888; Items Not Needed:</p>
+                    <div className="mt-2 pt-2 border-t border-link/30">
+                      <p className="text-xs font-semibold text-destructive mb-1">&#9888; Items Not Needed:</p>
                       {getUnneededItems().map((item) => (
-                        <p key={item.productId} className="text-xs text-red-600">
+                        <p key={item.productId} className="text-xs text-destructive">
                           • {item.name}: <span className="font-semibold">{item.qty} units</span>
                         </p>
                       ))}
@@ -600,14 +600,14 @@ export function CreatePalletForm({
                   )}
                 </div>
               ) : (
-                <p className="text-xs text-blue-600">No items selected yet</p>
+                <p className="text-xs text-link">No items selected yet</p>
               )}
             </div>
           </div>
         )}
       </div>
 
-      <div className="bg-off-white px-6 py-4 flex justify-end gap-2 border-t border-border rounded-b-2xl">
+      <div className="bg-muted px-6 py-4 flex justify-end gap-2 border-t border-border rounded-b-2xl">
         <button
           onClick={handleCreatePallet}
           disabled={

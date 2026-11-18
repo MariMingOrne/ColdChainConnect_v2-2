@@ -132,7 +132,7 @@ export function CreateAccountDialog({ onClose }: CreateAccountDialogProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <CreateAccountFields accountType={accountType} form={form} onChange={setForm} modulePermissions={modulePermissions} onModulePermissionsChange={setModulePermissions} />
 
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
 
           <div className="flex justify-end">
             <Button type="submit" className="w-full sm:w-auto" disabled={isSubmitting}>

@@ -103,7 +103,7 @@ export function DeliveryRouteMap({ deliveryId, stops, focus }: DeliveryRouteMapP
           </Marker>
         ))}
       </MapContainer>
-      <p className="text-xs text-muted">
+      <p className="text-xs text-muted-foreground">
         Dashed line joins stops in run order as straight lines, not road directions.
         {unmappedCount > 0 && ` ${unmappedCount} stop${unmappedCount === 1 ? "" : "s"} without coordinates not shown.`}
       </p>

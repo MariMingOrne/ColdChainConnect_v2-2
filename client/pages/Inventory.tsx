@@ -252,10 +252,10 @@ export function Inventory() {
   const getReorderStatus = (qty: number, reorderPoint: number) => qty <= reorderPoint ? "RE-ORDER" : "OK";
 
   const getStockHighlightColor = (qty: number, reorderPoint: number) => {
-    if (qty <= reorderPoint) return { bg: "bg-orange-50", hover: "hover:bg-orange-100/60" };
+    if (qty <= reorderPoint) return { bg: "bg-warning-soft", hover: "hover:bg-warning-soft" };
     const percentage = (qty / reorderPoint) * 100;
-    if (percentage < 150) return { bg: "bg-yellow-50", hover: "hover:bg-yellow-100/60" };
-    return { bg: "", hover: "hover:bg-off-white/50" };
+    if (percentage < 150) return { bg: "bg-warning-soft", hover: "hover:bg-warning-soft" };
+    return { bg: "", hover: "hover:bg-accent/50" };
   };
 
   const getExpiryStatus = (expiryDate: string) => {
@@ -264,9 +264,9 @@ export function Inventory() {
     const expiry = parseIsoDate(expiryDate);
     const daysUntilExpiry = Math.floor((expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
-    if (daysUntilExpiry < 0) return { status: "expired", icon: "❌", color: { bg: "bg-red-50", hover: "hover:bg-red-100/60" } };
-    if (daysUntilExpiry <= 7) return { status: "almost-expired", icon: "⚠️", color: { bg: "bg-yellow-50", hover: "hover:bg-yellow-100/60" } };
-    return { status: "ok", icon: "✅", color: { bg: "", hover: "hover:bg-off-white/50" } };
+    if (daysUntilExpiry < 0) return { status: "expired", icon: "❌", color: { bg: "bg-destructive-soft", hover: "hover:bg-destructive-soft" } };
+    if (daysUntilExpiry <= 7) return { status: "almost-expired", icon: "⚠️", color: { bg: "bg-warning-soft", hover: "hover:bg-warning-soft" } };
+    return { status: "ok", icon: "✅", color: { bg: "", hover: "hover:bg-accent/50" } };
   };
 
   const getRowHighlightColor = (qty: number, reorderPoint: number, expiryDate?: string) => {
@@ -381,9 +381,9 @@ export function Inventory() {
       <div className="space-y-6">
 
       {/* Batch & Pallet Selector Card */}
-      <div className="bg-white rounded-2xl border border-border p-6 space-y-4">
+      <div className="bg-card rounded-2xl border border-border p-6 space-y-4">
         <div>
-          <label className="block text-xs font-semibold text-navy mb-2">Batch</label>
+          <label className="block text-xs font-semibold text-foreground mb-2">Batch</label>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-visible">
             <FilterChip label="📦 All Products" meta={`${products.length} SKUs`} active={selectedBatchId === "batch-all"} onClick={() => selectBatch("batch-all")} />
             {visibleBatches.map((batch) => {
@@ -392,19 +392,19 @@ export function Inventory() {
                 <FilterChip key={batch.id} label={batch.name} meta={`${batch.pallets.length} pallets · ${itemCount} items`} active={selectedBatchId === batch.id} onClick={() => selectBatch(batch.id)} />
               );
             })}
-            {visibleBatches.length === 0 && <span className="text-xs text-muted self-center whitespace-nowrap">No batches match the current filters</span>}
+            {visibleBatches.length === 0 && <span className="text-xs text-muted-foreground self-center whitespace-nowrap">No batches match the current filters</span>}
           </div>
         </div>
 
         {currentBatch && currentBatch.id !== "batch-all" && (
           <div className="border-t border-border pt-4">
-            <label className="block text-xs font-semibold text-navy mb-2">Pallets in {currentBatch.name}</label>
+            <label className="block text-xs font-semibold text-foreground mb-2">Pallets in {currentBatch.name}</label>
             <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-visible">
               <FilterChip label="All pallets" meta={`${currentBatch.pallets.length} total`} active={!selectedPalletId} onClick={() => selectPallet(null)} />
               {visiblePallets.map((pallet) => (
                 <FilterChip key={pallet.id} label={pallet.palletId} meta={`${pallet.items.length} item${pallet.items.length !== 1 ? "s" : ""}`} active={selectedPalletId === pallet.id} onClick={() => selectPallet(pallet.id)} />
               ))}
-              {visiblePallets.length === 0 && <span className="text-xs text-muted self-center whitespace-nowrap">No pallets match “{batchSearch}”</span>}
+              {visiblePallets.length === 0 && <span className="text-xs text-muted-foreground self-center whitespace-nowrap">No pallets match “{batchSearch}”</span>}
             </div>
           </div>
         )}
@@ -413,24 +413,24 @@ export function Inventory() {
             <div className="w-full sm:w-72">
               <SearchFilterBar searchTerm={batchSearch} onSearchChange={setBatchSearch} placeholder="Find a batch or pallet…" />
             </div>
-            <input type="datetime-local" value={batchCreatedSince} onChange={(e) => setBatchCreatedSince(e.target.value)} title="Show batches created on or after this date and time" className="rounded-lg border border-border px-3 py-2 text-sm text-navy" />
+            <input type="datetime-local" value={batchCreatedSince} onChange={(e) => setBatchCreatedSince(e.target.value)} title="Show batches created on or after this date and time" className="rounded-lg border border-border px-3 py-2 text-sm text-foreground" />
           </div>
-          <button onClick={() => setIsBatchModalOpen(true)} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white w-fit">⚙ Manage Batches</button>
+          <button onClick={() => setIsBatchModalOpen(true)} className="px-4 py-2 bg-card border border-border text-foreground rounded-lg font-semibold text-sm hover:bg-accent w-fit">⚙ Manage Batches</button>
         </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-start gap-3">
         <div className="relative w-full sm:w-72">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-          <input type="text" placeholder="Search by SKU or name…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <input type="text" placeholder="Search by SKU or name…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none" />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <select aria-label="Filter inventory by stock level" value={stockFilter} onChange={(e) => { setStockFilter(e.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-white px-4 py-2 text-sm text-navy">
+          <select aria-label="Filter inventory by stock level" value={stockFilter} onChange={(e) => { setStockFilter(e.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground">
             <option value="all">All stock</option>
             <option value="low">Reorder needed</option>
             <option value="available">Above reorder level</option>
           </select>
-          <select aria-label="Filter inventory by expiry date" value={expiryFilter} onChange={(e) => { setExpiryFilter(e.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-white px-4 py-2 text-sm text-navy">
+          <select aria-label="Filter inventory by expiry date" value={expiryFilter} onChange={(e) => { setExpiryFilter(e.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground">
             <option value="all">All expiry dates</option>
             <option value="has-expiry">Has expiry date</option>
             <option value="no-expiry">No expiry date</option>
@@ -461,14 +461,14 @@ export function Inventory() {
                 {selectedBatchId !== "batch-all" && (
                   <SortableHeader label="Expiry Date" sortKey="expiry" sort={inventorySort} onSort={setInventorySort} />
                 )}
-                <th style={{ width: '120px' }} className="sticky right-0 z-10 bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-center border-b border-border whitespace-nowrap shadow-left">
+                <th style={{ width: '120px' }} className="sticky right-0 z-10 bg-navy-mid text-muted-foreground font-barlow-cond text-xs font-bold letter-spacing-wider px-3 py-3 text-center border-b border-border whitespace-nowrap shadow-left">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody>
               {paginatedBatchProducts.length === 0 ? (
-                <tr><td colSpan={5} className="px-3 py-6 text-center text-muted">No products in this batch</td></tr>
+                <tr><td colSpan={5} className="px-3 py-6 text-center text-muted-foreground">No products in this batch</td></tr>
               ) : (
                 paginatedBatchProducts.map((product) => {
                   const uniqueKey = product.itemId ? `${product.id}-${product.itemId}` : product.id;
@@ -477,14 +477,14 @@ export function Inventory() {
                   return (
                     <tr key={uniqueKey} className={`border-b border-border transition-colors ${highlightColor.bg} ${highlightColor.hover}`}>
                       {/* Name */}
-                      <td className="px-3 py-3 text-navy font-semibold max-w-[200px] truncate">
+                      <td className="px-3 py-3 text-foreground font-semibold max-w-[200px] truncate">
                         <div className="flex items-center gap-2 truncate">
                           {expiryStatus && <span title={expiryStatus.status}>{expiryStatus.icon}</span>}
                           <span className="truncate">{product.description}</span>
                         </div>
                       </td>
                       {/* Cost Per Item */}
-                      <td className="px-3 py-3 text-right text-navy whitespace-nowrap">₱{product.unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</td>
+                      <td className="px-3 py-3 text-right text-foreground whitespace-nowrap">₱{product.unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</td>
                       {/* Stock Qty */}
                       <td className="px-3 py-3 whitespace-nowrap text-center">
                         <span className={`inline-block px-2 py-1 rounded text-xs font-bold text-white ${
@@ -497,18 +497,18 @@ export function Inventory() {
                       </td>
                       {/* Reorder Level — read-only display in All Products view */}
                       {selectedBatchId === "batch-all" && (
-                        <td className="px-3 py-3 text-right text-navy whitespace-nowrap font-semibold">
+                        <td className="px-3 py-3 text-right text-foreground whitespace-nowrap font-semibold">
                           {product.reorderPoint.toLocaleString()}
                         </td>
                       )}
                       {/* Expiry Date — display in batch view */}
                       {selectedBatchId !== "batch-all" && (
-                        <td className="px-3 py-3 text-left text-navy whitespace-nowrap text-sm">
+                        <td className="px-3 py-3 text-left text-foreground whitespace-nowrap text-sm">
                           {product.batchExpiryDate ? parseIsoDate(product.batchExpiryDate).toLocaleDateString("en-PH") : "N/A"}
                         </td>
                       )}
                       {/* Actions */}
-                      <td style={{ width: '120px' }} className="sticky right-0 z-10 px-3 py-3 whitespace-nowrap bg-white border-l border-border shadow-left">
+                      <td style={{ width: '120px' }} className="sticky right-0 z-10 px-3 py-3 whitespace-nowrap bg-card border-l border-border shadow-left">
                         <div className="flex items-center justify-center gap-1">
                           <ActionButtons
                             onView={() => setExtraInfoProduct(product)}
@@ -527,25 +527,25 @@ export function Inventory() {
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-off-white/50">
-          <div className="text-xs text-muted">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-muted/50">
+          <div className="text-xs text-muted-foreground">
             Page {currentPage} of {Math.max(1, totalPages)} · {filteredBatchProducts.length} items
           </div>
           <div className="flex gap-2 items-center">
             <button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
             >
               ← Prev
             </button>
-            <span className="px-3 py-1 text-xs font-semibold text-navy bg-white rounded border border-border">
+            <span className="px-3 py-1 text-xs font-semibold text-foreground bg-card rounded border border-border">
               {currentPage}
             </span>
             <button
               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next →
             </button>
@@ -561,9 +561,9 @@ export function Inventory() {
 // ─── FilterChip ───────────────────────────────────────────────────────────────
 function FilterChip({ label, meta, active, onClick }: { label: string; meta: string; active: boolean; onClick: () => void }) {
   return (
-    <button onClick={onClick} className={`shrink-0 text-left px-3 py-2 rounded-lg border transition-colors ${active ? "bg-navy text-white border-navy" : "bg-white text-navy border-border hover:bg-off-white"}`}>
+    <button onClick={onClick} className={`shrink-0 text-left px-3 py-2 rounded-lg border transition-colors ${active ? "bg-primary text-primary-foreground border-primary" : "bg-card text-foreground border-border hover:bg-accent"}`}>
       <div className="text-sm font-semibold whitespace-nowrap">{label}</div>
-      <div className={`text-xs whitespace-nowrap ${active ? "text-white/70" : "text-muted"}`}>{meta}</div>
+      <div className={`text-xs whitespace-nowrap ${active ? "text-white/70" : "text-muted-foreground"}`}>{meta}</div>
     </button>
   );
 }
@@ -571,10 +571,10 @@ function FilterChip({ label, meta, active, onClick }: { label: string; meta: str
 // ─── StatsBox ─────────────────────────────────────────────────────────────────
 function StatsBox({ label, value, icon, color }: { label: string; value: string; icon: string; color?: string }) {
   return (
-    <div className="bg-white border border-border rounded-lg p-3 text-center">
+    <div className="bg-card border border-border rounded-lg p-3 text-center">
       <div className="text-2xl mb-1">{icon}</div>
       <div className={`font-rajdhani text-xl font-bold ${color ? `text-${color}` : "text-accent-2"}`}>{value}</div>
-      <div className="text-xs text-muted mt-1">{label}</div>
+      <div className="text-xs text-muted-foreground mt-1">{label}</div>
     </div>
   );
 }
@@ -601,30 +601,30 @@ function ExtraInfoModal({ product, batches, onClose, onSelectPallet }: { product
           Back
         </button>
       </div>
-      <div className="bg-white rounded-2xl border border-border overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border overflow-hidden">
 
         <div className="p-6 space-y-6">
           <div>
-            <h3 className="text-xs font-bold text-muted uppercase letter-spacing-wider mb-3">Summary</h3>
+            <h3 className="text-xs font-bold text-muted-foreground letter-spacing-wider mb-3">Summary</h3>
             <div className="grid grid-cols-3 gap-3">
               {[
                 ["Inventory Value", `₱${(product.unitPrice * product.batchQuantity).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`],
                 ["Reorder Level", product.reorderPoint.toString()],
                 ["Last Updated", new Date(product.lastUpdated).toLocaleDateString("en-PH")],
               ].map(([label, value]) => (
-                <div key={label} className="bg-off-white rounded-lg p-3">
-                  <div className="text-xs text-muted font-semibold mb-0.5">{label}</div>
-                  <div className="text-sm font-semibold text-navy">{value}</div>
+                <div key={label} className="bg-muted rounded-lg p-3">
+                  <div className="text-xs text-muted-foreground font-semibold mb-0.5">{label}</div>
+                  <div className="text-sm font-semibold text-foreground">{value}</div>
                 </div>
               ))}
             </div>
           </div>
 
           <div>
-            <h3 className="text-xs font-bold text-muted uppercase letter-spacing-wider mb-3">Batches Containing This Product</h3>
+            <h3 className="text-xs font-bold text-muted-foreground letter-spacing-wider mb-3">Batches Containing This Product</h3>
             {batchesWithProduct.length === 0 ? (
-              <div className="bg-off-white rounded-lg p-4 text-center">
-                <p className="text-xs text-muted">No batches currently contain this product</p>
+              <div className="bg-muted rounded-lg p-4 text-center">
+                <p className="text-xs text-muted-foreground">No batches currently contain this product</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -632,14 +632,14 @@ function ExtraInfoModal({ product, batches, onClose, onSelectPallet }: { product
                   <button
                     key={idx}
                     onClick={() => onSelectPallet(batch.batchId, "")}
-                    className="w-full text-left bg-off-white hover:bg-accent-2/10 rounded-lg p-3 border border-border hover:border-accent-2 transition-colors cursor-pointer"
+                    className="w-full text-left bg-muted hover:bg-accent-2/10 rounded-lg p-3 border border-border hover:border-accent-2 transition-colors cursor-pointer"
                   >
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-sm font-semibold text-navy">{batch.batchName}</div>
+                        <div className="text-sm font-semibold text-foreground">{batch.batchName}</div>
                       </div>
                       <div className="text-right">
-                        <div className="text-xs text-muted font-semibold mb-0.5">Quantity</div>
+                        <div className="text-xs text-muted-foreground font-semibold mb-0.5">Quantity</div>
                         <div className="text-lg font-bold text-accent-2">{batch.quantity.toLocaleString()}</div>
                       </div>
                     </div>
@@ -650,8 +650,8 @@ function ExtraInfoModal({ product, batches, onClose, onSelectPallet }: { product
           </div>
         </div>
 
-        <div className="sticky bottom-0 bg-off-white px-6 py-4 border-t border-border flex justify-end">
-          <button onClick={onClose} className="px-4 py-2 border border-border rounded-lg font-semibold text-sm hover:bg-white">Close</button>
+        <div className="sticky bottom-0 bg-muted px-6 py-4 border-t border-border flex justify-end">
+          <button onClick={onClose} className="px-4 py-2 border border-border rounded-lg font-semibold text-sm hover:bg-card">Close</button>
         </div>
       </div>
     </div>
@@ -721,7 +721,7 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
           Back
         </button>
       </div>
-      <div className="bg-white rounded-2xl border border-border overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <div className="p-6">
           {!isCreatingBatch ? (
             <>
@@ -733,19 +733,19 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                       value={batchQuery}
                       onChange={(e) => setBatchQuery(e.target.value)}
                       placeholder="Search batches by name…"
-                      className="flex-1 rounded-lg border border-border px-3 py-2 text-sm text-navy"
+                      className="flex-1 rounded-lg border border-border px-3 py-2 text-sm text-foreground"
                     />
                     <input
                       type="datetime-local"
                       value={createdSince}
                       onChange={(e) => setCreatedSince(e.target.value)}
                       title="Show batches created on or after this date and time"
-                      className="rounded-lg border border-border px-3 py-2 text-sm text-navy"
+                      className="rounded-lg border border-border px-3 py-2 text-sm text-foreground"
                     />
                     <select
                       value={productFilter}
                       onChange={(e) => setProductFilter(e.target.value)}
-                      className="rounded-lg border border-border px-3 py-2 text-sm text-navy bg-white"
+                      className="rounded-lg border border-border px-3 py-2 text-sm text-foreground bg-card"
                     >
                       <option value="">All products</option>
                       {products.map((product) => (
@@ -753,32 +753,32 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                       ))}
                     </select>
                     {(batchQuery || createdSince || productFilter) && (
-                      <button onClick={() => { setBatchQuery(""); setCreatedSince(""); setProductFilter(""); }} className="px-3 py-2 text-sm font-semibold text-navy border border-border rounded-lg hover:bg-off-white">
+                      <button onClick={() => { setBatchQuery(""); setCreatedSince(""); setProductFilter(""); }} className="px-3 py-2 text-sm font-semibold text-foreground border border-border rounded-lg hover:bg-accent">
                         Clear
                       </button>
                     )}
                   </div>
                   <div className="space-y-2 mb-6">
-                    <h3 className="text-xs font-semibold text-muted uppercase mb-3">Active Batches</h3>
-                    <div className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedBatchId === "batch-all" ? "border-accent-2 bg-accent-2/10" : "border-border hover:bg-off-white"}`} onClick={() => onSelectBatch("batch-all")}>
+                    <h3 className="text-xs font-semibold text-muted-foreground mb-3">Active Batches</h3>
+                    <div className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedBatchId === "batch-all" ? "border-accent-2 bg-accent-2/10" : "border-border hover:bg-accent"}`} onClick={() => onSelectBatch("batch-all")}>
                       <div className="flex-1">
-                        <div className="text-sm font-semibold text-navy">📦 All Products</div>
-                        <div className="text-xs text-muted">View all products across all batches</div>
+                        <div className="text-sm font-semibold text-foreground">📦 All Products</div>
+                        <div className="text-xs text-muted-foreground">View all products across all batches</div>
                       </div>
                     </div>
                     {activeBatches.length === 0 ? (
-                      <p className="text-xs text-muted py-4">No active batches</p>
+                      <p className="text-xs text-muted-foreground py-4">No active batches</p>
                     ) : (
                       activeBatches.map((batch) => {
                         const totalItems = batch.pallets?.reduce((sum: number, p: any) => sum + (p.items?.length || 0), 0) || 0;
                         return (
-                          <div key={batch.id} className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedBatchId === batch.id ? "border-accent-2 bg-accent-2/10" : "border-border hover:bg-off-white"}`} onClick={() => onSelectBatch(batch.id)}>
+                          <div key={batch.id} className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedBatchId === batch.id ? "border-accent-2 bg-accent-2/10" : "border-border hover:bg-accent"}`} onClick={() => onSelectBatch(batch.id)}>
                             <div className="flex-1">
-                              <div className="text-sm font-semibold text-navy">{batch.name}</div>
-                              <div className="text-xs text-muted">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
+                              <div className="text-sm font-semibold text-foreground">{batch.name}</div>
+                              <div className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
                             </div>
                             <div className="flex gap-1">
-                              <button onClick={(e) => { e.stopPropagation(); handleArchiveBatch(batch.id); }} className="px-2 py-1 bg-yellow-500 text-white rounded text-xs font-semibold hover:opacity-90" title="Archive batch">📦</button>
+                              <button onClick={(e) => { e.stopPropagation(); handleArchiveBatch(batch.id); }} className="px-2 py-1 bg-warning text-white rounded text-xs font-semibold hover:opacity-90" title="Archive batch">📦</button>
                               <button onClick={(e) => { e.stopPropagation(); onDeleteBatch(batch.id); }} className="px-2 py-1 bg-red text-white rounded text-xs font-semibold hover:opacity-90">🗑</button>
                             </div>
                           </div>
@@ -787,24 +787,24 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                     )}
                   </div>
                   <div className="flex gap-2 justify-between">
-                    <button onClick={() => setShowArchived(true)} className="px-4 py-2 bg-gray-400 text-white rounded-lg font-semibold text-sm hover:opacity-90">📋 View Archived ({archivedBatches.length})</button>
+                    <button onClick={() => setShowArchived(true)} className="px-4 py-2 bg-muted-foreground text-white rounded-lg font-semibold text-sm hover:opacity-90">📋 View Archived ({archivedBatches.length})</button>
                     <button onClick={() => { setIsCreatingBatch(true); setPallets([]); setNewBatchName(""); }} className="px-4 py-2 bg-green text-white rounded-lg font-semibold text-sm hover:opacity-90">➕ Create New Batch</button>
                   </div>
                 </>
               ) : (
                 <>
                   <div className="space-y-2 mb-6">
-                    <h3 className="text-xs font-semibold text-muted uppercase mb-3">Archived Batches</h3>
+                    <h3 className="text-xs font-semibold text-muted-foreground mb-3">Archived Batches</h3>
                     {archivedBatches.length === 0 ? (
-                      <p className="text-xs text-muted py-4">No archived batches</p>
+                      <p className="text-xs text-muted-foreground py-4">No archived batches</p>
                     ) : (
                       archivedBatches.map((batch) => {
                         const totalItems = batch.pallets?.reduce((sum: number, p: any) => sum + (p.items?.length || 0), 0) || 0;
                         return (
-                          <div key={batch.id} className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-off-white/50 transition-colors">
+                          <div key={batch.id} className="flex items-center justify-between p-3 rounded-lg border border-border hover:bg-accent/50 transition-colors">
                             <div className="flex-1">
-                              <div className="text-sm font-semibold text-navy">{batch.name}</div>
-                              <div className="text-xs text-muted">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
+                              <div className="text-sm font-semibold text-foreground">{batch.name}</div>
+                              <div className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
                             </div>
                             <div className="flex gap-1">
                               <button onClick={() => handleUnarchiveBatch(batch.id)} className="px-2 py-1 bg-green text-white rounded text-xs font-semibold hover:opacity-90" title="Restore batch">♻️</button>
@@ -816,7 +816,7 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                     )}
                   </div>
                   <div className="flex justify-start">
-                    <button onClick={() => setShowArchived(false)} className="px-4 py-2 bg-navy text-white rounded-lg font-semibold text-sm hover:opacity-90">← Back to Active</button>
+                    <button onClick={() => setShowArchived(false)} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90">← Back to Active</button>
                   </div>
                 </>
               )}
@@ -918,20 +918,20 @@ function CreateBatchForm({ newBatchName, setNewBatchName, pallets, setPallets, o
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-navy mb-2">Batch Name *</label>
+          <label className="block text-xs font-semibold text-foreground mb-2">Batch Name *</label>
           <Input type="text" value={newBatchName} onChange={(e) => setNewBatchName(e.target.value)} placeholder="e.g., Morning Delivery, Q1 Restock" className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2" />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-navy mb-2">Acquisition Date *</label>
+          <label className="block text-xs font-semibold text-foreground mb-2">Acquisition Date *</label>
           <Input type="date" value={acquisitionDate} onChange={(e) => setAcquisitionDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2" />
         </div>
       </div>
 
       <div className="space-y-3">
-        <h3 className="text-xs font-semibold text-navy">Items *</h3>
+        <h3 className="text-xs font-semibold text-foreground">Items *</h3>
 
         <div>
-          <label className="block text-xs font-semibold text-navy mb-2">Add Products *</label>
+          <label className="block text-xs font-semibold text-foreground mb-2">Add Products *</label>
           <select onChange={(e) => { if (e.target.value) { addItem(e.target.value); e.target.value = ""; } }} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2">
             <option value="">Choose a product...</option>
             {availableProducts.map((p) => (
@@ -941,20 +941,20 @@ function CreateBatchForm({ newBatchName, setNewBatchName, pallets, setPallets, o
         </div>
 
         {items.length > 0 && (
-          <div className="bg-off-white rounded-lg p-3 space-y-2">
-            <label className="text-xs font-semibold text-navy">Items ({items.length})</label>
+          <div className="bg-muted rounded-lg p-3 space-y-2">
+            <label className="text-xs font-semibold text-foreground">Items ({items.length})</label>
             {items.map((item, itemIdx) => (
-              <div key={itemIdx} className="bg-white border border-border rounded p-2 space-y-2">
+              <div key={itemIdx} className="bg-card border border-border rounded p-2 space-y-2">
                 <div className="flex items-end gap-2">
                   <div className="flex-1">
-                    <div className="text-xs font-semibold text-navy">{getName(item.productId)}</div>
-                    <div className="text-xs text-muted">{getSku(item.productId)}</div>
+                    <div className="text-xs font-semibold text-foreground">{getName(item.productId)}</div>
+                    <div className="text-xs text-muted-foreground">{getSku(item.productId)}</div>
                   </div>
                   <Input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(itemIdx, "quantity", parseInt(e.target.value) || 1)} className="w-20 px-2 py-1 border border-border rounded text-sm focus:outline-none focus:border-accent-2" />
                   <Button type="button" variant="destructive" size="sm" onClick={() => removeItem(itemIdx)} aria-label="Remove product">✕</Button>
                 </div>
                 <div>
-                  <label className="block text-xs font-semibold text-navy mb-1">Expiry Date</label>
+                  <label className="block text-xs font-semibold text-foreground mb-1">Expiry Date</label>
                   <Input type="date" value={item.expirationDate || ""} onChange={(e) => updateItem(itemIdx, "expirationDate", e.target.value)} className="w-full px-2 py-1 border border-border rounded text-sm focus:outline-none focus:border-accent-2" />
                 </div>
               </div>

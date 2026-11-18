@@ -36,12 +36,12 @@ function MetricCard({ label, value, detail, icon: Icon, accent, to, healthy = fa
   healthy?: boolean;
 }) {
   return (
-    <Link to={to} className={`group block rounded-2xl border p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-2 md:p-5 ${healthy ? "border-green-200 bg-green-50/70" : "border-border bg-white"}`}>
+    <Link to={to} className={`group block rounded-2xl border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-2 md:p-5 ${healthy ? "border-success/30 bg-success-soft" : "border-border bg-card"}`}>
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">{label}</p>
-          <p className={`mt-2 text-3xl font-bold tabular-nums ${healthy ? "text-green-800" : "text-navy"}`}>{value}</p>
-          <p className={`mt-1 text-xs ${healthy ? "text-green-700" : "text-gray-500"}`}>{detail}</p>
+          <p className="text-xs font-semibold text-muted-foreground">{label}</p>
+          <p className={`mt-2 text-3xl font-bold tabular-nums ${healthy ? "text-success" : "text-foreground"}`}>{value}</p>
+          <p className={`mt-1 text-xs ${healthy ? "text-success" : "text-muted-foreground"}`}>{detail}</p>
         </div>
         <span className={`rounded-xl p-2.5 ${accent}`}><Icon size={19} aria-hidden="true" /></span>
       </div>
@@ -51,7 +51,7 @@ function MetricCard({ label, value, detail, icon: Icon, accent, to, healthy = fa
 }
 
 function AuditActionBadge({ action }: { action: string }) {
-  return <span className={`inline-flex shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${getActionBadgeClass(action)}`}>{getActionLabel(action)}</span>;
+  return <span className={`inline-flex shrink-0 rounded-full px-2 py-1 text-2xs font-bold ${getActionBadgeClass(action)}`}>{getActionLabel(action)}</span>;
 }
 
 function DashboardActivity({ logs, isLoading, error }: { logs: AuditLog[]; isLoading: boolean; error: string | null }) {
@@ -71,11 +71,11 @@ function DashboardActivity({ logs, isLoading, error }: { logs: AuditLog[]; isLoa
   };
 
   return (
-    <section className="rounded-2xl border border-border bg-white p-5 shadow-sm md:p-6">
+    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-navy"><Activity size={18} aria-hidden="true" /><h2 className="text-lg font-bold">Recent activity</h2></div>
-          <p className="mt-1 text-sm text-gray-500">Latest recorded system actions</p>
+          <div className="flex items-center gap-2 text-foreground"><Activity size={18} aria-hidden="true" /><h2 className="text-lg font-bold">Recent activity</h2></div>
+          <p className="mt-1 text-sm text-muted-foreground">Latest recorded system actions</p>
         </div>
         <Link to="/audit" className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-accent-2 hover:bg-accent-2/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2">
           View audit log <ArrowRight size={15} aria-hidden="true" />
@@ -83,11 +83,11 @@ function DashboardActivity({ logs, isLoading, error }: { logs: AuditLog[]; isLoa
       </div>
 
       {isLoading ? (
-        <div className="flex items-center gap-2 py-8 text-sm text-gray-500"><LoaderCircle size={16} className="animate-spin" />Loading activity…</div>
+        <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground"><LoaderCircle size={16} className="animate-spin" />Loading activity…</div>
       ) : error ? (
-        <p role="status" className="py-8 text-sm text-gray-500">Recent activity is unavailable right now.</p>
+        <p role="status" className="py-8 text-sm text-muted-foreground">Recent activity is unavailable right now.</p>
       ) : logs.length === 0 ? (
-        <p className="py-8 text-sm text-gray-500">No activity has been recorded yet.</p>
+        <p className="py-8 text-sm text-muted-foreground">No activity has been recorded yet.</p>
       ) : (
         <ol className="mt-4 divide-y divide-border">
           {logs.map((log) => (
@@ -95,18 +95,18 @@ function DashboardActivity({ logs, isLoading, error }: { logs: AuditLog[]; isLoa
               <div className="flex min-w-0 items-center gap-2">
                 <AuditActionBadge action={log.action} />
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-navy">{log.user_name || "A user"} {describeLog(log).charAt(0).toLowerCase() + describeLog(log).slice(1)}</p>
+                  <p className="truncate text-sm font-medium text-foreground">{log.user_name || "A user"} {describeLog(log).charAt(0).toLowerCase() + describeLog(log).slice(1)}</p>
                   {log.resource_id ? (
-                    <div className="mt-0.5 inline-flex items-center gap-1 font-mono text-xs text-gray-500">
+                    <div className="mt-0.5 inline-flex items-center gap-1 font-mono text-xs text-muted-foreground">
                       <span>#{log.resource_id.slice(0, 6).toUpperCase()}</span>
-                      <button type="button" onClick={() => void copyReference(log)} aria-label={`Copy full reference ${log.resource_id}`} className="rounded p-1 hover:bg-off-white hover:text-navy focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2">
+                      <button type="button" onClick={() => void copyReference(log)} aria-label={`Copy full reference ${log.resource_id}`} className="rounded p-1 hover:bg-accent hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2">
                         {copiedId === log.id ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
                       </button>
                     </div>
-                  ) : <p className="mt-0.5 text-xs text-gray-500">System activity</p>}
+                  ) : <p className="mt-0.5 text-xs text-muted-foreground">System activity</p>}
                 </div>
               </div>
-              <time dateTime={log.created_at} className="shrink-0 text-xs text-gray-500">
+              <time dateTime={log.created_at} className="shrink-0 text-xs text-muted-foreground">
                 {new Date(log.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
               </time>
             </li>
@@ -176,46 +176,46 @@ export function Dashboard() {
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-accent-2">Admin overview</p>
-            <h1 className="mt-1 text-3xl font-bold text-navy md:text-4xl">Cold Chain Connect</h1>
-            <p className="mt-1 text-sm text-gray-600">A quick view of orders, stock, deliveries, and system activity.</p>
+            <p className="text-xs font-bold text-accent-2">Admin overview</p>
+            <h1 className="mt-1 text-3xl font-bold text-foreground md:text-4xl">Cold Chain Connect</h1>
+            <p className="mt-1 text-sm text-muted-foreground">A quick view of orders, stock, deliveries, and system activity.</p>
           </div>
           <div className="relative flex flex-wrap items-center gap-2">
-            <Link to="/booking-dispatch/order-summary?action=new" className="inline-flex items-center gap-2 rounded-lg bg-accent-2 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-2">
+            <Link to="/booking-dispatch/order-summary?action=new" className="inline-flex items-center gap-2 rounded-lg bg-accent-2 px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-2">
               <ClipboardList size={16} aria-hidden="true" /> New booking
             </Link>
             <SalesForecastWidget />
-            <Link to="/reports" className="inline-flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2.5 text-sm font-semibold text-navy hover:bg-off-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-2">
+            <Link to="/reports" className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-2">
               <ChartNoAxesCombined size={16} aria-hidden="true" /> Reports
             </Link>
           </div>
         </header>
 
-        {error && <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">Some dashboard metrics could not be loaded. Please refresh to try again.</p>}
+        {error && <p role="status" className="rounded-xl border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">Some dashboard metrics could not be loaded. Please refresh to try again.</p>}
 
         <section aria-label="Operations at a glance" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard to="/booking-dispatch/order-summary?status=pending" label="Pending orders" value={isLoading || !data ? "—" : String(data.pendingBookings)} detail="Awaiting review · open filtered list" icon={ClipboardList} accent="bg-blue-50 text-blue-700" />
-          <MetricCard to="/information-management/inventory" label="Available inventory" value={isLoading || !data ? "—" : data.availableUnits.toLocaleString()} detail="Units available · open inventory" icon={Boxes} accent="bg-sky-50 text-sky-700" />
-          <MetricCard to="/information-management/inventory" label="Low-stock products" value={isLoading || !data ? "—" : String(data.lowStockProducts)} detail={data?.lowStockProducts === 0 ? "No low-stock alerts" : "At or below reorder point"} icon={TriangleAlert} accent={data?.lowStockProducts === 0 ? "bg-green-100 text-green-700" : "bg-amber-50 text-amber-700"} healthy={!isLoading && data?.lowStockProducts === 0} />
-          <MetricCard to="/booking-dispatch/delivery" label="Active deliveries" value={isLoading || !data ? "—" : String(data.activeDeliveries)} detail="Pending or in transit · view dispatch" icon={Truck} accent="bg-green-50 text-green-700" />
+          <MetricCard to="/booking-dispatch/order-summary?status=pending" label="Pending orders" value={isLoading || !data ? "—" : String(data.pendingBookings)} detail="Awaiting review · open filtered list" icon={ClipboardList} accent="bg-info-soft text-link" />
+          <MetricCard to="/information-management/inventory" label="Available inventory" value={isLoading || !data ? "—" : data.availableUnits.toLocaleString()} detail="Units available · open inventory" icon={Boxes} accent="bg-info-soft text-link" />
+          <MetricCard to="/information-management/inventory" label="Low-stock products" value={isLoading || !data ? "—" : String(data.lowStockProducts)} detail={data?.lowStockProducts === 0 ? "No low-stock alerts" : "At or below reorder point"} icon={TriangleAlert} accent={data?.lowStockProducts === 0 ? "bg-success-soft text-success" : "bg-warning-soft text-warning"} healthy={!isLoading && data?.lowStockProducts === 0} />
+          <MetricCard to="/booking-dispatch/delivery" label="Active deliveries" value={isLoading || !data ? "—" : String(data.activeDeliveries)} detail="Pending or in transit · view dispatch" icon={Truck} accent="bg-success-soft text-success" />
         </section>
 
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
           <DashboardActivity logs={data?.activity ?? []} isLoading={isLoading} error={error} />
-          <aside className="rounded-2xl border border-border bg-white p-5 shadow-sm md:p-6">
-            <h2 className="text-lg font-bold text-navy">Quick access</h2>
-            <p className="mt-1 text-sm text-gray-500">Go straight to a key workspace.</p>
+          <aside className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
+            <h2 className="text-lg font-bold text-foreground">Quick access</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Go straight to a key workspace.</p>
             <div className="mt-4 space-y-2">
-              <Link to="/information-management/inventory?action=receive" className="flex items-center justify-between rounded-xl border border-border p-3 text-sm font-semibold text-navy hover:border-accent-2 hover:bg-off-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2">
+              <Link to="/information-management/inventory?action=receive" className="flex items-center justify-between rounded-xl border border-border p-3 text-sm font-semibold text-foreground hover:border-accent-2 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2">
                 Receive stock <ArrowRight size={15} aria-hidden="true" />
               </Link>
-              <Link to="/booking-dispatch/order-summary?status=pending" className="flex items-center justify-between rounded-xl border border-border p-3 text-sm font-semibold text-navy hover:border-accent-2 hover:bg-off-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2">
-                Pending orders <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-800">{isLoading || !data ? "—" : data.pendingBookings}</span>
+              <Link to="/booking-dispatch/order-summary?status=pending" className="flex items-center justify-between rounded-xl border border-border p-3 text-sm font-semibold text-foreground hover:border-accent-2 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2">
+                Pending orders <span className="rounded-full bg-warning-soft px-2 py-0.5 text-xs text-warning">{isLoading || !data ? "—" : data.pendingBookings}</span>
               </Link>
-              <Link to="/booking-dispatch/delivery" className="flex items-center justify-between rounded-xl border border-border p-3 text-sm font-semibold text-navy hover:border-accent-2 hover:bg-off-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2">
-                Active deliveries <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-800">{isLoading || !data ? "—" : data.activeDeliveries}</span>
+              <Link to="/booking-dispatch/delivery" className="flex items-center justify-between rounded-xl border border-border p-3 text-sm font-semibold text-foreground hover:border-accent-2 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2">
+                Active deliveries <span className="rounded-full bg-info-soft px-2 py-0.5 text-xs text-link">{isLoading || !data ? "—" : data.activeDeliveries}</span>
               </Link>
-              <Link to="/audit" className="flex items-center justify-between rounded-xl border border-border p-3 text-sm font-semibold text-navy hover:border-accent-2 hover:bg-off-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2">
+              <Link to="/audit" className="flex items-center justify-between rounded-xl border border-border p-3 text-sm font-semibold text-foreground hover:border-accent-2 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2">
                 Administration · Audit Log <ArrowRight size={15} aria-hidden="true" />
               </Link>
             </div>

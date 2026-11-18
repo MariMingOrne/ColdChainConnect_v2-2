@@ -4,6 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { createRoot } from "react-dom/client";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import type { ModulePermission } from "@shared/api";
@@ -34,7 +35,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         <AdminNavigation />
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex flex-1">
-            <div className="flex min-w-0 flex-1 flex-col bg-off-white pb-32 animate-fade-in md:pb-0">
+            <div className="flex min-w-0 flex-1 flex-col bg-background pb-32 animate-fade-in md:pb-0">
               {children}
             </div>
           </div>
@@ -51,7 +52,7 @@ const AgentLayout = ({ children, agentMode = false }: { children: React.ReactNod
   return (
     <div className={agentMode ? "flex h-dvh min-h-0 flex-col overflow-hidden" : "flex flex-col min-h-screen"}>
       <Topbar userName={user?.username || "User"} onLogout={logout} agentMode />
-      <div className={`flex-1 flex flex-col bg-off-white min-w-0 animate-fade-in ${agentMode ? "min-h-0" : ""}`}>
+      <div className={`flex-1 flex flex-col bg-background min-w-0 animate-fade-in ${agentMode ? "min-h-0" : ""}`}>
         {children}
       </div>
     </div>
@@ -80,7 +81,7 @@ function StaffModule({ permission, children }: { permission: ModulePermission; c
   const allowed = user?.module_permissions ?? [];
   if (!allowed.includes(permission)) {
     const next = Object.keys(staffModulePaths).find((key) => allowed.includes(key as ModulePermission)) as ModulePermission | undefined;
-    return next ? <Navigate to={staffModulePaths[next]} replace /> : <div className="p-8 text-center text-navy">No modules are currently assigned to your account. Contact an administrator.</div>;
+    return next ? <Navigate to={staffModulePaths[next]} replace /> : <div className="p-8 text-center text-foreground">No modules are currently assigned to your account. Contact an administrator.</div>;
   }
   return <>{children}</>;
 }
@@ -160,16 +161,18 @@ function PostLoginLoadingGate() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AppContent />
-        <PostLoginLoadingGate />
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+  <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange storageKey="ccc-theme">
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AppContent />
+          <PostLoginLoadingGate />
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 const rootElement = document.getElementById("root");

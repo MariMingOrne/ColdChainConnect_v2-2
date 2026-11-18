@@ -289,10 +289,10 @@ export function Employees() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="font-rajdhani text-3xl font-bold text-navy letter-spacing-tight">
+          <h1 className="font-rajdhani text-3xl font-bold text-foreground letter-spacing-tight">
             Employee Management
           </h1>
-          <p className="text-xs text-muted mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             Manage staff accounts and access levels
           </p>
         </div>
@@ -301,7 +301,7 @@ export function Employees() {
       {/* Search Bar and Actions */}
       <div className="flex flex-col md:flex-row gap-3">
         <div className="flex-1 flex items-center bg-navy-mid border border-border rounded-lg px-3 gap-2">
-          <span className="text-muted">🔍</span>
+          <span className="text-muted-foreground">🔍</span>
           <input
             type="text"
             placeholder="Search Term"
@@ -315,11 +315,11 @@ export function Employees() {
             resetForm();
             setIsModalOpen(true);
           }}
-          className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white"
+          className="px-4 py-2 bg-card border border-border text-foreground rounded-lg font-semibold text-sm hover:bg-accent"
         >
           ➕ Add Employee
         </button>
-        <button className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white">
+        <button className="px-4 py-2 bg-card border border-border text-foreground rounded-lg font-semibold text-sm hover:bg-accent">
           Database
         </button>
       </div>
@@ -339,7 +339,7 @@ export function Employees() {
 
       {filteredEmployees.length === 0 && (
         <div className="text-center py-12">
-          <p className="text-muted text-sm">No employees found</p>
+          <p className="text-muted-foreground text-sm">No employees found</p>
         </div>
       )}
 
@@ -370,26 +370,26 @@ function EmployeeCard({
       case "Assistant":
         return "bg-gold/15 text-gold border-gold/30";
       default:
-        return "bg-muted/15 text-muted border-muted/30";
+        return "bg-muted/15 text-muted-foreground border-muted/30";
     }
   };
 
   return (
-    <div className="bg-white rounded-2xl border border-border p-5 space-y-3">
+    <div className="bg-card rounded-2xl border border-border p-5 space-y-3">
       {/* Card Header with ID and Actions */}
       <div className="flex items-start justify-between">
         <div>
-          <h3 className="font-rajdhani text-lg font-bold text-navy">
+          <h3 className="font-rajdhani text-lg font-bold text-foreground">
             {employee.id}
           </h3>
-          <p className="text-xs text-muted mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             {employee.firstName} {employee.middleName} {employee.lastName}
           </p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={onView}
-            className="p-2 rounded-lg bg-off-white hover:bg-navy/10 text-navy transition-colors"
+            className="p-2 rounded-lg bg-muted hover:bg-primary/10 text-foreground transition-colors"
             title="View Details"
           >
             ℹ️
@@ -406,8 +406,8 @@ function EmployeeCard({
 
       {/* Employee Username */}
       <div>
-        <p className="text-xs text-muted font-semibold">USERNAME</p>
-        <p className="text-sm text-navy font-semibold">{employee.username}</p>
+        <p className="text-xs text-muted-foreground font-semibold">USERNAME</p>
+        <p className="text-sm text-foreground font-semibold">{employee.username}</p>
       </div>
 
       {/* Badges */}
@@ -433,7 +433,7 @@ function EmployeeCard({
       {/* Edit Button */}
       <button
         onClick={onEdit}
-        className="w-full px-3 py-2 rounded-lg bg-navy text-white font-semibold text-sm hover:opacity-90 transition-opacity"
+        className="w-full px-3 py-2 rounded-lg bg-primary text-primary-foreground font-semibold text-sm hover:opacity-90 transition-opacity"
       >
         Edit Employee
       </button>
@@ -471,12 +471,12 @@ function EmployeeModal({
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-border overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <div className="p-6 space-y-4">
           <div className="grid grid-cols-3 gap-3">
             {/* First Name */}
             <div>
-              <label className="block text-xs font-semibold text-navy mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1">
                 First Name *
               </label>
               <input
@@ -497,7 +497,7 @@ function EmployeeModal({
 
             {/* Middle Name */}
             <div>
-              <label className="block text-xs font-semibold text-navy mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1">
                 Middle Name
               </label>
               <input
@@ -513,7 +513,7 @@ function EmployeeModal({
 
             {/* Last Name */}
             <div>
-              <label className="block text-xs font-semibold text-navy mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1">
                 Last Name *
               </label>
               <input
@@ -536,7 +536,7 @@ function EmployeeModal({
           <div className="grid grid-cols-2 gap-3">
             {/* Username */}
             <div>
-              <label className="block text-xs font-semibold text-navy mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1">
                 Username *
               </label>
               <input
@@ -557,7 +557,7 @@ function EmployeeModal({
 
             {/* Email */}
             <div>
-              <label className="block text-xs font-semibold text-navy mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1">
                 Email *
               </label>
               <input
@@ -580,7 +580,7 @@ function EmployeeModal({
           <div className="grid grid-cols-2 gap-3">
             {/* Contact Number */}
             <div>
-              <label className="block text-xs font-semibold text-navy mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1">
                 Contact Number *
               </label>
               <input
@@ -603,7 +603,7 @@ function EmployeeModal({
 
             {/* Address */}
             <div>
-              <label className="block text-xs font-semibold text-navy mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1">
                 Address
               </label>
               <input
@@ -619,7 +619,7 @@ function EmployeeModal({
           <div className="grid grid-cols-3 gap-3">
             {/* Age */}
             <div>
-              <label className="block text-xs font-semibold text-navy mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1">
                 Age
               </label>
               <input
@@ -633,7 +633,7 @@ function EmployeeModal({
 
             {/* Date of Birth */}
             <div>
-              <label className="block text-xs font-semibold text-navy mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1">
                 Date of Birth
               </label>
               <input
@@ -648,7 +648,7 @@ function EmployeeModal({
 
             {/* Sex */}
             <div>
-              <label className="block text-xs font-semibold text-navy mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1">
                 Sex
               </label>
               <select
@@ -668,7 +668,7 @@ function EmployeeModal({
           <div className="grid grid-cols-2 gap-3">
             {/* Position */}
             <div>
-              <label className="block text-xs font-semibold text-navy mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1">
                 Position *
               </label>
               <select
@@ -697,7 +697,7 @@ function EmployeeModal({
 
             {/* Status */}
             <div>
-              <label className="block text-xs font-semibold text-navy mb-1">
+              <label className="block text-xs font-semibold text-foreground mb-1">
                 Status
               </label>
               <select
@@ -717,10 +717,10 @@ function EmployeeModal({
           </div>
         </div>
 
-        <div className="sticky bottom-0 bg-off-white px-6 py-4 flex justify-end gap-2 border-t border-border">
+        <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end gap-2 border-t border-border">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-border rounded-lg font-semibold text-sm hover:bg-white"
+            className="px-4 py-2 border border-border rounded-lg font-semibold text-sm hover:bg-card"
           >
             Cancel
           </button>
@@ -758,7 +758,7 @@ function ViewEmployeeModal({
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-border max-w-md w-full overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border max-w-md w-full overflow-hidden">
         <div className="p-6 space-y-3">
           <DetailRow label="Employee ID" value={employee.id} />
           <DetailRow
@@ -793,8 +793,8 @@ function ViewEmployeeModal({
 function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between py-2 border-b border-border">
-      <span className="text-xs font-semibold text-muted">{label}</span>
-      <span className="text-sm text-navy font-semibold">{value}</span>
+      <span className="text-xs font-semibold text-muted-foreground">{label}</span>
+      <span className="text-sm text-foreground font-semibold">{value}</span>
     </div>
   );
 }

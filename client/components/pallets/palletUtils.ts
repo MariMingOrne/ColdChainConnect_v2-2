@@ -67,8 +67,8 @@ export function isInDatePreset(isoDate: string, preset: DatePresetFilter, now = 
 }
 
 export const palletStatusStyles: Record<Pallet["status"], string> = {
-  draft: "bg-orange-50 text-orange-700 border-orange-200",
-  prepared: "bg-yellow-50 text-yellow-800 border-yellow-200",
-  approved: "bg-green-50 text-green-700 border-green-200",
-  shipped: "bg-blue-50 text-blue-700 border-blue-200",
+  draft: "bg-warning-soft text-warning border-warning/30",
+  prepared: "bg-warning-soft text-warning border-warning/30",
+  approved: "bg-success-soft text-success border-success/30",
+  shipped: "bg-info-soft text-link border-link/30",
 };

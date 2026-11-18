@@ -81,11 +81,11 @@ export function AddOrderModal({
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl border border-border flex-1 flex flex-col overflow-hidden">
+      <div className="bg-card rounded-2xl border border-border flex-1 flex flex-col overflow-hidden">
 
         {/* Customer Selection */}
-        <div className="bg-off-white px-6 py-3 border-b border-border">
-          <label className="block text-xs font-semibold text-navy mb-2">Select Customer *</label>
+        <div className="bg-muted px-6 py-3 border-b border-border">
+          <label className="block text-xs font-semibold text-foreground mb-2">Select Customer *</label>
           <select
             value={newCustomerId}
             onChange={(e) => onCustomerChange(e.target.value)}
@@ -98,7 +98,7 @@ export function AddOrderModal({
               </option>
             ))}
           </select>
-          <label className="mt-3 block text-xs font-semibold text-navy mb-2">Prepared Delivery Date</label>
+          <label className="mt-3 block text-xs font-semibold text-foreground mb-2">Prepared Delivery Date</label>
           <Input
             type="date"
             min={minDeliveryDate}
@@ -109,13 +109,13 @@ export function AddOrderModal({
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-border bg-white">
+        <div className="flex border-b border-border bg-card">
           <button
             onClick={() => setSelectedTab("products")}
             className={`flex-1 px-4 py-3 text-sm font-semibold transition ${
               selectedTab === "products"
                 ? "border-b-2 border-accent-2 text-accent-2"
-                : "text-muted hover:text-navy"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Browse Products
@@ -125,7 +125,7 @@ export function AddOrderModal({
             className={`flex-1 px-4 py-3 text-sm font-semibold transition ${
               selectedTab === "cart"
                 ? "border-b-2 border-accent-2 text-accent-2"
-                : "text-muted hover:text-navy"
+                : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Order Items ({getTotalQuantity()})
@@ -162,14 +162,14 @@ export function AddOrderModal({
                     disabled={isOutOfStock}
                     className={`w-full flex items-center gap-4 p-4 rounded-lg border-2 transition ${
                       isOutOfStock
-                        ? "border-red-300 bg-red-50 opacity-60 cursor-not-allowed"
+                        ? "border-destructive/30 bg-destructive-soft opacity-60 cursor-not-allowed"
                         : isSelected
-                          ? "border-accent-2 bg-blue-50"
-                          : "border-border bg-white hover:border-accent-2 hover:shadow-md cursor-pointer"
+                          ? "border-accent-2 bg-info-soft"
+                          : "border-border bg-card hover:border-accent-2 hover:shadow-md cursor-pointer"
                     }`}
                   >
                     {/* Image */}
-                    <div className="w-16 h-16 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
+                    <div className="w-16 h-16 flex-shrink-0 bg-muted rounded-lg overflow-hidden flex items-center justify-center">
                       <img
                         src={getImageUrl(product.image_filename)}
                         alt={product.name}
@@ -182,16 +182,16 @@ export function AddOrderModal({
 
                     {/* Product Info */}
                     <div className="flex-1 text-left">
-                      <h3 className="font-semibold text-sm text-navy mb-1">{product.name}</h3>
+                      <h3 className="font-semibold text-sm text-foreground mb-1">{product.name}</h3>
                       <div className="flex items-center gap-3">
                         <p className="text-sm font-bold text-accent-2">₱{product.price}</p>
                         <div
                           className={`px-2 py-1 rounded text-xs font-semibold ${
                             isOutOfStock
-                              ? "bg-red-200 text-red-700"
+                              ? "bg-destructive-soft text-destructive"
                               : stock < 10
-                                ? "bg-yellow-100 text-yellow-800"
-                                : "bg-green-100 text-green-800"
+                                ? "bg-warning-soft text-warning"
+                                : "bg-success-soft text-success"
                           }`}
                         >
                           {isOutOfStock ? "Out of Stock" : `${stock} available`}
@@ -211,7 +211,7 @@ export function AddOrderModal({
               </div>
               {filteredProducts.length === 0 && (
                 <div className="text-center py-8">
-                  <p className="text-muted text-sm">No products found matching "{productSearch}"</p>
+                  <p className="text-muted-foreground text-sm">No products found matching "{productSearch}"</p>
                 </div>
               )}
             </div>
@@ -219,7 +219,7 @@ export function AddOrderModal({
             <div className="space-y-3">
               {orderItems.length === 0 ? (
                 <div className="text-center py-12">
-                  <p className="text-muted text-sm mb-4">No items added yet. Browse products to add items.</p>
+                  <p className="text-muted-foreground text-sm mb-4">No items added yet. Browse products to add items.</p>
                   <button
                     onClick={() => setSelectedTab("products")}
                     className="px-4 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90"
@@ -238,7 +238,7 @@ export function AddOrderModal({
                     return (
                       <div
                         key={idx}
-                        className="flex items-center gap-3 p-4 border border-border rounded-lg bg-off-white"
+                        className="flex items-center gap-3 p-4 border border-border rounded-lg bg-muted"
                       >
                         <img
                           src={getImageUrl(product.image_filename)}
@@ -249,8 +249,8 @@ export function AddOrderModal({
                           }}
                         />
                         <div className="flex-1">
-                          <h4 className="font-semibold text-sm text-navy">{product.name}</h4>
-                          <p className="text-xs text-muted">₱{product.price}</p>
+                          <h4 className="font-semibold text-sm text-foreground">{product.name}</h4>
+                          <p className="text-xs text-muted-foreground">₱{product.price}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <QuantityStepper
@@ -259,11 +259,11 @@ export function AddOrderModal({
                             max={maxQty}
                             onChange={(qty) => onItemChange(idx, "qty_ordered", qty)}
                           />
-                          <span className="text-xs text-muted">{maxQty} available</span>
+                          <span className="text-xs text-muted-foreground">{maxQty} available</span>
                         </div>
                         <button
                           onClick={() => onRemoveItem(idx)}
-                          className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition"
+                          className="p-2 text-destructive hover:text-destructive hover:bg-destructive-soft rounded transition"
                         >
                           <Trash2 size={16} />
                         </button>
@@ -277,10 +277,10 @@ export function AddOrderModal({
         </div>
 
         {/* Footer */}
-        <div className="bg-off-white px-6 py-4 flex justify-between items-center border-t border-border">
+        <div className="bg-muted px-6 py-4 flex justify-between items-center border-t border-border">
           <div className="text-sm">
             {getTotalQuantity() > 0 && (
-              <p className="font-semibold text-navy">
+              <p className="font-semibold text-foreground">
                 Total Items: <span className="text-accent-2">{getTotalQuantity()}</span>
               </p>
             )}

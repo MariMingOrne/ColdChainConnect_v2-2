@@ -109,7 +109,7 @@ export function Preparation() {
     return true;
   };
 
-  if (isLoading) return <LoadingSpinner className="fixed inset-0 z-0 min-h-0 bg-off-white" slow />;
+  if (isLoading) return <LoadingSpinner className="fixed inset-0 z-0 min-h-0 bg-muted" slow />;
 
   const filtered = orders.filter((order) => {
     const matchesSearch =
@@ -213,23 +213,23 @@ export function Preparation() {
       </div>
 
       {error && (
-        <Card className="p-4 bg-red-50 border-red-200">
-          <p className="text-red-700">{error}</p>
+        <Card className="p-4 bg-destructive-soft border-destructive/30">
+          <p className="text-destructive">{error}</p>
         </Card>
       )}
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="stat-card">
-          <p className="text-xs text-muted font-semibold uppercase tracking-tight">Orders Ready</p>
+          <p className="text-xs text-muted-foreground font-semibold tracking-tight">Orders Ready</p>
           <p className="text-2xl font-bold text-accent-2 mt-1">{ordersReadyForPrep}</p>
         </div>
         <div className="stat-card">
-          <p className="text-xs text-muted font-semibold uppercase tracking-tight">Items Pending</p>
+          <p className="text-xs text-muted-foreground font-semibold tracking-tight">Items Pending</p>
           <p className="text-2xl font-bold text-gold mt-1">{pendingPalletItems}</p>
         </div>
         <div className="stat-card">
-          <p className="text-xs text-muted font-semibold uppercase tracking-tight">Pallets Today</p>
+          <p className="text-xs text-muted-foreground font-semibold tracking-tight">Pallets Today</p>
           <p className="text-2xl font-bold text-green mt-1">{palletsCreatedToday}</p>
         </div>
       </div>
@@ -272,30 +272,30 @@ export function Preparation() {
       {dateRangeFilter === "custom" && (
         <div className="flex flex-col sm:flex-row gap-3 items-end">
           <div className="flex-1">
-            <label className="block text-sm font-medium text-navy mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               Start Date
             </label>
-            <div className="flex items-center rounded-full border border-border bg-white px-4 gap-2">
-              <Calendar size={16} className="text-muted" />
+            <div className="flex items-center rounded-full border border-border bg-card px-4 gap-2">
+              <Calendar size={16} className="text-muted-foreground" />
               <Input
                 type="date"
                 value={customDateStart}
                 onChange={(e) => setCustomDateStart(e.target.value)}
-                className="flex-1 bg-transparent border-none text-navy py-2 outline-none text-sm"
+                className="flex-1 bg-transparent border-none text-foreground py-2 outline-none text-sm"
               />
             </div>
           </div>
           <div className="flex-1">
-            <label className="block text-sm font-medium text-navy mb-1">
+            <label className="block text-sm font-medium text-foreground mb-1">
               End Date
             </label>
-            <div className="flex items-center rounded-full border border-border bg-white px-4 gap-2">
-              <Calendar size={16} className="text-muted" />
+            <div className="flex items-center rounded-full border border-border bg-card px-4 gap-2">
+              <Calendar size={16} className="text-muted-foreground" />
               <Input
                 type="date"
                 value={customDateEnd}
                 onChange={(e) => setCustomDateEnd(e.target.value)}
-                className="flex-1 bg-transparent border-none text-navy py-2 outline-none text-sm"
+                className="flex-1 bg-transparent border-none text-foreground py-2 outline-none text-sm"
               />
             </div>
           </div>
@@ -317,7 +317,7 @@ export function Preparation() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted">
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
                   {orders.length === 0 ? "No orders found" : "No orders match your search"}
                 </TableCell>
               </TableRow>
@@ -337,9 +337,9 @@ export function Preparation() {
                     </TableCell>
                     <TableCell className="text-sm">
                       <div className="flex flex-col">
-                        <span className="font-semibold text-navy">{customer?.store_name || "Unknown"}</span>
+                        <span className="font-semibold text-foreground">{customer?.store_name || "Unknown"}</span>
                         {customer?.location && (
-                          <span className="text-xs text-muted">{customer.location}</span>
+                          <span className="text-xs text-muted-foreground">{customer.location}</span>
                         )}
                       </div>
                     </TableCell>
@@ -349,17 +349,17 @@ export function Preparation() {
                           <>
                             {order.booking_items.map((item) => (
                               <div key={item.id} className="text-xs">
-                                <span className="font-semibold text-navy">{item.product?.name || item.product_id}</span>
-                                <span className="text-muted"> × {item.qty_ordered}</span>
+                                <span className="font-semibold text-foreground">{item.product?.name || item.product_id}</span>
+                                <span className="text-muted-foreground"> × {item.qty_ordered}</span>
                               </div>
                             ))}
                           </>
                         ) : (
-                          <span className="font-semibold text-muted">No items</span>
+                          <span className="font-semibold text-muted-foreground">No items</span>
                         )}
                       </div>
                       {approvedPalletCount > 0 && (
-                        <span className="text-xs text-green-600 block mt-1">
+                        <span className="text-xs text-success block mt-1">
                           {approvedPalletCount} pallet(s) ready
                         </span>
                       )}
@@ -395,7 +395,7 @@ export function Preparation() {
                             </button>
                             <button
                               onClick={() => handleDeleteOrderPallets(order.id)}
-                              className="px-3 py-2 text-sm font-semibold bg-gold text-navy rounded-lg hover:opacity-80 transition"
+                              className="px-3 py-2 text-sm font-semibold bg-gold text-foreground rounded-lg hover:opacity-80 transition"
                               title={`Remove ${draftPalletCount} pallet(s) for this order`}
                             >
                               Undo
@@ -410,7 +410,7 @@ export function Preparation() {
                             </span>
                             <button
                               onClick={() => handleUndoPrepared(order.id)}
-                              className="px-3 py-2 text-sm font-semibold bg-gold text-navy rounded-lg hover:opacity-80 transition"
+                              className="px-3 py-2 text-sm font-semibold bg-gold text-foreground rounded-lg hover:opacity-80 transition"
                             >
                               Undo
                             </button>

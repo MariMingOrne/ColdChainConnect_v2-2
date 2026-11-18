@@ -73,10 +73,10 @@ function StatsBox({
   const colorClass = color ? `text-${color}` : "text-accent-2";
 
   return (
-    <div className="bg-white border border-border rounded-lg p-3 text-center">
+    <div className="bg-card border border-border rounded-lg p-3 text-center">
       <div className="text-2xl mb-1">{icon}</div>
       <div className={`font-rajdhani text-xl font-bold ${colorClass}`}>{value}</div>
-      <div className="text-xs text-muted mt-1">{label}</div>
+      <div className="text-xs text-muted-foreground mt-1">{label}</div>
     </div>
   );
 }
@@ -93,33 +93,33 @@ function ViewCustomerPage({ customer, onClose }: { customer: Customer; onClose: 
           Back
         </button>
       </div>
-      <div className="max-w-lg w-full rounded-2xl border border-border bg-white">
+      <div className="max-w-lg w-full rounded-2xl border border-border bg-card">
 
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-muted mb-1">Store Name</label>
-            <div className="text-sm text-navy font-semibold">{customer.store_name}</div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Store Name</label>
+            <div className="text-sm text-foreground font-semibold">{customer.store_name}</div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted mb-1">Delivery Address</label>
-            <div className="text-sm text-navy">{formatCustomerAddress(customer) || "—"}</div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Delivery Address</label>
+            <div className="text-sm text-foreground">{formatCustomerAddress(customer) || "—"}</div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted mb-1">Truck District</label>
-            <div className="text-sm text-navy">{customer.district || "—"}</div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Truck District</label>
+            <div className="text-sm text-foreground">{customer.district || "—"}</div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted mb-1">Contact Person</label>
-            <div className="text-sm text-navy">{customer.contact_person || "—"}</div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Contact Person</label>
+            <div className="text-sm text-foreground">{customer.contact_person || "—"}</div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted mb-1">Contact Info</label>
-            <div className="text-sm text-navy">{customer.contact_info || "—"}</div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Contact Info</label>
+            <div className="text-sm text-foreground">{customer.contact_info || "—"}</div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted mb-1">Discounts</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Discounts</label>
             {customer.discounts && customer.discounts.length > 0 ? (
-              <ul className="space-y-1 text-sm text-navy">
+              <ul className="space-y-1 text-sm text-foreground">
                 {customer.discounts.map((discount) => (
                   <li key={discount.id ?? discount.label}>
                     {discount.label}: {formatPercent(Number(discount.rate))}%
@@ -130,13 +130,13 @@ function ViewCustomerPage({ customer, onClose }: { customer: Customer; onClose: 
                 </li>
               </ul>
             ) : (
-              <div className="text-sm text-navy">—</div>
+              <div className="text-sm text-foreground">—</div>
             )}
           </div>
         </div>
 
-        <div className="sticky bottom-0 bg-off-white px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
-          <button onClick={onClose} className="px-4 py-2 bg-navy text-white rounded-lg font-semibold text-sm hover:opacity-90">
+        <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
+          <button onClick={onClose} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90">
             Close
           </button>
         </div>
@@ -177,11 +177,11 @@ function CustomerModal({
           Back
         </button>
       </div>
-      <div className="flex w-full max-w-xl flex-col rounded-2xl border border-border bg-white">
+      <div className="flex w-full max-w-xl flex-col rounded-2xl border border-border bg-card">
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-6">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-navy">
+            <label className="mb-1 block text-xs font-semibold text-foreground">
               Store Name *
             </label>
             <Input
@@ -202,7 +202,7 @@ function CustomerModal({
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-semibold text-navy">Street No.</label>
+              <label className="mb-1 block text-xs font-semibold text-foreground">Street No.</label>
               <Input
                 type="text"
                 value={formData.street_number}
@@ -212,7 +212,7 @@ function CustomerModal({
               />
             </div>
             <div className="col-span-2">
-              <label className="mb-1 block text-xs font-semibold text-navy">Street Address</label>
+              <label className="mb-1 block text-xs font-semibold text-foreground">Street Address</label>
               <Input
                 type="text"
                 value={formData.street_address}
@@ -225,7 +225,7 @@ function CustomerModal({
 
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-1">
-              <label className="mb-1 block text-xs font-semibold text-navy">City *</label>
+              <label className="mb-1 block text-xs font-semibold text-foreground">City *</label>
               <Input
                 type="text"
                 value={formData.location}
@@ -235,7 +235,7 @@ function CustomerModal({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-navy">State / Province</label>
+              <label className="mb-1 block text-xs font-semibold text-foreground">State / Province</label>
               <Input
                 type="text"
                 value={formData.state}
@@ -245,7 +245,7 @@ function CustomerModal({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-navy">Postal Code</label>
+              <label className="mb-1 block text-xs font-semibold text-foreground">Postal Code</label>
               <Input
                 type="text"
                 value={formData.postal_code}
@@ -257,7 +257,7 @@ function CustomerModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-navy">Truck District</label>
+            <label className="mb-1 block text-xs font-semibold text-foreground">Truck District</label>
             <Select
               value={formData.district || undefined}
               onValueChange={(district) => setFormData({ ...formData, district })}
@@ -271,11 +271,11 @@ function CustomerModal({
                 ))}
               </SelectContent>
             </Select>
-            <p className="mt-1 text-xs text-muted">Approved orders for this customer are dispatched to the truck serving this district.</p>
+            <p className="mt-1 text-xs text-muted-foreground">Approved orders for this customer are dispatched to the truck serving this district.</p>
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-navy">
+            <label className="mb-1 block text-xs font-semibold text-foreground">
               Contact Person
             </label>
             <Input
@@ -290,7 +290,7 @@ function CustomerModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-navy">
+            <label className="mb-1 block text-xs font-semibold text-foreground">
               Contact Info
             </label>
             <Input
@@ -306,7 +306,7 @@ function CustomerModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-semibold text-navy">Credit Limit (₱)</label>
+              <label className="mb-1 block text-xs font-semibold text-foreground">Credit Limit (₱)</label>
               <Input
                 type="number"
                 min="0"
@@ -317,7 +317,7 @@ function CustomerModal({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-navy">Credit Terms (days)</label>
+              <label className="mb-1 block text-xs font-semibold text-foreground">Credit Terms (days)</label>
               <Input
                 type="number"
                 min="1"
@@ -330,7 +330,7 @@ function CustomerModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-navy">Discounts</label>
+            <label className="mb-1 block text-xs font-semibold text-foreground">Discounts</label>
             <CustomerDiscountEditor
               rows={formData.discounts}
               onChange={(discounts) => setFormData({ ...formData, discounts })}
@@ -338,7 +338,7 @@ function CustomerModal({
           </div>
         </div>
 
-        <div className="sticky bottom-0 flex justify-end gap-2 rounded-b-2xl border-t border-border bg-off-white px-6 py-4">
+        <div className="sticky bottom-0 flex justify-end gap-2 rounded-b-2xl border-t border-border bg-muted px-6 py-4">
           <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
           <Button type="button" variant="accent" onClick={onSave}>Save Customer</Button>
         </div>
@@ -645,7 +645,7 @@ export function Customers({ onBack }: CustomersProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={openAddModal} className="flex items-center gap-2 rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90">
+          <button onClick={openAddModal} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90">
             ➕ Add Customer
           </button>
           <ExcelActionsDropdown
@@ -656,7 +656,7 @@ export function Customers({ onBack }: CustomersProps) {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-300 bg-red-50 px-4 py-3 text-sm text-red">
+        <div className="rounded-lg border border-destructive/30 bg-destructive-soft px-4 py-3 text-sm text-red">
           {error}
         </div>
       )}
@@ -678,7 +678,7 @@ export function Customers({ onBack }: CustomersProps) {
 
       <div className="flex flex-wrap items-center justify-start gap-3">
         <div className="relative w-full sm:w-72">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <input
             type="text"
             placeholder="Search by store, location, or contact person…"
@@ -687,7 +687,7 @@ export function Customers({ onBack }: CustomersProps) {
               setSearchQuery(event.target.value);
               setCurrentPage(1);
             }}
-            className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
+            className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
           />
         </div>
         <select
@@ -697,7 +697,7 @@ export function Customers({ onBack }: CustomersProps) {
             setDistrictFilter(event.target.value);
             setCurrentPage(1);
           }}
-          className="rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-navy focus:border-accent-2 focus:outline-none"
+          className="rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground focus:border-accent-2 focus:outline-none"
         >
           <option value="">All districts</option>
           {customerDistricts.map((district) => (
@@ -716,7 +716,7 @@ export function Customers({ onBack }: CustomersProps) {
                 <SortableHeader label="Contact Person" sortKey="contact" sort={customerSort} onSort={setCustomerSort} className="hidden md:table-cell" />
                 <SortableHeader label="Contact Info" sortKey="contactInfo" sort={customerSort} onSort={setCustomerSort} className="hidden md:table-cell" />
                 <SortableHeader label="District" sortKey="district" sort={customerSort} onSort={setCustomerSort} />
-                <TableHead style={{ width: '120px' }} className="sticky right-0 z-10 border-b border-border bg-navy-mid px-3 py-3 text-center font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap shadow-left">
+                <TableHead style={{ width: '120px' }} className="sticky right-0 z-10 border-b border-border bg-navy-mid px-3 py-3 text-center font-barlow-cond text-xs font-bold text-muted-foreground whitespace-nowrap shadow-left">
                   Actions
                 </TableHead>
               </TableRow>
@@ -724,7 +724,7 @@ export function Customers({ onBack }: CustomersProps) {
             <TableBody>
               {paginatedCustomers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="px-3 py-6 text-center text-muted">
+                  <TableCell colSpan={6} className="px-3 py-6 text-center text-muted-foreground">
                     {customers.length === 0
                       ? "No customers found"
                       : "No results matching your search"}
@@ -734,22 +734,22 @@ export function Customers({ onBack }: CustomersProps) {
                 paginatedCustomers.map((customer) => (
                   <TableRow
                     key={customer.id}
-                    className="border-b border-border transition-colors hover:bg-off-white/50"
+                    className="border-b border-border transition-colors hover:bg-accent/50"
                   >
-                    <TableCell className="px-3 py-3 font-semibold text-navy">
+                    <TableCell className="px-3 py-3 font-semibold text-foreground">
                       {customer.store_name}
                     </TableCell>
-                    <TableCell className="px-3 py-3 text-navy">{formatCustomerAddress(customer)}</TableCell>
-                    <TableCell className="hidden px-3 py-3 text-navy md:table-cell">
-                      {customer.contact_person || <span className="text-muted">—</span>}
+                    <TableCell className="px-3 py-3 text-foreground">{formatCustomerAddress(customer)}</TableCell>
+                    <TableCell className="hidden px-3 py-3 text-foreground md:table-cell">
+                      {customer.contact_person || <span className="text-muted-foreground">—</span>}
                     </TableCell>
-                    <TableCell className="hidden px-3 py-3 text-navy md:table-cell">
-                      {customer.contact_info || <span className="text-muted">—</span>}
+                    <TableCell className="hidden px-3 py-3 text-foreground md:table-cell">
+                      {customer.contact_info || <span className="text-muted-foreground">—</span>}
                     </TableCell>
-                    <TableCell className="px-3 py-3 whitespace-nowrap text-navy">
-                      {customer.district || <span className="text-muted">—</span>}
+                    <TableCell className="px-3 py-3 whitespace-nowrap text-foreground">
+                      {customer.district || <span className="text-muted-foreground">—</span>}
                     </TableCell>
-                    <TableCell style={{ width: '120px' }} className="sticky right-0 z-10 px-3 py-3 bg-white border-l border-border shadow-left">
+                    <TableCell style={{ width: '120px' }} className="sticky right-0 z-10 px-3 py-3 bg-card border-l border-border shadow-left">
                       <ActionButtons
                         onView={() => setViewingCustomer(customer)}
                         onEdit={() => openEditModal(customer)}
@@ -765,25 +765,25 @@ export function Customers({ onBack }: CustomersProps) {
         </div>
 
         {/* Pagination - Always Display */}
-        <div className="flex items-center justify-between border-t border-border bg-off-white/50 px-6 py-4">
-          <div className="text-xs text-muted">
+        <div className="flex items-center justify-between border-t border-border bg-muted/50 px-6 py-4">
+          <div className="text-xs text-muted-foreground">
             Page {currentPage} of {Math.max(1, totalPages)} · {filteredCustomers.length} customers
           </div>
           <div className="flex gap-2 items-center">
             <button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
             >
               ← Prev
             </button>
-            <span className="px-3 py-1 text-xs font-semibold text-navy bg-white rounded border border-border">
+            <span className="px-3 py-1 text-xs font-semibold text-foreground bg-card rounded border border-border">
               {currentPage}
             </span>
             <button
               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next →
             </button>
@@ -791,7 +791,7 @@ export function Customers({ onBack }: CustomersProps) {
         </div>
       </div>
 
-      <div className="text-xs text-muted">
+      <div className="text-xs text-muted-foreground">
         Total customers: {filteredCustomers.length}
       </div>
 

@@ -29,7 +29,7 @@ export function ExcelActionsDropdown({
           type="button"
           aria-label="Excel actions"
           className={cn(
-            "inline-flex items-center gap-2 rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-navy transition-colors hover:bg-off-white",
+            "inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent",
             className,
           )}
         >

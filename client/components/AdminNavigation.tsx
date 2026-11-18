@@ -226,7 +226,7 @@ export function AdminNavigation() {
       className={`sticky hidden shrink-0 flex-col border-r border-white/10 bg-navy px-3 py-4 text-white transition-[width] duration-200 md:flex ${collapsed ? "w-[4.5rem]" : "w-64"}`}
     >
       <div className={`mb-4 flex h-10 items-center ${collapsed ? "justify-center" : "justify-between px-2"}`}>
-        {!collapsed && <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-white/45">Workspace</span>}
+        {!collapsed && <span className="text-2xs font-bold text-chrome-muted">Workspace</span>}
         <button
           type="button"
           onClick={() => setCollapsed((value) => !value)}

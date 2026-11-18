@@ -89,7 +89,7 @@ export function DeliverySheet({ order, pallets, batches, onClose }: DeliveryShee
           </div>
         </div>
 
-        <div id="delivery-sheet" className={`overflow-y-auto rounded-2xl border border-border bg-white p-5 font-sans text-black ${cardMode ? "card-mode" : ""}`}>
+        <div id="delivery-sheet" className={`overflow-y-auto rounded-2xl border border-border bg-card p-5 font-sans text-black ${cardMode ? "card-mode" : ""}`}>
           <style>{`
             @media print {
               @page {
@@ -146,7 +146,7 @@ export function DeliverySheet({ order, pallets, batches, onClose }: DeliveryShee
             <p className="text-xs">Order {order.id.slice(0, 8)} · {storeName}{order.customer?.location ? ` · ${order.customer.location}` : ""}</p>
             <p className="text-xs">Delivery date: {deliveryDate} · Pallets: {pallets.length}</p>
             <img src={orderBarcode} alt={`Barcode for order ${order.id.slice(0, 8)}`} className="mt-2 h-auto w-full object-contain" />
-            <p className="font-mono text-[10px]">{order.id}</p>
+            <p className="font-mono text-2xs">{order.id}</p>
           </header>
 
           <section className="pick-list mt-3">
@@ -161,7 +161,7 @@ export function DeliverySheet({ order, pallets, batches, onClose }: DeliveryShee
               </thead>
               <tbody>
                 {pickLines.map((line) => (
-                  <tr key={line.key} className="border-b border-gray-300">
+                  <tr key={line.key} className="border-b border-border">
                     <td className="py-0.5">{line.productName}</td>
                     <td className="py-0.5">{line.batchName}</td>
                     <td className="py-0.5 text-right">{line.qty}</td>
@@ -180,9 +180,9 @@ export function DeliverySheet({ order, pallets, batches, onClose }: DeliveryShee
                   <div key={pallet.id} className="label-card flex flex-col items-center gap-1 border border-black p-2 text-center">
                     <p className="text-xs font-bold">Pallet {index + 1} of {pallets.length} · {units} units</p>
                     <p className="text-xs">{storeName}</p>
-                    <p className="text-[10px]">Delivery: {deliveryDate}</p>
+                    <p className="text-2xs">Delivery: {deliveryDate}</p>
                     {barcodes[pallet.id] && <img src={barcodes[pallet.id]} alt={`Barcode for pallet ${index + 1}`} className="h-auto w-full object-contain" />}
-                    <p className="font-mono text-[10px]">{pallet.id}</p>
+                    <p className="font-mono text-2xs">{pallet.id}</p>
                   </div>
                 );
               })}

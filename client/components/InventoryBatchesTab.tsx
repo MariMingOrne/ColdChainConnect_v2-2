@@ -127,13 +127,13 @@ export function InventoryBatchesTab() {
       {!showCreateModal && (
       <>
       {error && (
-        <Card className="p-4 bg-red-50 border-red-200">
-          <p className="text-red-700">{error}</p>
+        <Card className="p-4 bg-destructive-soft border-destructive/30">
+          <p className="text-destructive">{error}</p>
         </Card>
       )}
 
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-navy">Inventory Batches</h2>
+        <h2 className="text-2xl font-bold text-foreground">Inventory Batches</h2>
         <Button onClick={() => setShowCreateModal(true)} className="gap-2">
           <Plus className="w-4 h-4" />
           Create New Batch
@@ -155,7 +155,7 @@ export function InventoryBatchesTab() {
           <TableBody>
             {batches.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   No batches found. Create one to get started.
                 </TableCell>
               </TableRow>
@@ -171,15 +171,15 @@ export function InventoryBatchesTab() {
                     onClick={() =>
                       setExpandedBatchId(isExpanded ? null : batch.id)
                     }
-                    className="cursor-pointer hover:bg-gray-50"
+                    className="cursor-pointer hover:bg-muted"
                   >
-                    <TableCell className="font-semibold text-navy">{batch.name}</TableCell>
+                    <TableCell className="font-semibold text-foreground">{batch.name}</TableCell>
                     <TableCell>
                       <span
                         className={`px-2 py-1 rounded text-sm font-semibold ${
                           batch.status === "open"
-                            ? "bg-blue-100 text-blue-800"
-                            : "bg-green-100 text-green-800"
+                            ? "bg-info-soft text-link"
+                            : "bg-success-soft text-success"
                         }`}
                       >
                         {batch.status}
@@ -198,12 +198,12 @@ export function InventoryBatchesTab() {
                               e.stopPropagation();
                               handleCloseBatch(batch.id);
                             }}
-                            className="px-3 py-1 text-sm whitespace-nowrap bg-green-600 text-white rounded hover:bg-green-700 transition"
+                            className="px-3 py-1 text-sm whitespace-nowrap bg-success text-white rounded hover:bg-success transition"
                           >
                             Close Batch
                           </button>
                         )}
-                        <button className="text-gray-600 hover:text-navy transition">
+                        <button className="text-muted-foreground hover:text-foreground transition">
                           {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                         </button>
                       </div>
@@ -211,27 +211,27 @@ export function InventoryBatchesTab() {
                   </TableRow>,
                   isExpanded && batch.items && (
                     <TableRow key={`${batch.id}-expanded`}>
-                      <TableCell colSpan={6} className="bg-gray-50 p-4">
+                      <TableCell colSpan={6} className="bg-muted p-4">
                         <div className="space-y-2">
-                          <h4 className="font-semibold text-navy mb-3">Batch Items</h4>
+                          <h4 className="font-semibold text-foreground mb-3">Batch Items</h4>
                           {batch.items.map((item) => {
                             const product = products.find((p) => p.id === item.product_id);
                             return (
                               <div
                                 key={item.id}
-                                className="flex justify-between items-center p-3 bg-white rounded border border-border"
+                                className="flex justify-between items-center p-3 bg-card rounded border border-border"
                               >
                                 <div>
-                                  <p className="font-semibold text-navy">
+                                  <p className="font-semibold text-foreground">
                                     {product?.name || item.product_id}
                                   </p>
-                                  <p className="text-xs text-muted">
+                                  <p className="text-xs text-muted-foreground">
                                     Cost: ₱{item.unit_cost}
                                   </p>
                                 </div>
                                 <div className="text-right">
-                                  <p className="font-semibold text-navy">{item.qty_units} units</p>
-                                  <p className="text-xs text-muted">
+                                  <p className="font-semibold text-foreground">{item.qty_units} units</p>
+                                  <p className="text-xs text-muted-foreground">
                                     Subtotal: ₱{(parseFloat(item.unit_cost) * item.qty_units).toFixed(2)}
                                   </p>
                                 </div>
@@ -264,10 +264,10 @@ export function InventoryBatchesTab() {
               Back
             </button>
           </div>
-          <div className="bg-white rounded-2xl border border-border flex flex-col">
+          <div className="bg-card rounded-2xl border border-border flex flex-col">
             <div className="p-6 space-y-4 flex-1">
               <div>
-                <label className="block text-xs font-semibold text-navy mb-1">
+                <label className="block text-xs font-semibold text-foreground mb-1">
                   Batch Name *
                 </label>
                 <input
@@ -281,7 +281,7 @@ export function InventoryBatchesTab() {
 
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-semibold text-navy">Batch Items *</label>
+                  <label className="text-xs font-semibold text-foreground">Batch Items *</label>
                   <button
                     onClick={handleAddItem}
                     className="text-xs text-accent-2 font-semibold hover:underline flex items-center gap-1"
@@ -315,7 +315,7 @@ export function InventoryBatchesTab() {
                       {batchItems.length > 1 && (
                         <button
                           onClick={() => handleRemoveItem(idx)}
-                          className="text-red-400 hover:text-red-600 text-lg font-bold px-1"
+                          className="text-destructive hover:text-destructive text-lg font-bold px-1"
                         >
                           ×
                         </button>
@@ -326,10 +326,10 @@ export function InventoryBatchesTab() {
               </div>
             </div>
 
-            <div className="bg-off-white px-6 py-4 flex justify-end gap-2 border-t border-border rounded-b-2xl">
+            <div className="bg-muted px-6 py-4 flex justify-end gap-2 border-t border-border rounded-b-2xl">
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 border border-border rounded-lg font-semibold text-sm hover:bg-white"
+                className="px-4 py-2 border border-border rounded-lg font-semibold text-sm hover:bg-card"
               >
                 Cancel
               </button>

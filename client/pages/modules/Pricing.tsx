@@ -54,10 +54,10 @@ function StatsBox({
 }) {
   const colorClass = color ? `text-${color}` : "text-accent-2";
   return (
-    <div className="bg-white border border-border rounded-lg p-3 text-center">
+    <div className="bg-card border border-border rounded-lg p-3 text-center">
       <div className="text-2xl mb-1">{icon}</div>
       <div className={`font-rajdhani text-xl font-bold ${colorClass}`}>{value}</div>
-      <div className="text-xs text-muted mt-1">{label}</div>
+      <div className="text-xs text-muted-foreground mt-1">{label}</div>
     </div>
   );
 }
@@ -112,11 +112,11 @@ function ProductPage({
           Back
         </button>
       </div>
-      <div className="bg-white rounded-2xl border border-border max-w-lg w-full">
+      <div className="bg-card rounded-2xl border border-border max-w-lg w-full">
 
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-navy mb-1">Product Name *</label>
+            <label className="block text-xs font-semibold text-foreground mb-1">Product Name *</label>
             <Input
               type="text"
               value={formData.name}
@@ -127,7 +127,7 @@ function ProductPage({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-navy mb-1">SKU Code</label>
+            <label className="block text-xs font-semibold text-foreground mb-1">SKU Code</label>
             <Input
               type="text"
               value={formData.sku || ""}
@@ -138,7 +138,7 @@ function ProductPage({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-navy mb-1">Unit Price (₱) *</label>
+            <label className="block text-xs font-semibold text-foreground mb-1">Unit Price (₱) *</label>
             <Input
               type="number"
               step="0.01"
@@ -151,16 +151,16 @@ function ProductPage({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-navy mb-2">Product Image</label>
+            <label className="block text-xs font-semibold text-foreground mb-2">Product Image</label>
             <div className="flex items-center gap-3">
               <Input
                 type="file"
                 accept="image/*"
                 onChange={handleImageUpload}
                 disabled={uploadingImage}
-                className="flex-1 text-sm text-muted file:px-3 file:py-2 file:border file:border-border file:rounded-lg file:bg-white file:text-navy file:cursor-pointer hover:file:bg-off-white"
+                className="flex-1 text-sm text-muted-foreground file:px-3 file:py-2 file:border file:border-border file:rounded-lg file:bg-card file:text-foreground file:cursor-pointer hover:file:bg-muted"
               />
-              {uploadingImage && <span className="text-xs text-muted">Uploading...</span>}
+              {uploadingImage && <span className="text-xs text-muted-foreground">Uploading...</span>}
             </div>
             {formData.image_filename && (
               <div className="mt-2 text-xs text-success">✓ {formData.image_filename}</div>
@@ -168,7 +168,7 @@ function ProductPage({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-navy mb-1">Manufacturer</label>
+            <label className="block text-xs font-semibold text-foreground mb-1">Manufacturer</label>
             <Input
               type="text"
               value={formData.manufacturer || ""}
@@ -179,7 +179,7 @@ function ProductPage({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-navy mb-1">Reorder Level</label>
+            <label className="block text-xs font-semibold text-foreground mb-1">Reorder Level</label>
             <Input
               type="number"
               min="0"
@@ -188,11 +188,11 @@ function ProductPage({
               className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
               placeholder="e.g., 300"
             />
-            <p className="text-xs text-muted mt-1">Stock level at which inventory shows as needing reorder.</p>
+            <p className="text-xs text-muted-foreground mt-1">Stock level at which inventory shows as needing reorder.</p>
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-navy mb-1">Weight (kg)</label>
+            <label className="block text-xs font-semibold text-foreground mb-1">Weight (kg)</label>
             <Input
               type="number"
               min="0"
@@ -212,13 +212,13 @@ function ProductPage({
               onChange={(e) => setFormData({ ...formData, is_discontinued: e.target.checked })}
               className="w-4 h-4 accent-navy"
             />
-            <label htmlFor="is_discontinued" className="text-sm font-semibold text-navy">
+            <label htmlFor="is_discontinued" className="text-sm font-semibold text-foreground">
               Mark as Discontinued
             </label>
           </div>
         </div>
 
-        <div className="sticky bottom-0 bg-off-white px-6 py-4 flex justify-end gap-2 border-t border-border rounded-b-2xl">
+        <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end gap-2 border-t border-border rounded-b-2xl">
           <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
           <Button type="button" variant="accent" onClick={onSave}>Save Product</Button>
         </div>
@@ -239,44 +239,44 @@ function ViewProductPage({ product, onClose }: { product: Product; onClose: () =
           Back
         </button>
       </div>
-      <div className="bg-white rounded-2xl border border-border max-w-lg w-full">
+      <div className="bg-card rounded-2xl border border-border max-w-lg w-full">
 
         <div className="p-6 space-y-4">
           {product.image_filename && (
-            <div className="w-full bg-off-white rounded-lg p-4 text-center">
+            <div className="w-full bg-muted rounded-lg p-4 text-center">
               <img src={`/uploads/${product.image_filename}`} alt={product.name} className="max-w-full h-auto mx-auto max-h-64" />
             </div>
           )}
           <div>
-            <label className="block text-xs font-semibold text-muted mb-1">Product Name</label>
-            <div className="text-sm text-navy font-semibold">{product.name}</div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Product Name</label>
+            <div className="text-sm text-foreground font-semibold">{product.name}</div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted mb-1">SKU Code</label>
-            <div className="text-sm text-navy">{product.sku || "—"}</div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">SKU Code</label>
+            <div className="text-sm text-foreground">{product.sku || "—"}</div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted mb-1">Unit Price</label>
-            <div className="text-sm text-navy font-semibold">₱{parseFloat(product.price ?? "0").toLocaleString("en-PH", { minimumFractionDigits: 2 })}</div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Unit Price</label>
+            <div className="text-sm text-foreground font-semibold">₱{parseFloat(product.price ?? "0").toLocaleString("en-PH", { minimumFractionDigits: 2 })}</div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted mb-1">Batch Tracking</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Batch Tracking</label>
             <div className="text-sm"><span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${product.batch_tracking_enabled ? "badge-green" : "badge-red"}`}>{product.batch_tracking_enabled ? "Enabled" : "Discontinued"}</span></div>
           </div>
           {(product as any).manufacturer && (
             <div>
-              <label className="block text-xs font-semibold text-muted mb-1">Manufacturer</label>
-              <div className="text-sm text-navy">{(product as any).manufacturer}</div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Manufacturer</label>
+              <div className="text-sm text-foreground">{(product as any).manufacturer}</div>
             </div>
           )}
           <div>
-            <label className="block text-xs font-semibold text-muted mb-1">Discontinued</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Discontinued</label>
             <div className="text-sm"><span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${ (product as any).is_discontinued ? "badge-red" : "badge-green"}`}>{(product as any).is_discontinued ? "Yes" : "No"}</span></div>
           </div>
         </div>
 
-        <div className="sticky bottom-0 bg-off-white px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
-          <button onClick={onClose} className="px-4 py-2 bg-navy text-white rounded-lg font-semibold text-sm hover:opacity-90">
+        <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
+          <button onClick={onClose} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90">
             Close
           </button>
         </div>
@@ -297,7 +297,7 @@ function ImagePreviewPage({ filename, onClose }: { filename: string; onClose: ()
           Back
         </button>
       </div>
-      <div className="flex items-center justify-center rounded-2xl border border-border bg-white p-6">
+      <div className="flex items-center justify-center rounded-2xl border border-border bg-card p-6">
         <img src={`/uploads/${filename}`} alt="Preview" className="max-w-full max-h-[60vh] object-contain" />
       </div>
     </div>
@@ -541,7 +541,7 @@ export function Pricing({ onBack }: PricingProps) {
         <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={openAddModal}
-            className="px-4 py-2 bg-navy text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
           >
             ➕ Add Product
           </button>
@@ -573,12 +573,12 @@ export function Pricing({ onBack }: PricingProps) {
           <DropdownMenuTrigger asChild>
             <button
               disabled={selectedProducts.length === 0}
-              className="inline-flex items-center gap-2 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
             >
               <MoreHorizontal size={16} /> Actions ({selectedProducts.length})
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="bg-white text-navy">
+          <DropdownMenuContent align="start" className="bg-card text-foreground">
             {selectedProducts.length === 1 && (
               <>
                 <DropdownMenuItem onClick={() => setViewingProduct(selectedProducts[0])}>View product</DropdownMenuItem>
@@ -594,15 +594,15 @@ export function Pricing({ onBack }: PricingProps) {
         </DropdownMenu>
         <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
           <div className="relative w-full sm:w-72">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-            <input type="text" placeholder="Search by product name or SKU…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input type="text" placeholder="Search by product name or SKU…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none" />
           </div>
-          <select aria-label="Filter products by status" value={productStatusFilter} onChange={(event) => { setProductStatusFilter(event.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-white px-4 py-2 text-sm text-navy">
+          <select aria-label="Filter products by status" value={productStatusFilter} onChange={(event) => { setProductStatusFilter(event.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground">
             <option value="all">All statuses</option>
             <option value="active">Active</option>
             <option value="discontinued">Discontinued</option>
           </select>
-          <select aria-label="Filter products by manufacturer" value={manufacturerFilter} onChange={(event) => { setManufacturerFilter(event.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-white px-4 py-2 text-sm text-navy">
+          <select aria-label="Filter products by manufacturer" value={manufacturerFilter} onChange={(event) => { setManufacturerFilter(event.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground">
             <option value="all">All manufacturers</option>
             {manufacturers.map((manufacturer) => <option key={manufacturer} value={manufacturer}>{manufacturer}</option>)}
           </select>
@@ -627,26 +627,26 @@ export function Pricing({ onBack }: PricingProps) {
             <tbody>
               {paginatedProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-muted">
+                  <td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">
                     {products.length === 0 ? "No products found" : "No results matching your search"}
                   </td>
                 </tr>
               ) : (
                 paginatedProducts.map((product) => (
-                  <tr key={product.id} className="border-b border-border hover:bg-off-white/50 transition-colors">
+                  <tr key={product.id} className="border-b border-border hover:bg-accent/50 transition-colors">
                     <td className="px-3 py-3"><input aria-label={`Select ${product.name}`} type="checkbox" checked={selectedProductIds.includes(product.id)} onChange={(event) => setSelectedProductIds(event.target.checked ? [...selectedProductIds, product.id] : selectedProductIds.filter((id) => id !== product.id))} /></td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       {product.image_filename ? (
-                        <div className="w-10 h-10 bg-off-white rounded-lg overflow-hidden border border-border flex items-center justify-center cursor-pointer hover:border-accent-2 hover:shadow-md transition-all duration-200 hover:scale-110" onClick={() => setPreviewImageFilename(product.image_filename)}>
+                        <div className="w-10 h-10 bg-muted rounded-lg overflow-hidden border border-border flex items-center justify-center cursor-pointer hover:border-accent-2 hover:shadow-md transition duration-200 hover:scale-110" onClick={() => setPreviewImageFilename(product.image_filename)}>
                           <img src={`/uploads/${product.image_filename}`} alt={product.name} className="w-full h-full object-cover" />
                         </div>
                       ) : (
-                        <div className="w-10 h-10 bg-off-white rounded-lg border border-border flex items-center justify-center text-muted text-xs">
+                        <div className="w-10 h-10 bg-muted rounded-lg border border-border flex items-center justify-center text-muted-foreground text-xs">
                           —
                         </div>
                       )}
                     </td>
-                    <td className="px-3 py-3 text-navy font-semibold">
+                    <td className="px-3 py-3 text-foreground font-semibold">
                       <RecordTitleButton
                         onClick={() =>
                           setProductDetails({
@@ -674,10 +674,10 @@ export function Pricing({ onBack }: PricingProps) {
                         })}
                       </span>
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap font-semibold text-navy">
+                    <td className="px-3 py-3 whitespace-nowrap font-semibold text-foreground">
                       {product.reorder_point?.toLocaleString() || "—"}
                     </td>
-                    <td className="px-3 py-3 whitespace-nowrap text-navy">
+                    <td className="px-3 py-3 whitespace-nowrap text-foreground">
                       {product.weight != null ? `${Number(product.weight).toLocaleString()} kg` : "—"}
                     </td>
                     <td className="px-3 py-3 hidden md:table-cell">
@@ -693,25 +693,25 @@ export function Pricing({ onBack }: PricingProps) {
         </div>
 
         {/* Pagination - Always Display */}
-        <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-off-white/50">
-          <div className="text-xs text-muted">
+        <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-muted/50">
+          <div className="text-xs text-muted-foreground">
             Page {currentPage} of {Math.max(1, totalPages)} · {filteredProducts.length} products
           </div>
           <div className="flex gap-2 items-center">
             <button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
             >
               ← Prev
             </button>
-            <span className="px-3 py-1 text-xs font-semibold text-navy bg-white rounded border border-border">
+            <span className="px-3 py-1 text-xs font-semibold text-foreground bg-card rounded border border-border">
               {currentPage}
             </span>
             <button
               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next →
             </button>

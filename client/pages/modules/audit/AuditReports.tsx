@@ -26,8 +26,8 @@ export function AuditReports({ logs }: { logs: AuditLog[] }) {
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-semibold transition-all ${
-              activeTab === tab.id ? "bg-accent text-white" : "bg-off-white text-gray-700 hover:bg-gray-200"
+            className={`whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+              activeTab === tab.id ? "bg-primary text-primary-foreground" : "bg-muted text-foreground hover:bg-muted"
             }`}
           >
             <span className="mr-1.5">{tab.icon}</span>{tab.label}

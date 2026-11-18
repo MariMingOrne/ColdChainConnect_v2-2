@@ -14,7 +14,7 @@ export function AgentPendingOrders({
   onRollback,
 }: AgentPendingOrdersProps) {
   if (orders.length === 0) {
-    return <p className="text-center text-sm text-muted py-12">No pending orders</p>;
+    return <p className="text-center text-sm text-muted-foreground py-12">No pending orders</p>;
   }
 
   return (
@@ -24,19 +24,19 @@ export function AgentPendingOrders({
         const isOwn = order.created_by === currentUserId;
 
         return (
-          <li key={order.id} className="bg-white rounded-xl border border-border p-4 space-y-2">
+          <li key={order.id} className="bg-card rounded-xl border border-border p-4 space-y-2">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[11px] font-mono text-muted">#{order.id.slice(0, 8)}</p>
-                <p className="text-sm font-semibold text-navy truncate">
+                <p className="text-xs font-mono text-muted-foreground">#{order.id.slice(0, 8)}</p>
+                <p className="text-sm font-semibold text-foreground truncate">
                   {order.customer?.store_name || "Unknown customer"}
                 </p>
-                <p className="text-xs text-muted">
+                <p className="text-xs text-muted-foreground">
                   {totalQty} items · {new Date(order.created_at).toLocaleDateString()}
                   {order.creator && ` · ${order.creator.agent?.full_name || order.creator.username}`}
                 </p>
               </div>
-              <span className="px-2 py-1 rounded text-xs font-semibold bg-yellow-100 text-yellow-800">
+              <span className="px-2 py-1 rounded text-xs font-semibold bg-warning-soft text-warning">
                 Pending
               </span>
             </div>
@@ -44,7 +44,7 @@ export function AgentPendingOrders({
               type="button"
               onClick={() => onRollback(order)}
               disabled={!isOwn || rollingBackId === order.id}
-              className="w-full py-2 rounded-full border border-red-300 text-red-600 text-xs font-semibold disabled:opacity-40"
+              className="w-full py-2 rounded-full border border-destructive/30 text-destructive text-xs font-semibold disabled:opacity-40"
             >
               {rollingBackId === order.id
                 ? "Rolling back…"
