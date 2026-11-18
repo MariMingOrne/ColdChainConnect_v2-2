@@ -1,3 +1,5 @@
+import { useQuery } from "@tanstack/react-query";
+import type { DashboardSummary } from "@shared/api";
 import { Link, useLocation } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
@@ -56,32 +58,18 @@ export function BottomNavBar({ onLogout }: BottomNavBarProps) {
   const isAdmin = user?.role === "admin";
   const isStaff = user?.role === "staff";
   const staffCan = (permission: "dashboard" | "product-customer" | "order-fulfillment" | "delivery-operations" | "manage-accounts") => !isStaff || Boolean(user.module_permissions?.includes(permission));
-  const [counts, setCounts] = useState({ pendingOrders: 0, activeDeliveries: 0 });
-
-  useEffect(() => {
-    if (!isAdmin || !token) return;
-    let active = true;
-    const loadCounts = async () => {
-      try {
-        const headers = { Authorization: `Bearer ${token}` };
-        const [ordersResponse, deliveriesResponse] = await Promise.all([
-          fetch("/api/bookings", { headers }),
-          fetch("/api/deliveries", { headers }),
-        ]);
-        if (!ordersResponse.ok || !deliveriesResponse.ok) return;
-        const [orders, deliveries] = await Promise.all([ordersResponse.json(), deliveriesResponse.json()]);
-        if (active) setCounts({
-          pendingOrders: orders.filter((order: { status: string }) => order.status === "pending").length,
-          activeDeliveries: deliveries.filter((delivery: { status: string }) => delivery.status !== "completed").length,
-        });
-      } catch {
-        if (active) setCounts({ pendingOrders: 0, activeDeliveries: 0 });
-      }
-    };
-    void loadCounts();
-    const intervalId = window.setInterval(() => void loadCounts(), 60_000);
-    return () => { active = false; window.clearInterval(intervalId); };
-  }, [isAdmin, token]);
+  // Badge counts share the dashboard's 1 KB summary (same query key, one request).
+  const { data: summary } = useQuery({
+    queryKey: ["dashboard-summary"],
+    queryFn: async (): Promise<DashboardSummary> => {
+      const res = await fetch("/api/dashboard/summary", { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) throw new Error(`dashboard summary ${res.status}`);
+      return res.json();
+    },
+    enabled: isAdmin && Boolean(token),
+    refetchInterval: 60_000,
+  });
+  const counts = { pendingOrders: summary?.pendingOrders ?? 0, activeDeliveries: summary?.activeDeliveries ?? 0 };
 
   const countForPath = (path: string) => {
     if (path.endsWith("/order-summary")) return counts.pendingOrders;
