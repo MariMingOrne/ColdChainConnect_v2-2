@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applyReservationsToSourceItems } from "./inventory-reservations";
+import { applyReservationsToSourceItems } from "./reservation-allocation";
 
 describe("applyReservationsToSourceItems", () => {
   it("subtracts pallet allocations before distributing order holds by oldest stock", () => {

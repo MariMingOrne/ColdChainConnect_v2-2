@@ -13,8 +13,9 @@ import {
   date,
   jsonb,
   index,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 // Enums
 export const userRoleEnum = pgEnum("user_role", ["admin", "agent", "driver", "staff"]);
@@ -255,6 +256,7 @@ export const order_item_reservations = pgTable("order_item_reservations", {
 }, (table) => [
   index("order_item_reservations_booking_id_idx").on(table.booking_id),
   index("order_item_reservations_product_status_idx").on(table.product_id, table.status),
+  uniqueIndex("order_item_reservations_active_booking_item_idx").on(table.booking_item_id).where(sql`${table.status} = 'reserved'`),
 ]);
 
 // Order pallets table (pallets created for order fulfillment)

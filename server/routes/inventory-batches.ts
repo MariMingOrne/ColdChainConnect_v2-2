@@ -5,6 +5,8 @@ import { InventoryBatch, InventoryBatchItem, CreateInventoryBatchSchema, UpdateI
 import { db } from "../db";
 import { inventory_batches, batch_pallets, pallet_items } from "../db/schema";
 import { getAvailableUnitsBySource } from "../services/inventory-reservations";
+import { AuthRequest } from "../middleware/auth";
+import { getAgentOrderIds } from "../services/agent-bookings";
 
 const inventoryBatches: InventoryBatch[] = [
   {
@@ -55,8 +57,12 @@ const inventoryBatches: InventoryBatch[] = [
   },
 ];
 
-export const listInventoryBatches: RequestHandler = async (_req, res) => {
+export const listInventoryBatches: RequestHandler = async (req: AuthRequest, res) => {
   try {
+    const orderId = typeof req.query.order_id === "string" ? req.query.order_id : undefined;
+    if (orderId && req.user?.role === "agent" && !(await getAgentOrderIds(req.user.userId)).includes(orderId)) {
+      return res.status(403).json({ error: "You can only view stock availability for your own or assigned orders." });
+    }
     const dbBatches = await db.query.inventory_batches.findMany({
       where: eq(inventory_batches.is_archived, false),
       orderBy: [desc(inventory_batches.created_at)],
@@ -73,7 +79,7 @@ export const listInventoryBatches: RequestHandler = async (_req, res) => {
     });
 
     const sourceItems = dbBatches.flatMap((batch) => batch.pallets.flatMap((pallet) => pallet.items));
-    const availableBySource = await getAvailableUnitsBySource(db, sourceItems);
+    const availableBySource = await getAvailableUnitsBySource(db, sourceItems, orderId);
     const result: InventoryBatch[] = dbBatches.map((batch) => ({
       id: batch.id,
       name: batch.batch_name,

@@ -161,7 +161,7 @@ export const createBooking: RequestHandler = async (req: AuthRequest, res) => {
       });
       if (bookingItemRows.length > 0) await tx.insert(booking_items).values(bookingItemRows);
 
-      const reservation = await reserveBookingItemsTx(tx, bookingId, bookingItemRows);
+      const reservation = await reserveBookingItemsTx(tx, bookingId, bookingItemRows, req.user!.userId);
       if (reservation.status === "insufficient_stock") {
         throw new StockReservationConflict(
           reservation.productId,
@@ -279,12 +279,12 @@ export const updateBookingStatus: RequestHandler = async (req: AuthRequest, res)
           where: eq(order_pallets.order_id, id),
         });
         if (reservedPallet) return { status: "reserved" as const };
-        await releaseBookingReservationsTx(tx, id);
+        await releaseBookingReservationsTx(tx, id, req.user!.userId);
       }
 
       if (status === "approved" && lockedBooking.status !== "approved") {
         const items = await tx.query.booking_items.findMany({ where: eq(booking_items.booking_id, id) });
-        const reservation = await reserveBookingItemsTx(tx, id, items);
+        const reservation = await reserveBookingItemsTx(tx, id, items, req.user!.userId);
         if (reservation.status === "insufficient_stock") {
           return { status: "insufficient_stock" as const, productId: reservation.productId, available: reservation.available };
         }
@@ -349,7 +349,8 @@ export const updateBookingItems: RequestHandler = async (req: AuthRequest, res) 
       if (invoice || pallet) return { status: "locked" as const };
 
       const currentItems = await tx.query.booking_items.findMany({ where: eq(booking_items.booking_id, id) });
-      if (items.length !== currentItems.length || items.some((item) => !currentItems.some((current) => current.id === item.id))) {
+      if (items.length !== currentItems.length || new Set(items.map((item) => item.id)).size !== items.length ||
+        items.some((item) => !currentItems.some((current) => current.id === item.id))) {
         return { status: "invalid_items" as const };
       }
 
@@ -365,7 +366,7 @@ export const updateBookingItems: RequestHandler = async (req: AuthRequest, res) 
       }));
 
       if (activeReservation) {
-        const reservation = await reserveBookingItemsTx(tx, id, updatedItems, "superseded");
+        const reservation = await reserveBookingItemsTx(tx, id, updatedItems, req.user!.userId, "superseded");
         if (reservation.status === "insufficient_stock") {
           return {
             status: "insufficient_stock" as const,

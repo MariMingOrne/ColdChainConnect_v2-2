@@ -213,7 +213,7 @@ export const createPallet: RequestHandler = async (req: AuthRequest, res) => {
           unit_cost: priceByProductId.get(item.product_id) ?? "0.00",
         })));
       }
-      await convertBookingReservationsTx(tx, order_id);
+      await convertBookingReservationsTx(tx, order_id, req.user!.userId);
       return { status: "created" as const, palletIds };
     });
 
