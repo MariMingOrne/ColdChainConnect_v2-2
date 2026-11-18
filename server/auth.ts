@@ -23,8 +23,9 @@ export async function verifyPassword(
   return compare(password, hash);
 }
 
-export function signToken(payload: TokenPayload): string {
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: "24h" });
+export function signToken({ userId, username, role }: TokenPayload): string {
+  // Copy only our own claims: a decoded token also carries iat/exp, which jwt.sign rejects.
+  return jwt.sign({ userId, username, role }, JWT_SECRET, { expiresIn: "24h" });
 }
 
 export function verifyToken(token: string): TokenPayload | null {
