@@ -73,7 +73,7 @@ export function HubSidebar({ modules, basePath, agentMode = false }: HubSidebarP
         >
           <span className={cn(
             "flex h-8 w-8 items-center justify-center rounded-xl transition duration-200 group-active:scale-95",
-            isActive ? "bg-accent-2 shadow-md shadow-black/20" : "bg-white/10 group-hover:bg-white/20 group-focus-visible:bg-white/20"
+            isActive ? "bg-chrome-active shadow-md shadow-black/20" : "bg-white/10 group-hover:bg-white/20 group-focus-visible:bg-white/20"
           )}>
             <Icon size={19} strokeWidth={isActive ? 2.5 : 2.2} />
           </span>
@@ -96,7 +96,7 @@ export function HubSidebar({ modules, basePath, agentMode = false }: HubSidebarP
               type="button"
               onClick={() => setIsScanning(true)}
               aria-label="Open barcode scanner"
-              className="group relative -mt-3 flex h-14 w-14 items-center justify-center rounded-full border-4 border-navy bg-accent-2 text-white shadow-lg transition-transform duration-200 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
+              className="group relative -mt-3 flex h-14 w-14 items-center justify-center rounded-full border-4 border-navy bg-chrome-active text-white shadow-lg transition-transform duration-200 hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white"
             >
               <ScanBarcode size={22} className="transition-transform duration-200 group-hover:scale-110 group-focus-visible:scale-110 group-active:scale-105" />
             </button>
@@ -128,7 +128,7 @@ export function HubSidebar({ modules, basePath, agentMode = false }: HubSidebarP
               className={cn(
                 "flex items-center px-4 py-3 rounded-full text-sm font-semibold transition",
                 isActive
-                  ? "bg-accent-2 text-white shadow-lg"
+                  ? "bg-chrome-active text-white shadow-lg"
                   : "text-white/70 bg-white/5 hover:bg-white/15 hover:text-white"
               )}
             >

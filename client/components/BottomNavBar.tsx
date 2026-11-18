@@ -120,11 +120,11 @@ export function BottomNavBar({ onLogout }: BottomNavBarProps) {
                 to={fullPath}
                 className={`flex-shrink-0 flex flex-col items-center justify-center px-3 py-2 rounded-full text-2xs font-semibold transition min-w-max gap-0.5 ${
                   isActive
-                    ? "bg-accent-2 text-white"
+                    ? "bg-chrome-active text-white"
                     : "text-white/60 hover:text-white hover:bg-white/10"
                 }`}
               >
-                <span className="relative"><Icon size={16} />{countForPath(path) > 0 && <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-red px-1 text-center text-2xs font-bold leading-4 text-white">{countForPath(path) > 99 ? "99+" : countForPath(path)}</span>}</span>
+                <span className="relative"><Icon size={16} />{countForPath(path) > 0 && <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-brand-gold px-1 text-center text-2xs font-bold leading-4 text-brand-gold-foreground">{countForPath(path) > 99 ? "99+" : countForPath(path)}</span>}</span>
                 <span className="truncate">{label}</span>
               </Link>
             );
@@ -137,7 +137,7 @@ export function BottomNavBar({ onLogout }: BottomNavBarProps) {
   // Show global nav for dashboard or when not in a hub page
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-navy border-t border-white/10 z-30 md:hidden">
-      <div className="flex overflow-x-auto overflow-y-hidden scrollbar-visible gap-1 scroll-smooth touch-pan-x px-2 py-1 justify-center" style={{ WebkitOverflowScrolling: "touch" }}>
+      <div className="flex overflow-x-auto overflow-y-hidden scrollbar-visible gap-1 scroll-smooth touch-pan-x px-2 py-1 [justify-content:safe_center]" style={{ WebkitOverflowScrolling: "touch" }}>
         {globalNavItems.filter(({ path }) => {
           if (path === "/") return staffCan("dashboard");
           if (path.startsWith("/information-management")) return staffCan("product-customer");
@@ -151,11 +151,11 @@ export function BottomNavBar({ onLogout }: BottomNavBarProps) {
               to={path}
               className={`flex-shrink-0 flex flex-col items-center justify-center px-3 py-2 rounded-full text-2xs font-semibold transition min-w-max gap-0.5 ${
                 isActive
-                  ? "bg-accent-2 text-white"
+                  ? "bg-chrome-active text-white"
                   : "text-white/60 hover:text-white hover:bg-white/10"
               }`}
             >
-              <span className="relative"><Icon size={16} />{countForPath(path) > 0 && <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-red px-1 text-center text-2xs font-bold leading-4 text-white">{countForPath(path) > 99 ? "99+" : countForPath(path)}</span>}</span>
+              <span className="relative"><Icon size={16} />{countForPath(path) > 0 && <span className="absolute -right-2 -top-2 min-w-4 rounded-full bg-brand-gold px-1 text-center text-2xs font-bold leading-4 text-brand-gold-foreground">{countForPath(path) > 99 ? "99+" : countForPath(path)}</span>}</span>
               <span>{label}</span>
             </Link>
           );

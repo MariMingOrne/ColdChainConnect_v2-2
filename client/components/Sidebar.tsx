@@ -37,7 +37,7 @@ export function Sidebar({ activePanel, onPanelChange }: SidebarProps) {
             onClick={() => onPanelChange(id)}
             className={`flex items-center gap-3 px-4 py-3 rounded-full text-sm font-semibold transition w-full text-left ${
               isActive
-                ? "bg-accent-2 text-white shadow-lg"
+                ? "bg-chrome-active text-white shadow-lg"
                 : "text-white/70 bg-white/5 hover:bg-white/15 hover:text-white"
             }`}
           >

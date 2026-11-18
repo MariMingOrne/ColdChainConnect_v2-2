@@ -65,6 +65,7 @@ export default {
           foreground: "hsl(var(--chrome-foreground))",
           muted: "hsl(var(--chrome-muted))",
           border: "hsl(var(--chrome-border))",
+          active: "hsl(var(--chrome-active))",
         },
         popover: { DEFAULT: "hsl(var(--popover))", foreground: "hsl(var(--popover-foreground))" },
         card: { DEFAULT: "hsl(var(--card))", foreground: "hsl(var(--card-foreground))" },

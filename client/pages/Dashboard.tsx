@@ -1,114 +1,203 @@
+/**
+ * Admin dashboard. Question it answers at first glance: "what needs my attention today?"
+ * Figures come from /api/dashboard/summary (aggregated server-side); activity from the audit log.
+ * Deviation from the dashboard-design house style: no comparison baselines, because the API keeps
+ * no history for these counts yet; the "needs attention" list carries the context instead.
+ */
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
-import { AuditLog, Booking, Delivery, Product } from "@shared/api";
-import { describeLog, getActionBadgeClass, getActionLabel } from "./modules/audit/auditDescribe";
-import { SalesForecastWidget } from "@/components/SalesForecastWidget";
-import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
 import {
   Activity,
-  ArrowRight,
   Boxes,
-  ChartNoAxesCombined,
   Check,
+  CircleCheck,
   ClipboardList,
   Copy,
-  LoaderCircle,
+  PackagePlus,
+  ChartNoAxesCombined,
   Truck,
-  TriangleAlert,
+  Wallet,
+  type LucideIcon,
 } from "lucide-react";
+import type { AuditLog, DashboardSummary } from "@shared/api";
+import { useAuth } from "../hooks/useAuth";
+import { describeLog, getActionBadgeClass, getActionLabel } from "./modules/audit/auditDescribe";
+import { SalesForecastWidget } from "@/components/SalesForecastWidget";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn, formatPeso } from "@/lib/utils";
+import { toast } from "sonner";
 
-type DashboardData = {
-  pendingBookings: number;
-  availableUnits: number;
-  lowStockProducts: number;
-  activeDeliveries: number;
-  activity: AuditLog[];
-};
+const REFRESH_MS = 60_000;
+/** Receivables older than this are flagged. */
+const OVERDUE_DAYS = 30;
 
-function MetricCard({ label, value, detail, icon: Icon, accent, to, healthy = false }: {
+async function getJson<T>(url: string, token: string | null): Promise<T> {
+  const res = await fetch(url, { headers: { Authorization: `Bearer ${token ?? ""}` } });
+  if (!res.ok) throw new Error(`${url} responded ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
+function Figure({ to, label, value, detail, icon: Icon, attention = false, loading }: {
+  to: string;
   label: string;
   value: string;
   detail: string;
-  icon: typeof ClipboardList;
-  accent: string;
-  to: string;
-  healthy?: boolean;
+  icon: LucideIcon;
+  attention?: boolean;
+  loading: boolean;
 }) {
   return (
-    <Link to={to} className={`group block rounded-2xl border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-2 md:p-5 ${healthy ? "border-success/30 bg-success-soft" : "border-border bg-card"}`}>
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold text-muted-foreground">{label}</p>
-          <p className={`mt-2 text-3xl font-bold tabular-nums ${healthy ? "text-success" : "text-foreground"}`}>{value}</p>
-          <p className={`mt-1 text-xs ${healthy ? "text-success" : "text-muted-foreground"}`}>{detail}</p>
-        </div>
-        <span className={`rounded-xl p-2.5 ${accent}`}><Icon size={19} aria-hidden="true" /></span>
+    <Link
+      to={to}
+      className={cn(
+        "group rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:p-5",
+        attention ? "border-warning/40" : "border-border",
+      )}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <span className="text-sm font-medium text-muted-foreground">{label}</span>
+        <Icon className="h-4 w-4 text-muted-foreground" aria-hidden />
       </div>
-      <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-accent-2 opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100">View details <ArrowRight size={13} /></span>
+      {loading ? (
+        <Skeleton className="mt-3 h-8 w-24" />
+      ) : (
+        <p className={cn("mt-2 font-rajdhani text-3xl font-bold tabular-nums", attention ? "text-warning" : "text-foreground")}>{value}</p>
+      )}
+      <p className="mt-1 text-xs text-muted-foreground">{loading ? " " : detail}</p>
     </Link>
   );
 }
 
-function AuditActionBadge({ action }: { action: string }) {
-  return <span className={`inline-flex shrink-0 rounded-full px-2 py-1 text-2xs font-bold ${getActionBadgeClass(action)}`}>{getActionLabel(action)}</span>;
+type AttentionItem = { key: string; title: string; detail: string; action: string; to: string };
+
+function attentionItems(data: DashboardSummary): AttentionItem[] {
+  const items: AttentionItem[] = [];
+  if (data.pendingOrders > 0) {
+    items.push({
+      key: "pending",
+      title: `${data.pendingOrders} ${data.pendingOrders === 1 ? "order is" : "orders are"} waiting for approval`,
+      detail: "Approve or reject so preparation can start",
+      action: "Review orders",
+      to: "/booking-dispatch/order-summary?status=pending",
+    });
+  }
+  for (const product of data.lowStock) {
+    items.push({
+      key: `stock-${product.id}`,
+      title: `${product.name} is low on stock`,
+      detail: `${product.available.toLocaleString()} available, reorder point ${product.reorderPoint.toLocaleString()}`,
+      action: "Receive stock",
+      to: "/information-management/inventory?action=receive",
+    });
+  }
+  if (data.receivables.oldestDays !== null && data.receivables.oldestDays > OVERDUE_DAYS) {
+    items.push({
+      key: "receivables",
+      title: `A customer balance is ${data.receivables.oldestDays} days old`,
+      detail: `${data.receivables.outstandingCount} outstanding, ${formatPeso(data.receivables.outstandingTotal)} in total`,
+      action: "Open receivables",
+      to: "/booking-dispatch/accounts",
+    });
+  }
+  return items;
 }
 
-function DashboardActivity({ logs, isLoading, error }: { logs: AuditLog[]; isLoading: boolean; error: string | null }) {
+function NeedsAttention({ data, loading, failed }: { data?: DashboardSummary; loading: boolean; failed: boolean }) {
+  const items = data ? attentionItems(data) : [];
+  return (
+    <section aria-labelledby="attention-heading" className="rounded-xl border border-border bg-card">
+      <h2 id="attention-heading" className="border-b border-border px-5 py-4 text-lg font-bold text-foreground">Needs attention</h2>
+      {loading ? (
+        <div className="space-y-3 p-5">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-12" />)}</div>
+      ) : failed ? (
+        <p role="status" className="px-5 py-8 text-sm text-muted-foreground">These figures could not be loaded. They retry every minute.</p>
+      ) : items.length === 0 ? (
+        <div className="flex items-center gap-3 px-5 py-8 text-sm text-muted-foreground">
+          <CircleCheck className="h-5 w-5 text-success" aria-hidden="true" />
+          Nothing needs attention right now.
+        </div>
+      ) : (
+        <ul className="divide-y divide-border">
+          {items.map((item) => (
+            <li key={item.key} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{item.detail}</p>
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <Link to={item.to}>{item.action}</Link>
+              </Button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function RecentActivity({ logs, loading, failed }: { logs: AuditLog[]; loading: boolean; failed: boolean }) {
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const { toast } = useToast();
 
   const copyReference = async (log: AuditLog) => {
     if (!log.resource_id) return;
     try {
       await navigator.clipboard.writeText(log.resource_id);
       setCopiedId(log.id);
-      window.setTimeout(() => setCopiedId((current) => current === log.id ? null : current), 1500);
-      toast({ title: "Copied", description: "Full reference ID copied to clipboard." });
+      window.setTimeout(() => setCopiedId((current) => (current === log.id ? null : current)), 1500);
+      toast.success("Reference copied");
     } catch {
-      toast({ title: "Copy failed", description: "Clipboard access is unavailable.", variant: "destructive" });
+      toast.error("Clipboard access is unavailable");
     }
   };
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-foreground"><Activity size={18} aria-hidden="true" /><h2 className="text-lg font-bold">Recent activity</h2></div>
-          <p className="mt-1 text-sm text-muted-foreground">Latest recorded system actions</p>
-        </div>
-        <Link to="/audit" className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-sm font-semibold text-accent-2 hover:bg-accent-2/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2">
-          View audit log <ArrowRight size={15} aria-hidden="true" />
-        </Link>
+    <section aria-labelledby="activity-heading" className="rounded-xl border border-border bg-card">
+      <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-4">
+        <h2 id="activity-heading" className="flex items-center gap-2 text-lg font-bold text-foreground">
+          <Activity className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+          Recent activity
+        </h2>
+        <Button asChild variant="ghost" size="sm">
+          <Link to="/audit">Audit log</Link>
+        </Button>
       </div>
-
-      {isLoading ? (
-        <div className="flex items-center gap-2 py-8 text-sm text-muted-foreground"><LoaderCircle size={16} className="animate-spin" />Loading activity…</div>
-      ) : error ? (
-        <p role="status" className="py-8 text-sm text-muted-foreground">Recent activity is unavailable right now.</p>
+      {loading ? (
+        <div className="space-y-3 p-5">{[0, 1, 2, 3].map((i) => <Skeleton key={i} className="h-10" />)}</div>
+      ) : failed ? (
+        <p role="status" className="px-5 py-8 text-sm text-muted-foreground">Recent activity is unavailable right now.</p>
       ) : logs.length === 0 ? (
-        <p className="py-8 text-sm text-muted-foreground">No activity has been recorded yet.</p>
+        <p className="px-5 py-8 text-sm text-muted-foreground">No activity has been recorded yet.</p>
       ) : (
-        <ol className="mt-4 divide-y divide-border">
+        <ol className="divide-y divide-border">
           {logs.map((log) => (
-            <li key={log.id} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 py-3 first:pt-1">
-              <div className="flex min-w-0 items-center gap-2">
-                <AuditActionBadge action={log.action} />
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-medium text-foreground">{log.user_name || "A user"} {describeLog(log).charAt(0).toLowerCase() + describeLog(log).slice(1)}</p>
-                  {log.resource_id ? (
-                    <div className="mt-0.5 inline-flex items-center gap-1 font-mono text-xs text-muted-foreground">
-                      <span>#{log.resource_id.slice(0, 6).toUpperCase()}</span>
-                      <button type="button" onClick={() => void copyReference(log)} aria-label={`Copy full reference ${log.resource_id}`} className="rounded p-1 hover:bg-accent hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2">
-                        {copiedId === log.id ? <Check size={12} aria-hidden="true" /> : <Copy size={12} aria-hidden="true" />}
-                      </button>
-                    </div>
-                  ) : <p className="mt-0.5 text-xs text-muted-foreground">System activity</p>}
+            <li key={log.id} className="flex items-start gap-3 px-5 py-3">
+              <span className={cn("mt-0.5 inline-flex shrink-0 rounded-full px-2 py-0.5 text-2xs font-semibold", getActionBadgeClass(log.action))}>
+                {getActionLabel(log.action)}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm text-foreground">
+                  <span className="font-semibold">{log.user_name || "A user"}</span>{" "}
+                  {describeLog(log).charAt(0).toLowerCase() + describeLog(log).slice(1)}
+                </p>
+                <div className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
+                  <time dateTime={log.created_at}>
+                    {new Date(log.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
+                  </time>
+                  {log.resource_id && (
+                    <button
+                      type="button"
+                      onClick={() => void copyReference(log)}
+                      aria-label={`Copy reference ${log.resource_id}`}
+                      className="inline-flex items-center gap-1 rounded px-1 tabular-nums hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                    >
+                      #{log.resource_id.slice(0, 6).toUpperCase()}
+                      {copiedId === log.id ? <Check className="h-3 w-3" aria-hidden="true" /> : <Copy className="h-3 w-3" aria-hidden="true" />}
+                    </button>
+                  )}
                 </div>
               </div>
-              <time dateTime={log.created_at} className="shrink-0 text-xs text-muted-foreground">
-                {new Date(log.created_at).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}
-              </time>
             </li>
           ))}
         </ol>
@@ -120,107 +209,103 @@ function DashboardActivity({ logs, isLoading, error }: { logs: AuditLog[]; isLoa
 export function Dashboard() {
   const finishPostLoginLoading = useAuth((state) => state.finishPostLoginLoading);
   const token = useAuth((state) => state.token);
-  const [data, setData] = useState<DashboardData | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     finishPostLoginLoading();
   }, [finishPostLoginLoading]);
 
-  useEffect(() => {
-    if (!token) return;
-    let active = true;
+  const summary = useQuery({
+    queryKey: ["dashboard-summary"],
+    queryFn: () => getJson<DashboardSummary>("/api/dashboard/summary", token),
+    enabled: Boolean(token),
+    refetchInterval: REFRESH_MS,
+  });
+  const activity = useQuery({
+    queryKey: ["audit-logs", "recent"],
+    queryFn: () => getJson<AuditLog[]>("/api/audit-logs?limit=6", token),
+    enabled: Boolean(token),
+    refetchInterval: REFRESH_MS,
+  });
 
-    const loadDashboard = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        const headers = { Authorization: `Bearer ${token}` };
-        const responses = await Promise.all([
-          fetch("/api/bookings", { headers }),
-          fetch("/api/products/inventory", { headers }),
-          fetch("/api/products", { headers }),
-          fetch("/api/deliveries", { headers }),
-          fetch("/api/audit-logs?limit=5", { headers }),
-        ]);
-        if (responses.some((response) => !response.ok)) throw new Error("Dashboard data request failed");
-
-        const [bookings, inventory, products, deliveries, activity] = await Promise.all(responses.map((response) => response.json())) as [Booking[], Record<string, number>, Product[], Delivery[], AuditLog[]];
-        if (!active) return;
-
-        const lowStockProducts = products.filter((product) =>
-          !product.is_discontinued && typeof product.reorder_point === "number" && (inventory[product.id] ?? 0) <= product.reorder_point,
-        ).length;
-
-        setData({
-          pendingBookings: bookings.filter((booking) => booking.status === "pending").length,
-          availableUnits: Object.values(inventory).reduce((total, units) => total + Number(units), 0),
-          lowStockProducts,
-          activeDeliveries: deliveries.filter((delivery) => delivery.status !== "completed").length,
-          activity: activity.slice(0, 5),
-        });
-      } catch {
-        if (active) setError("Dashboard data is unavailable.");
-      } finally {
-        if (active) setIsLoading(false);
-      }
-    };
-
-    void loadDashboard();
-    return () => { active = false; };
-  }, [token]);
+  const data = summary.data;
+  const loading = summary.isPending;
+  const receivablesOverdue = (data?.receivables.oldestDays ?? 0) > OVERDUE_DAYS;
+  const today = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
   return (
     <main className="flex-1 overflow-y-auto px-4 py-5 md:px-6 md:py-7">
       <div className="mx-auto max-w-7xl space-y-6">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <p className="text-xs font-bold text-accent-2">Admin overview</p>
-            <h1 className="mt-1 text-3xl font-bold text-foreground md:text-4xl">Cold Chain Connect</h1>
-            <p className="mt-1 text-sm text-muted-foreground">A quick view of orders, stock, deliveries, and system activity.</p>
+            <h1 className="text-3xl font-bold text-foreground">Operations today</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{today}</p>
           </div>
-          <div className="relative flex flex-wrap items-center gap-2">
-            <Link to="/booking-dispatch/order-summary?action=new" className="inline-flex items-center gap-2 rounded-lg bg-accent-2 px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm hover:bg-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-2">
-              <ClipboardList size={16} aria-hidden="true" /> New booking
-            </Link>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button asChild>
+              <Link to="/booking-dispatch/order-summary?action=new"><ClipboardList aria-hidden="true" />New booking</Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link to="/information-management/inventory?action=receive"><PackagePlus aria-hidden="true" />Receive stock</Link>
+            </Button>
             <SalesForecastWidget />
-            <Link to="/reports" className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-2">
-              <ChartNoAxesCombined size={16} aria-hidden="true" /> Reports
-            </Link>
+            <Button asChild variant="outline">
+              <Link to="/reports"><ChartNoAxesCombined aria-hidden="true" />Reports</Link>
+            </Button>
           </div>
         </header>
 
-        {error && <p role="status" className="rounded-xl border border-warning/30 bg-warning-soft px-4 py-3 text-sm text-warning">Some dashboard metrics could not be loaded. Please refresh to try again.</p>}
-
         <section aria-label="Operations at a glance" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard to="/booking-dispatch/order-summary?status=pending" label="Pending orders" value={isLoading || !data ? "—" : String(data.pendingBookings)} detail="Awaiting review · open filtered list" icon={ClipboardList} accent="bg-info-soft text-link" />
-          <MetricCard to="/information-management/inventory" label="Available inventory" value={isLoading || !data ? "—" : data.availableUnits.toLocaleString()} detail="Units available · open inventory" icon={Boxes} accent="bg-info-soft text-link" />
-          <MetricCard to="/information-management/inventory" label="Low-stock products" value={isLoading || !data ? "—" : String(data.lowStockProducts)} detail={data?.lowStockProducts === 0 ? "No low-stock alerts" : "At or below reorder point"} icon={TriangleAlert} accent={data?.lowStockProducts === 0 ? "bg-success-soft text-success" : "bg-warning-soft text-warning"} healthy={!isLoading && data?.lowStockProducts === 0} />
-          <MetricCard to="/booking-dispatch/delivery" label="Active deliveries" value={isLoading || !data ? "—" : String(data.activeDeliveries)} detail="Pending or in transit · view dispatch" icon={Truck} accent="bg-success-soft text-success" />
+          <Figure
+            to="/booking-dispatch/order-summary?status=pending"
+            label="Pending orders"
+            value={String(data?.pendingOrders ?? 0)}
+            detail={data?.pendingOrders ? "Waiting for approval" : "None waiting"}
+            icon={ClipboardList}
+            attention={(data?.pendingOrders ?? 0) > 0}
+            loading={loading}
+          />
+          <Figure
+            to="/booking-dispatch/delivery"
+            label="Active deliveries"
+            value={String(data?.activeDeliveries ?? 0)}
+            detail="Pending or in transit"
+            icon={Truck}
+            loading={loading}
+          />
+          <Figure
+            to="/information-management/inventory"
+            label="Low-stock products"
+            value={String(data?.lowStock.length ?? 0)}
+            detail={`${(data?.availableUnits ?? 0).toLocaleString()} units in stock`}
+            icon={Boxes}
+            attention={(data?.lowStock.length ?? 0) > 0}
+            loading={loading}
+          />
+          <Figure
+            to="/booking-dispatch/accounts"
+            label="Outstanding receivables"
+            value={formatPeso(data?.receivables.outstandingTotal ?? 0)}
+            detail={
+              data && data.receivables.outstandingCount > 0
+                ? `${data.receivables.outstandingCount} balances, oldest ${data.receivables.oldestDays} days`
+                : "Nothing outstanding"
+            }
+            icon={Wallet}
+            attention={receivablesOverdue}
+            loading={loading}
+          />
         </section>
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
-          <DashboardActivity logs={data?.activity ?? []} isLoading={isLoading} error={error} />
-          <aside className="rounded-2xl border border-border bg-card p-5 shadow-sm md:p-6">
-            <h2 className="text-lg font-bold text-foreground">Quick access</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Go straight to a key workspace.</p>
-            <div className="mt-4 space-y-2">
-              <Link to="/information-management/inventory?action=receive" className="flex items-center justify-between rounded-xl border border-border p-3 text-sm font-semibold text-foreground hover:border-accent-2 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2">
-                Receive stock <ArrowRight size={15} aria-hidden="true" />
-              </Link>
-              <Link to="/booking-dispatch/order-summary?status=pending" className="flex items-center justify-between rounded-xl border border-border p-3 text-sm font-semibold text-foreground hover:border-accent-2 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2">
-                Pending orders <span className="rounded-full bg-warning-soft px-2 py-0.5 text-xs text-warning">{isLoading || !data ? "—" : data.pendingBookings}</span>
-              </Link>
-              <Link to="/booking-dispatch/delivery" className="flex items-center justify-between rounded-xl border border-border p-3 text-sm font-semibold text-foreground hover:border-accent-2 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2">
-                Active deliveries <span className="rounded-full bg-info-soft px-2 py-0.5 text-xs text-link">{isLoading || !data ? "—" : data.activeDeliveries}</span>
-              </Link>
-              <Link to="/audit" className="flex items-center justify-between rounded-xl border border-border p-3 text-sm font-semibold text-foreground hover:border-accent-2 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent-2">
-                Administration · Audit Log <ArrowRight size={15} aria-hidden="true" />
-              </Link>
-            </div>
-          </aside>
+        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+          <NeedsAttention data={data} loading={loading} failed={summary.isError && !data} />
+          <RecentActivity logs={activity.data ?? []} loading={activity.isPending} failed={activity.isError && !activity.data} />
         </div>
+
+        {summary.isError && data && (
+          <p role="status" className="text-xs text-muted-foreground">
+            Showing figures from {new Date(data.generatedAt).toLocaleTimeString()}; the latest refresh failed.
+          </p>
+        )}
       </div>
     </main>
   );
