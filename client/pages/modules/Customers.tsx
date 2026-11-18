@@ -1,12 +1,12 @@
 import { StatCard } from "@/components/shared/StatCard";
-import { Store, Receipt, BarChart3 } from "lucide-react";
+import { Store, Receipt, BarChart3, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Customer, Truck, formatCustomerAddress, totalDiscountRate } from "@shared/api";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
@@ -17,6 +17,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ActionButtons } from "@/components/ActionButtons";
+import { RecordTitleButton } from "@/components/RecordTitleButton";
+import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
 import {
   CustomerDiscountEditor,
   DiscountRow,
@@ -583,6 +585,42 @@ export function Customers({ onBack }: CustomersProps) {
     }
   };
 
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
+  const selectedCustomers = customers.filter((customer) => selectedCustomerIds.includes(customer.id));
+  const pageIds = paginatedCustomers.map((customer) => customer.id);
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedCustomerIds.includes(id));
+  const toggleCustomerSelection = (id: string, checked: boolean) =>
+    setSelectedCustomerIds((current) => (checked ? [...current, id] : current.filter((selectedId) => selectedId !== id)));
+  const togglePageSelection = (checked: boolean) =>
+    setSelectedCustomerIds((current) => (checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id))));
+
+  const handleDeleteSelected = async () => {
+    const noun = selectedCustomers.length === 1 ? "customer" : "customers";
+    if (!(await confirmAction(`Delete ${selectedCustomers.length} selected ${noun}?`))) return;
+    const ids = selectedCustomers.map((customer) => customer.id);
+    try {
+      await Promise.all(ids.map(async (id) => {
+        const response = await fetch(`/api/customers/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+        if (!response.ok) throw new Error("Failed to delete customer");
+      }));
+    } catch {
+      toast.error("Some customers could not be deleted.");
+    } finally {
+      setSelectedCustomerIds([]);
+      await fetchCustomers();
+    }
+  };
+
+  const bulkActions: TableBulkAction[] = [
+    ...(selectedCustomers.length === 1
+      ? [
+          { label: "View customer", onSelect: () => setViewingCustomer(selectedCustomers[0]) },
+          { label: "Edit customer", onSelect: () => openEditModal(selectedCustomers[0]) },
+        ]
+      : []),
+    { label: `Delete selected ${selectedCustomers.length === 1 ? "customer" : "customers"}`, onSelect: () => void handleDeleteSelected(), destructive: true },
+  ];
+
   if (isLoading) {
     return (
       <div className="flex-1 px-4 py-4 md:px-6 md:py-6">
@@ -654,43 +692,32 @@ export function Customers({ onBack }: CustomersProps) {
           label="With Discounts"
           value={customers.filter((customer) => (customer.discounts?.length ?? 0) > 0).length.toString()} icon={BarChart3}
         />
+        <StatCard label="Districts" value={customerDistricts.length.toString()} icon={MapPin} />
       </div>
 
-      <div className="flex flex-wrap items-center justify-start gap-3">
-        <div className="relative w-full sm:w-72">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="text"
-            placeholder="Search by store, location, or contact person…"
-            value={searchQuery}
-            onChange={(event) => {
-              setSearchQuery(event.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
-          />
-        </div>
-        <select
-          aria-label="District"
-          value={districtFilter}
-          onChange={(event) => {
-            setDistrictFilter(event.target.value);
-            setCurrentPage(1);
-          }}
-          className="rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground focus:border-accent-2 focus:outline-none"
-        >
+      <TableToolbar
+        selectedCount={selectedCustomers.length}
+        bulkActions={bulkActions}
+        searchValue={searchQuery}
+        onSearchChange={(value) => { setSearchQuery(value); setCurrentPage(1); }}
+        searchPlaceholder="Search by store, location, or contact person…"
+      >
+        <TableFilterSelect label="District" value={districtFilter} onChange={(value) => { setDistrictFilter(value); setCurrentPage(1); }}>
           <option value="">All districts</option>
           {customerDistricts.map((district) => (
             <option key={district} value={district}>{district}</option>
           ))}
-        </select>
-      </div>
+        </TableFilterSelect>
+      </TableToolbar>
 
       <div className="data-table-frame overflow-hidden">
         <div className="overflow-x-auto text-xs md:text-sm">
           <Table className="w-full">
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10 px-3 py-3">
+                  <input aria-label="Select all customers on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
+                </TableHead>
                 <SortableHeader label="Store Name" sortKey="store" sort={customerSort} onSort={setCustomerSort} />
                 <SortableHeader label="Delivery Address" sortKey="address" sort={customerSort} onSort={setCustomerSort} />
                 <SortableHeader label="Contact Person" sortKey="contact" sort={customerSort} onSort={setCustomerSort} className="hidden md:table-cell" />
@@ -704,7 +731,7 @@ export function Customers({ onBack }: CustomersProps) {
             <TableBody>
               {paginatedCustomers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="px-3 py-6 text-center text-muted-foreground">
+                  <TableCell colSpan={7} className="px-3 py-6 text-center text-muted-foreground">
                     {customers.length === 0
                       ? "No customers found"
                       : "No results matching your search"}
@@ -716,8 +743,11 @@ export function Customers({ onBack }: CustomersProps) {
                     key={customer.id}
                     className="border-b border-border transition-colors hover:bg-accent/50"
                   >
-                    <TableCell className="px-3 py-3 font-semibold text-foreground">
-                      {customer.store_name}
+                    <TableCell className="px-3 py-3">
+                      <input aria-label={`Select ${customer.store_name}`} type="checkbox" checked={selectedCustomerIds.includes(customer.id)} onChange={(event) => toggleCustomerSelection(customer.id, event.target.checked)} />
+                    </TableCell>
+                    <TableCell className="px-3 py-3">
+                      <RecordTitleButton onClick={() => setViewingCustomer(customer)}>{customer.store_name}</RecordTitleButton>
                     </TableCell>
                     <TableCell className="px-3 py-3 text-foreground">{formatCustomerAddress(customer)}</TableCell>
                     <TableCell className="hidden px-3 py-3 text-foreground md:table-cell">

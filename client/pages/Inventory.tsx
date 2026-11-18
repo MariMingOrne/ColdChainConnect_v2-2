@@ -6,7 +6,7 @@ import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { useInventoryContext } from "../context/InventoryContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, MoreHorizontal, Search } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
@@ -15,7 +15,7 @@ import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
 import { RecordTitleButton } from "@/components/RecordTitleButton";
 
 interface InventoryProduct {
@@ -345,6 +345,13 @@ export function Inventory() {
     }
   };
 
+  const inventoryBulkActions: TableBulkAction[] = [
+    ...(selectedProducts.length === 1
+      ? [{ label: "View item", onSelect: () => setExtraInfoProduct(selectedProducts[0]) }]
+      : []),
+    { label: `Delete selected ${selectedProducts.length === 1 ? "product" : "products"}`, onSelect: () => void handleDeleteSelected(), destructive: true },
+  ];
+
   if (extraInfoProduct) return (
     <ExtraInfoModal
       product={extraInfoProduct}
@@ -440,44 +447,24 @@ export function Inventory() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              disabled={selectedProducts.length === 0}
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <MoreHorizontal size={16} /> Actions ({selectedProducts.length})
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="bg-card text-foreground">
-            {selectedProducts.length === 1 && (
-              <DropdownMenuItem onClick={() => setExtraInfoProduct(selectedProducts[0])}>View item</DropdownMenuItem>
-            )}
-            {selectedProducts.length > 0 && (
-              <DropdownMenuItem className="text-red focus:text-red" onClick={() => void handleDeleteSelected()}>
-                Delete selected {selectedProducts.length === 1 ? "product" : "products"}
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-          <div className="relative w-full sm:w-72">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input type="text" placeholder="Search by SKU or name…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none" />
-          </div>
-          <select aria-label="Filter inventory by stock level" value={stockFilter} onChange={(e) => { setStockFilter(e.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground">
-            <option value="all">All stock</option>
-            <option value="low">Reorder needed</option>
-            <option value="available">Above reorder level</option>
-          </select>
-          <select aria-label="Filter inventory by expiry date" value={expiryFilter} onChange={(e) => { setExpiryFilter(e.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground">
-            <option value="all">All expiry dates</option>
-            <option value="has-expiry">Has expiry date</option>
-            <option value="no-expiry">No expiry date</option>
-          </select>
-        </div>
-      </div>
+      <TableToolbar
+        selectedCount={selectedProducts.length}
+        bulkActions={inventoryBulkActions}
+        searchValue={searchQuery}
+        onSearchChange={(value) => { setSearchQuery(value); setCurrentPage(1); }}
+        searchPlaceholder="Search by SKU or name…"
+      >
+        <TableFilterSelect label="Filter inventory by stock level" value={stockFilter} onChange={(value) => { setStockFilter(value); setCurrentPage(1); }}>
+          <option value="all">All stock</option>
+          <option value="low">Reorder needed</option>
+          <option value="available">Above reorder level</option>
+        </TableFilterSelect>
+        <TableFilterSelect label="Filter inventory by expiry date" value={expiryFilter} onChange={(value) => { setExpiryFilter(value); setCurrentPage(1); }}>
+          <option value="all">All expiry dates</option>
+          <option value="has-expiry">Has expiry date</option>
+          <option value="no-expiry">No expiry date</option>
+        </TableFilterSelect>
+      </TableToolbar>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -796,9 +783,9 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                               <div className="text-sm font-semibold text-foreground">{batch.name}</div>
                               <div className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
                             </div>
-                            <div className="flex gap-1">
-                              <button onClick={(e) => { e.stopPropagation(); handleArchiveBatch(batch.id); }} className="px-2 py-1 bg-warning text-white rounded text-xs font-semibold hover:opacity-90" title="Archive batch"></button>
-                              <button onClick={(e) => { e.stopPropagation(); onDeleteBatch(batch.id); }} className="px-2 py-1 bg-red text-white rounded text-xs font-semibold hover:opacity-90"></button>
+                            <div className="flex gap-2">
+                              <button type="button" onClick={(e) => { e.stopPropagation(); handleArchiveBatch(batch.id); }} className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-warning text-white transition-opacity hover:opacity-90" title="Archive batch" aria-label="Archive batch"><Archive size={18} /></button>
+                              <button type="button" onClick={(e) => { e.stopPropagation(); onDeleteBatch(batch.id); }} className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-red text-white transition-opacity hover:opacity-90" title="Delete batch" aria-label="Delete batch"><Trash2 size={18} /></button>
                             </div>
                           </div>
                         );
@@ -806,8 +793,8 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                     )}
                   </div>
                   <div className="flex gap-2 justify-between">
-                    <button onClick={() => setShowArchived(true)} className="px-4 py-2 bg-muted-foreground text-white rounded-lg font-semibold text-sm hover:opacity-90">View Archived ({archivedBatches.length})</button>
-                    <button onClick={() => { setIsCreatingBatch(true); setPallets([]); setNewBatchName(""); }} className="px-4 py-2 bg-green text-white rounded-lg font-semibold text-sm hover:opacity-90">Create New Batch</button>
+                    <button onClick={() => setShowArchived(true)} className="inline-flex items-center gap-2 px-4 py-2.5 bg-muted-foreground text-white rounded-lg font-semibold text-sm hover:opacity-90"><Archive size={16} />View Archived ({archivedBatches.length})</button>
+                    <button onClick={() => { setIsCreatingBatch(true); setPallets([]); setNewBatchName(""); }} className="inline-flex items-center gap-2 px-4 py-2.5 bg-green text-white rounded-lg font-semibold text-sm hover:opacity-90"><Plus size={16} />Create New Batch</button>
                   </div>
                 </>
               ) : (
@@ -825,9 +812,9 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                               <div className="text-sm font-semibold text-foreground">{batch.name}</div>
                               <div className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
                             </div>
-                            <div className="flex gap-1">
-                              <button onClick={() => handleUnarchiveBatch(batch.id)} className="px-2 py-1 bg-green text-white rounded text-xs font-semibold hover:opacity-90" title="Restore batch"></button>
-                              <button onClick={() => onDeleteBatch(batch.id)} className="px-2 py-1 bg-red text-white rounded text-xs font-semibold hover:opacity-90"></button>
+                            <div className="flex gap-2">
+                              <button type="button" onClick={() => handleUnarchiveBatch(batch.id)} className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-green text-white transition-opacity hover:opacity-90" title="Restore batch" aria-label="Restore batch"><ArchiveRestore size={18} /></button>
+                              <button type="button" onClick={() => onDeleteBatch(batch.id)} className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-red text-white transition-opacity hover:opacity-90" title="Delete batch" aria-label="Delete batch"><Trash2 size={18} /></button>
                             </div>
                           </div>
                         );
@@ -835,7 +822,7 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                     )}
                   </div>
                   <div className="flex justify-start">
-                    <button onClick={() => setShowArchived(false)} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90">← Back to Active</button>
+                    <button onClick={() => setShowArchived(false)} className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90"><ArrowLeft size={16} />Back to Active</button>
                   </div>
                 </>
               )}

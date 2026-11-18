@@ -11,10 +11,10 @@ import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Product } from "@shared/api";
-import { ArrowLeft, Search, MoreHorizontal } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
 import { RecordDetailsDialog, type RecordDetails } from "@/components/RecordDetailsDialog";
@@ -473,6 +473,16 @@ export function Pricing({ onBack }: PricingProps) {
   const totalValue = products.reduce((sum, p) => sum + parseFloat(p.price ?? "0"), 0);
   const avgPrice = products.length > 0 ? totalValue / products.length : 0;
 
+  const productBulkActions: TableBulkAction[] = [
+    ...(selectedProducts.length === 1
+      ? [
+          { label: "View product", onSelect: () => setViewingProduct(selectedProducts[0]) },
+          { label: "Edit product", onSelect: () => openEditModal(selectedProducts[0]) },
+        ]
+      : []),
+    { label: `Delete selected ${selectedProducts.length === 1 ? "product" : "products"}`, onSelect: () => void handleDeleteSelected(), destructive: true },
+  ];
+
   if (isLoading) {
     return (
       <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 space-y-6">
@@ -551,46 +561,23 @@ export function Pricing({ onBack }: PricingProps) {
         />
       </div>
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <button
-              disabled={selectedProducts.length === 0}
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              <MoreHorizontal size={16} /> Actions ({selectedProducts.length})
-            </button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="bg-card text-foreground">
-            {selectedProducts.length === 1 && (
-              <>
-                <DropdownMenuItem onClick={() => setViewingProduct(selectedProducts[0])}>View product</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => openEditModal(selectedProducts[0])}>Edit product</DropdownMenuItem>
-              </>
-            )}
-            {selectedProducts.length > 0 && (
-              <DropdownMenuItem className="text-red focus:text-red" onClick={() => void handleDeleteSelected()}>
-                Delete selected {selectedProducts.length === 1 ? "product" : "products"}
-              </DropdownMenuItem>
-            )}
-          </DropdownMenuContent>
-        </DropdownMenu>
-        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
-          <div className="relative w-full sm:w-72">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input type="text" placeholder="Search by product name or SKU…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none" />
-          </div>
-          <select aria-label="Filter products by status" value={productStatusFilter} onChange={(event) => { setProductStatusFilter(event.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground">
-            <option value="all">All statuses</option>
-            <option value="active">Active</option>
-            <option value="discontinued">Discontinued</option>
-          </select>
-          <select aria-label="Filter products by manufacturer" value={manufacturerFilter} onChange={(event) => { setManufacturerFilter(event.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground">
-            <option value="all">All manufacturers</option>
-            {manufacturers.map((manufacturer) => <option key={manufacturer} value={manufacturer}>{manufacturer}</option>)}
-          </select>
-        </div>
-      </div>
+      <TableToolbar
+        selectedCount={selectedProducts.length}
+        bulkActions={productBulkActions}
+        searchValue={searchQuery}
+        onSearchChange={(value) => { setSearchQuery(value); setCurrentPage(1); }}
+        searchPlaceholder="Search by product name or SKU…"
+      >
+        <TableFilterSelect label="Filter products by status" value={productStatusFilter} onChange={(value) => { setProductStatusFilter(value); setCurrentPage(1); }}>
+          <option value="all">All statuses</option>
+          <option value="active">Active</option>
+          <option value="discontinued">Discontinued</option>
+        </TableFilterSelect>
+        <TableFilterSelect label="Filter products by manufacturer" value={manufacturerFilter} onChange={(value) => { setManufacturerFilter(value); setCurrentPage(1); }}>
+          <option value="all">All manufacturers</option>
+          {manufacturers.map((manufacturer) => <option key={manufacturer} value={manufacturer}>{manufacturer}</option>)}
+        </TableFilterSelect>
+      </TableToolbar>
 
       {/* Table */}
       <div className="data-table-frame overflow-hidden">
