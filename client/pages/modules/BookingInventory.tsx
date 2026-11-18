@@ -1,3 +1,4 @@
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -202,7 +203,7 @@ export function BookingInventory() {
             <>
               <label className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
                 <span>Date</span>
-                <input type="date" value={printDate} onChange={(event) => setPrintDate(event.target.value)} className="bg-transparent text-foreground outline-none" />
+                <Input type="date" value={printDate} onChange={(event) => setPrintDate(event.target.value)} className="h-auto w-auto border-0 bg-transparent p-0 text-foreground focus-visible:ring-0 focus-visible:ring-offset-0" />
               </label>
               <Button onClick={() => setShowPrintAll(true)} variant="outline" className="flex items-center gap-2">
                 <Printer size={16} />

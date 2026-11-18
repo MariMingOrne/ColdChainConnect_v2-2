@@ -1,3 +1,4 @@
+import { NativeSelect } from "@/components/ui/native-select";
 import { formatPeso } from "@/lib/utils";
 import { StatCard } from "@/components/shared/StatCard";
 import { Package, TriangleAlert, Hash, Wallet } from "lucide-react";
@@ -418,7 +419,7 @@ export function Inventory() {
             <div className="w-full sm:w-72">
               <SearchFilterBar searchTerm={batchSearch} onSearchChange={setBatchSearch} placeholder="Find a batch or pallet…" />
             </div>
-            <input type="datetime-local" value={batchCreatedSince} onChange={(e) => setBatchCreatedSince(e.target.value)} title="Show batches created on or after this date and time" className="rounded-lg border border-border px-3 py-2 text-sm text-foreground" />
+            <Input type="datetime-local" value={batchCreatedSince} onChange={(e) => setBatchCreatedSince(e.target.value)} title="Show batches created on or after this date and time"  />
           </div>
           <Button onClick={() => setIsBatchModalOpen(true)} variant="outline" className="w-fit">Manage Batches</Button>
         </div>
@@ -427,19 +428,19 @@ export function Inventory() {
       <div className="flex flex-wrap items-center justify-start gap-3">
         <div className="relative w-full sm:w-72">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input type="text" placeholder="Search by SKU or name…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none" />
+          <Input type="text" placeholder="Search by SKU or name…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full" />
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <select aria-label="Filter inventory by stock level" value={stockFilter} onChange={(e) => { setStockFilter(e.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground">
+          <NativeSelect aria-label="Filter inventory by stock level" value={stockFilter} onChange={(e) => { setStockFilter(e.target.value); setCurrentPage(1); }} >
             <option value="all">All stock</option>
             <option value="low">Reorder needed</option>
             <option value="available">Above reorder level</option>
-          </select>
-          <select aria-label="Filter inventory by expiry date" value={expiryFilter} onChange={(e) => { setExpiryFilter(e.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground">
+          </NativeSelect>
+          <NativeSelect aria-label="Filter inventory by expiry date" value={expiryFilter} onChange={(e) => { setExpiryFilter(e.target.value); setCurrentPage(1); }} >
             <option value="all">All expiry dates</option>
             <option value="has-expiry">Has expiry date</option>
             <option value="no-expiry">No expiry date</option>
-          </select>
+          </NativeSelect>
         </div>
       </div>
 
@@ -723,30 +724,30 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
               {!showArchived ? (
                 <>
                   <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                    <input
+                    <Input
                       type="search"
                       value={batchQuery}
                       onChange={(e) => setBatchQuery(e.target.value)}
                       placeholder="Search batches by name…"
-                      className="flex-1 rounded-lg border border-border px-3 py-2 text-sm text-foreground"
+                      className="flex-1"
                     />
-                    <input
+                    <Input
                       type="datetime-local"
                       value={createdSince}
                       onChange={(e) => setCreatedSince(e.target.value)}
                       title="Show batches created on or after this date and time"
-                      className="rounded-lg border border-border px-3 py-2 text-sm text-foreground"
+                      
                     />
-                    <select
+                    <NativeSelect
                       value={productFilter}
                       onChange={(e) => setProductFilter(e.target.value)}
-                      className="rounded-lg border border-border px-3 py-2 text-sm text-foreground bg-card"
+                      
                     >
                       <option value="">All products</option>
                       {products.map((product) => (
                         <option key={product.id} value={product.id}>{product.description}</option>
                       ))}
-                    </select>
+                    </NativeSelect>
                     {(batchQuery || createdSince || productFilter) && (
                       <Button onClick={() => { setBatchQuery(""); setCreatedSince(""); setProductFilter(""); }} variant="outline">
                         Clear
@@ -913,12 +914,12 @@ function CreateBatchForm({ newBatchName, setNewBatchName, pallets, setPallets, o
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-foreground mb-2">Batch Name *</label>
-          <Input type="text" value={newBatchName} onChange={(e) => setNewBatchName(e.target.value)} placeholder="e.g., Morning Delivery, Q1 Restock" className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2" />
+          <label htmlFor="inventory-batch-name" className="block text-xs font-semibold text-foreground mb-2">Batch Name *</label>
+          <Input id="inventory-batch-name" type="text" value={newBatchName} onChange={(e) => setNewBatchName(e.target.value)} placeholder="e.g., Morning Delivery, Q1 Restock" className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2" />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-foreground mb-2">Acquisition Date *</label>
-          <Input type="date" value={acquisitionDate} onChange={(e) => setAcquisitionDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2" />
+          <label htmlFor="inventory-acquisition-date" className="block text-xs font-semibold text-foreground mb-2">Acquisition Date *</label>
+          <Input id="inventory-acquisition-date" type="date" value={acquisitionDate} onChange={(e) => setAcquisitionDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2" />
         </div>
       </div>
 
@@ -926,13 +927,13 @@ function CreateBatchForm({ newBatchName, setNewBatchName, pallets, setPallets, o
         <h3 className="text-xs font-semibold text-foreground">Items *</h3>
 
         <div>
-          <label className="block text-xs font-semibold text-foreground mb-2">Add Products *</label>
-          <select onChange={(e) => { if (e.target.value) { addItem(e.target.value); e.target.value = ""; } }} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2">
+          <label htmlFor="inventory-add-products" className="block text-xs font-semibold text-foreground mb-2">Add Products *</label>
+          <NativeSelect id="inventory-add-products" onChange={(e) => { if (e.target.value) { addItem(e.target.value); e.target.value = ""; } }} className="w-full">
             <option value="">Choose a product...</option>
             {availableProducts.map((p) => (
               <option key={p.id} value={p.id}>{p.sku ? `${p.sku} - ` : ""}{p.name}</option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
 
         {items.length > 0 && (

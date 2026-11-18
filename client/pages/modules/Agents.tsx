@@ -272,7 +272,7 @@ function AgentCard({
       {canManageMfa && agent.user && (
         <label className="flex items-center justify-between gap-3 border-t border-border pt-2 text-xs font-semibold text-foreground">
           <span>Require MFA at sign-in</span>
-          <input type="checkbox" checked={agent.user.mfa_required} disabled={isSavingMfa} onChange={(event) => onMfaRequirementChange(event.target.checked)} className="h-4 w-4 accent-navy" />
+          <Input type="checkbox" checked={agent.user.mfa_required} disabled={isSavingMfa} onChange={(event) => onMfaRequirementChange(event.target.checked)} className="h-4 w-4 accent-navy" />
         </label>
       )}
 

@@ -88,7 +88,7 @@ export function CreateAccountFields({ accountType, form, onChange, modulePermiss
           <legend className="px-1 text-sm font-semibold text-foreground">Module access</legend>
           {modulePermissionKeys.map((permission) => (
             <label key={permission} className="flex items-start gap-2 text-sm text-foreground">
-              <input type="checkbox" checked={modulePermissions.includes(permission)} onChange={() => togglePermission(permission)} className="mt-0.5 accent-navy" />
+              <Input type="checkbox" checked={modulePermissions.includes(permission)} onChange={() => togglePermission(permission)} className="mt-0.5 accent-navy" />
               <span>{modulePermissionLabels[permission]}</span>
             </label>
           ))}
@@ -185,7 +185,7 @@ function ActiveToggle({
 }) {
   return (
     <div className="flex items-center gap-3">
-      <input
+      <Input
         id={id}
         type="checkbox"
         checked={checked}

@@ -1,3 +1,5 @@
+import { NativeSelect } from "@/components/ui/native-select";
+import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { Pallet } from "@shared/api";
 import { cn } from "@/lib/utils";
@@ -45,12 +47,12 @@ export function PalletToolbar({
     <div className="flex flex-wrap items-center justify-start gap-3">
       <div className="relative w-full sm:w-72">
         <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-        <input
+        <Input
           type="text"
           placeholder="Search order, pallet, customer…"
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
+          className="w-full"
         />
       </div>
 
@@ -70,31 +72,31 @@ export function PalletToolbar({
           ))}
         </div>
 
-        <select
+        <NativeSelect
           aria-label="Truck"
           value={truckFilter}
           onChange={(e) => onTruckChange(e.target.value)}
-          className="rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground focus:border-accent-2 focus:outline-none"
+          className="font-semibold"
         >
           {truckOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
 
-        <select
+        <NativeSelect
           aria-label="Date range"
           value={datePreset}
           onChange={(e) => onDatePresetChange(e.target.value as DatePresetFilter)}
-          className="rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground focus:border-accent-2 focus:outline-none"
+          className="font-semibold"
         >
           {datePresetOptions.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
             </option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
 
     </div>

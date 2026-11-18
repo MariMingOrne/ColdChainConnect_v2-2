@@ -1,3 +1,4 @@
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
@@ -228,13 +229,13 @@ export function CustomerLocationPicker({ position, onSelect }: CustomerLocationP
       <form onSubmit={searchPlaces} className="flex gap-2">
         <div className="relative min-w-0 flex-1">
           <MapPin size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
+          <Input
             id="customer-location-search"
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search an address or place"
-            className="w-full rounded-lg border border-border py-2 pl-9 pr-3 text-sm focus:border-accent-2 focus:outline-none"
+            className="w-full"
           />
         </div>
         <Button type="submit" disabled={isSearching || !query.trim()} variant="default" className="shrink-0">

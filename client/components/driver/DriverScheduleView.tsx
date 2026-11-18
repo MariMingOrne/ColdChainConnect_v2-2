@@ -1,3 +1,4 @@
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
@@ -63,11 +64,11 @@ export function DriverScheduleView({ driverId }: { driverId?: string }) {
         >
           Previous
         </Button>
-        <input
+        <Input
           type="date"
           value={date}
           onChange={(event) => event.target.value && setDate(event.target.value)}
-          className="flex-1 px-3 py-1.5 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
+          className="flex-1"
         />
         <Button
           type="button"

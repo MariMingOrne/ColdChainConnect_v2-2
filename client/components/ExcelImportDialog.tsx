@@ -1,3 +1,4 @@
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState, type ChangeEvent } from "react";
 import { AlertTriangle, ArrowLeft, FileSpreadsheet, Upload } from "lucide-react";
@@ -72,7 +73,7 @@ export function ExcelImportDialog({ title, columns, validateRow, onImport, onClo
             <label className="flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border border-dashed border-border bg-muted px-4 py-3 text-sm font-semibold text-foreground hover:border-accent-2">
               <FileSpreadsheet size={20} className="shrink-0 text-accent-2" />
               <span className="flex-1">{isReading ? "Reading workbook…" : "Choose .xlsx workbook"}</span>
-              <input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled={isReading || isImporting || importedCount !== null} onChange={handleFile} className="sr-only" />
+              <Input type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" disabled={isReading || isImporting || importedCount !== null} onChange={handleFile} className="sr-only" />
             </label>
             <p className="mt-2 text-xs text-muted-foreground">Import creates new records only; it does not update or delete existing records. Export the workbook for a template.</p>
           </div>

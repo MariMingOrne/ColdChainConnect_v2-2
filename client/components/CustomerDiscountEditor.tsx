@@ -1,3 +1,4 @@
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Plus, X } from "lucide-react";
 
@@ -28,15 +29,15 @@ export function CustomerDiscountEditor({
     <div className="space-y-2">
       {rows.map((row, index) => (
         <div key={index} className="flex items-center gap-2">
-          <input
+          <Input
             type="text"
             value={row.label}
             onChange={(e) => updateRow(index, { label: e.target.value })}
             placeholder="e.g., Prompt payment"
-            className="flex-1 rounded-lg border border-border px-3 py-2 text-sm focus:border-accent-2 focus:outline-none"
+            className="flex-1"
           />
           <div className="relative w-24">
-            <input
+            <Input
               type="number"
               min="0"
               max="100"
@@ -44,7 +45,7 @@ export function CustomerDiscountEditor({
               value={row.percent}
               onChange={(e) => updateRow(index, { percent: e.target.value })}
               placeholder="5"
-              className="w-full rounded-lg border border-border py-2 pl-3 pr-7 text-sm focus:border-accent-2 focus:outline-none"
+              className="w-full"
             />
             <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
               %

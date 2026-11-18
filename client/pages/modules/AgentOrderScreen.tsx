@@ -111,8 +111,8 @@ export function AgentOrderScreen({
                 </Select>
               </div>
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-2">Prepared Delivery Date</label>
-                <Input
+                <label htmlFor="agentorderscreen-prepared-delivery-date" className="block text-xs font-semibold text-foreground mb-2">Prepared Delivery Date</label>
+                <Input id="agentorderscreen-prepared-delivery-date"
                   type="date"
                   min={minDeliveryDate}
                   value={preparedDeliveryDate}

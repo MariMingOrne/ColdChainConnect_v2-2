@@ -193,7 +193,7 @@ export function LogReturnForm({
                 className={`flex flex-col gap-1 p-3 border-2 rounded-lg cursor-pointer transition bg-card ${
                   returnType === opt.value ? "border-accent-2 bg-accent-2/5" : "border-border"
                 }`}>
-                <input type="radio" className="sr-only" checked={returnType === opt.value} onChange={() => setReturnType(opt.value)} />
+                <Input type="radio" className="sr-only" checked={returnType === opt.value} onChange={() => setReturnType(opt.value)} />
                 <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
                   <opt.Icon size={14} className={opt.iconClass} /> {opt.label}
                 </span>
@@ -204,8 +204,8 @@ export function LogReturnForm({
         </div>
 
         <div>
-          <label className="block text-xs font-semibold text-foreground mb-1">Reason / Notes</label>
-          <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2}
+          <label htmlFor="logreturnform-reason-notes" className="block text-xs font-semibold text-foreground mb-1">Reason / Notes</label>
+          <Textarea id="logreturnform-reason-notes" value={reason} onChange={(e) => setReason(e.target.value)} rows={2}
             placeholder="Describe why the goods are being returned…"
             className="min-h-16 resize-none" />
         </div>

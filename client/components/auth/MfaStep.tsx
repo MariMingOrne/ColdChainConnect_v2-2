@@ -1,3 +1,4 @@
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { MfaSetupResponse } from "@shared/api";
@@ -49,7 +50,7 @@ export function MfaStep({ mode, setupInfo, error, isLoading, onSubmit, onBack }:
         <label htmlFor="mfa-code" className="mb-1.5 block text-sm font-semibold text-foreground">
           Authentication code
         </label>
-        <input
+        <Input
           id="mfa-code"
           type="text"
           inputMode="numeric"
@@ -61,7 +62,7 @@ export function MfaStep({ mode, setupInfo, error, isLoading, onSubmit, onBack }:
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
           disabled={isLoading}
-          className="w-full px-3.5 py-2.5 border-2 border-link/30 rounded-lg text-sm text-foreground bg-info-soft tracking-widest text-center transition-colors focus:outline-none focus:border-primary disabled:opacity-50"
+          className="w-full bg-info-soft tracking-widest text-center"
         />
       </div>
 

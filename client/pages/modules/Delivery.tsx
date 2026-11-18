@@ -1,3 +1,5 @@
+import { NativeSelect } from "@/components/ui/native-select";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
@@ -377,17 +379,17 @@ export function DeliveryDispatch() {
         <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card p-3">
           <div className="relative w-full sm:w-64">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <input type="search" aria-label="Search truck schedule" placeholder="Search runs, customers, agents…" value={scheduleSearch} onChange={(event) => setScheduleSearch(event.target.value)} className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
+            <Input type="search" aria-label="Search truck schedule" placeholder="Search runs, customers, agents…" value={scheduleSearch} onChange={(event) => setScheduleSearch(event.target.value)} className="w-full" />
           </div>
-          <input type="datetime-local" aria-label="Scheduled from date and time" title="Show runs scheduled from this date and time" value={scheduleFromDateTime} onChange={(event) => setScheduleFromDateTime(event.target.value)} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground" />
-          <select aria-label="Filter by driver" value={scheduleDriverFilter} onChange={(event) => setScheduleDriverFilter(event.target.value)} className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground">
+          <Input type="datetime-local" aria-label="Scheduled from date and time" title="Show runs scheduled from this date and time" value={scheduleFromDateTime} onChange={(event) => setScheduleFromDateTime(event.target.value)}  />
+          <NativeSelect aria-label="Filter by driver" value={scheduleDriverFilter} onChange={(event) => setScheduleDriverFilter(event.target.value)} >
             <option value="all">All drivers</option>
             {drivers.map((driver) => <option key={driver.id} value={driver.id}>{driver.full_name || driver.id.slice(0, 8)}</option>)}
-          </select>
-          <select aria-label="Filter by agent" value={scheduleAgentFilter} onChange={(event) => setScheduleAgentFilter(event.target.value)} className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground">
+          </NativeSelect>
+          <NativeSelect aria-label="Filter by agent" value={scheduleAgentFilter} onChange={(event) => setScheduleAgentFilter(event.target.value)} >
             <option value="all">All agents</option>
             {agents.map((agent) => <option key={agent.id} value={agent.id}>{agent.full_name || agent.user?.username || agent.id.slice(0, 8)}</option>)}
-          </select>
+          </NativeSelect>
         </div>
 
         {sortedScheduleDays.length === 0 ? (
@@ -437,10 +439,10 @@ export function DeliveryDispatch() {
               </span>
               <label className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground">
                 Driver
-                <select
+                <NativeSelect
                   value={delivery.driver_id ?? delivery.truck?.driver_id ?? ""}
                   onChange={(event) => void handleAssignDriver(delivery.id, event.target.value)}
-                  className="rounded-md border border-border bg-card px-2 py-1 text-xs font-normal text-foreground"
+                  className="font-normal"
                 >
                   <option value="">Unassigned</option>
                   {drivers.filter((driver) => driver.is_active).map((driver) => (
@@ -448,7 +450,7 @@ export function DeliveryDispatch() {
                       {driver.full_name || driver.id.slice(0, 8)}{driver.id === delivery.truck?.driver_id ? " · truck default" : ""}
                     </option>
                   ))}
-                </select>
+                </NativeSelect>
               </label>
               {delivery.status === "pending" && (
                 <Button
@@ -815,11 +817,11 @@ function ChangeTruckDriverModal({ truck, drivers, token, onClose, onSave }: {
   return (
     <ModalShell title={`Assign Driver — ${truck.license_plate}`} onClose={onClose}>
       <div>
-        <label className="block text-xs font-semibold text-foreground mb-2">Select Driver</label>
-        <select
+        <label htmlFor="delivery-select-driver" className="block text-xs font-semibold text-foreground mb-2">Select Driver</label>
+        <NativeSelect id="delivery-select-driver"
           value={selectedDriverId}
           onChange={(e) => setSelectedDriverId(e.target.value)}
-          className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
+          className="w-full"
         >
           <option value="">No driver assigned</option>
           {drivers.filter((d) => d.is_active).map((d) => (
@@ -829,7 +831,7 @@ function ChangeTruckDriverModal({ truck, drivers, token, onClose, onSave }: {
               {d.contact_info ? ` — ${d.contact_info}` : ""}
             </option>
           ))}
-        </select>
+        </NativeSelect>
 
         {/* Preview card for the selected driver */}
         {selectedDriverId && (() => {
@@ -902,28 +904,28 @@ function AddTruckModal({ drivers, token, onClose, onCreated }: {
         ].map(({ label, value, onChange, placeholder }) => (
           <div key={label}>
             <label className="block text-xs font-semibold text-foreground mb-1">{label}</label>
-            <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2" />
+            <Input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+              className="w-full" />
           </div>
         ))}
         <div>
-          <label className="block text-xs font-semibold text-foreground mb-1">Status</label>
-          <select value={truckStatus} onChange={(e) => setTruckStatus(e.target.value as any)}
-            className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2">
+          <label htmlFor="delivery-status" className="block text-xs font-semibold text-foreground mb-1">Status</label>
+          <NativeSelect id="delivery-status" value={truckStatus} onChange={(e) => setTruckStatus(e.target.value as any)}
+            className="w-full">
             <option value="available">Available</option>
             <option value="in_transit">In Transit</option>
             <option value="maintenance">Maintenance</option>
-          </select>
+          </NativeSelect>
         </div>
         <div>
-          <label className="block text-xs font-semibold text-foreground mb-1">Assign Driver (Optional)</label>
-          <select value={selectedDriverId} onChange={(e) => setSelectedDriverId(e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2">
+          <label htmlFor="delivery-assign-driver-optional" className="block text-xs font-semibold text-foreground mb-1">Assign Driver (Optional)</label>
+          <NativeSelect id="delivery-assign-driver-optional" value={selectedDriverId} onChange={(e) => setSelectedDriverId(e.target.value)}
+            className="w-full">
             <option value="">No agent assigned</option>
             {drivers.filter((d) => d.is_active).map((d) => (
               <option key={d.id} value={d.id}>{d.full_name || d.id.slice(0, 8)}{d.contact_info && ` — ${d.contact_info}`}</option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-4 border-t border-border">
@@ -974,18 +976,18 @@ function EditTruckModal({ truck, token, onClose, onSaved }: {
         ].map(({ label, value, onChange, placeholder }) => (
           <div key={label}>
             <label className="block text-xs font-semibold text-foreground mb-1">{label}</label>
-            <input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2" />
+            <Input type="text" value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder}
+              className="w-full" />
           </div>
         ))}
         <div>
-          <label className="block text-xs font-semibold text-foreground mb-1">Status</label>
-          <select value={truckStatus} onChange={(e) => setTruckStatus(e.target.value as Truck["status"])}
-            className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2">
+          <label htmlFor="delivery-status-2" className="block text-xs font-semibold text-foreground mb-1">Status</label>
+          <NativeSelect id="delivery-status-2" value={truckStatus} onChange={(e) => setTruckStatus(e.target.value as Truck["status"])}
+            className="w-full">
             <option value="available">Available</option>
             <option value="in_transit">In Transit</option>
             <option value="maintenance">Maintenance</option>
-          </select>
+          </NativeSelect>
         </div>
       </div>
       <div className="flex justify-end gap-2 pt-4 border-t border-border">
@@ -1105,20 +1107,20 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <label className="block text-xs font-semibold text-foreground">
             Scheduled Date *
-            <input
+            <Input
               type="date"
               value={scheduledDate}
               onChange={(event) => setScheduledDate(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:border-accent-2"
+              className="mt-1 w-full"
             />
           </label>
           <label className="block text-xs font-semibold text-foreground">
             Scheduled Time *
-            <input
+            <Input
               type="time"
               value={scheduledTime}
               onChange={(event) => setScheduledTime(event.target.value)}
-              className="mt-1 w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:border-accent-2"
+              className="mt-1 w-full"
             />
           </label>
         </div>
@@ -1128,11 +1130,11 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
           {saleOwnerIds.size > 1 && <p className="mt-1 text-xs text-red">One delivery run can include sales from only one agent.</p>}
         </div>
         <div>
-          <label className="block text-xs font-semibold text-foreground mb-1">Assign Driver (Optional)</label>
-          <select
+          <label htmlFor="delivery-assign-driver-optional-2" className="block text-xs font-semibold text-foreground mb-1">Assign Driver (Optional)</label>
+          <NativeSelect id="delivery-assign-driver-optional-2"
             value={selectedDriverId}
             onChange={(event) => setSelectedDriverId(event.target.value)}
-            className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground focus:outline-none focus:border-accent-2"
+            className="w-full"
           >
             <option value="">No driver assigned</option>
             {drivers.filter((driver) => driver.is_active).map((driver) => (
@@ -1140,25 +1142,25 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
                 {driver.full_name || driver.id.slice(0, 8)}{driver.id === truck.driver_id ? " · truck default" : ""}
               </option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
 
         <div className="rounded-lg border border-border bg-card p-3 space-y-2">
           <div className="flex flex-wrap items-center gap-2">
-            <input
+            <Input
               type="search"
               value={orderSearch}
               onChange={(event) => setOrderSearch(event.target.value)}
               aria-label="Search orders"
               placeholder="Search store, contact, address, receipt"
-              className="min-w-0 flex-1 rounded-lg border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-accent-2"
+              className="min-w-0 flex-1"
             />
-            <input
+            <Input
               type="date"
               value={orderDate}
               onChange={(event) => setOrderDate(event.target.value)}
               aria-label="Filter orders by date"
-              className="rounded-lg border border-border px-3 py-2 text-xs text-foreground focus:outline-none focus:border-accent-2"
+              
             />
           </div>
           <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -1200,10 +1202,10 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
 
               <div>
                 <label className="block text-xs text-muted-foreground mb-1">Order (Customer — Contact)</label>
-                <select
+                <NativeSelect
                   value={stop.invoice_id}
                   onChange={(e) => updateStop(i, e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg text-xs focus:outline-none focus:border-accent-2 bg-card"
+                  className="w-full"
                 >
                   <option value="">Select order…</option>
                   {stopOptions.map((inv) => {
@@ -1215,7 +1217,7 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
                       </option>
                     );
                   })}
-                </select>
+                </NativeSelect>
               </div>
 
               {/* Preview card once an order is selected */}
@@ -1329,7 +1331,7 @@ function PaymentConfirmationModal({
           <div className="space-y-2">
             <label className="flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition"
               style={{ borderColor: !isPaid ? 'hsl(var(--link))' : 'hsl(var(--border))', backgroundColor: !isPaid ? 'hsl(var(--info-soft))' : 'transparent' }}>
-              <input
+              <Input
                 type="radio"
                 checked={!isPaid}
                 onChange={() => setIsPaid(false)}
@@ -1340,7 +1342,7 @@ function PaymentConfirmationModal({
 
             <label className="flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition"
               style={{ borderColor: isPaid ? 'hsl(var(--success))' : 'hsl(var(--border))', backgroundColor: isPaid ? 'hsl(var(--success-soft))' : 'transparent' }}>
-              <input
+              <Input
                 type="radio"
                 checked={isPaid}
                 onChange={() => setIsPaid(true)}
@@ -1358,7 +1360,7 @@ function PaymentConfirmationModal({
             <div className="space-y-2">
               {PAYMENT_METHODS.map((method) => (
                 <label key={method.value} className="flex items-center gap-3 p-3 border border-border rounded-lg cursor-pointer hover:bg-card transition-colors">
-                  <input
+                  <Input
                     type="radio"
                     checked={paymentMethod === method.value}
                     onChange={() => setPaymentMethod(method.value)}
@@ -1369,13 +1371,13 @@ function PaymentConfirmationModal({
               ))}
             </div>
             <div>
-              <label className="block text-xs font-semibold text-foreground mb-1">Reference / Receipt No. (optional)</label>
-              <input
+              <label htmlFor="delivery-reference-receipt-no-optional" className="block text-xs font-semibold text-foreground mb-1">Reference / Receipt No. (optional)</label>
+              <Input id="delivery-reference-receipt-no-optional"
                 type="text"
                 value={paymentReference}
                 onChange={(e) => setPaymentReference(e.target.value)}
                 placeholder="e.g. check #, transfer ref, OR number…"
-                className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
+                className="w-full"
               />
             </div>
           </div>

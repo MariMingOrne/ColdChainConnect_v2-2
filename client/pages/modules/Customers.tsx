@@ -1,3 +1,4 @@
+import { NativeSelect } from "@/components/ui/native-select";
 import { StatCard } from "@/components/shared/StatCard";
 import { Store, Receipt, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
@@ -164,10 +165,10 @@ function CustomerModal({
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-6">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-foreground">
+            <label htmlFor="customers-store-name" className="mb-1 block text-xs font-semibold text-foreground">
               Store Name *
             </label>
-            <Input
+            <Input id="customers-store-name"
               type="text"
               value={formData.store_name}
               onChange={(e) =>
@@ -185,8 +186,8 @@ function CustomerModal({
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-semibold text-foreground">Street No.</label>
-              <Input
+              <label htmlFor="customers-street-no" className="mb-1 block text-xs font-semibold text-foreground">Street No.</label>
+              <Input id="customers-street-no"
                 type="text"
                 value={formData.street_number}
                 onChange={(e) => updateAddressField("street_number", e.target.value)}
@@ -195,8 +196,8 @@ function CustomerModal({
               />
             </div>
             <div className="col-span-2">
-              <label className="mb-1 block text-xs font-semibold text-foreground">Street Address</label>
-              <Input
+              <label htmlFor="customers-street-address" className="mb-1 block text-xs font-semibold text-foreground">Street Address</label>
+              <Input id="customers-street-address"
                 type="text"
                 value={formData.street_address}
                 onChange={(e) => updateAddressField("street_address", e.target.value)}
@@ -208,8 +209,8 @@ function CustomerModal({
 
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-1">
-              <label className="mb-1 block text-xs font-semibold text-foreground">City *</label>
-              <Input
+              <label htmlFor="customers-city" className="mb-1 block text-xs font-semibold text-foreground">City *</label>
+              <Input id="customers-city"
                 type="text"
                 value={formData.location}
                 onChange={(e) => updateAddressField("location", e.target.value)}
@@ -218,8 +219,8 @@ function CustomerModal({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-foreground">State / Province</label>
-              <Input
+              <label htmlFor="customers-state-province" className="mb-1 block text-xs font-semibold text-foreground">State / Province</label>
+              <Input id="customers-state-province"
                 type="text"
                 value={formData.state}
                 onChange={(e) => updateAddressField("state", e.target.value)}
@@ -228,8 +229,8 @@ function CustomerModal({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-foreground">Postal Code</label>
-              <Input
+              <label htmlFor="customers-postal-code" className="mb-1 block text-xs font-semibold text-foreground">Postal Code</label>
+              <Input id="customers-postal-code"
                 type="text"
                 value={formData.postal_code}
                 onChange={(e) => updateAddressField("postal_code", e.target.value)}
@@ -258,10 +259,10 @@ function CustomerModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-foreground">
+            <label htmlFor="customers-contact-person" className="mb-1 block text-xs font-semibold text-foreground">
               Contact Person
             </label>
-            <Input
+            <Input id="customers-contact-person"
               type="text"
               value={formData.contact_person}
               onChange={(e) =>
@@ -273,10 +274,10 @@ function CustomerModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-foreground">
+            <label htmlFor="customers-contact-info" className="mb-1 block text-xs font-semibold text-foreground">
               Contact Info
             </label>
-            <Input
+            <Input id="customers-contact-info"
               type="text"
               value={formData.contact_info}
               onChange={(e) =>
@@ -289,8 +290,8 @@ function CustomerModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-semibold text-foreground">Credit Limit (₱)</label>
-              <Input
+              <label htmlFor="customers-credit-limit" className="mb-1 block text-xs font-semibold text-foreground">Credit Limit (₱)</label>
+              <Input id="customers-credit-limit"
                 type="number"
                 min="0"
                 value={formData.credit_limit}
@@ -300,8 +301,8 @@ function CustomerModal({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-foreground">Credit Terms (days)</label>
-              <Input
+              <label htmlFor="customers-credit-terms-days" className="mb-1 block text-xs font-semibold text-foreground">Credit Terms (days)</label>
+              <Input id="customers-credit-terms-days"
                 type="number"
                 min="1"
                 max="365"
@@ -659,7 +660,7 @@ export function Customers({ onBack }: CustomersProps) {
       <div className="flex flex-wrap items-center justify-start gap-3">
         <div className="relative w-full sm:w-72">
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
+          <Input
             type="text"
             placeholder="Search by store, location, or contact person…"
             value={searchQuery}
@@ -667,23 +668,23 @@ export function Customers({ onBack }: CustomersProps) {
               setSearchQuery(event.target.value);
               setCurrentPage(1);
             }}
-            className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
+            className="w-full"
           />
         </div>
-        <select
+        <NativeSelect
           aria-label="District"
           value={districtFilter}
           onChange={(event) => {
             setDistrictFilter(event.target.value);
             setCurrentPage(1);
           }}
-          className="rounded-full border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground focus:border-accent-2 focus:outline-none"
+          className="font-semibold"
         >
           <option value="">All districts</option>
           {customerDistricts.map((district) => (
             <option key={district} value={district}>{district}</option>
           ))}
-        </select>
+        </NativeSelect>
       </div>
 
       <div className="data-table-frame overflow-hidden">

@@ -1,3 +1,4 @@
+import { Input } from "@/components/ui/input";
 import { useEffect, useMemo, useState } from "react";
 import { ShieldCheck, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -133,7 +134,7 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
               {currentUser?.role === "admin" && (
                 <label className="flex items-center justify-between gap-3 border-t border-border pt-2 text-xs font-semibold text-foreground">
                   <span>Require MFA at sign-in</span>
-                  <input type="checkbox" checked={account.mfa_required} disabled={mfaSavingId === account.id} onChange={(event) => void updateMfaRequirement(account, event.target.checked)} className="h-4 w-4 accent-navy" />
+                  <Input type="checkbox" checked={account.mfa_required} disabled={mfaSavingId === account.id} onChange={(event) => void updateMfaRequirement(account, event.target.checked)} className="h-4 w-4 accent-navy" />
                 </label>
               )}
               {account.role === "staff" && currentUser?.role === "admin" && (
@@ -142,7 +143,7 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
                   <div className="grid grid-cols-1 gap-1.5">
                     {modulePermissionKeys.map((permission) => (
                       <label key={permission} className="flex items-start gap-2 text-xs text-foreground">
-                        <input type="checkbox" checked={account.module_permissions?.includes(permission) ?? false} onChange={() => togglePermission(account.id, permission)} className="mt-0.5 accent-navy" />
+                        <Input type="checkbox" checked={account.module_permissions?.includes(permission) ?? false} onChange={() => togglePermission(account.id, permission)} className="mt-0.5 accent-navy" />
                         <span>{modulePermissionLabels[permission]}</span>
                       </label>
                     ))}

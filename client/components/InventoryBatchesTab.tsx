@@ -1,3 +1,5 @@
+import { NativeSelect } from "@/components/ui/native-select";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
@@ -268,15 +270,15 @@ export function InventoryBatchesTab() {
           <div className="bg-card rounded-2xl border border-border flex flex-col">
             <div className="p-6 space-y-4 flex-1">
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
+                <label htmlFor="inventorybatchestab-batch-name" className="block text-xs font-semibold text-foreground mb-1">
                   Batch Name *
                 </label>
-                <input
+                <Input id="inventorybatchestab-batch-name"
                   type="text"
                   value={newBatchName}
                   onChange={(e) => setNewBatchName(e.target.value)}
                   placeholder="e.g., Morning Delivery, Weekly Restock"
-                  className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
+                  className="w-full"
                 />
               </div>
 
@@ -293,10 +295,10 @@ export function InventoryBatchesTab() {
                 <div className="space-y-2">
                   {batchItems.map((item, idx) => (
                     <div key={idx} className="flex gap-2 items-center">
-                      <select
+                      <NativeSelect
                         value={item.product_id}
                         onChange={(e) => handleItemChange(idx, "product_id", e.target.value)}
-                        className="flex-1 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
+                        className="flex-1"
                       >
                         <option value="">Select product…</option>
                         {products.map((p) => (
@@ -304,13 +306,13 @@ export function InventoryBatchesTab() {
                             {p.name} (₱{p.price})
                           </option>
                         ))}
-                      </select>
-                      <input
+                      </NativeSelect>
+                      <Input
                         type="number"
                         min={1}
                         value={item.qty_units}
                         onChange={(e) => handleItemChange(idx, "qty_units", e.target.value)}
-                        className="w-20 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
+                        className="w-20"
                         placeholder="Qty"
                       />
                       {batchItems.length > 1 && (
