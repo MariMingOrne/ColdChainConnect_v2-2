@@ -139,7 +139,7 @@ export function createServer() {
   app.get("/api/demo", handleDemo);
 
   // Upload route
-  app.post("/api/upload", uploadMiddleware, handleUpload);
+  app.post("/api/upload", authMiddleware, requireRole("admin"), uploadMiddleware, handleUpload);
 
   // Auth routes (no auth required)
   app.post("/api/auth/login", handleLogin);

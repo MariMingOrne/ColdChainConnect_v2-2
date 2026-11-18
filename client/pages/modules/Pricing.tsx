@@ -88,13 +88,14 @@ function ProductPage({
     try {
       const response = await fetch("/api/upload", {
         method: "POST",
+        headers: { Authorization: `Bearer ${useAuth.getState().token ?? ""}` },
         body: formDataUpload,
       });
-      if (!response.ok) throw new Error("Upload failed");
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || "Upload failed");
       setFormData({ ...formData, image_filename: data.filename });
     } catch (err) {
-      alert("Failed to upload image");
+      alert(err instanceof Error ? err.message : "Failed to upload image");
     } finally {
       setUploadingImage(false);
     }
