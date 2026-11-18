@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { StatCard } from "@/components/shared/StatCard";
 import { Package, CalendarDays, Store, CircleCheck } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
@@ -267,13 +268,13 @@ function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt; onClo
           <h1 className="page-title">Original Receipt</h1>
         </div>
         <div className="flex gap-2">
-          <button onClick={handlePrint} className="btn-ghost">
+          <Button onClick={handlePrint} variant="outline">
             Print
-          </button>
-          <button onClick={onClose} className="btn-ghost">
+          </Button>
+          <Button onClick={onClose} variant="outline">
             <ArrowLeft size={15} />
             Back
-          </button>
+          </Button>
         </div>
       </div>
 

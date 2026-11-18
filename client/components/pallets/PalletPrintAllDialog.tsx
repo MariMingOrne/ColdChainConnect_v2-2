@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import JsBarcode from "jsbarcode";
 import { ArrowLeft, Printer } from "lucide-react";
 import { useMemo } from "react";
@@ -29,10 +30,10 @@ export function PalletPrintAllDialog({ entries, date, onClose }: {
             <button type="button" onClick={() => window.print()} disabled={entries.length === 0} className="inline-flex items-center gap-2 rounded-lg bg-accent-2 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
               <Printer size={16} /> Print all
             </button>
-            <button type="button" onClick={onClose} className="btn-ghost">
+            <Button type="button" onClick={onClose} variant="outline">
               <ArrowLeft size={15} />
               Back
-            </button>
+            </Button>
           </div>
         </div>
 

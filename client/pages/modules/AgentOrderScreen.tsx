@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Booking, Customer, Product } from "@shared/api";
 import { cn } from "@/lib/utils";
@@ -169,14 +170,14 @@ export function AgentOrderScreen({
             >
               Cancel
             </button>
-            <button
+            <Button
               type="button"
               onClick={onCreateOrder}
               disabled={!canCreate}
-              className="min-h-[52px] flex-[1.2] rounded-xl bg-primary px-4 font-semibold text-sm text-primary-foreground transition hover:bg-navy-mid active:scale-[0.98] disabled:opacity-40 disabled:hover:bg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2"
+              variant="default" className="min-h-[52px] flex-[1.2]"
             >
               {isCreating ? "Creating…" : "Create Order"}
-            </button>
+            </Button>
           </footer>
         </>
       ) : (

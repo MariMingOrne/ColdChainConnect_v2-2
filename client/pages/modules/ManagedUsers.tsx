@@ -109,7 +109,7 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><h1 className="font-rajdhani text-3xl font-bold tracking-tight text-foreground">{title}</h1><p className="mt-1 text-xs text-muted-foreground">Manage {roleLabel.toLowerCase()} accounts</p></div>
         <div className="flex flex-wrap items-center gap-2">
-          {currentUser?.role === "admin" && <button type="button" onClick={onCreateAccount} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">Create Accounts</button>}
+          {currentUser?.role === "admin" && <Button type="button" onClick={onCreateAccount} variant="default">Create Accounts</Button>}
         </div>
       </div>
       {error && <p className="rounded-lg border border-red/30 bg-red/10 px-4 py-3 text-sm text-red">{error}</p>}

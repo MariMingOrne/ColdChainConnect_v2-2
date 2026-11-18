@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
@@ -72,10 +73,10 @@ function CreateReturnModal({
         <div>
           <h1 className="page-title">Log Return</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border flex flex-col">
         <LogReturnForm

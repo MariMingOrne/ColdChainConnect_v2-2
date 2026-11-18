@@ -75,10 +75,10 @@ export function AddOrderModal({
           <h1 className="page-title">Add New Order</h1>
           <p className="page-subtitle">Select a customer and add products to the order</p>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
 
       <div className="bg-card rounded-2xl border border-border flex-1 flex flex-col overflow-hidden">

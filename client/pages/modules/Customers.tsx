@@ -71,10 +71,10 @@ function ViewCustomerPage({ customer, onClose }: { customer: Customer; onClose: 
         <div>
           <h1 className="page-title">Customer Details</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <div className="max-w-lg w-full rounded-2xl border border-border bg-card">
 
@@ -119,9 +119,9 @@ function ViewCustomerPage({ customer, onClose }: { customer: Customer; onClose: 
         </div>
 
         <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
-          <button onClick={onClose} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90">
+          <Button onClick={onClose} variant="default">
             Close
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -155,10 +155,10 @@ function CustomerModal({
         <div>
           <h1 className="page-title">{title}</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <div className="flex w-full max-w-xl flex-col rounded-2xl border border-border bg-card">
 
@@ -628,9 +628,9 @@ export function Customers({ onBack }: CustomersProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={openAddModal} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90">
+          <Button onClick={openAddModal} variant="default">
             Add Customer
-          </button>
+          </Button>
           <ExcelActionsDropdown
             onImport={() => setShowExcelImport(true)}
             onExport={handleCustomerExport}

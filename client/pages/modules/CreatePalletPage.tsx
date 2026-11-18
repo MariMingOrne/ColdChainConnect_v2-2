@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
@@ -76,10 +77,10 @@ export function CreatePalletPage() {
           <h1 className="page-title">Create Pallet</h1>
           <p className="page-subtitle">Build pallets for your selected order</p>
         </div>
-        <button onClick={goBack} className="btn-ghost">
+        <Button onClick={goBack} variant="outline">
           <ArrowLeft size={15} />
           Back to Preparation
-        </button>
+        </Button>
       </div>
 
       {isLoading ? (

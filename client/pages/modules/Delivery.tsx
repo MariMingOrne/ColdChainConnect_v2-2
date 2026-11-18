@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
 import React, { useState, useEffect, useCallback } from "react";
@@ -359,12 +360,12 @@ export function DeliveryDispatch() {
           )}
         </div>
 
-        <button
+        <Button
           onClick={() => setShowAddDeliveryModal(true)}
-          className="w-full px-3 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-semibold hover:opacity-90 transition-opacity"
+          variant="default" className="w-full"
         >
           + Add Delivery
-        </button>
+        </Button>
       </div>
 
       <div className="space-y-5">
@@ -450,13 +451,13 @@ export function DeliveryDispatch() {
                 </select>
               </label>
               {delivery.status === "pending" && (
-                <button
+                <Button
                   type="button"
                   onClick={() => void handleStartRun(delivery.id)}
-                  className="ml-auto px-3 py-1 bg-primary text-primary-foreground rounded text-xs font-semibold hover:opacity-90"
+                  variant="default" size="sm" className="ml-auto"
                 >
                   Start run
-                </button>
+                </Button>
               )}
             </div>
 
@@ -1166,15 +1167,15 @@ function AddDeliveryModal({ truck, eligibleInvoices, customers, agents, drivers,
               <button onClick={() => { setOrderSearch(""); setOrderDate(localScheduleDate(new Date())); }} className="font-semibold text-accent-2 hover:opacity-80">Clear</button>
             )}
           </div>
-          <button
+          <Button
             onClick={addMatchingStops}
             disabled={!orderDate || matchingStopsForRun.length === 0}
-            className="w-full px-3 py-2 bg-primary text-primary-foreground rounded-lg text-xs font-semibold hover:opacity-90 disabled:opacity-50"
+            variant="default" size="sm" className="w-full"
           >
             {orderDate
               ? `Add all delivery stops for ${new Date(`${orderDate}T00:00:00`).toLocaleDateString("en-PH")} (${matchingStopsForRun.length})`
               : "Choose a date to add delivery stops"}
-          </button>
+          </Button>
           {otherMatchingAgentCount > 0 && (
             <p className="text-xs text-muted-foreground">{otherMatchingAgentCount} matching orders belong to other agents and need a separate run.</p>
           )}
@@ -1263,10 +1264,10 @@ function ModalShell({ title, onClose, children }: {
         <div>
           <h1 className="page-title">{title}</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <div className="max-w-2xl w-full bg-card rounded-xl border border-border p-5 space-y-4">{children}</div>
     </div>

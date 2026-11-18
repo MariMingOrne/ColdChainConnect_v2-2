@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { Booking, Product } from "@shared/api";
 import { OrderTotalsBreakdown } from "@/components/OrderTotalsBreakdown";
@@ -17,10 +18,10 @@ export function BookingDetailPage({ booking, products, getStatusColor, onBack }:
           <h1 className="page-title">Order Details</h1>
           <p className="page-subtitle">Review the details of this order</p>
         </div>
-        <button onClick={onBack} className="btn-ghost">
+        <Button onClick={onBack} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
 
       <div className="bg-card rounded-2xl border border-border p-6 space-y-6">

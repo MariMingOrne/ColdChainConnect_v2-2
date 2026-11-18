@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { confirmAction } from "@/lib/confirm";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
@@ -186,15 +187,15 @@ export function AgentPalletTracking() {
             </h1>
             <p className="mt-0.5 text-xs text-muted-foreground">Pallet {scanPallet.id.slice(0, 8)} · Order {scanPallet.order_id.slice(0, 8)}</p>
           </div>
-          <button
+          <Button
             type="button"
             onClick={() => setScanPalletId(null)}
             disabled={updatingPalletId !== null}
-            className="btn-ghost"
+            variant="outline"
           >
             <ArrowLeft size={15} />
             Back
-          </button>
+          </Button>
         </header>
 
         <div className="mx-4 rounded-2xl border border-border bg-card p-5 shadow-sm sm:mx-0">
@@ -217,14 +218,14 @@ export function AgentPalletTracking() {
               {nextActionLabels[scanPallet.status] ? "Cancel" : "Close"}
             </button>
             {nextActionLabels[scanPallet.status] && (
-              <button
+              <Button
                 type="button"
                 onClick={() => void confirmScannedPallet()}
                 disabled={updatingPalletId !== null}
-                className="min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:cursor-wait disabled:opacity-60"
+                variant="default" className="min-h-11"
               >
                 {updatingPalletId === scanPallet.id ? "Updating…" : nextActionLabels[scanPallet.status]}
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -355,14 +356,14 @@ export function AgentPalletTracking() {
 
                 {pallet.status !== "shipped" && (
                   <div className="border-t border-border p-3">
-                    <button
+                    <Button
                       type="button"
                       onClick={() => handleListAdvance(pallet)}
                       disabled={updatingPalletId !== null}
-                      className="min-h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-navy-mid active:scale-[0.99] disabled:cursor-wait disabled:opacity-60"
+                      variant="default" className="min-h-11 w-full"
                     >
                       {updatingPalletId === pallet.id ? "Updating…" : nextActionLabels[pallet.status]}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </article>

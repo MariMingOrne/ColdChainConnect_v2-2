@@ -36,10 +36,10 @@ function ViewDriverModal({ driver, onClose }: { driver: Driver; onClose: () => v
         <div>
           <h1 className="page-title">Driver Details</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
 
       <div className="bg-card rounded-2xl border border-border">
@@ -67,9 +67,9 @@ function ViewDriverModal({ driver, onClose }: { driver: Driver; onClose: () => v
         </div>
 
         <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
-          <button onClick={onClose} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90">
+          <Button onClick={onClose} variant="default">
             Close
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -117,10 +117,10 @@ function DriverModal({
         <div>
           <h1 className="page-title">{title}</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
 
       <div className="bg-card rounded-2xl border border-border">
@@ -435,13 +435,13 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden px-4 py-4 md:px-6 md:py-5">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="font-rajdhani text-3xl font-bold text-foreground letter-spacing-tight">
+          <h1 className="font-rajdhani text-3xl font-bold text-foreground">
             Driver Management
           </h1>
           <p className="text-xs text-muted-foreground mt-1">Manage field drivers</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">Create Accounts</button>
+          <Button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} variant="default">Create Accounts</Button>
         </div>
       </div>
 

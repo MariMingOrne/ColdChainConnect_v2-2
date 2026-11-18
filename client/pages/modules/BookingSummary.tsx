@@ -426,10 +426,10 @@ export function BookingSummary() {
             <h1 className="page-title">Approve Order</h1>
             <p className="page-subtitle">Confirm approval for this customer order</p>
           </div>
-          <button onClick={closeApproveModal} className="btn-ghost">
+          <Button onClick={closeApproveModal} variant="outline">
             <ArrowLeft size={15} />
             Back
-          </button>
+          </Button>
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-6 space-y-4 max-w-2xl">
@@ -467,17 +467,17 @@ export function BookingSummary() {
         </div>
 
         <div className="flex justify-end gap-2 max-w-2xl">
-          <button onClick={closeApproveModal} className="btn-ghost">
+          <Button onClick={closeApproveModal} variant="outline">
             {approveSuccess ? "Close" : "Cancel"}
-          </button>
+          </Button>
           {!approveSuccess && (
-            <button
+            <Button
               onClick={handleApproveBooking}
               disabled={isApproving}
-              className="btn-primary disabled:opacity-50"
+              variant="default"
             >
               {isApproving ? "Approving…" : "Approve Order"}
-            </button>
+            </Button>
           )}
         </div>
       </div>
@@ -492,10 +492,10 @@ export function BookingSummary() {
             <h1 className="page-title">Reject Order</h1>
             <p className="page-subtitle">Confirm rejection of this customer order</p>
           </div>
-          <button onClick={closeRejectModal} className="btn-ghost">
+          <Button onClick={closeRejectModal} variant="outline">
             <ArrowLeft size={15} />
             Back
-          </button>
+          </Button>
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-6 space-y-4 max-w-2xl">
@@ -522,16 +522,16 @@ export function BookingSummary() {
         </div>
 
         <div className="flex justify-end gap-2 max-w-2xl">
-          <button onClick={closeRejectModal} className="btn-ghost">
+          <Button onClick={closeRejectModal} variant="outline">
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={handleRejectBooking}
             disabled={isRejecting}
-            className="btn-danger bg-red text-white border-red hover:bg-red/80 disabled:opacity-50"
+            variant="destructive"
           >
             {isRejecting ? "Rejecting…" : "Reject Order"}
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -747,30 +747,30 @@ export function BookingSummary() {
                     <TableCell className="text-right">
                       {booking.status === "pending" ? (
                         <div className="flex gap-2 justify-end">
-                          <button
+                          <Button
                             onClick={() => openApproveModal(booking)}
-                            className="btn-accent whitespace-nowrap"
+                            variant="default"
                           >
                             <CheckCircle size={14} />
                             Approve
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => openRejectModal(booking)}
-                            className="btn-danger whitespace-nowrap"
+                            variant="destructive"
                           >
                             <XCircle size={14} />
                             Reject
-                          </button>
+                          </Button>
                         </div>
                       ) : booking.status === "approved" ? (
                         <div className="flex justify-end">
-                          <button
+                          <Button
                             onClick={() => handleUnapproveBooking(booking)}
-                            className="btn-secondary whitespace-nowrap"
+                            variant="outline"
                           >
                             <XCircle size={14} />
                             Unapprove
-                          </button>
+                          </Button>
                         </div>
                       ) : (
                         <span className="px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-muted rounded-lg capitalize border border-border">{booking.status}</span>

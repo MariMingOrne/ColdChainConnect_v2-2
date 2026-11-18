@@ -16,7 +16,7 @@ export function PlaceholderPanel({
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="font-rajdhani text-3xl font-bold text-white letter-spacing-tight">
+          <h1 className="font-rajdhani text-3xl font-bold text-white">
             {title}
           </h1>
           <p className="text-xs text-muted-foreground mt-1">{description}</p>

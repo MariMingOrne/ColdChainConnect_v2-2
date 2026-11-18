@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Bot, Send } from "lucide-react";
 import type { SalesForecastResponse } from "@shared/api";
@@ -100,14 +101,14 @@ export function SalesForecastChat({ token, forecast }: { token: string; forecast
           disabled={isSending}
           className="min-h-10 flex-1 resize-y rounded-lg border border-border px-3 py-2 text-sm text-foreground outline-none focus:border-accent-2 disabled:bg-muted"
         />
-        <button
+        <Button
           type="submit"
           disabled={isSending || !question.trim()}
           aria-label="Send question"
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground transition hover:bg-navy-mid disabled:cursor-not-allowed disabled:opacity-50"
+          variant="default" className="h-10 w-10 shrink-0"
         >
           <Send size={16} />
-        </button>
+        </Button>
       </form>
     </section>
   );

@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { AuditLog } from "@shared/api";
 import { describeLog, formatFieldValue, getFieldChanges, parseState } from "./auditDescribe";
@@ -43,10 +44,10 @@ export function AuditLogDetailDialog({ log, onClose }: AuditLogDetailDialogProps
             {new Date(log.created_at).toLocaleString()} · {log.action.toUpperCase()} · {log.resource_type.replace(/_/g, " ")}
           </p>
         </div>
-        <button type="button" onClick={onClose} className="btn-ghost">
+        <Button type="button" onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
 
         <div className="grid grid-cols-1 gap-4 rounded-lg border border-border bg-muted p-4 sm:grid-cols-2">

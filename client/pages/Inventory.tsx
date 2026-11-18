@@ -374,7 +374,7 @@ export function Inventory() {
           <p className="page-subtitle">Track, manage, and monitor all frozen goods SKUs</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => { setNewBatchName(""); setStartBatchCreation(true); setIsBatchModalOpen(true); }} className="btn-primary">Add Items</button>
+          <Button onClick={() => { setNewBatchName(""); setStartBatchCreation(true); setIsBatchModalOpen(true); }} variant="default">Add Items</Button>
           <ExcelActionsDropdown
             onImport={() => setShowExcelImport(true)}
             onExport={handleInventoryExport}
@@ -420,7 +420,7 @@ export function Inventory() {
             </div>
             <input type="datetime-local" value={batchCreatedSince} onChange={(e) => setBatchCreatedSince(e.target.value)} title="Show batches created on or after this date and time" className="rounded-lg border border-border px-3 py-2 text-sm text-foreground" />
           </div>
-          <button onClick={() => setIsBatchModalOpen(true)} className="px-4 py-2 bg-card border border-border text-foreground rounded-lg font-semibold text-sm hover:bg-accent w-fit">Manage Batches</button>
+          <Button onClick={() => setIsBatchModalOpen(true)} variant="outline" className="w-fit">Manage Batches</Button>
         </div>
       </div>
 
@@ -466,7 +466,7 @@ export function Inventory() {
                 {selectedBatchId !== "batch-all" && (
                   <SortableHeader label="Expiry Date" sortKey="expiry" sort={inventorySort} onSort={setInventorySort} />
                 )}
-                <th style={{ width: '120px' }} className="sticky right-0 z-10 bg-navy-mid text-muted-foreground font-barlow-cond text-xs font-bold letter-spacing-wider px-3 py-3 text-center border-b border-border whitespace-nowrap shadow-left">
+                <th style={{ width: '120px' }} className="sticky right-0 z-10 bg-navy-mid text-muted-foreground font-barlow-cond text-xs font-bold px-3 py-3 text-center border-b border-border whitespace-nowrap shadow-left">
                   Actions
                 </th>
               </tr>
@@ -591,16 +591,16 @@ function ExtraInfoModal({ product, batches, onClose, onSelectPallet }: { product
           <h1 className="page-title">{product.description}</h1>
           <p className="page-subtitle">SKU: {product.sku}</p>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
 
         <div className="p-6 space-y-6">
           <div>
-            <h3 className="text-xs font-bold text-muted-foreground letter-spacing-wider mb-3">Summary</h3>
+            <h3 className="text-xs font-bold text-muted-foreground mb-3">Summary</h3>
             <div className="grid grid-cols-3 gap-3">
               {[
                 ["Inventory Value", `₱${(product.unitPrice * product.batchQuantity).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`],
@@ -616,7 +616,7 @@ function ExtraInfoModal({ product, batches, onClose, onSelectPallet }: { product
           </div>
 
           <div>
-            <h3 className="text-xs font-bold text-muted-foreground letter-spacing-wider mb-3">Batches Containing This Product</h3>
+            <h3 className="text-xs font-bold text-muted-foreground mb-3">Batches Containing This Product</h3>
             {batchesWithProduct.length === 0 ? (
               <div className="bg-muted rounded-lg p-4 text-center">
                 <p className="text-xs text-muted-foreground">No batches currently contain this product</p>
@@ -711,10 +711,10 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
             {isCreatingBatch ? "Create New Batch" : "Manage Batches"}
           </h1>
         </div>
-        <button onClick={() => { setIsCreatingBatch(false); setPallets([]); onClose(); }} className="btn-ghost">
+        <Button onClick={() => { setIsCreatingBatch(false); setPallets([]); onClose(); }} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <div className="p-6">
@@ -811,7 +811,7 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                     )}
                   </div>
                   <div className="flex justify-start">
-                    <button onClick={() => setShowArchived(false)} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90">← Back to Active</button>
+                    <Button onClick={() => setShowArchived(false)} variant="default">← Back to Active</Button>
                   </div>
                 </>
               )}

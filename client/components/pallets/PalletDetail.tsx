@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { confirmAction } from "@/lib/confirm";
 import { useState } from "react";
 import { ArrowLeft, MoreVertical } from "lucide-react";
@@ -63,14 +64,14 @@ export function PalletDetail({
           </div>
           <div className="flex items-center gap-3">
             <PalletStatusBadge status={pallet.status} />
-            <button
+            <Button
               type="button"
               onClick={onPrintSheet}
               disabled={!order}
-              className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:bg-accent disabled:opacity-50"
+              variant="outline"
             >
               Print delivery sheet
-            </button>
+            </Button>
             <div className="flex items-center gap-2">
               <button
                 type="button"

@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import type { ReactNode } from "react";
 import { ArrowLeft } from "lucide-react";
 
@@ -27,10 +28,10 @@ export function RecordDetailsDialog({ details, onClose }: RecordDetailsDialogPro
           <h1 className="page-title">{details.title}</h1>
           {details.subtitle && <p className="page-subtitle">{details.subtitle}</p>}
         </div>
-        <button type="button" onClick={onClose} className="btn-ghost">
+        <Button type="button" onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {details.fields.map((field) => (

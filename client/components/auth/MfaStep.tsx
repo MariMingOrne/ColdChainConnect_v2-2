@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { MfaSetupResponse } from "@shared/api";
 
@@ -64,13 +65,13 @@ export function MfaStep({ mode, setupInfo, error, isLoading, onSubmit, onBack }:
         />
       </div>
 
-      <button
+      <Button
         type="submit"
         disabled={isLoading || code.length !== 6}
-        className="w-full py-3.5 bg-primary text-primary-foreground rounded-xl font-rajdhani text-xl letter-spacing-widest font-semibold cursor-pointer transition-colors hover:bg-navy-mid mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        variant="default" size="lg" className="mt-1 w-full"
       >
         {isLoading ? "Verifying..." : mode === "setup" ? "Finish setup" : "Verify"}
-      </button>
+      </Button>
 
       <button
         type="button"

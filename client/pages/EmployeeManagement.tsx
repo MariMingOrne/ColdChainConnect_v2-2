@@ -222,7 +222,7 @@ export function EmployeeManagement() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="font-rajdhani text-3xl font-bold text-foreground letter-spacing-tight">
+          <h1 className="font-rajdhani text-3xl font-bold text-foreground">
             Employee Management
           </h1>
           <p className="text-xs text-muted-foreground mt-1">

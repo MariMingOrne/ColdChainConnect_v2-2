@@ -147,7 +147,7 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
 
           <div className="flex items-center gap-2">
             <img src="https://cdn.builder.io/api/v1/image/assets%2F95235f61d85340cc8929dd5e2ec9cafe%2F04690f469f254fd393684ed5411b7cab?format=webp&width=800&height=1200" alt="ACDP Logo" className="w-8 h-8 object-cover rounded-full" />
-            <div className="font-rajdhani text-xl font-bold letter-spacing-wider text-white hidden sm:block">
+            <div className="font-rajdhani text-xl font-bold text-white hidden sm:block">
               ACDP
             </div>
           </div>

@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -73,10 +74,10 @@ function ReceiptModal({ invoice, onClose }: ReceiptModalProps) {
           >
             <Printer size={16} /> Print
           </button>
-          <button onClick={onClose} className="btn-ghost">
+          <Button onClick={onClose} variant="outline">
             <ArrowLeft size={15} />
             Back
-          </button>
+          </Button>
         </div>
       </div>
 

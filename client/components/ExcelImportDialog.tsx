@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useState, type ChangeEvent } from "react";
 import { AlertTriangle, ArrowLeft, FileSpreadsheet, Upload } from "lucide-react";
 import { ExcelColumn, ExcelRow, readExcelRows } from "@/lib/excel";
@@ -63,7 +64,7 @@ export function ExcelImportDialog({ title, columns, validateRow, onImport, onClo
           <h1 className="page-title">Import {title}</h1>
           <p className="page-subtitle">Choose an .xlsx file with the exported column headers.</p>
         </div>
-        <button type="button" onClick={onClose} disabled={isImporting} className="btn-ghost disabled:opacity-50"><ArrowLeft size={15} />Back</button>
+        <Button type="button" onClick={onClose} disabled={isImporting} variant="outline"><ArrowLeft size={15} />Back</Button>
       </div>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-5">

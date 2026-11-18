@@ -397,10 +397,10 @@ function DeliveryPaymentPrompt({ stop, mode, isConfirming, onClose, onConfirm }:
         <div>
           <h1 className="page-title">{isRecordingPayment ? "Record payment" : "Confirm delivery"}</h1>
         </div>
-        <button type="button" onClick={onClose} disabled={isConfirming} className="btn-ghost">
+        <Button type="button" onClick={onClose} disabled={isConfirming} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <section className="max-w-lg w-full rounded-2xl bg-card p-5 shadow-sm">
         <p className="mt-2 text-sm text-muted-foreground">

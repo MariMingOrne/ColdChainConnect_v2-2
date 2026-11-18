@@ -91,10 +91,10 @@ function ProductPage({
         <div>
           <h1 className="page-title">{title}</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border max-w-lg w-full">
 
@@ -218,10 +218,10 @@ function ViewProductPage({ product, onClose }: { product: Product; onClose: () =
         <div>
           <h1 className="page-title">Product Details</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border max-w-lg w-full">
 
@@ -260,9 +260,9 @@ function ViewProductPage({ product, onClose }: { product: Product; onClose: () =
         </div>
 
         <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
-          <button onClick={onClose} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90">
+          <Button onClick={onClose} variant="default">
             Close
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -276,10 +276,10 @@ function ImagePreviewPage({ filename, onClose }: { filename: string; onClose: ()
         <div>
           <h1 className="page-title">Image Preview</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <div className="flex items-center justify-center rounded-2xl border border-border bg-card p-6">
         <img src={`/uploads/${filename}`} alt="Preview" className="max-w-full max-h-[60vh] object-contain" />
@@ -523,12 +523,12 @@ export function Pricing({ onBack }: PricingProps) {
           <p className="page-subtitle">Manage your products</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button
+          <Button
             onClick={openAddModal}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+            variant="default"
           >
             Add Product
-          </button>
+          </Button>
           <ExcelActionsDropdown
             onImport={() => setShowExcelImport(true)}
             onExport={handleProductExport}
@@ -554,12 +554,12 @@ export function Pricing({ onBack }: PricingProps) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button
+            <Button
               disabled={selectedProducts.length === 0}
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+              variant="default"
             >
               <MoreHorizontal size={16} /> Actions ({selectedProducts.length})
-            </button>
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="bg-card text-foreground">
             {selectedProducts.length === 1 && (

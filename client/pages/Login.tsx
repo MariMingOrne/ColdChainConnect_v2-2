@@ -103,10 +103,10 @@ export function Login() {
 
         {/* Brand Box */}
         <div className="bg-card text-foreground px-7 py-2.5 rounded-lg text-center relative z-10">
-          <h1 className="font-rajdhani text-5xl font-bold letter-spacing-widest text-foreground">
+          <h1 className="font-rajdhani text-5xl font-bold text-foreground">
             ACDP
           </h1>
-          <p className="font-barlow-cond text-xs letter-spacing-wider text-muted-foreground mt-0.5">
+          <p className="font-barlow-cond text-xs text-muted-foreground mt-0.5">
             CONSUMER GOODS TRADING
           </p>
         </div>

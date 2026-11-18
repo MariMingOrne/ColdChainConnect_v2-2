@@ -260,10 +260,10 @@ export function InventoryBatchesTab() {
             <div>
               <h1 className="page-title">Create New Batch</h1>
             </div>
-            <button onClick={() => setShowCreateModal(false)} className="btn-ghost">
+            <Button onClick={() => setShowCreateModal(false)} variant="outline">
               <ArrowLeft size={15} />
               Back
-            </button>
+            </Button>
           </div>
           <div className="bg-card rounded-2xl border border-border flex flex-col">
             <div className="p-6 space-y-4 flex-1">

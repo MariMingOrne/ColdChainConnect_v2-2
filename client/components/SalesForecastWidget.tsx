@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useQuery } from "@tanstack/react-query";
@@ -120,15 +121,15 @@ export function SalesForecastWidget() {
 
   if (!isOpen) {
     return (
-      <button
+      <Button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-2"
+        variant="outline"
         aria-label="Open sales forecast"
       >
         <TrendingUp className="h-4 w-4" />
         <span>Sales Forecast</span>
-      </button>
+      </Button>
     );
   }
 

@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -75,14 +76,14 @@ export function AuditLogPage() {
           </p>
         </div>
         <div className="flex gap-2 w-fit">
-          <button
+          <Button
             onClick={handleBackup}
             disabled={isBackingUp}
-            className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            variant="outline"
           >
             <Download size={16} className={isBackingUp ? "animate-pulse" : ""} />
             {isBackingUp ? "Preparing backup…" : "Backup all data"}
-          </button>
+          </Button>
         </div>
       </div>
 

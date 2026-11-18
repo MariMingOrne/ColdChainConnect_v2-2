@@ -108,10 +108,10 @@ export function CreateAccountDialog({ onClose }: CreateAccountDialogProps) {
           <h1 className="page-title">Create Account</h1>
           <p className="page-subtitle">Only admins can create accounts.</p>
         </div>
-        <button type="button" onClick={handleClose} className="btn-ghost">
+        <Button type="button" onClick={handleClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
 
         <Tabs
