@@ -2,7 +2,7 @@ import { RequestHandler } from "express";
 import { and, eq, gte, ne } from "drizzle-orm";
 import { db } from "../db";
 import { bookings, customers, inventory_batches, invoice_items, invoices, products } from "../db/schema";
-import { getReservedUnitsBySource } from "../services/inventory-reservations";
+import { getAvailableUnitsBySource } from "../services/inventory-reservations";
 import type {
   ReportCustomerRow,
   ReportProductPerformance,
@@ -141,14 +141,14 @@ export const getStockReport: RequestHandler = async (_req, res) => {
       with: { pallets: { with: { items: true } } },
     });
     const stockItems = batches.flatMap((batch) => batch.pallets.flatMap((pallet) => pallet.items));
-    const [reservedBySource, productList] = await Promise.all([
-      getReservedUnitsBySource(stockItems.map((item) => item.id)),
+    const [availableBySource, productList] = await Promise.all([
+      getAvailableUnitsBySource(db, stockItems),
       db.select().from(products),
     ]);
 
     const stockByProduct = new Map<string, { units: number; earliestExpiry: string | null }>();
     for (const item of stockItems) {
-      const available = Math.max(0, item.qty_units - (reservedBySource.get(item.id) ?? 0));
+      const available = availableBySource.get(item.id) ?? 0;
       if (available === 0) continue;
 
       const entry = stockByProduct.get(item.product_id) ?? { units: 0, earliestExpiry: null };

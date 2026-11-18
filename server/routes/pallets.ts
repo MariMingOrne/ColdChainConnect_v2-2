@@ -1,15 +1,23 @@
 import { sendRouteError } from "../utils";
 import { RequestHandler } from "express";
-import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { Pallet, PalletItem, CreatePalletSchema, UpdatePalletStatusSchema } from "../../shared/api";
 import { db } from "../db";
-import { inventory_batches, batch_pallets, pallet_items, order_pallets, order_pallet_items, products, invoices, bookings } from "../db/schema";
-import { getReservedUnitsBySource } from "../services/inventory-reservations";
+import { inventory_batches, batch_pallets, pallet_items, order_pallets, order_pallet_items, products, invoices, bookings, booking_items } from "../db/schema";
+import {
+  convertBookingReservationsTx,
+  getAvailableUnitsBySource,
+  getAvailableUnitsBySourceForProducts,
+  lockStockForProducts,
+  reserveBookingItemsTx,
+} from "../services/inventory-reservations";
 import { AuthRequest } from "../middleware/auth";
 import { getAgentOrderIds } from "../services/agent-bookings";
 import { createInvoiceAfterPicking } from "../services/booking-invoices";
 import { logAction } from "../middleware/audit-logger";
+
+class ReservationRestoreConflict extends Error {}
 
 export async function calculateProductInventory(): Promise<Record<string, number>> {
   try {
@@ -35,10 +43,10 @@ export async function calculateProductInventory(): Promise<Record<string, number
     });
 
     const stockItems = batches.flatMap((batch) => batch.pallets.flatMap((pallet) => pallet.items));
-    const reservedBySource = await getReservedUnitsBySource(stockItems.map((item) => item.id));
+    const availableBySource = await getAvailableUnitsBySource(db, stockItems);
 
     for (const item of stockItems) {
-      result[item.product_id] = (result[item.product_id] ?? 0) + Math.max(0, item.qty_units - (reservedBySource.get(item.id) ?? 0));
+      result[item.product_id] = (result[item.product_id] ?? 0) + (availableBySource.get(item.id) ?? 0);
     }
 
     return result;
@@ -139,13 +147,20 @@ export const createPallet: RequestHandler = async (req: AuthRequest, res) => {
     const priceByProductId = new Map(productRows.map((product) => [product.id, product.price]));
 
     const result = await db.transaction(async (tx) => {
-      const [booking] = await tx.select({ id: bookings.id }).from(bookings).where(eq(bookings.id, order_id)).for("update");
+      const [booking] = await tx.select({ id: bookings.id, status: bookings.status })
+        .from(bookings)
+        .where(eq(bookings.id, order_id))
+        .for("update");
       if (!booking) return { status: "not_found" as const, palletIds: [] as string[] };
+      if (booking.status !== "approved") return { status: "not_approved" as const, palletIds: [] as string[] };
 
       const existingInvoice = await tx.query.invoices.findFirst({ where: eq(invoices.booking_id, order_id) });
       if (existingInvoice) return { status: "invoiced" as const, palletIds: [] as string[] };
+      const existingPallet = await tx.query.order_pallets.findFirst({ where: eq(order_pallets.order_id, order_id) });
+      if (existingPallet) return { status: "already_picked" as const, palletIds: [] as string[] };
 
-      await tx.select({ id: pallet_items.id }).from(pallet_items).where(inArray(pallet_items.id, sourceIds)).for("update");
+      const productIds = [...new Set(requestedItems.map((item) => item.product_id))];
+      await lockStockForProducts(tx, productIds);
       const sourceItems = await tx.query.pallet_items.findMany({
         where: inArray(pallet_items.id, sourceIds),
         with: { pallet: { with: { batch: true } } },
@@ -155,34 +170,35 @@ export const createPallet: RequestHandler = async (req: AuthRequest, res) => {
         return { status: "invalid_source" as const, palletIds: [] as string[] };
       }
 
-      const reservedRows = await tx
-        .select({
-          sourceItemId: order_pallet_items.batch_item_id,
-          quantity: sql<number>`sum(${order_pallet_items.qty_units})::int`,
-        })
-        .from(order_pallet_items)
-        .innerJoin(order_pallets, eq(order_pallet_items.pallet_id, order_pallets.id))
-        .where(and(inArray(order_pallet_items.batch_item_id, sourceIds), ne(order_pallets.status, "shipped")))
-        .groupBy(order_pallet_items.batch_item_id);
-      const reservedBySource = new Map(reservedRows.map((row) => [row.sourceItemId, row.quantity]));
       const requestedBySource = new Map<string, number>();
-
+      const requestedByProduct = new Map<string, number>();
       for (const item of requestedItems) {
         const source = sourceById.get(item.batch_item_id);
         if (!source || source.product_id !== item.product_id || source.pallet.batch.is_archived) {
           return { status: "invalid_source" as const, palletIds: [] as string[] };
         }
         requestedBySource.set(item.batch_item_id, (requestedBySource.get(item.batch_item_id) ?? 0) + item.qty_units);
+        requestedByProduct.set(item.product_id, (requestedByProduct.get(item.product_id) ?? 0) + item.qty_units);
       }
 
+      const orderItems = await tx.query.booking_items.findMany({ where: eq(booking_items.booking_id, order_id) });
+      const orderedByProduct = new Map<string, number>();
+      for (const item of orderItems) {
+        orderedByProduct.set(item.product_id, (orderedByProduct.get(item.product_id) ?? 0) + item.qty_ordered);
+      }
+      if (orderedByProduct.size !== requestedByProduct.size ||
+        [...orderedByProduct].some(([productId, quantity]) => requestedByProduct.get(productId) !== quantity)) {
+        return { status: "incomplete_pick" as const, palletIds: [] as string[] };
+      }
+
+      const availableBySource = await getAvailableUnitsBySourceForProducts(tx, productIds, order_id);
       for (const [sourceItemId, requested] of requestedBySource) {
-        const source = sourceById.get(sourceItemId)!;
-        const available = source.qty_units - (reservedBySource.get(sourceItemId) ?? 0);
+        const available = availableBySource.get(sourceItemId) ?? 0;
         if (requested > available) {
           return {
             status: "insufficient_stock" as const,
             palletIds: [] as string[],
-            error: `Only ${Math.max(0, available)} units remain available from source item ${sourceItemId}.`,
+            error: `Only ${available} units remain available from source item ${sourceItemId}.`,
           };
         }
       }
@@ -200,11 +216,15 @@ export const createPallet: RequestHandler = async (req: AuthRequest, res) => {
           unit_cost: priceByProductId.get(item.product_id) ?? "0.00",
         })));
       }
+      await convertBookingReservationsTx(tx, order_id, req.user!.userId);
       return { status: "created" as const, palletIds };
     });
 
     if (result.status === "not_found") return res.status(404).json({ error: "Booking not found" });
+    if (result.status === "not_approved") return res.status(409).json({ error: "Approve this order before creating pallets." });
     if (result.status === "invoiced") return res.status(409).json({ error: "This order has already been invoiced." });
+    if (result.status === "already_picked") return res.status(409).json({ error: "Pallets already exist for this order." });
+    if (result.status === "incomplete_pick") return res.status(409).json({ error: "Picked quantities must exactly match the order." });
     if (result.status === "invalid_source") return res.status(409).json({ error: "A selected inventory item is unavailable or no longer matches the product." });
     if (result.status === "insufficient_stock") return res.status(409).json({ error: result.error });
 
@@ -324,17 +344,37 @@ export const deletePalletForOrder: RequestHandler = async (req: AuthRequest, res
     if (!existing) return res.status(404).json({ error: "Pallet not found" });
 
     const deleteResult = await db.transaction(async (tx) => {
-      await tx.select({ id: bookings.id }).from(bookings).where(eq(bookings.id, existing.order_id)).for("update");
+      const [booking] = await tx.select({ id: bookings.id, status: bookings.status })
+        .from(bookings)
+        .where(eq(bookings.id, existing.order_id))
+        .for("update");
       const current = await tx.query.order_pallets.findFirst({ where: eq(order_pallets.id, id) });
-      if (!current) return "not_found";
+      if (!current || !booking) return "not_found" as const;
 
       const existingInvoice = await tx.query.invoices.findFirst({
         where: eq(invoices.booking_id, current.order_id),
       });
-      if (existingInvoice) return "invoiced";
+      if (existingInvoice) return "invoiced" as const;
 
       await tx.delete(order_pallets).where(eq(order_pallets.id, id));
-      return "deleted";
+
+      if (booking.status === "approved") {
+        const bookingItems = await tx.query.booking_items.findMany({ where: eq(booking_items.booking_id, current.order_id) });
+        const pickedRows = await tx
+          .select({ productId: order_pallet_items.product_id, quantity: sql<number>`sum(${order_pallet_items.qty_units})::int` })
+          .from(order_pallet_items)
+          .innerJoin(order_pallets, eq(order_pallet_items.pallet_id, order_pallets.id))
+          .where(eq(order_pallets.order_id, current.order_id))
+          .groupBy(order_pallet_items.product_id);
+        const pickedByProduct = new Map(pickedRows.map((row) => [row.productId, row.quantity]));
+        const unpicked = bookingItems.map((item) => ({
+          ...item,
+          qty_ordered: Math.max(0, item.qty_ordered - (pickedByProduct.get(item.product_id) ?? 0)),
+        })).filter((item) => item.qty_ordered > 0);
+        const reservation = await reserveBookingItemsTx(tx, current.order_id, unpicked, req.user!.userId);
+        if (reservation.status === "insufficient_stock") throw new ReservationRestoreConflict();
+      }
+      return "deleted" as const;
     });
 
     if (deleteResult === "not_found") return res.status(404).json({ error: "Pallet not found" });
@@ -343,6 +383,9 @@ export const deletePalletForOrder: RequestHandler = async (req: AuthRequest, res
     }
     res.json({ message: "Pallet deleted" });
   } catch (error) {
+    if (error instanceof ReservationRestoreConflict) {
+      return res.status(409).json({ error: "The remaining stock cannot satisfy this order's reservation, so the pallet was not deleted." });
+    }
     console.error("Error deleting pallet:", error);
     res.status(500).json({ error: "Internal server error" });
   }

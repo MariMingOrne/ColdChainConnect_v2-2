@@ -219,8 +219,9 @@ export function Preparation() {
   const canAutoPick = (orderId: string) =>
     !isOrderPrepared(orderId) && !pallets.some((p) => p.order_id === orderId && p.status === "draft");
 
-  const fetchBatches = async () => {
-    const response = await fetch("/api/inventory-batches", { headers: { Authorization: `Bearer ${token}` } });
+  const fetchBatches = async (orderId?: string) => {
+    const query = orderId ? `?order_id=${encodeURIComponent(orderId)}` : "";
+    const response = await fetch(`/api/inventory-batches${query}`, { headers: { Authorization: `Bearer ${token}` } });
     if (!response.ok) throw new Error(`Could not load inventory (HTTP ${response.status}).`);
     return (await response.json()) as InventoryBatch[];
   };
@@ -234,7 +235,7 @@ export function Preparation() {
     const skipped: string[] = [];
     try {
       for (const order of eligible) {
-        const batches = await fetchBatches();
+        const batches = await fetchBatches(order.id);
         const { pallets: suggested, shortages } = buildAutomaticPallets(order, batches);
         const validPallets = suggested.filter((pallet) => pallet.items.length > 0);
         if (shortages.length > 0 || validPallets.length === 0 || !isCompletePick(order, validPallets)) {

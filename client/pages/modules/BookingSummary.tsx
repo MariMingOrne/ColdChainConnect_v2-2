@@ -226,6 +226,7 @@ export function BookingSummary() {
       }
       const created = await res.json();
       setBookings((prev) => [created, ...prev]);
+      void fetchAll();
       setShowAddModal(false);
       setNewCustomerId("");
       setPreparedDeliveryDate("");
@@ -276,6 +277,40 @@ export function BookingSummary() {
     setDetailBooking(null);
   };
 
+  const handleSaveBookingItems = async (items: Array<{ id: string; qty_ordered: number }>) => {
+    if (!detailBooking) return null;
+    const save = async (override?: { reason: string }): Promise<Booking | null> => {
+      const res = await fetch(`/api/bookings/${detailBooking.id}/items`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          items,
+          ...(override && { ar_override: true, ar_override_reason: override.reason }),
+        }),
+      });
+      const result = await res.json();
+      if (res.status === 409 && isCreditBlock(result)) {
+        const reason = override ? null : promptCreditOverride(result);
+        if (reason) return save({ reason });
+        toast.error(describeCreditBlock(result));
+        return null;
+      }
+      if (!res.ok) throw new Error(result.error || "Failed to update order quantities");
+      setBookings((prev) => prev.map((booking) => booking.id === result.id ? result : booking));
+      setDetailBooking(result);
+      void fetchAll();
+      toast.success("Order quantities updated.");
+      return result as Booking;
+    };
+
+    try {
+      return await save();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update order quantities");
+      return null;
+    }
+  };
+
   // ── Approve Booking ───────────────────────────────────────────
   const openApproveModal = (booking: Booking) => {
     setSelectedBooking(booking);
@@ -304,6 +339,7 @@ export function BookingSummary() {
       }
       const { booking: updated } = await res.json();
       setBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
+      void fetchAll();
       setApproveSuccess("Order approved. The invoice will be created after stock picking is complete.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to approve booking");
@@ -324,8 +360,9 @@ export function BookingSummary() {
         const errorData = await res.json();
         throw new Error(errorData.error || "Failed to unapprove booking");
       }
-      const updated = await res.json();
+      const { booking: updated } = await res.json();
       setBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
+      void fetchAll();
       toast.success("Order moved back to pending status.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to unapprove booking");
@@ -353,6 +390,7 @@ export function BookingSummary() {
     }));
     const approved = results.filter((b): b is Booking => b !== null);
     setBookings((prev) => prev.map((b) => approved.find((a) => a.id === b.id) ?? b));
+    if (approved.length > 0) void fetchAll();
     setSelectedBookingIds((current) => current.filter((id) => !approved.some((b) => b.id === id)));
     if (approved.length > 0) toast.success(`${approved.length} order${approved.length === 1 ? "" : "s"} approved.`);
     if (approved.length < pending.length) toast.error(`${pending.length - approved.length} order(s) could not be approved.`);
@@ -383,8 +421,9 @@ export function BookingSummary() {
         const errorData = await res.json();
         throw new Error(errorData.error || "Failed to reject booking");
       }
-      const updated = await res.json();
+      const { booking: updated } = await res.json();
       setBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
+      void fetchAll();
       closeRejectModal();
       toast.success("Order rejected successfully.");
     } catch (err) {
@@ -573,6 +612,7 @@ export function BookingSummary() {
         products={products}
         getStatusTone={getStatusTone}
         onBack={closeDetailModal}
+        onSaveItems={handleSaveBookingItems}
       />
     );
   }
