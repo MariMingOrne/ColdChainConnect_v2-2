@@ -6,9 +6,8 @@ import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { useInventoryContext } from "../context/InventoryContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft, MoreHorizontal, Search } from "lucide-react";
 import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
-import { ActionButtons } from "@/components/ActionButtons";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
@@ -16,6 +15,8 @@ import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { RecordTitleButton } from "@/components/RecordTitleButton";
 
 interface InventoryProduct {
   id: string;
@@ -74,6 +75,7 @@ export function Inventory() {
   const [batchCreatedSince, setBatchCreatedSince] = useState("");
   const [inventorySort, setInventorySort] = useState<SortState<"name" | "cost" | "stock" | "reorder" | "expiry">>(null);
   const [showExcelImport, setShowExcelImport] = useState(false);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
 
   const emptyForm = (): InventoryProduct => ({
     id: "", sku: "", description: "", unitPrice: 0, supplierId: "",
@@ -149,8 +151,8 @@ export function Inventory() {
   const visiblePallets = currentBatch && currentBatch.id !== "batch-all"
     ? currentBatch.pallets.filter((p) => !batchSearchTerm || currentBatch.name.toLowerCase().includes(batchSearchTerm) || p.palletId.toLowerCase().includes(batchSearchTerm))
     : [];
-  const selectBatch = (id: string) => { setSelectedBatchId(id); setSelectedPalletId(null); setCurrentPage(1); };
-  const selectPallet = (id: string | null) => { setSelectedPalletId(id); setCurrentPage(1); };
+  const selectBatch = (id: string) => { setSelectedBatchId(id); setSelectedPalletId(null); setCurrentPage(1); setSelectedProductIds([]); };
+  const selectPallet = (id: string | null) => { setSelectedPalletId(id); setCurrentPage(1); setSelectedProductIds([]); };
 
   const getBatchProducts = (): (InventoryProduct & { batchQuantity: number; batchExpiryDate: string; itemId?: string })[] => {
     if (!currentBatch || currentBatch.id === "batch-all") {
@@ -186,6 +188,7 @@ export function Inventory() {
   };
 
   const batchProducts = getBatchProducts();
+  const selectedProducts = batchProducts.filter((p) => selectedProductIds.includes(p.id));
 
   const filteredBatchProducts = batchProducts.filter((p) =>
     (p.sku.toLowerCase().includes(searchQuery.toLowerCase()) || p.description.toLowerCase().includes(searchQuery.toLowerCase())) &&
@@ -203,6 +206,13 @@ export function Inventory() {
   const totalPages = Math.ceil(sortedBatchProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedBatchProducts = sortedBatchProducts.slice(startIndex, startIndex + itemsPerPage);
+
+  const toggleProductSelection = (id: string, checked: boolean) =>
+    setSelectedProductIds((current) => checked ? [...current, id] : current.filter((selectedId) => selectedId !== id));
+  const togglePageSelection = (checked: boolean) => {
+    const pageIds = paginatedBatchProducts.map((product) => product.id);
+    setSelectedProductIds((current) => checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id)));
+  };
 
   const suppliers = Array.from(new Set(products.map((p) => p.supplierId))).sort();
 
@@ -309,23 +319,29 @@ export function Inventory() {
     await refreshBatchesFromDB();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!(await confirmAction("Are you sure you want to delete this product?"))) return;
+  const handleDeleteSelected = async () => {
+    if (selectedProducts.length === 0) return;
+    const noun = selectedProducts.length === 1 ? "product" : "products";
+    if (!(await confirmAction(`Delete ${selectedProducts.length} selected ${noun}?`))) return;
+    const selectedIds = selectedProducts.map((product) => product.id);
     try {
       const token = localStorage.getItem("auth_token") || "";
-      const response = await fetch(`/api/products/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-      if (!response.ok) throw new Error("Failed to delete");
-      setProducts(products.filter((p) => p.id !== id));
+      await Promise.all(selectedIds.map(async (id) => {
+        const response = await fetch(`/api/products/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+        if (!response.ok) throw new Error("Failed to delete");
+      }));
+      setProducts(products.filter((p) => !selectedIds.includes(p.id)));
       setBatches(batches.map((b) => ({
         ...b,
         pallets: b.pallets.map((p: any) => ({
           ...p,
-          items: p.items.filter((i: any) => i.productId !== id),
+          items: p.items.filter((i: any) => !selectedIds.includes(i.productId)),
         })),
       })));
+      setSelectedProductIds([]);
       await fetchProductsFromApi();
     } catch (err) {
-      toast.error("Failed to delete product. Please try again.");
+      toast.error("Failed to delete selected products. Please try again.");
     }
   };
 
@@ -424,12 +440,32 @@ export function Inventory() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-start gap-3">
-        <div className="relative w-full sm:w-72">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input type="text" placeholder="Search by SKU or name…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none" />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button
+              disabled={selectedProducts.length === 0}
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <MoreHorizontal size={16} /> Actions ({selectedProducts.length})
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start" className="bg-card text-foreground">
+            {selectedProducts.length === 1 && (
+              <DropdownMenuItem onClick={() => setExtraInfoProduct(selectedProducts[0])}>View item</DropdownMenuItem>
+            )}
+            {selectedProducts.length > 0 && (
+              <DropdownMenuItem className="text-red focus:text-red" onClick={() => void handleDeleteSelected()}>
+                Delete selected {selectedProducts.length === 1 ? "product" : "products"}
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <div className="relative w-full sm:w-72">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <input type="text" placeholder="Search by SKU or name…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full rounded-full border border-border bg-card py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none" />
+          </div>
           <select aria-label="Filter inventory by stock level" value={stockFilter} onChange={(e) => { setStockFilter(e.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-card px-4 py-2 text-sm text-foreground">
             <option value="all">All stock</option>
             <option value="low">Reorder needed</option>
@@ -457,6 +493,7 @@ export function Inventory() {
           <Table className="w-full">
             <thead>
               <tr>
+                <th className="px-3 py-3"><input aria-label="Select all products on this page" type="checkbox" checked={paginatedBatchProducts.length > 0 && paginatedBatchProducts.every((product) => selectedProductIds.includes(product.id))} onChange={(event) => togglePageSelection(event.target.checked)} /></th>
                 <SortableHeader label="Name" sortKey="name" sort={inventorySort} onSort={setInventorySort} />
                 <SortableHeader label="Cost Per Item" sortKey="cost" sort={inventorySort} onSort={setInventorySort} align="right" />
                 <SortableHeader label="Stock Qty" sortKey="stock" sort={inventorySort} onSort={setInventorySort} align="center" />
@@ -466,9 +503,6 @@ export function Inventory() {
                 {selectedBatchId !== "batch-all" && (
                   <SortableHeader label="Expiry Date" sortKey="expiry" sort={inventorySort} onSort={setInventorySort} />
                 )}
-                <th style={{ width: '120px' }} className="sticky right-0 z-10 bg-navy-mid text-muted-foreground font-barlow-cond text-xs font-bold letter-spacing-wider px-3 py-3 text-center border-b border-border whitespace-nowrap shadow-left">
-                  Actions
-                </th>
               </tr>
             </thead>
             <tbody>
@@ -481,11 +515,12 @@ export function Inventory() {
                   const expiryStatus = selectedBatchId !== "batch-all" && product.batchExpiryDate ? getExpiryStatus(product.batchExpiryDate) : null;
                   return (
                     <tr key={uniqueKey} className={`border-b border-border transition-colors ${highlightColor.bg} ${highlightColor.hover}`}>
+                      <td className="px-3 py-3"><input aria-label={`Select ${product.description}`} type="checkbox" checked={selectedProductIds.includes(product.id)} onChange={(event) => toggleProductSelection(product.id, event.target.checked)} /></td>
                       {/* Name */}
                       <td className="px-3 py-3 text-foreground font-semibold max-w-[200px] truncate">
                         <div className="flex items-center gap-2 truncate">
                           {expiryStatus?.icon && <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-2xs font-semibold ${expiryStatus.status === "expired" ? "bg-destructive-soft text-destructive" : "bg-warning-soft text-warning"}`}>{expiryStatus.icon}</span>}
-                          <span className="truncate">{product.description}</span>
+                          <RecordTitleButton onClick={() => setExtraInfoProduct(product)} className="min-w-0 truncate">{product.description}</RecordTitleButton>
                         </div>
                       </td>
                       {/* Cost Per Item */}
@@ -512,17 +547,6 @@ export function Inventory() {
                           {product.batchExpiryDate ? parseIsoDate(product.batchExpiryDate).toLocaleDateString("en-PH") : "N/A"}
                         </td>
                       )}
-                      {/* Actions */}
-                      <td style={{ width: '120px' }} className="sticky right-0 z-10 px-3 py-3 whitespace-nowrap bg-card border-l border-border shadow-left">
-                        <div className="flex items-center justify-center gap-1">
-                          <ActionButtons
-                            onView={() => setExtraInfoProduct(product)}
-                            onEdit={undefined}
-                            onDelete={() => handleDelete(product.id)}
-                            showDelete
-                          />
-                        </div>
-                      </td>
                     </tr>
                   );
                 })
