@@ -26,7 +26,7 @@ export const createProduct: RequestHandler = async (
   req: AuthRequest,
   res
 ) => {
-  const { name, sku, price, image_filename, batch_tracking_enabled, reorder_point, manufacturer, is_discontinued } = req.body;
+  const { name, sku, price, image_filename, batch_tracking_enabled, reorder_point, weight, manufacturer, is_discontinued } = req.body;
 
   if (!name || !price) {
     return res.status(400).json({ error: "Name and price are required" });
@@ -42,6 +42,7 @@ export const createProduct: RequestHandler = async (
       image_filename: image_filename || null,
       batch_tracking_enabled: batch_tracking_enabled ?? true,
       reorder_point: reorder_point ?? null,
+      weight: weight != null && weight !== "" ? weight.toString() : null,
       manufacturer: manufacturer || null,
       is_discontinued: is_discontinued ?? false,
     });
@@ -73,7 +74,7 @@ export const updateProduct: RequestHandler = async (
   res
 ) => {
   const { id } = req.params;
-  const { name, sku, price, image_filename, batch_tracking_enabled, reorder_point, manufacturer, is_discontinued } = req.body;
+  const { name, sku, price, image_filename, batch_tracking_enabled, reorder_point, weight, manufacturer, is_discontinued } = req.body;
 
   try {
     const existing = await db.query.products.findFirst({
@@ -94,6 +95,7 @@ export const updateProduct: RequestHandler = async (
         batch_tracking_enabled:
           batch_tracking_enabled ?? existing.batch_tracking_enabled,
         reorder_point: reorder_point !== undefined ? reorder_point : existing.reorder_point,
+        weight: weight !== undefined ? (weight === null || weight === "" ? null : weight.toString()) : existing.weight,
         manufacturer: manufacturer !== undefined ? manufacturer : existing.manufacturer,
         is_discontinued: is_discontinued !== undefined ? is_discontinued : existing.is_discontinued,
         updated_at: new Date(),

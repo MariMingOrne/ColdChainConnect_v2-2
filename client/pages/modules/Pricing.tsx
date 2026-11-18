@@ -2,13 +2,13 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useInventoryContext } from "../../context/InventoryContext";
-import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
 import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Product } from "@shared/api";
-import { Download, Upload, RefreshCw } from "lucide-react";
-import { ActionButtons } from "@/components/ActionButtons";
+import { ArrowLeft, Download, Upload, RefreshCw, Search, MoreHorizontal } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
 import { RecordDetailsDialog, type RecordDetails } from "@/components/RecordDetailsDialog";
@@ -26,6 +26,7 @@ interface ProductForm {
   manufacturer?: string;
   is_discontinued: boolean;
   reorder_point?: number;
+  weight?: number;
 }
 
 const productExcelColumns: ExcelColumn[] = [
@@ -59,7 +60,7 @@ function StatsBox({
   );
 }
 
-function ProductModal({
+function ProductPage({
   title,
   formData,
   setFormData,
@@ -98,12 +99,17 @@ function ProductModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-          <h2 className="font-rajdhani text-lg font-bold text-white">{title}</h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl">×</button>
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">{title}</h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <div className="bg-white rounded-2xl border border-border max-w-lg w-full">
 
         <div className="p-6 space-y-4">
           <div>
@@ -182,6 +188,19 @@ function ProductModal({
             <p className="text-xs text-muted mt-1">Stock level at which inventory shows as needing reorder.</p>
           </div>
 
+          <div>
+            <label className="block text-xs font-semibold text-navy mb-1">Weight (kg)</label>
+            <Input
+              type="number"
+              min="0"
+              step="0.01"
+              value={formData.weight ?? ""}
+              onChange={(e) => setFormData({ ...formData, weight: e.target.value === "" ? undefined : Number(e.target.value) })}
+              className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
+              placeholder="e.g., 25"
+            />
+          </div>
+
           <div className="flex items-center gap-3">
             <Input
               type="checkbox"
@@ -205,14 +224,19 @@ function ProductModal({
   );
 }
 
-function ViewProductModal({ product, onClose }: { product: Product; onClose: () => void }) {
+function ViewProductPage({ product, onClose }: { product: Product; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-lg w-full">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-          <h2 className="font-rajdhani text-lg font-bold text-white">Product Details</h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl">×</button>
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Product Details</h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <div className="bg-white rounded-2xl border border-border max-w-lg w-full">
 
         <div className="p-6 space-y-4">
           {product.image_filename && (
@@ -258,6 +282,25 @@ function ViewProductModal({ product, onClose }: { product: Product; onClose: () 
   );
 }
 
+function ImagePreviewPage({ filename, onClose }: { filename: string; onClose: () => void }) {
+  return (
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Image Preview</h1>
+        </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <div className="flex items-center justify-center rounded-2xl border border-border bg-white p-6">
+        <img src={`/uploads/${filename}`} alt="Preview" className="max-w-full max-h-[60vh] object-contain" />
+      </div>
+    </div>
+  );
+}
+
 export function Pricing({ onBack }: PricingProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -265,9 +308,12 @@ export function Pricing({ onBack }: PricingProps) {
   // Shared with Inventory via context
   const { searchQuery, setSearchQuery } = useInventoryContext();
   const [currentPage, setCurrentPage] = useState(1);
+  const [productSort, setProductSort] = useState<SortState<"image" | "name" | "price" | "reorder" | "weight" | "status">>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [showDeleteButtons, setShowDeleteButtons] = useState(false);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
+  const [productStatusFilter, setProductStatusFilter] = useState("all");
+  const [manufacturerFilter, setManufacturerFilter] = useState("all");
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const [productDetails, setProductDetails] = useState<RecordDetails | null>(null);
   const [previewImageFilename, setPreviewImageFilename] = useState<string | null>(null);
@@ -280,6 +326,7 @@ export function Pricing({ onBack }: PricingProps) {
     manufacturer: "",
     is_discontinued: false,
     reorder_point: 0,
+    weight: undefined,
   });
   const { token } = useAuth();
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -338,6 +385,7 @@ export function Pricing({ onBack }: PricingProps) {
       sku: product.sku ?? "",
       price: Number(product.price),
       reorder_point: product.reorder_point ?? 0,
+      weight: product.weight != null ? Number(product.weight) : undefined,
       manufacturer: product.manufacturer ?? "",
       is_discontinued: product.is_discontinued ?? false,
       batch_tracking_enabled: product.batch_tracking_enabled,
@@ -350,19 +398,35 @@ export function Pricing({ onBack }: PricingProps) {
     }
   }, [token]);
 
-  const filteredProducts = products.filter((p) =>
-    p.name?.toLowerCase().includes(searchQuery.toLowerCase())
+  const manufacturers = Array.from(new Set(products.map((product) => product.manufacturer).filter((manufacturer): manufacturer is string => Boolean(manufacturer)))).sort();
+  const filteredProducts = products.filter((product) =>
+    (product.name?.toLowerCase().includes(searchQuery.toLowerCase()) || product.sku?.toLowerCase().includes(searchQuery.toLowerCase())) &&
+    (productStatusFilter === "all" || (productStatusFilter === "active" ? !product.is_discontinued : product.is_discontinued)) &&
+    (manufacturerFilter === "all" || product.manufacturer === manufacturerFilter)
   );
 
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (!productSort) return 0;
+    const direction = productSort.direction === "asc" ? 1 : -1;
+    const value = (p: Product) =>
+      productSort.key === "image" ? p.image_filename
+      : productSort.key === "name" ? p.name
+      : productSort.key === "price" ? Number(p.price)
+      : productSort.key === "reorder" ? Number(p.reorder_point)
+      : productSort.key === "weight" ? Number(p.weight)
+      : p.is_discontinued ? "Discontinued" : "Active";
+    return compareValues(value(a), value(b)) * direction;
+  });
+
   const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const paginatedProducts = filteredProducts.slice(
+  const paginatedProducts = sortedProducts.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
   );
 
   const openAddModal = () => {
     setEditingProduct(null);
-    setFormData({ name: "", sku: "", price: "", image_filename: "", manufacturer: "", is_discontinued: false, reorder_point: 0 });
+    setFormData({ name: "", sku: "", price: "", image_filename: "", manufacturer: "", is_discontinued: false, reorder_point: 0, weight: undefined });
     setIsModalOpen(true);
   };
 
@@ -376,6 +440,7 @@ export function Pricing({ onBack }: PricingProps) {
       manufacturer: (product as any).manufacturer ?? "",
       is_discontinued: (product as any).is_discontinued ?? false,
       reorder_point: (product as any).reorder_point ?? 0,
+      weight: product.weight != null ? Number(product.weight) : undefined,
     });
     setIsModalOpen(true);
   };
@@ -414,8 +479,23 @@ export function Pricing({ onBack }: PricingProps) {
         headers: { Authorization: `Bearer ${token}` },
       });
       setProducts(products.filter((p) => p.id !== id));
+      setSelectedProductIds((ids) => ids.filter((selectedId) => selectedId !== id));
     } catch {
       alert("Failed to delete product");
+    }
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!confirm(`Delete ${selectedProductIds.length} selected products?`)) return;
+    try {
+      await Promise.all(selectedProductIds.map((id) => fetch(`/api/products/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      })));
+      setProducts((current) => current.filter((product) => !selectedProductIds.includes(product.id)));
+      setSelectedProductIds([]);
+    } catch {
+      alert("Failed to delete selected products");
     }
   };
 
@@ -430,21 +510,48 @@ export function Pricing({ onBack }: PricingProps) {
     );
   }
 
+  if (isModalOpen) {
+    return (
+      <ProductPage
+        title={editingProduct ? "Edit Product" : "Add New Product"}
+        formData={formData}
+        setFormData={setFormData}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+      />
+    );
+  }
+
+  if (viewingProduct) {
+    return <ViewProductPage product={viewingProduct} onClose={() => setViewingProduct(null)} />;
+  }
+  if (productDetails) {
+    return <RecordDetailsDialog details={productDetails} onClose={() => setProductDetails(null)} />;
+  }
+  if (showExcelImport) {
+    return (
+      <ExcelImportDialog
+        title="Products"
+        columns={productExcelColumns}
+        validateRow={validateProductImportRow}
+        onImport={importProductRows}
+        onClose={() => setShowExcelImport(false)}
+      />
+    );
+  }
+
+  if (previewImageFilename) {
+    return <ImagePreviewPage filename={previewImageFilename} onClose={() => setPreviewImageFilename(null)} />;
+  }
+
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="font-rajdhani text-3xl font-bold text-navy letter-spacing-tight">
-              Products
-            </h1>
-            <p className="text-xs text-muted mt-1">
-              Manage your products
-            </p>
-          </div>
+    <div className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto scrollbar-visible">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="page-title">Products</h1>
+          <p className="page-subtitle">Manage your products</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
@@ -453,6 +560,12 @@ export function Pricing({ onBack }: PricingProps) {
           >
             <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
             Refresh
+          </button>
+          <button
+            onClick={openAddModal}
+            className="px-4 py-2 bg-navy text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+          >
+            ➕ Add Product
           </button>
           <button onClick={() => setShowExcelImport(true)} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors">
             ⬇ Import Excel
@@ -479,32 +592,30 @@ export function Pricing({ onBack }: PricingProps) {
         />
       </div>
 
-      {/* Search + Add + Delete Toggle */}
-      <div className="flex flex-col md:flex-row gap-3 items-stretch">
-        <SearchFilterBar
-          searchTerm={searchQuery}
-          onSearchChange={(value) => {
-            setSearchQuery(value);
-            setCurrentPage(1);
-          }}
-          placeholder="Search by product name…"
-        />
-        <button
-          onClick={openAddModal}
-          className="px-4 py-2 bg-navy text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 w-fit"
-        >
-          ➕ Add Product
-        </button>
-        <button
-          onClick={() => setShowDeleteButtons(!showDeleteButtons)}
-          className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
-            showDeleteButtons
-              ? "bg-red text-white hover:opacity-90"
-              : "bg-white border border-border text-navy hover:bg-off-white"
-          }`}
-        >
-          {showDeleteButtons ? "🔓 Delete Enabled" : "🔒 Enable Delete"}
-        </button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        {selectedProductIds.length > 0 && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild><button className="inline-flex items-center gap-2 rounded-full bg-navy px-4 py-2 text-sm font-semibold text-white"><MoreHorizontal size={16} /> Actions ({selectedProductIds.length})</button></DropdownMenuTrigger>
+            <DropdownMenuContent align="start" className="bg-white text-navy">
+              <DropdownMenuItem className="text-red focus:text-red" onClick={() => void handleDeleteSelected()}>Delete selected products</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
+        <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
+          <div className="relative w-full sm:w-72">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+            <input type="text" placeholder="Search by product name or SKU…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none" />
+          </div>
+          <select aria-label="Filter products by status" value={productStatusFilter} onChange={(event) => { setProductStatusFilter(event.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-white px-4 py-2 text-sm text-navy">
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="discontinued">Discontinued</option>
+          </select>
+          <select aria-label="Filter products by manufacturer" value={manufacturerFilter} onChange={(event) => { setManufacturerFilter(event.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-white px-4 py-2 text-sm text-navy">
+            <option value="all">All manufacturers</option>
+            {manufacturers.map((manufacturer) => <option key={manufacturer} value={manufacturer}>{manufacturer}</option>)}
+          </select>
+        </div>
       </div>
 
       {/* Table */}
@@ -513,21 +624,13 @@ export function Pricing({ onBack }: PricingProps) {
           <Table className="w-full">
             <thead>
               <tr>
-                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                  Image
-                </th>
-                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                  Product Name
-                </th>
-                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                  Unit Price
-                </th>
-                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                  Reorder Level
-                </th>
-                <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap hidden md:table-cell">
-                  Status
-                </th>
+                <th className="px-3 py-3"><input aria-label="Select all products on this page" type="checkbox" checked={paginatedProducts.length > 0 && paginatedProducts.every((product) => selectedProductIds.includes(product.id))} onChange={(event) => setSelectedProductIds(event.target.checked ? Array.from(new Set([...selectedProductIds, ...paginatedProducts.map((product) => product.id)])) : selectedProductIds.filter((id) => !paginatedProducts.some((product) => product.id === id)))} /></th>
+                <SortableHeader label="Image" sortKey="image" sort={productSort} onSort={setProductSort} />
+                <SortableHeader label="Product Name" sortKey="name" sort={productSort} onSort={setProductSort} />
+                <SortableHeader label="Unit Price" sortKey="price" sort={productSort} onSort={setProductSort} />
+                <SortableHeader label="Reorder Level" sortKey="reorder" sort={productSort} onSort={setProductSort} />
+                <SortableHeader label="Weight" sortKey="weight" sort={productSort} onSort={setProductSort} />
+                <SortableHeader label="Status" sortKey="status" sort={productSort} onSort={setProductSort} className="hidden md:table-cell" />
                 <th style={{ width: '120px' }} className="sticky right-0 z-10 bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-center border-b border-border whitespace-nowrap shadow-left">
                   Actions
                 </th>
@@ -536,16 +639,14 @@ export function Pricing({ onBack }: PricingProps) {
             <tbody>
               {paginatedProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-3 py-6 text-center text-muted">
+                  <td colSpan={8} className="px-3 py-6 text-center text-muted">
                     {products.length === 0 ? "No products found" : "No results matching your search"}
                   </td>
                 </tr>
               ) : (
                 paginatedProducts.map((product) => (
-                  <tr
-                    key={product.id}
-                    className="border-b border-border hover:bg-off-white/50 transition-colors"
-                  >
+                  <tr key={product.id} className="border-b border-border hover:bg-off-white/50 transition-colors">
+                    <td className="px-3 py-3"><input aria-label={`Select ${product.name}`} type="checkbox" checked={selectedProductIds.includes(product.id)} onChange={(event) => setSelectedProductIds(event.target.checked ? [...selectedProductIds, product.id] : selectedProductIds.filter((id) => id !== product.id))} /></td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       {product.image_filename ? (
                         <div className="w-10 h-10 bg-off-white rounded-lg overflow-hidden border border-border flex items-center justify-center cursor-pointer hover:border-accent-2 hover:shadow-md transition-all duration-200 hover:scale-110" onClick={() => setPreviewImageFilename(product.image_filename)}>
@@ -567,6 +668,7 @@ export function Pricing({ onBack }: PricingProps) {
                               { label: "SKU", value: product.sku || "—" },
                               { label: "Unit Price", value: `₱${parseFloat(product.price ?? "0").toLocaleString("en-PH", { minimumFractionDigits: 2 })}` },
                               { label: "Reorder Level", value: product.reorder_point?.toLocaleString() || "—" },
+                              { label: "Weight", value: product.weight != null ? `${Number(product.weight).toLocaleString()} kg` : "—" },
                               { label: "Status", value: product.is_discontinued ? "Discontinued" : "Active" },
                               { label: "Manufacturer", value: product.manufacturer || "—" },
                               { label: "Batch Tracking", value: product.batch_tracking_enabled ? "Enabled" : "Disabled" },
@@ -587,18 +689,23 @@ export function Pricing({ onBack }: PricingProps) {
                     <td className="px-3 py-3 whitespace-nowrap font-semibold text-navy">
                       {product.reorder_point?.toLocaleString() || "—"}
                     </td>
+                    <td className="px-3 py-3 whitespace-nowrap text-navy">
+                      {product.weight != null ? `${Number(product.weight).toLocaleString()} kg` : "—"}
+                    </td>
                     <td className="px-3 py-3 hidden md:table-cell">
                       <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${product.is_discontinued ? "bg-red text-white" : "bg-green text-white"}`}>
                         {product.is_discontinued ? "Discontinued" : "Active"}
                       </span>
                     </td>
-                    <td style={{ width: '120px' }} className="sticky right-0 z-10 px-3 py-3 bg-white border-l border-border shadow-left">
-                      <ActionButtons
-                        onView={() => setViewingProduct(product)}
-                        onEdit={() => openEditModal(product)}
-                        onDelete={() => handleDelete(product.id)}
-                        showDelete={showDeleteButtons}
-                      />
+                    <td className="sticky right-0 z-10 px-3 py-3 bg-white border-l border-border shadow-left">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild><button aria-label={`Actions for ${product.name}`} className="rounded-md p-2 hover:bg-off-white"><MoreHorizontal size={18} /></button></DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="bg-white text-navy">
+                          <DropdownMenuItem onClick={() => setViewingProduct(product)}>View</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => openEditModal(product)}>Edit</DropdownMenuItem>
+                          <DropdownMenuItem className="text-red focus:text-red" onClick={() => void handleDelete(product.id)}>Delete</DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </td>
                   </tr>
                 ))
@@ -634,48 +741,6 @@ export function Pricing({ onBack }: PricingProps) {
         </div>
       </div>
 
-      <RecordDetailsDialog details={productDetails} onClose={() => setProductDetails(null)} />
-
-      {/* View Modal */}
-      {viewingProduct && (
-        <ViewProductModal product={viewingProduct} onClose={() => setViewingProduct(null)} />
-      )}
-
-      {/* Modal */}
-      {isModalOpen && (
-        <ProductModal
-          title={editingProduct ? "Edit Product" : "Add New Product"}
-          formData={formData}
-          setFormData={setFormData}
-          onClose={() => setIsModalOpen(false)}
-          onSave={handleSave}
-        />
-      )}
-
-      {/* Image Preview Modal */}
-      {showExcelImport && (
-        <ExcelImportDialog
-          title="Products"
-          columns={productExcelColumns}
-          validateRow={validateProductImportRow}
-          onImport={importProductRows}
-          onClose={() => setShowExcelImport(false)}
-        />
-      )}
-
-      {previewImageFilename && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4" onClick={() => setPreviewImageFilename(null)}>
-          <div className="bg-white rounded-2xl border border-border max-w-2xl w-full max-h-[80vh] overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between px-6 py-4 bg-navy-mid border-b border-border">
-              <h2 className="font-rajdhani text-lg font-bold text-white">Image Preview</h2>
-              <button onClick={() => setPreviewImageFilename(null)} className="text-white hover:opacity-70 text-2xl">×</button>
-            </div>
-            <div className="flex items-center justify-center p-6">
-              <img src={`/uploads/${previewImageFilename}`} alt="Preview" className="max-w-full max-h-[60vh] object-contain" />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

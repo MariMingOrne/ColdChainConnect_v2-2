@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { ChevronDown, ChevronUp, Package, RefreshCw, Search } from "lucide-react";
+import { ArrowLeft, ChevronDown, ChevronUp, Package, RefreshCw, Search } from "lucide-react";
 import { Booking, Pallet, Product } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { Input } from "@/components/ui/input";
@@ -180,6 +180,63 @@ export function AgentPalletTracking() {
 
   if (isLoading) return <LoadingSpinner className="fixed inset-0 z-0 min-h-0 bg-off-white" slow />;
 
+  if (scanPallet) {
+    return (
+      <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col gap-4 px-0 pb-24 pt-5 sm:px-4">
+        <header className="flex items-start justify-between gap-3 px-4 sm:px-0">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Scanned pallet</p>
+            <h1 className="mt-1 truncate font-rajdhani text-2xl font-bold text-navy">
+              {scanPallet.order?.customer?.store_name ?? "Customer order"}
+            </h1>
+            <p className="mt-0.5 text-xs text-muted">Pallet {scanPallet.id.slice(0, 8)} · Order {scanPallet.order_id.slice(0, 8)}</p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setScanPalletId(null)}
+            disabled={updatingPalletId !== null}
+            className="btn-ghost"
+          >
+            <ArrowLeft size={15} />
+            Back
+          </button>
+        </header>
+
+        <div className="mx-4 rounded-2xl border border-border bg-white p-5 shadow-sm sm:mx-0">
+          <div className="flex items-center justify-between rounded-xl bg-off-white p-3 text-sm">
+            <span className="text-muted">Current status</span>
+            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClasses(scanPallet.status)}`}>
+              {statusLabels[scanPallet.status]}
+            </span>
+          </div>
+
+          {error && <p role="alert" className="mt-3 rounded-xl border border-red/20 bg-red/5 p-3 text-sm text-red">{error}</p>}
+
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button
+              type="button"
+              onClick={() => setScanPalletId(null)}
+              disabled={updatingPalletId !== null}
+              className="min-h-11 rounded-xl border border-border bg-white px-4 text-sm font-semibold text-navy disabled:opacity-60"
+            >
+              {nextActionLabels[scanPallet.status] ? "Cancel" : "Close"}
+            </button>
+            {nextActionLabels[scanPallet.status] && (
+              <button
+                type="button"
+                onClick={() => void confirmScannedPallet()}
+                disabled={updatingPalletId !== null}
+                className="min-h-11 rounded-xl bg-navy px-4 text-sm font-semibold text-white disabled:cursor-wait disabled:opacity-60"
+              >
+                {updatingPalletId === scanPallet.id ? "Updating…" : nextActionLabels[scanPallet.status]}
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col gap-4 px-0 pb-24 pt-5 sm:px-4">
       <header className="flex items-start justify-between gap-3 px-4 sm:px-0">
@@ -328,47 +385,6 @@ export function AgentPalletTracking() {
         </div>
       )}
 
-      {scanPallet && (
-        <div role="dialog" aria-modal="true" aria-labelledby="scan-confirm-title" className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center">
-          <div className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-xl">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Scanned pallet</p>
-            <h2 id="scan-confirm-title" className="mt-1 truncate font-rajdhani text-xl font-bold text-navy">
-              {scanPallet.order?.customer?.store_name ?? "Customer order"}
-            </h2>
-            <p className="mt-0.5 text-xs text-muted">Pallet {scanPallet.id.slice(0, 8)} · Order {scanPallet.order_id.slice(0, 8)}</p>
-
-            <div className="mt-4 flex items-center justify-between rounded-xl bg-off-white p-3 text-sm">
-              <span className="text-muted">Current status</span>
-              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClasses(scanPallet.status)}`}>
-                {statusLabels[scanPallet.status]}
-              </span>
-            </div>
-
-            {error && <p role="alert" className="mt-3 rounded-xl border border-red/20 bg-red/5 p-3 text-sm text-red">{error}</p>}
-
-            <div className="mt-4 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={() => setScanPalletId(null)}
-                disabled={updatingPalletId !== null}
-                className="min-h-11 rounded-xl border border-border bg-white px-4 text-sm font-semibold text-navy disabled:opacity-60"
-              >
-                {nextActionLabels[scanPallet.status] ? "Cancel" : "Close"}
-              </button>
-              {nextActionLabels[scanPallet.status] && (
-                <button
-                  type="button"
-                  onClick={() => void confirmScannedPallet()}
-                  disabled={updatingPalletId !== null}
-                  className="min-h-11 rounded-xl bg-navy px-4 text-sm font-semibold text-white disabled:cursor-wait disabled:opacity-60"
-                >
-                  {updatingPalletId === scanPallet.id ? "Updating…" : nextActionLabels[scanPallet.status]}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
 
     </div>
   );

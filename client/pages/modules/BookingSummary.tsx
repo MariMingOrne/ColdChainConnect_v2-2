@@ -6,14 +6,14 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { RefreshCw, Plus, Calendar, CheckCircle, XCircle } from "lucide-react";
+import { ArrowLeft, RefreshCw, Plus, Calendar, CheckCircle, XCircle } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Booking, Truck, Customer, Product } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { useSearchParams } from "react-router-dom";
 import { AddOrderModal } from "./AddOrderModal";
+import { BookingDetailPage } from "./BookingDetailPage";
 import { AgentOrderScreen } from "./AgentOrderScreen";
-import { OrderTotalsBreakdown } from "@/components/OrderTotalsBreakdown";
 import { describeCreditBlock, isCreditBlock, promptCreditOverride } from "@/lib/creditOverride";
 
 export function BookingSummary() {
@@ -395,6 +395,162 @@ export function BookingSummary() {
     );
   }
 
+  if (showAddModal) {
+    return (
+      <AddOrderModal
+        onClose={() => {
+          setShowAddModal(false);
+          setNewCustomerId("");
+          setPreparedDeliveryDate("");
+          setOrderItems([{ product_id: "", qty_ordered: 1 }]);
+        }}
+        customers={customers}
+        products={products}
+        productStock={productStock}
+        orderItems={orderItems}
+        newCustomerId={newCustomerId}
+        preparedDeliveryDate={preparedDeliveryDate}
+        onCustomerChange={setNewCustomerId}
+        onPreparedDeliveryDateChange={setPreparedDeliveryDate}
+        onAddItem={handleAddItem}
+        onRemoveItem={handleRemoveItem}
+        onItemChange={handleItemChange}
+        onCreateOrder={handleCreateOrder}
+        isCreating={isCreating}
+      />
+    );
+  }
+
+  if (showApproveModal && selectedBooking) {
+    return (
+      <div className="flex-1 flex flex-col p-6 gap-6">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Approve Order</h1>
+            <p className="page-subtitle">Confirm approval for this customer order</p>
+          </div>
+          <button onClick={closeApproveModal} className="btn-ghost">
+            <ArrowLeft size={15} />
+            Back
+          </button>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-border p-6 space-y-4 max-w-2xl">
+          <div>
+            <label className="block text-xs font-semibold text-navy mb-1">Order ID</label>
+            <div className="px-3 py-2 bg-off-white rounded-lg text-sm font-mono text-navy">
+              {selectedBooking.id.slice(0, 8)}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-navy mb-1">Customer</label>
+            <div className="px-3 py-2 bg-off-white rounded-lg text-sm text-navy">
+              <span className="font-semibold">{selectedBooking.customer?.store_name || "Unknown"}</span>
+              {selectedBooking.customer?.contact_info && (
+                <span className="text-xs text-muted block">{selectedBooking.customer.contact_info}</span>
+              )}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-navy mb-1">Location</label>
+            <div className="px-3 py-2 bg-off-white rounded-lg text-sm text-navy">
+              {selectedBooking.customer?.location || "Unknown"}
+            </div>
+          </div>
+
+          {approveSuccess ? (
+            <div className="px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800 font-semibold">
+              ✓ {approveSuccess}
+            </div>
+          ) : (
+            <div className="px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
+              The truck will be automatically assigned based on the customer's truck district.
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 max-w-2xl">
+          <button onClick={closeApproveModal} className="btn-ghost">
+            {approveSuccess ? "Close" : "Cancel"}
+          </button>
+          {!approveSuccess && (
+            <button
+              onClick={handleApproveBooking}
+              disabled={isApproving}
+              className="btn-primary disabled:opacity-50"
+            >
+              {isApproving ? "Approving…" : "Approve Order"}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (showRejectModal && selectedBooking) {
+    return (
+      <div className="flex-1 flex flex-col p-6 gap-6">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Reject Order</h1>
+            <p className="page-subtitle">Confirm rejection of this customer order</p>
+          </div>
+          <button onClick={closeRejectModal} className="btn-ghost">
+            <ArrowLeft size={15} />
+            Back
+          </button>
+        </div>
+
+        <div className="bg-white rounded-2xl border border-border p-6 space-y-4 max-w-2xl">
+          <div>
+            <label className="block text-xs font-semibold text-navy mb-1">Order ID</label>
+            <div className="px-3 py-2 bg-off-white rounded-lg text-sm font-mono text-navy">
+              {selectedBooking.id.slice(0, 8)}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-navy mb-1">Customer</label>
+            <div className="px-3 py-2 bg-off-white rounded-lg text-sm text-navy">
+              <span className="font-semibold">{selectedBooking.customer?.store_name || "Unknown"}</span>
+              {selectedBooking.customer?.contact_info && (
+                <span className="text-xs text-muted block">{selectedBooking.customer.contact_info}</span>
+              )}
+            </div>
+          </div>
+          <div className="bg-red-50 p-3 rounded-lg border border-red-200">
+            <p className="text-xs text-red-800">
+              This order will be marked as rejected and cannot be processed further. This action cannot be undone easily.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 max-w-2xl">
+          <button onClick={closeRejectModal} className="btn-ghost">
+            Cancel
+          </button>
+          <button
+            onClick={handleRejectBooking}
+            disabled={isRejecting}
+            className="btn-danger bg-red text-white border-red hover:bg-red/80 disabled:opacity-50"
+          >
+            {isRejecting ? "Rejecting…" : "Reject Order"}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (showDetailModal && detailBooking) {
+    return (
+      <BookingDetailPage
+        booking={detailBooking}
+        products={products}
+        getStatusColor={getStatusColor}
+        onBack={closeDetailModal}
+      />
+    );
+  }
+
   const filtered = bookings.filter((b) => {
     const matchesSearch =
       b.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -444,6 +600,7 @@ export function BookingSummary() {
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
         placeholder="Search by order ID or customer ID…"
+        className="!justify-start"
         filters={[
           {
             name: "statusFilter",
@@ -634,263 +791,6 @@ export function BookingSummary() {
         </Table>
       </Card>
 
-      {/* ── Add Order Modal ── */}
-      <AddOrderModal
-        isOpen={showAddModal}
-        onClose={() => {
-          setShowAddModal(false);
-          setNewCustomerId("");
-          setPreparedDeliveryDate("");
-          setOrderItems([{ product_id: "", qty_ordered: 1 }]);
-        }}
-        customers={customers}
-        products={products}
-        productStock={productStock}
-        orderItems={orderItems}
-        newCustomerId={newCustomerId}
-        preparedDeliveryDate={preparedDeliveryDate}
-        onCustomerChange={setNewCustomerId}
-        onPreparedDeliveryDateChange={setPreparedDeliveryDate}
-        onAddItem={handleAddItem}
-        onRemoveItem={handleRemoveItem}
-        onItemChange={handleItemChange}
-        onCreateOrder={handleCreateOrder}
-        isCreating={isCreating}
-      />
-
-      {/* ── Approve Booking Modal ── */}
-      {showApproveModal && selectedBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl border border-border max-w-lg w-full">
-            <div className="bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-              <h2 className="font-rajdhani text-lg font-bold text-white">Approve Order</h2>
-              <button onClick={closeApproveModal} className="text-white hover:opacity-70 text-2xl">×</button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-navy mb-1">Order ID</label>
-                <div className="px-3 py-2 bg-off-white rounded-lg text-sm font-mono text-navy">
-                  {selectedBooking.id.slice(0, 8)}
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-navy mb-1">Customer</label>
-                <div className="px-3 py-2 bg-off-white rounded-lg text-sm text-navy">
-                  <span className="font-semibold">{selectedBooking.customer?.store_name || "Unknown"}</span>
-                  {selectedBooking.customer?.contact_info && (
-                    <span className="text-xs text-muted block">{selectedBooking.customer.contact_info}</span>
-                  )}
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-navy mb-1">Location</label>
-                <div className="px-3 py-2 bg-off-white rounded-lg text-sm text-navy">
-                  {selectedBooking.customer?.location || "Unknown"}
-                </div>
-              </div>
-
-              {approveSuccess ? (
-                <div className="px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800 font-semibold">
-                  ✓ {approveSuccess}
-                </div>
-              ) : (
-                <div className="px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-sm text-blue-800">
-                  The truck will be automatically assigned based on the customer's truck district.
-                </div>
-              )}
-            </div>
-
-            <div className="bg-off-white px-6 py-4 flex justify-end gap-2 border-t border-border rounded-b-2xl">
-              <button
-                onClick={closeApproveModal}
-                className="btn-ghost"
-              >
-                {approveSuccess ? "Close" : "Cancel"}
-              </button>
-              {!approveSuccess && (
-                <button
-                  onClick={handleApproveBooking}
-                  disabled={isApproving}
-                  className="btn-primary disabled:opacity-50"
-                >
-                  {isApproving ? "Approving…" : "Approve Order"}
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Order Detail Modal ── */}
-      {showDetailModal && detailBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl border border-border max-w-2xl w-full max-h-[90vh] flex flex-col">
-            <div className="bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-              <h2 className="font-rajdhani text-lg font-bold text-white">Order Details</h2>
-              <button onClick={closeDetailModal} className="text-white hover:opacity-70 text-2xl">×</button>
-            </div>
-
-            <div className="p-6 space-y-6 overflow-y-auto">
-              {/* Order Header */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-navy mb-1">Order ID</label>
-                  <div className="px-3 py-2 bg-off-white rounded-lg text-sm font-mono text-navy font-semibold">
-                    {detailBooking.id}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-navy mb-1">Status</label>
-                  <div className="px-3 py-2 bg-off-white rounded-lg text-sm">
-                    <span className={`px-2 py-1 rounded text-sm font-semibold ${getStatusColor(detailBooking.status)}`}>
-                      {detailBooking.status}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Customer Info */}
-              <div className="border-t border-border pt-4">
-                <h3 className="text-sm font-semibold text-navy mb-3">Customer Information</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-xs font-semibold text-muted mb-1 block">Store Name</label>
-                    <p className="text-sm text-navy font-semibold">{detailBooking.customer?.store_name || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted mb-1 block">Location</label>
-                    <p className="text-sm text-navy">{detailBooking.customer?.location || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted mb-1 block">Contact Person</label>
-                    <p className="text-sm text-navy">{detailBooking.customer?.contact_person || "N/A"}</p>
-                  </div>
-                  <div>
-                    <label className="text-xs font-semibold text-muted mb-1 block">Contact Info</label>
-                    <p className="text-sm text-navy">{detailBooking.customer?.contact_info || "N/A"}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Truck Assignment */}
-              {(detailBooking as any).truck_id && (
-                <div className="border-t border-border pt-4">
-                  <h3 className="text-sm font-semibold text-navy mb-3">Assigned Truck</h3>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-xs font-semibold text-muted mb-1 block">License Plate</label>
-                      <p className="text-sm text-navy font-semibold">{(detailBooking as any).truck?.license_plate || "N/A"}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs font-semibold text-muted mb-1 block">District</label>
-                      <p className="text-sm text-navy">{(detailBooking as any).truck?.district || "N/A"}</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Order Items */}
-              <div className="border-t border-border pt-4">
-                <h3 className="text-sm font-semibold text-navy mb-3">Order Items</h3>
-                {detailBooking.booking_items && detailBooking.booking_items.length > 0 ? (
-                  <div className="space-y-2">
-                    {detailBooking.booking_items.map((item, idx) => {
-                      const product = products.find((p) => p.id === item.product_id);
-                      return (
-                        <div key={idx} className="flex justify-between items-center p-3 bg-off-white rounded-lg">
-                          <div className="flex-1">
-                            <p className="text-sm font-semibold text-navy">{product?.name || "Unknown Product"}</p>
-                            <p className="text-xs text-muted">{product?.sku || "No SKU"}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-sm font-semibold text-navy">{item.qty_ordered} units</p>
-                            <p className="text-xs text-muted">₱{parseFloat(product?.price || "0").toLocaleString()}</p>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted italic">No items in this order</p>
-                )}
-              </div>
-
-              <OrderTotalsBreakdown booking={detailBooking} products={products} />
-
-              {/* Timestamps */}
-              <div className="border-t border-border pt-4">
-                <div className="grid grid-cols-2 gap-4 text-xs">
-                  <div>
-                    <label className="font-semibold text-muted mb-1 block">Created</label>
-                    <p className="text-navy">{new Date(detailBooking.created_at).toLocaleString()}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-off-white px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
-              <button
-                onClick={closeDetailModal}
-                className="btn-primary"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ── Reject Booking Modal ── */}
-      {showRejectModal && selectedBooking && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl border border-border max-w-lg w-full">
-            <div className="bg-red px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-              <h2 className="font-rajdhani text-lg font-bold text-white">Reject Order</h2>
-              <button onClick={closeRejectModal} className="text-white hover:opacity-70 text-2xl">×</button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-navy mb-1">Order ID</label>
-                <div className="px-3 py-2 bg-off-white rounded-lg text-sm font-mono text-navy">
-                  {selectedBooking.id.slice(0, 8)}
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-navy mb-1">Customer</label>
-                <div className="px-3 py-2 bg-off-white rounded-lg text-sm text-navy">
-                  <span className="font-semibold">{selectedBooking.customer?.store_name || "Unknown"}</span>
-                  {selectedBooking.customer?.contact_info && (
-                    <span className="text-xs text-muted block">{selectedBooking.customer.contact_info}</span>
-                  )}
-                </div>
-              </div>
-              <div className="bg-red-50 p-3 rounded-lg border border-red-200">
-                <p className="text-xs text-red-800">
-                  This order will be marked as rejected and cannot be processed further. This action cannot be undone easily.
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-off-white px-6 py-4 flex justify-end gap-2 border-t border-border rounded-b-2xl">
-              <button
-                onClick={closeRejectModal}
-                className="btn-ghost"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleRejectBooking}
-                disabled={isRejecting}
-                className="btn-danger bg-red text-white border-red hover:bg-red/80 disabled:opacity-50"
-              >
-                {isRejecting ? "Rejecting…" : "Reject Order"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

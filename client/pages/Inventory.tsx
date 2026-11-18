@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useInventoryContext } from "../context/InventoryContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { ChevronLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, Search } from "lucide-react";
 import { ActionButtons } from "@/components/ActionButtons";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
@@ -9,6 +9,7 @@ import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
 
 interface InventoryProduct {
   id: string;
@@ -61,6 +62,10 @@ export function Inventory() {
   const [newBatchName, setNewBatchName] = useState("");
   const [startBatchCreation, setStartBatchCreation] = useState(false);
   const [batchSearch, setBatchSearch] = useState("");
+  const [stockFilter, setStockFilter] = useState("all");
+  const [expiryFilter, setExpiryFilter] = useState("all");
+  const [batchCreatedSince, setBatchCreatedSince] = useState("");
+  const [inventorySort, setInventorySort] = useState<SortState<"name" | "cost" | "stock" | "reorder" | "expiry">>(null);
   const [showExcelImport, setShowExcelImport] = useState(false);
 
   const emptyForm = (): InventoryProduct => ({
@@ -70,7 +75,6 @@ export function Inventory() {
     manufacturer: "", isDiscontinued: false,
   });
 
-  const [showDeleteButtons, setShowDeleteButtons] = useState(false);
 
   useEffect(() => {
     if (searchParams.get("action") !== "receive") return;
@@ -131,7 +135,8 @@ export function Inventory() {
   const activeBatches = batches.filter((b) => !b.isArchived && b.id !== "batch-all");
   const batchSearchTerm = batchSearch.trim().toLowerCase();
   const visibleBatches = activeBatches.filter((b) =>
-    !batchSearchTerm || b.name.toLowerCase().includes(batchSearchTerm) || b.pallets.some((p) => p.palletId.toLowerCase().includes(batchSearchTerm))
+    (!batchSearchTerm || b.name.toLowerCase().includes(batchSearchTerm) || b.pallets.some((p) => p.palletId.toLowerCase().includes(batchSearchTerm))) &&
+    (!batchCreatedSince || new Date(b.createdAt) >= new Date(batchCreatedSince))
   );
   const visiblePallets = currentBatch && currentBatch.id !== "batch-all"
     ? currentBatch.pallets.filter((p) => !batchSearchTerm || currentBatch.name.toLowerCase().includes(batchSearchTerm) || p.palletId.toLowerCase().includes(batchSearchTerm))
@@ -175,13 +180,21 @@ export function Inventory() {
   const batchProducts = getBatchProducts();
 
   const filteredBatchProducts = batchProducts.filter((p) =>
-    p.sku.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.description.toLowerCase().includes(searchQuery.toLowerCase())
+    (p.sku.toLowerCase().includes(searchQuery.toLowerCase()) || p.description.toLowerCase().includes(searchQuery.toLowerCase())) &&
+    (stockFilter === "all" || (stockFilter === "low" ? p.batchQuantity <= p.reorderPoint : p.batchQuantity > p.reorderPoint)) &&
+    (expiryFilter === "all" || (expiryFilter === "has-expiry" ? Boolean(p.batchExpiryDate) : !p.batchExpiryDate))
   );
 
-  const totalPages = Math.ceil(filteredBatchProducts.length / itemsPerPage);
+  const sortedBatchProducts = [...filteredBatchProducts].sort((a, b) => {
+    if (!inventorySort) return 0;
+    const direction = inventorySort.direction === "asc" ? 1 : -1;
+    const value = (p: typeof a) => ({ name: p.description, cost: p.unitPrice, stock: p.batchQuantity, reorder: p.reorderPoint, expiry: p.batchExpiryDate }[inventorySort.key]);
+    return compareValues(value(a), value(b)) * direction;
+  });
+
+  const totalPages = Math.ceil(sortedBatchProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
-  const paginatedBatchProducts = filteredBatchProducts.slice(startIndex, startIndex + itemsPerPage);
+  const paginatedBatchProducts = sortedBatchProducts.slice(startIndex, startIndex + itemsPerPage);
 
   const suppliers = Array.from(new Set(products.map((p) => p.supplierId))).sort();
 
@@ -308,21 +321,52 @@ export function Inventory() {
     }
   };
 
+  if (extraInfoProduct) return (
+    <ExtraInfoModal
+      product={extraInfoProduct}
+      batches={batches}
+      onClose={() => setExtraInfoProduct(null)}
+      onSelectPallet={(batchId, palletId) => {
+        setSelectedBatchId(batchId);
+        setSelectedPalletId(palletId);
+        setExtraInfoProduct(null);
+      }}
+    />
+  );
+
+  if (isBatchModalOpen) return (
+    <BatchModal
+      batches={batches} selectedBatchId={selectedBatchId}
+      onSelectBatch={(id) => { selectBatch(id); setIsBatchModalOpen(false); }}
+      onDeleteBatch={deleteBatch}
+      onCreateBatch={createNewBatch}
+      onEditBatch={() => {}}
+      onClose={() => { setIsBatchModalOpen(false); setStartBatchCreation(false); }}
+      newBatchName={newBatchName} setNewBatchName={setNewBatchName}
+      products={products} startCreating={startBatchCreation}
+      onRefresh={async () => { await fetchProductsFromApi(); await refreshBatchesFromDB(); }}
+    />
+  );
+
+  if (showExcelImport) return (
+    <ExcelImportDialog
+      title="Inventory Stock"
+      columns={inventoryExcelColumns}
+      validateRow={validateInventoryImportRow}
+      onImport={importInventoryRows}
+      onClose={() => setShowExcelImport(false)}
+    />
+  );
+
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-2 hover:bg-off-white rounded-lg transition-colors">
-            <ChevronLeft className="w-6 h-6 text-navy" />
-          </button>
-          <div>
-            <h1 className="font-rajdhani text-3xl font-bold text-navy letter-spacing-tight">Inventory Management</h1>
-            <p className="text-xs text-muted mt-1">Track, manage, and monitor all frozen goods SKUs</p>
-          </div>
+    <div className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto scrollbar-visible">
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="page-title">Inventory Management</h1>
+          <p className="page-subtitle">Track, manage, and monitor all frozen goods SKUs</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
-          <button onClick={() => navigate("/information-management/products")} className="px-4 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-colors">👁 Show All Products</button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={() => { setNewBatchName(""); setStartBatchCreation(true); setIsBatchModalOpen(true); }} className="px-4 py-2 bg-green text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-colors">➕ Add Items</button>
           <button onClick={() => setShowExcelImport(true)} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors">⬇ Import Excel</button>
           <button onClick={() => void handleInventoryExport()} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white transition-colors"><Download size={15} className="mr-1 inline" />Export Excel</button>
         </div>
@@ -333,22 +377,6 @@ export function Inventory() {
 
       {/* Batch & Pallet Selector Card */}
       <div className="bg-white rounded-2xl border border-border p-6 space-y-4">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-          <div className="w-full md:max-w-sm">
-            <SearchFilterBar
-              searchTerm={batchSearch}
-              onSearchChange={setBatchSearch}
-              placeholder="Find a batch or pallet…"
-            />
-          </div>
-          <div className="flex gap-2">
-            <button onClick={() => setIsBatchModalOpen(true)} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white w-fit">⚙ Manage Batches</button>
-            <button onClick={() => { setNewBatchName(""); setStartBatchCreation(true); setIsBatchModalOpen(true); }} className="px-4 py-2 bg-green text-white rounded-lg font-semibold text-sm hover:opacity-90 w-fit">
-              ➕ Add Items
-            </button>
-          </div>
-        </div>
-
         <div>
           <label className="block text-xs font-semibold text-navy mb-2">Batch</label>
           <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-visible">
@@ -359,7 +387,7 @@ export function Inventory() {
                 <FilterChip key={batch.id} label={batch.name} meta={`${batch.pallets.length} pallets · ${itemCount} items`} active={selectedBatchId === batch.id} onClick={() => selectBatch(batch.id)} />
               );
             })}
-            {visibleBatches.length === 0 && <span className="text-xs text-muted self-center whitespace-nowrap">No batches match “{batchSearch}”</span>}
+            {visibleBatches.length === 0 && <span className="text-xs text-muted self-center whitespace-nowrap">No batches match the current filters</span>}
           </div>
         </div>
 
@@ -375,25 +403,34 @@ export function Inventory() {
             </div>
           </div>
         )}
+        <div className="flex flex-col gap-3 border-t border-border pt-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <div className="w-full sm:w-72">
+              <SearchFilterBar searchTerm={batchSearch} onSearchChange={setBatchSearch} placeholder="Find a batch or pallet…" />
+            </div>
+            <input type="datetime-local" value={batchCreatedSince} onChange={(e) => setBatchCreatedSince(e.target.value)} title="Show batches created on or after this date and time" className="rounded-lg border border-border px-3 py-2 text-sm text-navy" />
+          </div>
+          <button onClick={() => setIsBatchModalOpen(true)} className="px-4 py-2 bg-white border border-border text-navy rounded-lg font-semibold text-sm hover:bg-off-white w-fit">⚙ Manage Batches</button>
+        </div>
       </div>
 
-      {/* Search + Delete Toggle */}
-      <div className="flex flex-col md:flex-row gap-3 items-stretch">
-        <SearchFilterBar
-          searchTerm={searchQuery}
-          onSearchChange={(value) => { setSearchQuery(value); setCurrentPage(1); }}
-          placeholder="Search by SKU or name…"
-        />
-        <button
-          onClick={() => setShowDeleteButtons(!showDeleteButtons)}
-          className={`px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
-            showDeleteButtons
-              ? "bg-red text-white hover:opacity-90"
-              : "bg-white border border-border text-navy hover:bg-off-white"
-          }`}
-        >
-          {showDeleteButtons ? "🔓 Delete Enabled" : "🔒 Enable Delete"}
-        </button>
+      <div className="flex flex-wrap items-center justify-start gap-3">
+        <div className="relative w-full sm:w-72">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <input type="text" placeholder="Search by SKU or name…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none" />
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <select aria-label="Filter inventory by stock level" value={stockFilter} onChange={(e) => { setStockFilter(e.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-white px-4 py-2 text-sm text-navy">
+            <option value="all">All stock</option>
+            <option value="low">Reorder needed</option>
+            <option value="available">Above reorder level</option>
+          </select>
+          <select aria-label="Filter inventory by expiry date" value={expiryFilter} onChange={(e) => { setExpiryFilter(e.target.value); setCurrentPage(1); }} className="rounded-full border border-border bg-white px-4 py-2 text-sm text-navy">
+            <option value="all">All expiry dates</option>
+            <option value="has-expiry">Has expiry date</option>
+            <option value="no-expiry">No expiry date</option>
+          </select>
+        </div>
       </div>
 
       {/* Stats */}
@@ -410,20 +447,14 @@ export function Inventory() {
           <Table className="w-full">
             <thead>
               <tr>
-                {["Name", "Cost Per Item", "Stock Qty"].map((col) => (
-                  <th key={col} className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                    {col}
-                  </th>
-                ))}
+                <SortableHeader label="Name" sortKey="name" sort={inventorySort} onSort={setInventorySort} />
+                <SortableHeader label="Cost Per Item" sortKey="cost" sort={inventorySort} onSort={setInventorySort} align="right" />
+                <SortableHeader label="Stock Qty" sortKey="stock" sort={inventorySort} onSort={setInventorySort} align="center" />
                 {selectedBatchId === "batch-all" && (
-                  <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                    Reorder Level
-                  </th>
+                  <SortableHeader label="Reorder Level" sortKey="reorder" sort={inventorySort} onSort={setInventorySort} align="right" />
                 )}
                 {selectedBatchId !== "batch-all" && (
-                  <th className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                    Expiry Date
-                  </th>
+                  <SortableHeader label="Expiry Date" sortKey="expiry" sort={inventorySort} onSort={setInventorySort} />
                 )}
                 <th style={{ width: '120px' }} className="sticky right-0 z-10 bg-navy-mid text-muted font-barlow-cond text-xs font-bold letter-spacing-wider uppercase px-3 py-3 text-center border-b border-border whitespace-nowrap shadow-left">
                   Actions
@@ -441,17 +472,19 @@ export function Inventory() {
                   return (
                     <tr key={uniqueKey} className={`border-b border-border transition-colors ${highlightColor.bg} ${highlightColor.hover}`}>
                       {/* Name */}
-                      <td className="px-3 py-3 text-navy font-semibold max-w-[200px] truncate flex items-center gap-2">
-                        {expiryStatus && <span title={expiryStatus.status}>{expiryStatus.icon}</span>}
-                        {product.description}
+                      <td className="px-3 py-3 text-navy font-semibold max-w-[200px] truncate">
+                        <div className="flex items-center gap-2 truncate">
+                          {expiryStatus && <span title={expiryStatus.status}>{expiryStatus.icon}</span>}
+                          <span className="truncate">{product.description}</span>
+                        </div>
                       </td>
                       {/* Cost Per Item */}
-                      <td className="px-3 py-3 text-navy whitespace-nowrap">₱{product.unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</td>
+                      <td className="px-3 py-3 text-right text-navy whitespace-nowrap">₱{product.unitPrice.toLocaleString("en-PH", { minimumFractionDigits: 2 })}</td>
                       {/* Stock Qty */}
-                      <td className="px-3 py-3 whitespace-nowrap">
-                        <span className={`px-2 py-1 rounded text-xs font-bold text-white ${
+                      <td className="px-3 py-3 whitespace-nowrap text-center">
+                        <span className={`inline-block px-2 py-1 rounded text-xs font-bold text-white ${
                           product.batchQuantity / product.reorderPoint < 0.5 ? "bg-red" :
-                          product.batchQuantity / product.reorderPoint < 1 ? "bg-yellow-500" :
+                          product.batchQuantity / product.reorderPoint < 1 ? "bg-gold" :
                           "bg-green"
                         }`}>
                           {product.batchQuantity.toLocaleString()}
@@ -459,13 +492,13 @@ export function Inventory() {
                       </td>
                       {/* Reorder Level — read-only display in All Products view */}
                       {selectedBatchId === "batch-all" && (
-                        <td className="px-3 py-3 text-navy whitespace-nowrap font-semibold">
+                        <td className="px-3 py-3 text-right text-navy whitespace-nowrap font-semibold">
                           {product.reorderPoint.toLocaleString()}
                         </td>
                       )}
                       {/* Expiry Date — display in batch view */}
                       {selectedBatchId !== "batch-all" && (
-                        <td className="px-3 py-3 text-navy whitespace-nowrap text-sm">
+                        <td className="px-3 py-3 text-left text-navy whitespace-nowrap text-sm">
                           {product.batchExpiryDate ? parseIsoDate(product.batchExpiryDate).toLocaleDateString("en-PH") : "N/A"}
                         </td>
                       )}
@@ -476,7 +509,7 @@ export function Inventory() {
                             onView={() => setExtraInfoProduct(product)}
                             onEdit={undefined}
                             onDelete={() => handleDelete(product.id)}
-                            showDelete={showDeleteButtons}
+                            showDelete
                           />
                         </div>
                       </td>
@@ -515,44 +548,6 @@ export function Inventory() {
         </div>
       </div>
 
-      {showExcelImport && (
-        <ExcelImportDialog
-          title="Inventory Stock"
-          columns={inventoryExcelColumns}
-          validateRow={validateInventoryImportRow}
-          onImport={importInventoryRows}
-          onClose={() => setShowExcelImport(false)}
-        />
-      )}
-
-      {/* Extra Info Popup */}
-      {extraInfoProduct && (
-        <ExtraInfoModal
-          product={extraInfoProduct}
-          batches={batches}
-          onClose={() => setExtraInfoProduct(null)}
-          onSelectPallet={(batchId, palletId) => {
-            setSelectedBatchId(batchId);
-            setSelectedPalletId(palletId);
-            setExtraInfoProduct(null);
-          }}
-        />
-      )}
-
-      {/* Batch Modal */}
-      {isBatchModalOpen && (
-        <BatchModal
-          batches={batches} selectedBatchId={selectedBatchId}
-          onSelectBatch={(id) => { selectBatch(id); setIsBatchModalOpen(false); }}
-          onDeleteBatch={deleteBatch}
-          onCreateBatch={createNewBatch}
-          onEditBatch={() => {}}
-          onClose={() => { setIsBatchModalOpen(false); setStartBatchCreation(false); }}
-          newBatchName={newBatchName} setNewBatchName={setNewBatchName}
-          products={products} startCreating={startBatchCreation}
-          onRefresh={async () => { await fetchProductsFromApi(); await refreshBatchesFromDB(); }}
-        />
-      )}
       </div>
     </div>
   );
@@ -590,15 +585,18 @@ function ExtraInfoModal({ product, batches, onClose, onSelectPallet }: { product
     });
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-2xl w-full max-h-[85vh] overflow-y-auto">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border">
-          <div>
-            <h2 className="font-rajdhani text-lg font-bold text-white">{product.description}</h2>
-            <p className="text-xs text-muted mt-0.5">SKU: {product.sku}</p>
-          </div>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl leading-none">×</button>
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">{product.description}</h1>
+          <p className="page-subtitle">SKU: {product.sku}</p>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <div className="bg-white rounded-2xl border border-border overflow-hidden">
 
         <div className="p-6 space-y-6">
           <div>
@@ -660,8 +658,17 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
   const [isCreatingBatch, setIsCreatingBatch] = useState(startCreating);
   const [pallets, setPallets] = useState<any[]>([]);
   const [showArchived, setShowArchived] = useState(false);
+  const [batchQuery, setBatchQuery] = useState("");
+  const [createdSince, setCreatedSince] = useState("");
+  const [productFilter, setProductFilter] = useState("");
 
-  const activeBatches = batches.filter((b) => !b.isArchived && b.id !== "batch-all");
+  const activeBatches = batches.filter((b) => {
+    if (b.isArchived || b.id === "batch-all") return false;
+    if (batchQuery.trim() && !b.name.toLowerCase().includes(batchQuery.trim().toLowerCase())) return false;
+    if (createdSince && new Date(b.createdAt) < new Date(createdSince)) return false;
+    if (productFilter && !b.pallets.some((p: any) => p.items.some((item: any) => item.productId === productFilter))) return false;
+    return true;
+  });
   const archivedBatches = batches.filter((b) => b.isArchived);
 
   const handleArchiveBatch = async (batchId: string) => {
@@ -697,19 +704,55 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-3xl w-full max-h-screen overflow-y-auto">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border">
-          <h2 className="font-rajdhani text-lg font-bold text-white">
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">
             {isCreatingBatch ? "Create New Batch" : "Manage Batches"}
-          </h2>
-          <button onClick={() => { setIsCreatingBatch(false); setPallets([]); onClose(); }} className="text-white hover:opacity-70 text-2xl leading-none">×</button>
+          </h1>
         </div>
+        <button onClick={() => { setIsCreatingBatch(false); setPallets([]); onClose(); }} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <div className="bg-white rounded-2xl border border-border overflow-hidden">
         <div className="p-6">
           {!isCreatingBatch ? (
             <>
               {!showArchived ? (
                 <>
+                  <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                    <input
+                      type="search"
+                      value={batchQuery}
+                      onChange={(e) => setBatchQuery(e.target.value)}
+                      placeholder="Search batches by name…"
+                      className="flex-1 rounded-lg border border-border px-3 py-2 text-sm text-navy"
+                    />
+                    <input
+                      type="datetime-local"
+                      value={createdSince}
+                      onChange={(e) => setCreatedSince(e.target.value)}
+                      title="Show batches created on or after this date and time"
+                      className="rounded-lg border border-border px-3 py-2 text-sm text-navy"
+                    />
+                    <select
+                      value={productFilter}
+                      onChange={(e) => setProductFilter(e.target.value)}
+                      className="rounded-lg border border-border px-3 py-2 text-sm text-navy bg-white"
+                    >
+                      <option value="">All products</option>
+                      {products.map((product) => (
+                        <option key={product.id} value={product.id}>{product.description}</option>
+                      ))}
+                    </select>
+                    {(batchQuery || createdSince || productFilter) && (
+                      <button onClick={() => { setBatchQuery(""); setCreatedSince(""); setProductFilter(""); }} className="px-3 py-2 text-sm font-semibold text-navy border border-border rounded-lg hover:bg-off-white">
+                        Clear
+                      </button>
+                    )}
+                  </div>
                   <div className="space-y-2 mb-6">
                     <h3 className="text-xs font-semibold text-muted uppercase mb-3">Active Batches</h3>
                     <div className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedBatchId === "batch-all" ? "border-accent-2 bg-accent-2/10" : "border-border hover:bg-off-white"}`} onClick={() => onSelectBatch("batch-all")}>

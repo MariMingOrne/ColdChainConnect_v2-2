@@ -1,5 +1,6 @@
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { modulePermissionKeys, modulePermissionLabels, type ModulePermission } from "@shared/api";
 import {
   Select,
   SelectContent,
@@ -8,7 +9,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-export type AccountType = "agent" | "driver" | "admin";
+export type AccountType = "agent" | "driver" | "admin" | "staff";
 
 export interface AccountForm {
   username: string;
@@ -40,9 +41,11 @@ interface CreateAccountFieldsProps {
   accountType: AccountType;
   form: AccountForm;
   onChange: (form: AccountForm) => void;
+  modulePermissions: ModulePermission[];
+  onModulePermissionsChange: (permissions: ModulePermission[]) => void;
 }
 
-export function CreateAccountFields({ accountType, form, onChange }: CreateAccountFieldsProps) {
+export function CreateAccountFields({ accountType, form, onChange, modulePermissions, onModulePermissionsChange }: CreateAccountFieldsProps) {
   const update = (patch: Partial<AccountForm>) => onChange({ ...form, ...patch });
 
   const credentials = (
@@ -69,6 +72,28 @@ export function CreateAccountFields({ accountType, form, onChange }: CreateAccou
 
   if (accountType === "admin") {
     return <div className="space-y-4">{credentials}</div>;
+  }
+
+  if (accountType === "staff") {
+    const togglePermission = (permission: ModulePermission) => {
+      onModulePermissionsChange(modulePermissions.includes(permission)
+        ? modulePermissions.filter((value) => value !== permission)
+        : [...modulePermissions, permission]);
+    };
+    return (
+      <div className="space-y-4">
+        {credentials}
+        <fieldset className="space-y-2 rounded-xl border border-border p-4">
+          <legend className="px-1 text-sm font-semibold text-navy">Module access</legend>
+          {modulePermissionKeys.map((permission) => (
+            <label key={permission} className="flex items-start gap-2 text-sm text-navy">
+              <input type="checkbox" checked={modulePermissions.includes(permission)} onChange={() => togglePermission(permission)} className="mt-0.5 accent-navy" />
+              <span>{modulePermissionLabels[permission]}</span>
+            </label>
+          ))}
+        </fieldset>
+      </div>
+    );
   }
 
   if (accountType === "agent") {

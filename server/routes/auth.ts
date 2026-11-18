@@ -61,6 +61,14 @@ export const handleLogin: RequestHandler<{}, LoginResponse | object> = async (
       return res.status(401).json({ error: "Invalid credentials" });
     }
 
+    if (!user.mfa_required) {
+      const token = signToken({ userId: user.id, username: user.username, role: user.role });
+      return res.json({
+        token,
+        user: { id: user.id, username: user.username, role: user.role, module_permissions: user.module_permissions },
+      } as LoginResponse);
+    }
+
     res.json({
       mfa: user.mfa_enabled ? "verify" : "setup",
       challenge_token: signMfaChallenge(user.id),
@@ -81,6 +89,7 @@ export const handleMfaSetup: RequestHandler = async (req, res) => {
   try {
     const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
     if (!user) return res.status(401).json({ error: "Sign-in expired. Please log in again." });
+    if (!user.mfa_required) return res.status(403).json({ error: "MFA is not required for this account" });
     if (user.mfa_enabled) {
       return res.status(400).json({ error: "MFA is already enabled for this account" });
     }
@@ -140,6 +149,7 @@ export const handleMfaVerify: RequestHandler = async (req, res) => {
         id: user.id,
         username: user.username,
         role: user.role,
+        module_permissions: user.module_permissions,
       },
     } as LoginResponse);
   } catch (error) {

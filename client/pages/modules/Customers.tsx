@@ -2,10 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Customer, Truck, formatCustomerAddress, totalDiscountRate } from "@shared/api";
-import { Download, RefreshCw } from "lucide-react";
+import { ArrowLeft, Download, RefreshCw, Search } from "lucide-react";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
-import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -79,14 +79,19 @@ function StatsBox({
   );
 }
 
-function ViewCustomerModal({ customer, onClose }: { customer: Customer; onClose: () => void }) {
+function ViewCustomerPage({ customer, onClose }: { customer: Customer; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-lg w-full">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-          <h2 className="font-rajdhani text-lg font-bold text-white">Customer Details</h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl">×</button>
+    <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Customer Details</h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <div className="max-w-lg w-full rounded-2xl border border-border bg-white">
 
         <div className="p-6 space-y-4">
           <div>
@@ -160,14 +165,17 @@ function CustomerModal({
   const updateAddressField = (field: "street_number" | "street_address" | "location" | "state" | "postal_code", value: string) =>
     setFormData({ ...formData, [field]: value, latitude: null, longitude: null });
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-      <div className="flex max-h-[90vh] w-full max-w-xl flex-col overflow-hidden rounded-2xl border border-border bg-white">
-        <div className="sticky top-0 flex items-center justify-between rounded-t-2xl border-b border-border bg-navy-mid px-6 py-4">
-          <h2 className="font-rajdhani text-lg font-bold text-white">{title}</h2>
-          <button onClick={onClose} className="text-2xl text-white hover:opacity-70">
-            ×
-          </button>
+    <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">{title}</h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+      <div className="flex w-full max-w-xl flex-col rounded-2xl border border-border bg-white">
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-6">
           <div>
@@ -342,10 +350,11 @@ export function Customers({ onBack }: CustomersProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [districtFilter, setDistrictFilter] = useState("");
+  const [customerSort, setCustomerSort] = useState<SortState<"store" | "address" | "contact" | "contactInfo" | "district">>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
-  const [showDeleteButtons, setShowDeleteButtons] = useState(false);
   const [viewingCustomer, setViewingCustomer] = useState<Customer | null>(null);
   const [showExcelImport, setShowExcelImport] = useState(false);
   const [truckDistricts, setTruckDistricts] = useState<string[]>([]);
@@ -443,15 +452,28 @@ export function Customers({ onBack }: CustomersProps) {
       .catch(() => setTruckDistricts([]));
   }, [token]);
 
+  const customerDistricts = useMemo(
+    () => [...new Set(customers.map((c) => c.district).filter((d): d is string => Boolean(d)))].sort(),
+    [customers]
+  );
+
   const filteredCustomers = useMemo(
     () =>
-      customers.filter(
-        (customer) =>
-          customer.store_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          customer.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          customer.contact_person?.toLowerCase().includes(searchQuery.toLowerCase())
-      ),
-    [customers, searchQuery]
+      customers
+        .filter(
+          (customer) =>
+            (customer.store_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              customer.location?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+              customer.contact_person?.toLowerCase().includes(searchQuery.toLowerCase())) &&
+            (!districtFilter || customer.district === districtFilter)
+        )
+        .sort((a, b) => {
+          if (!customerSort) return 0;
+          const direction = customerSort.direction === "asc" ? 1 : -1;
+          const value = (c: Customer) => ({ store: c.store_name, address: formatCustomerAddress(c), contact: c.contact_person, contactInfo: c.contact_info, district: c.district })[customerSort.key];
+          return compareValues(value(a), value(b)) * direction;
+        }),
+    [customers, searchQuery, districtFilter, customerSort]
   );
 
   const totalPages = Math.ceil(filteredCustomers.length / itemsPerPage);
@@ -590,19 +612,43 @@ export function Customers({ onBack }: CustomersProps) {
     );
   }
 
+  if (isModalOpen) {
+    return (
+      <CustomerModal
+        title={editingCustomer ? "Edit Customer" : "Add New Customer"}
+        formData={formData}
+        setFormData={setFormData}
+        districts={truckDistricts}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+      />
+    );
+  }
+
+  if (viewingCustomer) {
+    return <ViewCustomerPage customer={viewingCustomer} onClose={() => setViewingCustomer(null)} />;
+  }
+  if (showExcelImport) {
+    return (
+      <ExcelImportDialog
+        title="Customers"
+        columns={customerExcelColumns}
+        validateRow={validateCustomerImportRow}
+        onImport={importCustomerRows}
+        onClose={() => setShowExcelImport(false)}
+      />
+    );
+  }
+
   return (
-    <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+    <div className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="font-rajdhani text-3xl font-bold tracking-tight text-navy">
-            Customer Management
-          </h1>
-          <p className="mt-1 text-xs text-muted">
-            Manage customer stores, contacts, and discount settings
-          </p>
+          <h1 className="page-title">Customer Management</h1>
+          <p className="page-subtitle">Manage customer stores, contacts, and discount settings</p>
         </div>
 
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={handleRefresh}
             disabled={isRefreshing}
@@ -611,6 +657,9 @@ export function Customers({ onBack }: CustomersProps) {
           >
             <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
             Refresh
+          </button>
+          <button onClick={openAddModal} className="flex items-center gap-2 rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90">
+            ➕ Add Customer
           </button>
           <button onClick={() => setShowExcelImport(true)} className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-navy transition-colors hover:bg-off-white">
             ⬇ Import Excel
@@ -642,33 +691,34 @@ export function Customers({ onBack }: CustomersProps) {
         />
       </div>
 
-      <div className="flex flex-col gap-3 md:flex-row">
-        <SearchFilterBar
-          searchTerm={searchQuery}
-          onSearchChange={(value) => {
-            setSearchQuery(value);
+      <div className="flex flex-wrap items-center justify-start gap-3">
+        <div className="relative w-full sm:w-72">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
+          <input
+            type="text"
+            placeholder="Search by store, location, or contact person…"
+            value={searchQuery}
+            onChange={(event) => {
+              setSearchQuery(event.target.value);
+              setCurrentPage(1);
+            }}
+            className="w-full rounded-full border border-border bg-white py-2 pl-9 pr-4 text-sm focus:border-accent-2 focus:outline-none"
+          />
+        </div>
+        <select
+          aria-label="District"
+          value={districtFilter}
+          onChange={(event) => {
+            setDistrictFilter(event.target.value);
             setCurrentPage(1);
           }}
-          placeholder="Search by store, location, or contact person…"
-        />
-
-        <button
-          onClick={openAddModal}
-          className="flex w-fit items-center gap-2 rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          className="rounded-full border border-border bg-white px-4 py-2 text-sm font-semibold text-navy focus:border-accent-2 focus:outline-none"
         >
-          ➕ Add Customer
-        </button>
-
-        <button
-          onClick={() => setShowDeleteButtons(!showDeleteButtons)}
-          className={`w-fit rounded-lg px-4 py-2 text-sm font-semibold transition-colors ${
-            showDeleteButtons
-              ? "bg-red text-white hover:opacity-90"
-              : "border border-border bg-white text-navy hover:bg-off-white"
-          }`}
-        >
-          {showDeleteButtons ? "🔓 Delete Enabled" : "🔒 Enable Delete"}
-        </button>
+          <option value="">All districts</option>
+          {customerDistricts.map((district) => (
+            <option key={district} value={district}>{district}</option>
+          ))}
+        </select>
       </div>
 
       <div className="data-table-frame overflow-hidden">
@@ -676,21 +726,11 @@ export function Customers({ onBack }: CustomersProps) {
           <Table className="w-full">
             <TableHeader>
               <TableRow>
-                <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap">
-                  Store Name
-                </TableHead>
-                <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap">
-                  Delivery Address
-                </TableHead>
-                <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap hidden md:table-cell">
-                  Contact Person
-                </TableHead>
-                <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap hidden md:table-cell">
-                  Contact Info
-                </TableHead>
-                <TableHead className="border-b border-border bg-navy-mid px-3 py-3 text-left font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap">
-                  Discounts
-                </TableHead>
+                <SortableHeader label="Store Name" sortKey="store" sort={customerSort} onSort={setCustomerSort} />
+                <SortableHeader label="Delivery Address" sortKey="address" sort={customerSort} onSort={setCustomerSort} />
+                <SortableHeader label="Contact Person" sortKey="contact" sort={customerSort} onSort={setCustomerSort} className="hidden md:table-cell" />
+                <SortableHeader label="Contact Info" sortKey="contactInfo" sort={customerSort} onSort={setCustomerSort} className="hidden md:table-cell" />
+                <SortableHeader label="District" sortKey="district" sort={customerSort} onSort={setCustomerSort} />
                 <TableHead style={{ width: '120px' }} className="sticky right-0 z-10 border-b border-border bg-navy-mid px-3 py-3 text-center font-barlow-cond text-xs font-bold uppercase tracking-wider text-muted whitespace-nowrap shadow-left">
                   Actions
                 </TableHead>
@@ -721,21 +761,15 @@ export function Customers({ onBack }: CustomersProps) {
                     <TableCell className="hidden px-3 py-3 text-navy md:table-cell">
                       {customer.contact_info || <span className="text-muted">—</span>}
                     </TableCell>
-                    <TableCell className="px-3 py-3 whitespace-nowrap">
-                      {customer.discounts && customer.discounts.length > 0 ? (
-                        <span className="inline-block rounded bg-green-50 px-2 py-0.5 text-xs font-bold text-green-700">
-                          {formatPercent(totalDiscountRate(customer.discounts))}% · {customer.discounts.length}
-                        </span>
-                      ) : (
-                        <span className="text-muted">—</span>
-                      )}
+                    <TableCell className="px-3 py-3 whitespace-nowrap text-navy">
+                      {customer.district || <span className="text-muted">—</span>}
                     </TableCell>
                     <TableCell style={{ width: '120px' }} className="sticky right-0 z-10 px-3 py-3 bg-white border-l border-border shadow-left">
                       <ActionButtons
                         onView={() => setViewingCustomer(customer)}
                         onEdit={() => openEditModal(customer)}
                         onDelete={() => handleDelete(customer.id)}
-                        showDelete={showDeleteButtons}
+                        showDelete
                       />
                     </TableCell>
                   </TableRow>
@@ -776,30 +810,6 @@ export function Customers({ onBack }: CustomersProps) {
         Total customers: {filteredCustomers.length}
       </div>
 
-      {showExcelImport && (
-        <ExcelImportDialog
-          title="Customers"
-          columns={customerExcelColumns}
-          validateRow={validateCustomerImportRow}
-          onImport={importCustomerRows}
-          onClose={() => setShowExcelImport(false)}
-        />
-      )}
-
-      {viewingCustomer && (
-        <ViewCustomerModal customer={viewingCustomer} onClose={() => setViewingCustomer(null)} />
-      )}
-
-      {isModalOpen && (
-        <CustomerModal
-          title={editingCustomer ? "Edit Customer" : "Add New Customer"}
-          formData={formData}
-          setFormData={setFormData}
-          districts={truckDistricts}
-          onClose={() => setIsModalOpen(false)}
-          onSave={handleSave}
-        />
-      )}
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { RefreshCw } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,12 +28,18 @@ interface DriverForm {
 
 function ViewDriverModal({ driver, onClose }: { driver: Driver; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-          <h2 className="font-rajdhani text-lg font-bold text-white">Driver Details</h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl">×</button>
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 space-y-6 max-w-2xl">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Driver Details</h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-border">
 
         <div className="p-6 space-y-4">
           {[
@@ -103,12 +109,18 @@ function DriverModal({
   );
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-          <h2 className="font-rajdhani text-lg font-bold text-white">{title}</h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl">×</button>
+    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 space-y-6 max-w-2xl">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">{title}</h1>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-border">
 
         <div className="p-6 space-y-4">
           {field("Full Name *", "full_name", "e.g., Juan Dela Cruz")}
@@ -241,18 +253,17 @@ function DriverCard({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export function Drivers({ onBack }: DriversProps) {
+export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAccount?: () => void }) {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
   const [viewingDriver, setViewingDriver] = useState<Driver | null>(null);
   const [schedulingDriver, setSchedulingDriver] = useState<Driver | null>(null);
-  const [showDeleteButtons, setShowDeleteButtons] = useState(false);
-  const [isRefreshing, setIsRefreshing] = useState(false);
   const { token } = useAuth();
 
   const emptyForm = (): DriverForm => ({
@@ -284,21 +295,16 @@ export function Drivers({ onBack }: DriversProps) {
     }
   };
 
-  const handleRefresh = async () => {
-    setIsRefreshing(true);
-    await fetchDrivers();
-    setIsRefreshing(false);
-  };
-
   useEffect(() => {
     if (token) fetchDrivers();
   }, [token]);
 
   const filteredDrivers = drivers.filter(
     (d) =>
-      (d.full_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      ((d.full_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (d.contact_info?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (d.license?.toLowerCase().includes(searchQuery.toLowerCase()))
+      (d.license?.toLowerCase().includes(searchQuery.toLowerCase()))) &&
+      (statusFilter === "all" || (statusFilter === "active" ? d.is_active : !d.is_active))
   );
 
   const totalPages = Math.ceil(filteredDrivers.length / itemsPerPage);
@@ -392,7 +398,7 @@ export function Drivers({ onBack }: DriversProps) {
     }
   };
 
-  if (isLoading && !isRefreshing) {
+  if (isLoading) {
     return (
       <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6">
         <LoadingSpinner className="min-h-64" />
@@ -400,8 +406,29 @@ export function Drivers({ onBack }: DriversProps) {
     );
   }
 
+  if (schedulingDriver) {
+    return <DriverScheduleModal driver={schedulingDriver} onClose={() => setSchedulingDriver(null)} />;
+  }
+
+  if (viewingDriver) {
+    return <ViewDriverModal driver={viewingDriver} onClose={() => setViewingDriver(null)} />;
+  }
+
+  if (isModalOpen) {
+    return (
+      <DriverModal
+        title={editingDriver ? "Edit Driver" : "Add New Driver"}
+        formData={formData}
+        setFormData={setFormData}
+        hasLogin={Boolean(editingDriver?.user)}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+      />
+    );
+  }
+
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+    <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden px-4 py-4 md:px-6 md:py-5">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="font-rajdhani text-3xl font-bold text-navy letter-spacing-tight">
@@ -409,14 +436,9 @@ export function Drivers({ onBack }: DriversProps) {
           </h1>
           <p className="text-xs text-muted mt-1">Manage field drivers</p>
         </div>
-        <button
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className="rounded-lg border border-border bg-white px-4 py-2 text-sm font-semibold text-navy transition-colors hover:bg-off-white disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 w-fit"
-        >
-          <RefreshCw size={16} className={isRefreshing ? "animate-spin" : ""} />
-          Refresh
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} className="rounded-lg bg-navy px-4 py-2 text-sm font-semibold text-white hover:opacity-90">Create Accounts</button>
+        </div>
       </div>
 
       {error && (
@@ -425,41 +447,25 @@ export function Drivers({ onBack }: DriversProps) {
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row gap-3">
-        <SearchFilterBar
-          searchTerm={searchQuery}
-          onSearchChange={(value) => { setSearchQuery(value); setCurrentPage(1); }}
-          placeholder="Search by name, contact, license…"
-        />
-        <button
-          onClick={openAddModal}
-          className="px-4 py-2 bg-navy text-white rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2 w-fit"
-        >
-          ➕ Add Driver
-        </button>
-        <button
-          onClick={() => setShowDeleteButtons(!showDeleteButtons)}
-          className={`w-fit px-4 py-2 rounded-lg font-semibold text-sm transition-colors ${
-            showDeleteButtons
-              ? "bg-red text-white hover:opacity-90"
-              : "bg-white border border-border text-navy hover:bg-off-white"
-          }`}
-        >
-          {showDeleteButtons ? "🔓 Delete Enabled" : "🔒 Enable Delete"}
-        </button>
-      </div>
+      <SearchFilterBar
+        searchTerm={searchQuery}
+        onSearchChange={(value) => { setSearchQuery(value); setCurrentPage(1); }}
+        placeholder="Search by name, contact, license…"
+        className="!flex-none"
+        filters={[{ name: "Status", value: statusFilter, onChange: (value) => { setStatusFilter(value); setCurrentPage(1); }, options: [{ label: "All Status", value: "all" }, { label: "Active", value: "active" }, { label: "Inactive", value: "inactive" }] }]}
+      />
 
       {paginatedDrivers.length === 0 ? (
         <div className="text-center text-muted text-sm py-12">
           {drivers.length === 0 ? "No drivers found" : "No results matching your search"}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 stagger-children">
+        <div className="grid flex-1 content-start grid-cols-1 gap-3 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 stagger-children">
           {paginatedDrivers.map((driver) => (
             <DriverCard
               key={driver.id}
               driver={driver}
-              showDelete={showDeleteButtons}
+              showDelete
               onView={() => setViewingDriver(driver)}
               onEdit={() => openEditModal(driver)}
               onSchedule={() => setSchedulingDriver(driver)}
@@ -469,7 +475,7 @@ export function Drivers({ onBack }: DriversProps) {
         </div>
       )}
 
-      <div className="flex items-center justify-between px-2 py-2">
+      <div className="mt-auto flex items-center justify-between px-2 py-2">
         <div className="text-xs text-muted">
           Page {currentPage} of {Math.max(1, totalPages)} · {filteredDrivers.length} drivers
         </div>
@@ -494,24 +500,6 @@ export function Drivers({ onBack }: DriversProps) {
         </div>
       </div>
 
-      {viewingDriver && (
-        <ViewDriverModal driver={viewingDriver} onClose={() => setViewingDriver(null)} />
-      )}
-
-      {schedulingDriver && (
-        <DriverScheduleModal driver={schedulingDriver} onClose={() => setSchedulingDriver(null)} />
-      )}
-
-      {isModalOpen && (
-        <DriverModal
-          title={editingDriver ? "Edit Driver" : "Add New Driver"}
-          formData={formData}
-          setFormData={setFormData}
-          hasLogin={Boolean(editingDriver?.user)}
-          onClose={() => setIsModalOpen(false)}
-          onSave={handleSave}
-        />
-      )}
     </div>
   );
 }

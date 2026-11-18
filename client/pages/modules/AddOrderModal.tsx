@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QuantityStepper } from "./QuantityStepper";
@@ -11,7 +11,6 @@ interface OrderItem {
 }
 
 interface AddOrderModalProps {
-  isOpen: boolean;
   onClose: () => void;
   customers: Customer[];
   products: Product[];
@@ -29,7 +28,6 @@ interface AddOrderModalProps {
 }
 
 export function AddOrderModal({
-  isOpen,
   onClose,
   customers,
   products,
@@ -70,18 +68,20 @@ export function AddOrderModal({
     (product.sku && product.sku.toLowerCase().includes(productSearch.toLowerCase()))
   );
 
-  if (!isOpen) return null;
-
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-4xl w-full max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-          <h2 className="font-rajdhani text-lg font-bold text-white">Add New Order</h2>
-          <button onClick={onClose} className="text-white hover:opacity-70 text-2xl">
-            ×
-          </button>
+    <div className="flex-1 flex flex-col p-6 gap-6">
+      <div className="page-header">
+        <div>
+          <h1 className="page-title">Add New Order</h1>
+          <p className="page-subtitle">Select a customer and add products to the order</p>
         </div>
+        <button onClick={onClose} className="btn-ghost">
+          <ArrowLeft size={15} />
+          Back
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-border flex-1 flex flex-col overflow-hidden">
 
         {/* Customer Selection */}
         <div className="bg-off-white px-6 py-3 border-b border-border">
@@ -133,7 +133,7 @@ export function AddOrderModal({
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 min-h-[400px]">
           {selectedTab === "products" ? (
             <div className="space-y-4">
               <Input
@@ -277,7 +277,7 @@ export function AddOrderModal({
         </div>
 
         {/* Footer */}
-        <div className="bg-off-white px-6 py-4 flex justify-between items-center border-t border-border rounded-b-2xl">
+        <div className="bg-off-white px-6 py-4 flex justify-between items-center border-t border-border">
           <div className="text-sm">
             {getTotalQuantity() > 0 && (
               <p className="font-semibold text-navy">

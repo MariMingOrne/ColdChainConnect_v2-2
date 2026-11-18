@@ -11,11 +11,12 @@ import {
   foreignKey,
   primaryKey,
   date,
+  jsonb,
 } from "drizzle-orm/pg-core";
 import { relations } from "drizzle-orm";
 
 // Enums
-export const userRoleEnum = pgEnum("user_role", ["admin", "agent", "driver"]);
+export const userRoleEnum = pgEnum("user_role", ["admin", "agent", "driver", "staff"]);
 export const bookingStatusEnum = pgEnum("booking_status", [
   "pending",
   "approved",
@@ -46,7 +47,9 @@ export const users = pgTable("users", {
   password_hash: text("password_hash").notNull(),
   mfa_secret: text("mfa_secret"),
   mfa_enabled: boolean("mfa_enabled").default(false).notNull(),
+  mfa_required: boolean("mfa_required").default(true).notNull(),
   role: userRoleEnum("role").default("agent").notNull(),
+  module_permissions: jsonb("module_permissions").$type<string[]>().default([]).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
@@ -94,6 +97,7 @@ export const products = pgTable("products", {
   batch_tracking_enabled: boolean("batch_tracking_enabled").default(true),
   manufacturer: text("manufacturer"),
   reorder_point: integer("reorder_point"),
+  weight: decimal("weight", { precision: 10, scale: 2 }),
   is_discontinued: boolean("is_discontinued").default(false),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),

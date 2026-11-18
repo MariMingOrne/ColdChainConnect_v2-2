@@ -4,6 +4,7 @@ import { AuditLog } from "@shared/api";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { useToast } from "@/hooks/use-toast";
 import { Table } from "@/components/ui/table";
+import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
 import { describeLog, getActionBadgeClass, getActionLabel } from "./auditDescribe";
 
 interface AuditLogTableProps {
@@ -18,6 +19,7 @@ export function AuditLogTable({ logs, onView }: AuditLogTableProps) {
   const [actionFilter, setActionFilter] = useState("all");
   const [resourceFilter, setResourceFilter] = useState("all");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [sort, setSort] = useState<SortState<"timestamp" | "user" | "action" | "description" | "resource" | "resourceId">>(null);
   const { toast } = useToast();
 
   const copyResourceId = async (log: AuditLog) => {
@@ -54,6 +56,12 @@ export function AuditLogTable({ logs, onView }: AuditLogTableProps) {
     });
   }, [logs, query, actionFilter, resourceFilter]);
 
+  const sortedLogs = useMemo(() => {
+    if (!sort) return filteredLogs;
+    const value = (log: AuditLog) => ({ timestamp: log.created_at, user: log.user_name, action: getActionLabel(log.action), description: describeLog(log), resource: log.resource_type, resourceId: log.resource_id })[sort.key];
+    return [...filteredLogs].sort((a, b) => compareValues(value(a), value(b)) * (sort.direction === "asc" ? 1 : -1));
+  }, [filteredLogs, sort]);
+
   return (
     <div className="flex flex-col gap-4">
       <SearchFilterBar
@@ -87,24 +95,24 @@ export function AuditLogTable({ logs, onView }: AuditLogTableProps) {
           <Table className="w-full">
             <thead>
               <tr>
-                <th className={`${HEAD_CLASS} text-left`}>Timestamp</th>
-                <th className={`${HEAD_CLASS} text-left`}>User</th>
-                <th className={`${HEAD_CLASS} text-left`}>Action</th>
-                <th className={`${HEAD_CLASS} text-left`}>Description</th>
-                <th className={`${HEAD_CLASS} text-left`}>Resource</th>
-                <th className={`${HEAD_CLASS} text-left`}>Resource ID</th>
-                <th className={`${HEAD_CLASS} text-right`}>Details</th>
+                <SortableHeader label="Timestamp" sortKey="timestamp" sort={sort} onSort={setSort} />
+                <SortableHeader label="User" sortKey="user" sort={sort} onSort={setSort} />
+                <SortableHeader label="Action" sortKey="action" sort={sort} onSort={setSort} />
+                <SortableHeader label="Description" sortKey="description" sort={sort} onSort={setSort} />
+                <SortableHeader label="Resource" sortKey="resource" sort={sort} onSort={setSort} />
+                <SortableHeader label="Resource ID" sortKey="resourceId" sort={sort} onSort={setSort} />
+                <th className={`${HEAD_CLASS} bg-[#101f5e] text-right text-sm font-bold text-white`}>Details</th>
               </tr>
             </thead>
             <tbody>
-              {filteredLogs.length === 0 ? (
+              {sortedLogs.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-3 py-6 text-center text-muted">
                     {logs.length === 0 ? "No activity yet" : "No entries match your search"}
                   </td>
                 </tr>
               ) : (
-                filteredLogs.map((log) => (
+                sortedLogs.map((log) => (
                   <tr
                     key={log.id}
                     className="border-b border-border transition-colors hover:bg-off-white/50"

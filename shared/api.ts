@@ -4,6 +4,26 @@
 
 import { z } from "zod";
 
+export const modulePermissionKeys = [
+  "dashboard",
+  "product-customer",
+  "order-fulfillment",
+  "delivery-operations",
+  "manage-accounts",
+  "reports",
+  "administration",
+] as const;
+export type ModulePermission = (typeof modulePermissionKeys)[number];
+export const modulePermissionLabels: Record<ModulePermission, string> = {
+  dashboard: "Dashboard",
+  "product-customer": "Product & Customer Management",
+  "order-fulfillment": "Order Fulfillment",
+  "delivery-operations": "Delivery & Customer Operations",
+  "manage-accounts": "Manage Accounts",
+  reports: "Reports",
+  administration: "Administration",
+};
+
 // Auth types
 export interface LoginRequest {
   username: string;
@@ -20,7 +40,8 @@ export interface LoginResponse {
   user: {
     id: string;
     username: string;
-    role: "admin" | "agent" | "driver";
+    role: "admin" | "agent" | "driver" | "staff";
+    module_permissions?: string[];
   };
 }
 
@@ -47,21 +68,23 @@ export interface LogoutResponse {
 export interface CreateAccountRequest {
   username: string;
   password: string;
-  role: "admin" | "agent";
+  role: "admin" | "agent" | "staff";
+  module_permissions?: ModulePermission[];
 }
 
 export interface CreateAccountResponse {
   id: string;
   username: string;
-  role: "admin" | "agent";
+  role: "admin" | "agent" | "staff";
 }
 
 // User types
 export interface User {
   id: string;
   username: string;
-  role: "admin" | "agent" | "driver";
+  role: "admin" | "agent" | "driver" | "staff";
   mfa_enabled: boolean;
+  mfa_required: boolean;
   created_at: string;
   updated_at: string;
   agent?: Pick<Agent, "full_name"> | null;
@@ -155,6 +178,7 @@ export interface Product {
   image_filename?: string;
   batch_tracking_enabled: boolean;
   reorder_point?: number;
+  weight?: string | null;
   manufacturer?: string;
   is_discontinued?: boolean;
   created_at: string;
@@ -171,6 +195,7 @@ export const CreateProductSchema = z.object({
   image_filename: z.string().optional(),
   batch_tracking_enabled: z.boolean().default(true),
   reorder_point: z.number().int().nonnegative().optional(),
+  weight: z.number().nonnegative().optional(),
   manufacturer: z.string().optional(),
   is_discontinued: z.boolean().optional(),
 });
@@ -319,7 +344,7 @@ export interface Driver {
   employment_type?: "full_time" | "part_time";
   is_active: boolean;
   user_id?: string | null;
-  user?: { id: string; username: string; mfa_enabled: boolean } | null;
+  user?: { id: string; username: string; mfa_enabled: boolean; mfa_required: boolean } | null;
   created_at: string;
   updated_at: string;
 }

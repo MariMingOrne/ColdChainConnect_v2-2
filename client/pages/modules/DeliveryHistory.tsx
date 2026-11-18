@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, ArrowLeft } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Customer, Truck, Invoice } from "@shared/api";
 import { Table } from "@/components/ui/table";
+import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
 
 interface Receipt {
   id: string;
@@ -41,6 +42,7 @@ export function DeliveryHistory() {
   const [customerFilter, setCustomerFilter] = useState("");
   const [page,         setPage]         = useState(1);
   const [viewReceipt,  setViewReceipt]  = useState<ReceiptExt | null>(null);
+  const [sort, setSort] = useState<SortState<"receipt" | "customer" | "truck" | "confirmed" | "notes">>(null);
 
   const PER_PAGE = 15;
 
@@ -103,8 +105,15 @@ export function DeliveryHistory() {
     return true;
   });
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-  const paginated  = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const sorted = [...filtered].sort((a, b) => {
+    if (!sort) return 0;
+    const value = (receipt: ReceiptExt) => ({ receipt: receipt.receipt_number, customer: receipt.customer?.store_name, truck: receipt.truck?.license_plate, confirmed: receipt.confirmed_at, notes: receipt.notes })[sort.key];
+    return compareValues(value(a), value(b)) * (sort.direction === "asc" ? 1 : -1);
+  });
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
+  const paginated  = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+  if (viewReceipt) return <OriginalReceiptModal receipt={viewReceipt} onClose={() => setViewReceipt(null)} />;
 
   const totalReceipts = receipts.length;
   const todayReceipts = receipts.filter((r) => {
@@ -153,6 +162,7 @@ export function DeliveryHistory() {
         searchTerm={search}
         onSearchChange={(value) => { setSearch(value); setPage(1); }}
         placeholder="Search by receipt #, customer, truck, or invoice…"
+        className="!justify-start"
         filters={[
           {
             name: "customerFilter",
@@ -178,11 +188,12 @@ export function DeliveryHistory() {
             <Table className="w-full text-xs md:text-sm">
               <thead>
                 <tr>
-                  {["Receipt #", "Customer", "Truck", "Confirmed At", "Notes", "Action"].map((h) => (
-                    <th key={h} className="bg-navy-mid text-muted font-barlow-cond text-xs font-bold uppercase tracking-wider px-3 py-3 text-left border-b border-border whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
+                  <SortableHeader label="Receipt #" sortKey="receipt" sort={sort} onSort={setSort} />
+                  <SortableHeader label="Customer" sortKey="customer" sort={sort} onSort={setSort} />
+                  <SortableHeader label="Truck" sortKey="truck" sort={sort} onSort={setSort} />
+                  <SortableHeader label="Confirmed At" sortKey="confirmed" sort={sort} onSort={setSort} />
+                  <SortableHeader label="Notes" sortKey="notes" sort={sort} onSort={setSort} />
+                  <th className="bg-[#101f5e] px-3 py-3 text-left text-sm font-bold text-white">Action</th>
                 </tr>
               </thead>
               <tbody>
@@ -250,10 +261,6 @@ export function DeliveryHistory() {
         )}
       </div>
 
-      {/* Original Receipt Modal */}
-      {viewReceipt && (
-        <OriginalReceiptModal receipt={viewReceipt} onClose={() => setViewReceipt(null)} />
-      )}
     </div>
   );
 }
@@ -280,22 +287,23 @@ function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt; onClo
   const handlePrint = () => window.print();
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl border border-border max-w-lg w-full max-h-[90vh] overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 bg-navy-mid px-6 py-4 flex items-center justify-between border-b border-border rounded-t-2xl">
-          <h2 className="font-rajdhani text-lg font-bold text-white">Original Receipt</h2>
-          <div className="flex gap-2">
-            <button
-              onClick={handlePrint}
-              className="px-3 py-1 bg-white/20 text-white rounded text-xs font-semibold hover:bg-white/30"
-            >
-              🖨 Print
-            </button>
-            <button onClick={onClose} className="text-white hover:opacity-70 text-2xl leading-none">×</button>
-          </div>
+    <div className="flex-1 flex flex-col gap-6 p-4 md:p-6">
+      <div className="page-header no-print">
+        <div>
+          <h1 className="page-title">Original Receipt</h1>
         </div>
+        <div className="flex gap-2">
+          <button onClick={handlePrint} className="btn-ghost">
+            🖨 Print
+          </button>
+          <button onClick={onClose} className="btn-ghost">
+            <ArrowLeft size={15} />
+            Back
+          </button>
+        </div>
+      </div>
 
+      <div className="max-w-lg w-full bg-white rounded-2xl border border-border">
         {/* Receipt body */}
         <div className="p-8 space-y-6 font-mono text-sm" id="receipt-print-area">
           {/* Company header */}
