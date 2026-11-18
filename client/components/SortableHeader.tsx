@@ -16,6 +16,14 @@ export function compareValues(a: string | number | null | undefined, b: string |
   return String(a).localeCompare(String(b), undefined, { numeric: true, sensitivity: "base" });
 }
 
+export function compareNewestFirst(a: { created_at?: string | null }, b: { created_at?: string | null }) {
+  return (Date.parse(b.created_at ?? "") || 0) - (Date.parse(a.created_at ?? "") || 0);
+}
+
+export function newestFirst<T extends { created_at?: string | null }>(rows: T[]): T[] {
+  return [...rows].sort(compareNewestFirst);
+}
+
 export function SortableHeader<K extends string>({
   label,
   sortKey,

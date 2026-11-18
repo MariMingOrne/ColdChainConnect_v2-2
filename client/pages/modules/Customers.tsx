@@ -11,7 +11,7 @@ import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
-import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
+import { SortableHeader, SortState, compareNewestFirst, compareValues } from "@/components/SortableHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -447,7 +447,7 @@ export function Customers({ onBack }: CustomersProps) {
             (!districtFilter || customer.district === districtFilter)
         )
         .sort((a, b) => {
-          if (!customerSort) return 0;
+          if (!customerSort) return compareNewestFirst(a, b);
           const direction = customerSort.direction === "asc" ? 1 : -1;
           const value = (c: Customer) => ({ store: c.store_name, address: formatCustomerAddress(c), contact: c.contact_person, contactInfo: c.contact_info, district: c.district })[customerSort.key];
           return compareValues(value(a), value(b)) * direction;

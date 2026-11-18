@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { CheckCircle } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { newestFirst } from "@/components/SortableHeader";
 import { AccountsReceivable as ARType, Customer } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -140,13 +141,13 @@ export function AccountsReceivable() {
     return true; // "all"
   });
 
-  const filtered = tabFiltered.filter((ar) => {
+  const filtered = newestFirst(tabFiltered.filter((ar) => {
     const q = searchTerm.toLowerCase();
     return (
       ar.id.toLowerCase().includes(q) ||
       getCustomerName(ar.customer_id).toLowerCase().includes(q)
     );
-  });
+  }));
 
   if (isLoading) return <LoadingSpinner />;
 

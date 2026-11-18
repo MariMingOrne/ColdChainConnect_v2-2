@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/table";
 import { Calendar } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { newestFirst } from "@/components/SortableHeader";
 import { Booking, Customer, Pallet } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
@@ -111,7 +112,7 @@ export function Preparation() {
 
   if (isLoading) return <LoadingSpinner className="fixed inset-0 z-0 min-h-0 bg-muted" slow />;
 
-  const filtered = orders.filter((order) => {
+  const filtered = newestFirst(orders.filter((order) => {
     const matchesSearch =
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customer_id.toLowerCase().includes(searchTerm.toLowerCase());
@@ -121,7 +122,7 @@ export function Preparation() {
     if (!isDateInRange(order.created_at)) return false;
 
     return true;
-  });
+  }));
 
   const ordersReadyForPrep = filtered.length;
   const pendingPalletItems = orders.reduce((sum, order) => {

@@ -7,6 +7,7 @@ import { ArrowLeft, RotateCcw, CheckCircle, XCircle, Search } from "lucide-react
 import { AgentReturn, Invoice, Customer, Product } from "@shared/api";
 import { LogReturnForm } from "./LogReturnForm";
 import { Table } from "@/components/ui/table";
+import { newestFirst } from "@/components/SortableHeader";
 
 function authHeaders(token: string) {
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
@@ -197,14 +198,14 @@ export function AgentReports() {
     );
   }
 
-  const filtered = returns.filter((ret) => {
+  const filtered = newestFirst(returns.filter((ret) => {
     const invoice = invoices.find((entry) => entry.id === ret.invoice_id);
     const customer = customers.find((entry) => entry.id === ret.customer_id);
     const query = searchTerm.trim().toLowerCase();
     const matchesSearch = !query || [ret.id, invoice?.receipt_number, ret.customer_id, customer?.store_name, ret.product_name, ret.reason]
       .some((value) => value?.toLowerCase().includes(query));
     return matchesSearch && (statusFilter === "all" || ret.status === statusFilter);
-  });
+  }));
 
   const pendingCount  = returns.filter((r) => r.status === "pending").length;
   const acceptedCount = returns.filter((r) => r.status === "accepted").length;
