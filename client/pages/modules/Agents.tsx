@@ -6,6 +6,7 @@ import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Agent } from "@shared/api";
+import { notify, confirmAction } from "@/components/ui/app-dialog";
 
 interface AgentForm {
   full_name: string;
@@ -408,7 +409,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
       } else {
         // Create new agent (account + profile in one call)
         if (!formData.username || !formData.password) {
-          alert("Username and password are required for new agents");
+          notify("Username and password are required for new agents");
           return;
         }
         const res = await fetch("/api/agents", {
@@ -435,7 +436,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
       }
       setIsModalOpen(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to save agent");
+      notify(err instanceof Error ? err.message : "Failed to save agent");
     }
   };
 
@@ -451,7 +452,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
       if (!response.ok) throw new Error("Failed to update MFA requirement");
       setAgents((current) => current.map((item) => item.id === agent.id && item.user ? { ...item, user: { ...item.user, mfa_required: required } } : item));
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Failed to update MFA requirement");
+      notify(error instanceof Error ? error.message : "Failed to update MFA requirement");
     } finally {
       setMfaSavingAgentId(null);
     }
@@ -460,7 +461,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
   const handleResetMfa = async () => {
     if (!editingAgent?.user_id) return;
     const username = editingAgent.user?.username;
-    if (!confirm(`Reset MFA for ${username}? They will need to set up their authenticator app again at next sign-in.`)) return;
+    if (!(await confirmAction(`Reset MFA for ${username}? They will need to set up their authenticator app again at next sign-in.`))) return;
 
     setIsResettingMfa(true);
     setMfaMessage(null);
@@ -487,7 +488,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this agent? This will also remove their login account.")) return;
+    if (!(await confirmAction("Delete this agent? This will also remove their login account."))) return;
     try {
       await fetch(`/api/agents/${id}`, {
         method: "DELETE",
@@ -495,7 +496,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
       });
       setAgents(agents.filter((a) => a.id !== id));
     } catch {
-      alert("Failed to delete agent");
+      notify("Failed to delete agent");
     }
   };
 

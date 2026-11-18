@@ -15,6 +15,7 @@ import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
 import { RecordDetailsDialog, type RecordDetails } from "@/components/RecordDetailsDialog";
 import { RecordTitleButton } from "@/components/RecordTitleButton";
+import { notify, confirmAction } from "@/components/ui/app-dialog";
 
 interface PricingProps {
   onBack?: () => void;
@@ -94,7 +95,7 @@ function ProductPage({
       const data = await response.json();
       setFormData({ ...formData, image_filename: data.filename });
     } catch (err) {
-      alert("Failed to upload image");
+      notify("Failed to upload image");
     } finally {
       setUploadingImage(false);
     }
@@ -464,14 +465,14 @@ export function Pricing({ onBack }: PricingProps) {
       }
       setIsModalOpen(false);
     } catch (err) {
-      alert("Failed to save product");
+      notify("Failed to save product");
     }
   };
 
   const handleDeleteSelected = async () => {
     if (selectedProducts.length === 0) return;
     const noun = selectedProducts.length === 1 ? "product" : "products";
-    if (!confirm(`Delete ${selectedProducts.length} selected ${noun}?`)) return;
+    if (!(await confirmAction(`Delete ${selectedProducts.length} selected ${noun}?`))) return;
     const selectedIds = selectedProducts.map((product) => product.id);
     try {
       await Promise.all(selectedIds.map((id) => fetch(`/api/products/${id}`, {
@@ -481,7 +482,7 @@ export function Pricing({ onBack }: PricingProps) {
       setProducts((current) => current.filter((product) => !selectedIds.includes(product.id)));
       setSelectedProductIds([]);
     } catch {
-      alert("Failed to delete selected products");
+      notify("Failed to delete selected products");
     }
   };
 

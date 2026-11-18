@@ -6,6 +6,7 @@ import { ArrowLeft, RotateCcw, CheckCircle, XCircle, Search } from "lucide-react
 import { AgentReturn, Invoice, Customer, Product } from "@shared/api";
 import { LogReturnForm } from "./LogReturnForm";
 import { Table } from "@/components/ui/table";
+import { notify } from "@/components/ui/app-dialog";
 
 function authHeaders(token: string) {
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
@@ -147,7 +148,7 @@ export function AgentReports() {
       if (!res.ok) throw new Error(await res.text());
       await fetchAll();
     } catch (err) {
-      alert("Failed: " + (err instanceof Error ? err.message : String(err)));
+      notify("Failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setProcessing(null);
     }
@@ -166,7 +167,7 @@ export function AgentReports() {
       if (!res.ok) throw new Error(await res.text());
       await fetchAll();
     } catch (err) {
-      alert("Failed: " + (err instanceof Error ? err.message : String(err)));
+      notify("Failed: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setProcessing(null);
     }

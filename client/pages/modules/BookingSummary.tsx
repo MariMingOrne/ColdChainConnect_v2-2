@@ -16,6 +16,7 @@ import { AddOrderModal } from "./AddOrderModal";
 import { BookingDetailPage } from "./BookingDetailPage";
 import { AgentOrderScreen } from "./AgentOrderScreen";
 import { describeCreditBlock, isCreditBlock, promptCreditOverride } from "@/lib/creditOverride";
+import { notify, confirmAction } from "@/components/ui/app-dialog";
 
 export function BookingSummary() {
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -177,16 +178,16 @@ export function BookingSummary() {
 
   const submitOrder = async (override?: { reason: string }) => {
     if (!newCustomerId) {
-      alert("Please select a customer");
+      notify("Please select a customer");
       return;
     }
     const emptyItems = orderItems.filter((i) => !i.product_id);
     if (emptyItems.length > 0) {
-      alert(`Please select a product for ${emptyItems.length} item${emptyItems.length > 1 ? "s" : ""}`);
+      notify(`Please select a product for ${emptyItems.length} item${emptyItems.length > 1 ? "s" : ""}`);
       return;
     }
     if (orderItems.length === 0) {
-      alert("Please add at least one item to the order");
+      notify("Please add at least one item to the order");
       return;
     }
     setIsCreating(true);
@@ -202,7 +203,7 @@ export function BookingSummary() {
         }),
       });
       if (res.status === 401) {
-        alert("Your session has expired or your account was not found. Please log in again.");
+        notify("Your session has expired or your account was not found. Please log in again.");
         await logout();
         return;
       }
@@ -211,7 +212,7 @@ export function BookingSummary() {
         if (isCreditBlock(block)) {
           const reason = override ? null : promptCreditOverride(block);
           if (reason) return await submitOrder({ reason });
-          alert(describeCreditBlock(block));
+          notify(describeCreditBlock(block));
           return;
         }
       }
@@ -226,7 +227,7 @@ export function BookingSummary() {
       setPreparedDeliveryDate("");
       setOrderItems([]);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to create order");
+      notify(err instanceof Error ? err.message : "Failed to create order");
     } finally {
       setIsCreating(false);
     }
@@ -241,7 +242,7 @@ export function BookingSummary() {
   };
 
   const handleRollbackOrder = async (booking: Booking) => {
-    if (!window.confirm("Roll back this order? It will be permanently deleted.")) return;
+    if (!(await confirmAction("Roll back this order? It will be permanently deleted."))) return;
     setRollingBackId(booking.id);
     try {
       const res = await fetch(`/api/bookings/${booking.id}`, {
@@ -254,7 +255,7 @@ export function BookingSummary() {
       }
       setBookings((prev) => prev.filter((b) => b.id !== booking.id));
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to roll back order");
+      notify(err instanceof Error ? err.message : "Failed to roll back order");
     } finally {
       setRollingBackId(null);
     }
@@ -285,7 +286,7 @@ export function BookingSummary() {
   };
 
   const handleApproveBooking = async () => {
-    if (!selectedBooking) return alert("No booking selected");
+    if (!selectedBooking) return notify("No booking selected");
     setIsApproving(true);
     try {
       const res = await fetch(`/api/bookings/${selectedBooking.id}/status`, {
@@ -301,14 +302,14 @@ export function BookingSummary() {
       setBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
       setApproveSuccess("Order approved. The invoice will be created after stock picking is complete.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to approve booking");
+      notify(err instanceof Error ? err.message : "Failed to approve booking");
     } finally {
       setIsApproving(false);
     }
   };
 
   const handleUnapproveBooking = async (booking: Booking) => {
-    if (!window.confirm("Are you sure you want to unapprove this order? It will return to pending status.")) return;
+    if (!(await confirmAction("Are you sure you want to unapprove this order? It will return to pending status."))) return;
     try {
       const res = await fetch(`/api/bookings/${booking.id}/status`, {
         method: "PATCH",
@@ -321,9 +322,9 @@ export function BookingSummary() {
       }
       const updated = await res.json();
       setBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
-      alert("Order moved back to pending status.");
+      notify("Order moved back to pending status.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to unapprove booking");
+      notify(err instanceof Error ? err.message : "Failed to unapprove booking");
     }
   };
 
@@ -340,7 +341,7 @@ export function BookingSummary() {
   };
 
   const handleRejectBooking = async () => {
-    if (!selectedBooking) return alert("No booking selected");
+    if (!selectedBooking) return notify("No booking selected");
     setIsRejecting(true);
     try {
       const res = await fetch(`/api/bookings/${selectedBooking.id}/status`, {
@@ -355,9 +356,9 @@ export function BookingSummary() {
       const updated = await res.json();
       setBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
       closeRejectModal();
-      alert("Order rejected successfully.");
+      notify("Order rejected successfully.");
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to reject booking");
+      notify(err instanceof Error ? err.message : "Failed to reject booking");
     } finally {
       setIsRejecting(false);
     }

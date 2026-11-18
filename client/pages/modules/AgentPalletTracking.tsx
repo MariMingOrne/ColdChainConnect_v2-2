@@ -6,6 +6,7 @@ import { ArrowLeft, ChevronDown, ChevronUp, Package, Search } from "lucide-react
 import { Booking, Pallet, Product } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { Input } from "@/components/ui/input";
+import { confirmAction } from "@/components/ui/app-dialog";
 
 interface TrackingPallet extends Pallet {
   order?: Booking;
@@ -167,8 +168,8 @@ export function AgentPalletTracking() {
     if (await handleAdvancePallet(scanPallet)) setScanPalletId(null);
   };
 
-  const handleListAdvance = (pallet: TrackingPallet) => {
-    if (pallet.status === "approved" && !window.confirm("Mark this pallet as shipped?")) return;
+  const handleListAdvance = async (pallet: TrackingPallet) => {
+    if (pallet.status === "approved" && !(await confirmAction("Mark this pallet as shipped?"))) return;
     void handleAdvancePallet(pallet);
   };
 

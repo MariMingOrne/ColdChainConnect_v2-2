@@ -14,6 +14,7 @@ import { DeliverySheet } from "@/components/pallets/DeliverySheet";
 import { PalletPrintAllDialog } from "@/components/pallets/PalletPrintAllDialog";
 import { DatePresetFilter, isInDatePreset } from "@/components/pallets/palletUtils";
 import { localScheduleDate } from "@/lib/agentSchedule";
+import { notify } from "@/components/ui/app-dialog";
 
 type DeliveryWithItems = Delivery & { delivery_items?: DeliveryItem[] };
 
@@ -95,10 +96,10 @@ export function BookingInventory() {
         throw new Error(errorData.error || "Failed to update pallet status");
       }
       const updated: Pallet & { invoice_pending_reason?: string } = await res.json();
-      if (updated.invoice_pending_reason) alert(updated.invoice_pending_reason);
+      if (updated.invoice_pending_reason) notify(updated.invoice_pending_reason);
       setPallets((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to update pallet status");
+      notify(err instanceof Error ? err.message : "Failed to update pallet status");
     } finally {
       setIsUpdatingStatus(false);
     }

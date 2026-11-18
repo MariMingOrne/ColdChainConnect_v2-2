@@ -6,6 +6,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ArrowLeft, Plus, X, ChevronDown, ChevronUp } from "lucide-react";
 import { InventoryBatch, InventoryBatchItem } from "@shared/api";
 import { useAuth } from "../hooks/useAuth";
+import { notify } from "@/components/ui/app-dialog";
 
 export function InventoryBatchesTab() {
   const [batches, setBatches] = useState<InventoryBatch[]>([]);
@@ -72,8 +73,8 @@ export function InventoryBatchesTab() {
     );
 
   const handleCreateBatch = async () => {
-    if (!newBatchName.trim()) return alert("Please enter batch name");
-    if (batchItems.some((i) => !i.product_id)) return alert("Please select product for each item");
+    if (!newBatchName.trim()) return notify("Please enter batch name");
+    if (batchItems.some((i) => !i.product_id)) return notify("Please select product for each item");
 
     setIsCreating(true);
     try {
@@ -94,7 +95,7 @@ export function InventoryBatchesTab() {
       setNewBatchName("");
       setBatchItems([{ product_id: "", qty_units: 1 }]);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to create batch");
+      notify(err instanceof Error ? err.message : "Failed to create batch");
     } finally {
       setIsCreating(false);
     }
@@ -116,7 +117,7 @@ export function InventoryBatchesTab() {
 
       setBatches((prev) => prev.map((b) => (b.id === batchId ? updated : b)));
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to close batch");
+      notify(err instanceof Error ? err.message : "Failed to close batch");
     }
   };
 

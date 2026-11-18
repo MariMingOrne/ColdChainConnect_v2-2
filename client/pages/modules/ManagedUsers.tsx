@@ -5,6 +5,7 @@ import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { ManagedUserCard } from "@/components/managed-users/ManagedUserCard";
 import { ManagedUserModal } from "@/components/managed-users/ManagedUserModal";
 import type { ManagedUser } from "@/components/managed-users/types";
+import { notify } from "@/components/ui/app-dialog";
 
 export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["role"]; onCreateAccount?: () => void }) {
   const token = useAuth((state) => state.token);
@@ -81,7 +82,7 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
       if (!response.ok) throw new Error("Failed to update MFA requirement");
       updateAccount(account.id, { mfa_required: required });
     } catch (cause) {
-      alert(cause instanceof Error ? cause.message : "Failed to update MFA requirement");
+      notify(cause instanceof Error ? cause.message : "Failed to update MFA requirement");
     } finally {
       setMfaSavingId(null);
     }

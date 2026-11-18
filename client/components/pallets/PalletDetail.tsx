@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Table } from "@/components/ui/table";
 import { formatMoney, palletItemTotal, palletTotal, palletStatusOptions } from "./palletUtils";
 import { PalletStatusBadge } from "./PalletTable";
+import { confirmAction } from "@/components/ui/app-dialog";
 
 interface PalletDetailProps {
   pallet: Pallet;
@@ -36,10 +37,10 @@ export function PalletDetail({
   const nextStatus = palletStatusOptions[statusIndex + 1];
   const previousStatus = statusIndex > 0 ? palletStatusOptions[statusIndex - 1] : undefined;
 
-  const handleRevert = () => {
+  const handleRevert = async () => {
     setMenuOpen(false);
     if (!previousStatus) return;
-    if (window.confirm(`Revert this pallet from ${palletStatusOptions[statusIndex].label} to ${previousStatus.label}?`)) {
+    if (await confirmAction(`Revert this pallet from ${palletStatusOptions[statusIndex].label} to ${previousStatus.label}?`)) {
       onStatusChange(previousStatus.value);
     }
   };

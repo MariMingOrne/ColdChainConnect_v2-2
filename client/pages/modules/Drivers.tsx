@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Driver } from "@shared/api";
 import { DriverScheduleModal } from "@/components/driver/DriverScheduleModal";
+import { notify, confirmAction } from "@/components/ui/app-dialog";
 
 interface DriversProps {
   onBack?: () => void;
@@ -337,7 +338,7 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
   const handleSave = async () => {
     try {
       if (!formData.full_name) {
-        alert("Full name is required");
+        notify("Full name is required");
         return;
       }
 
@@ -382,12 +383,12 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
       }
       setIsModalOpen(false);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to save driver");
+      notify(err instanceof Error ? err.message : "Failed to save driver");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this driver?")) return;
+    if (!(await confirmAction("Delete this driver?"))) return;
     try {
       await fetch(`/api/drivers/${id}`, {
         method: "DELETE",
@@ -395,7 +396,7 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
       });
       setDrivers(drivers.filter((d) => d.id !== id));
     } catch {
-      alert("Failed to delete driver");
+      notify("Failed to delete driver");
     }
   };
 

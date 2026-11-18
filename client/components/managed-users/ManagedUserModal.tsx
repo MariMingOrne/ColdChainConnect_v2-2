@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { modulePermissionKeys, modulePermissionLabels, type ModulePermission } from "@shared/api";
 import type { ManagedUser } from "./types";
+import { notify, confirmAction } from "@/components/ui/app-dialog";
 
 async function requireOk(response: Response, fallback: string) {
   if (response.ok) return;
@@ -47,8 +48,8 @@ export function ManagedUserModal({
   };
 
   const handleSave = async () => {
-    if (!trimmedUsername) return alert("Username is required");
-    if (password && password.trim().length < 4) return alert("Password must be at least 4 characters");
+    if (!trimmedUsername) return notify("Username is required");
+    if (password && password.trim().length < 4) return notify("Password must be at least 4 characters");
     if (!usernameChanged && !password && !permissionsChanged) return onClose();
 
     setIsSaving(true);
@@ -80,14 +81,14 @@ export function ManagedUserModal({
       onUpdated({ username: trimmedUsername, module_permissions: permissions });
       onClose();
     } catch (cause) {
-      alert(cause instanceof Error ? cause.message : "Failed to save account");
+      notify(cause instanceof Error ? cause.message : "Failed to save account");
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleResetMfa = async () => {
-    if (!confirm(`Reset MFA for ${account.username}? They will need to set up their authenticator app again at next sign-in.`)) return;
+    if (!(await confirmAction(`Reset MFA for ${account.username}? They will need to set up their authenticator app again at next sign-in.`))) return;
 
     setIsResettingMfa(true);
     setMfaMessage(null);

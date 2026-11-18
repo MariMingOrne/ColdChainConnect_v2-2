@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { notify } from "@/components/ui/app-dialog";
 
 type ReturnType = "good" | "damaged";
 
@@ -58,7 +59,7 @@ export function LogReturnForm({
 
   const handleSave = async () => {
     if (!customerId || !invoiceId || items.some((item) => !item.product_id || !Number.isInteger(item.qty_returned) || item.qty_returned < 1)) {
-      alert("Select a product and enter a valid quantity for every item.");
+      notify("Select a product and enter a valid quantity for every item.");
       return;
     }
     setSaving(true);
@@ -78,7 +79,7 @@ export function LogReturnForm({
       reset();
       onSaved();
     } catch (err) {
-      alert("Failed to create return: " + (err instanceof Error ? err.message : String(err)));
+      notify("Failed to create return: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setSaving(false);
     }

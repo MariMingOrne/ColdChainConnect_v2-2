@@ -14,6 +14,7 @@ import { CheckCircle } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { AccountsReceivable as ARType, Customer } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
+import { notify, confirmAction } from "@/components/ui/app-dialog";
 
 type Tab = "outstanding" | "paid" | "credits" | "all";
 
@@ -64,7 +65,7 @@ export function AccountsReceivable() {
   };
 
   const handleMarkPaid = async (id: string) => {
-    if (!confirm("Mark this AR record as paid?")) return;
+    if (!(await confirmAction("Mark this AR record as paid?"))) return;
     setMarkingPaid(id);
     try {
       const res = await fetch(`/api/accounts-receivable/${id}/status`, {
@@ -77,7 +78,7 @@ export function AccountsReceivable() {
       setActiveTab("paid");
       await fetchData();
     } catch (err) {
-      alert("Failed to mark as paid: " + (err instanceof Error ? err.message : String(err)));
+      notify("Failed to mark as paid: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setMarkingPaid(null);
     }

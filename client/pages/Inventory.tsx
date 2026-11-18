@@ -11,6 +11,7 @@ import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
+import { notify, confirmAction } from "@/components/ui/app-dialog";
 
 interface InventoryProduct {
   id: string;
@@ -286,8 +287,8 @@ export function Inventory() {
   };
 
   const deleteBatch = async (batchId: string) => {
-    if (batchId === "batch-all") { alert("Cannot delete the default 'All Products' batch"); return; }
-    if (!confirm("Are you sure you want to delete this batch?")) return;
+    if (batchId === "batch-all") { notify("Cannot delete the default 'All Products' batch"); return; }
+    if (!(await confirmAction("Are you sure you want to delete this batch?"))) return;
     const batchName = batches.find((b) => b.id === batchId)?.name;
     if (batchName) {
       try {
@@ -305,7 +306,7 @@ export function Inventory() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this product?")) return;
+    if (!(await confirmAction("Are you sure you want to delete this product?"))) return;
     try {
       const token = localStorage.getItem("auth_token") || "";
       const response = await fetch(`/api/products/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
@@ -320,7 +321,7 @@ export function Inventory() {
       })));
       await fetchProductsFromApi();
     } catch (err) {
-      alert("Failed to delete product. Please try again.");
+      notify("Failed to delete product. Please try again.");
     }
   };
 
@@ -688,7 +689,7 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
       await onRefresh();
     } catch (err) {
       console.error("Failed to archive batch:", err);
-      alert("Failed to archive batch. Please try again.");
+      notify("Failed to archive batch. Please try again.");
     }
   };
 
@@ -704,7 +705,7 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
       await onRefresh();
     } catch (err) {
       console.error("Failed to unarchive batch:", err);
-      alert("Failed to unarchive batch. Please try again.");
+      notify("Failed to unarchive batch. Please try again.");
     }
   };
 
@@ -874,11 +875,11 @@ function CreateBatchForm({ newBatchName, setNewBatchName, pallets, setPallets, o
 
   const handleCreate = async () => {
     if (!newBatchName.trim() || items.length === 0 || !acquisitionDate) {
-      alert("Ensure batch name, acquisition date, and at least one item are set");
+      notify("Ensure batch name, acquisition date, and at least one item are set");
       return;
     }
     if (items.some((item) => !item.quantity)) {
-      alert("Enter a quantity greater than 0 for every item");
+      notify("Enter a quantity greater than 0 for every item");
       return;
     }
     const token = localStorage.getItem("auth_token") || "";
@@ -897,18 +898,18 @@ function CreateBatchForm({ newBatchName, setNewBatchName, pallets, setPallets, o
       if (!res.ok) {
         const error = await res.json();
         console.error("API Error:", error);
-        alert("Failed to create batch: " + (error.error || "Unknown error"));
+        notify("Failed to create batch: " + (error.error || "Unknown error"));
         return;
       }
       console.log("Batch created successfully");
-      alert("✓ Batch created successfully!");
+      notify("✓ Batch created successfully!");
       setItems([]);
       setAcquisitionDate("");
       // Close the modal and refresh batches
       await onCreateBatch();
     } catch (err) {
       console.error("Failed to create batch:", err);
-      alert("Failed to create batch: " + String(err));
+      notify("Failed to create batch: " + String(err));
     }
   };
 

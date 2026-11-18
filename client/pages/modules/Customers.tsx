@@ -19,6 +19,7 @@ import {
   formatPercent,
 } from "@/components/CustomerDiscountEditor";
 import { CustomerLocationPicker } from "@/components/CustomerLocationPicker";
+import { notify, confirmAction } from "@/components/ui/app-dialog";
 
 interface CustomersProps {
   onBack?: () => void;
@@ -582,12 +583,12 @@ export function Customers({ onBack }: CustomersProps) {
 
       setIsModalOpen(false);
     } catch {
-      alert("Failed to save customer");
+      notify("Failed to save customer");
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Delete this customer?")) return;
+    if (!(await confirmAction("Delete this customer?"))) return;
 
     try {
       await fetch(`/api/customers/${id}`, {
@@ -596,7 +597,7 @@ export function Customers({ onBack }: CustomersProps) {
       });
       setCustomers(customers.filter((customer) => customer.id !== id));
     } catch {
-      alert("Failed to delete customer");
+      notify("Failed to delete customer");
     }
   };
 
