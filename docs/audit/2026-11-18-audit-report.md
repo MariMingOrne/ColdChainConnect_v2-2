@@ -155,3 +155,41 @@ shadcn/ui is installed (46 components) but barely used:
 - Logged-in UI review, screenshots, responsive QA, chart-data verification: **blocked by the Neon quota** (no data, no login).
 - Load/performance profiling: same reason.
 - Penetration testing against a deployed instance: out of scope / not authorized.
+
+---
+
+## 7. Status after branch `audit/security-and-ui-overhaul`
+
+Every "Fixed" item below has a test or a recorded browser check. "Not done" means exactly that.
+
+| ID | Status | What changed / why not |
+|---|---|---|
+| P0-1 secrets in git | **Partly** | `.env` untracked and ignored; local `JWT_SECRET` regenerated. **Still required:** rotate the old Neon password and the deployed `JWT_SECRET` (needs account access), optionally purge history (force-push). |
+| P0-2 open upload | Fixed | Admin-only, magic-byte check, random filenames. Tests. |
+| P0-3 DB quota | Worked around | Development points at a teammate's Neon DB (local `.env` only). |
+| P1-1 payment race | **Partly** | `recordDeliveryItemPayment` now one transaction with row locks. **Not done:** a `payments` history table (schema change on a shared DB) and transactions in `deliveries.ts` / `invoices.ts`. |
+| P1-2 demo admin login | Fixed | Needs `DEMO_MODE=true` outside production; else 503. Test. |
+| P1-3 brute force | Fixed | 5 tries per username, 30 per IP, 5 MFA codes, per 15 min; proxy-aware. In-memory per instance (serverless instances count separately). Tests. |
+| P1-4 dependencies | Fixed | 26 → 8 advisories; remaining 8 are exceljs transitive paths this app does not reach. |
+| P1-5 agent data scope | Fixed | Invoices, receipts, AR, returns scoped to the agent's orders. Drivers cannot reach these routes at all. Tests. |
+| P1-6 stale tokens | Fixed | Account and role re-checked per request; client signs out on 401. Tests. |
+| P1-7 indexes / migrations | **Partly** | 44 indexes declared + `drizzle/0016_add_indexes.sql` (additive). **Not applied** to any DB. `db:migrate` still runs `push`; the migration journal is out of sync (tracks 5 of 17 files). |
+| P1-8 design system | **Partly** | Tokens, dark mode, shadcn-compatible theme, dialogs/toasts, shared StatCard, quiet row actions, Login on shadcn. **Not done:** ~245 hand-written `<button>`s and 5 custom overlays still to move onto shadcn components screen by screen. |
+| P2-1 refresh crash | Fixed | Test. |
+| P2-2 validation / leaks | **Partly** | No raw DB errors in responses (`sendRouteError`). Zod still only in 5 of 26 route files. |
+| P2-3 CORS | Fixed | Same-origin unless `CORS_ORIGIN` is set. Test. |
+| P2-4 4-char passwords | Fixed | 8 minimum for new/changed passwords. Test. |
+| P2-5 error boundary | Fixed | RouteBoundary. |
+| P2-6 bundle | Fixed | Route code-splitting: 2,510 kB → 225 kB main chunk. |
+| P2-7 data fetching | **Partly** | Dashboard + nav badges on TanStack Query with a server summary (~1.1 MB → ~26 KB per dashboard load). Other screens unchanged. |
+| P2-8 dead pages | Kept | Owner decision: keep. Only colour tokens changed in them. |
+| P2-9 uploads in git | **Partly** | `.bak` removed. Uploaded images left tracked: product records reference them, removing them would break images for everyone who pulls. Needs object storage first. |
+| P2-10 login labels | Fixed | Browser-verified. |
+| P2-11 tiny mobile type | Fixed | 12 px minimum; mobile heading override removed. |
+| P2-12 tests hit real DB | **Partly** | Builds no longer connect. API tests still read the configured DB (read-only) and are skipped without one. |
+| P2-13 stale docs | Not done | |
+| — audit filters (new) | Fixed | `?action=` / `?user_id=` returned nothing. Test. |
+| — driver schedule (new) | Fixed | Drivers were 403 on their own schedule (also on main). Test. |
+| — misleading figures (new) | Fixed | Reports' overlapping-period bars; Delivery History "Paid Invoices" showed the delivery count. |
+
+Measured: Hallmark sloplint 226 → 50 FAIL (remaining: recorded waivers, kept dead pages, nested-card follow-ups); contrast 22 failing elements → 0 (light and dark, dashboard); tests 19 → 43.
