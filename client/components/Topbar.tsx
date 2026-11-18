@@ -35,6 +35,7 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [hoveredSuggestionId, setHoveredSuggestionId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const bellRef = useRef<HTMLButtonElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const { data: searchData = EMPTY_SEARCH_DATA, isFetching: isFetchingSearch } = useGlobalSearchData(
     isSearchFocused && Boolean(searchTerm.trim())
@@ -239,6 +240,7 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
         {role === "admin" && <AdminMobileNavigation />}
         {/* Notification button */}
         <button
+          ref={bellRef}
           onClick={() => setShowNotifications(!showNotifications)}
           aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
           aria-expanded={showNotifications}
@@ -287,7 +289,11 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
             onMarkAsRead={markAsRead}
             onMarkAllAsRead={markAllAsRead}
             onDismiss={dismiss}
-            onClose={() => setShowNotifications(false)}
+            onClose={() => {
+              setShowNotifications(false);
+              // The sheet unmounts on close, so hand focus back to the bell ourselves.
+              window.setTimeout(() => bellRef.current?.focus(), 0);
+            }}
           />
         )}
       </div>
