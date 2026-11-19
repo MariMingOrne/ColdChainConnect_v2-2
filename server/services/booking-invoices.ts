@@ -2,7 +2,7 @@ import { randomUUID } from "crypto";
 import { eq } from "drizzle-orm";
 import { totalDiscountRate } from "../../shared/api";
 import { db } from "../db";
-import { bookings, invoices, invoice_items } from "../db/schema";
+import { agents, bookings, invoices, invoice_items } from "../db/schema";
 
 function generateReceiptNumber(): string {
   const num = Math.floor(Math.random() * 99999).toString().padStart(6, "0");
@@ -52,6 +52,13 @@ export async function createInvoiceAfterPicking(bookingId: string) {
       [...bookedQuantities].every(([productId, quantity]) => pickedQuantities.get(productId) === quantity);
     if (!quantitiesMatch) return { status: "incomplete_pick" as const, invoice: null };
 
+    // Receipts name the person, not the login: use the agent's full name when there is one.
+    const preparer = await tx.query.agents.findFirst({
+      where: eq(agents.user_id, booking.created_by),
+      columns: { full_name: true },
+    });
+    const preparedBy = preparer?.full_name?.trim() || booking.creator?.username || "";
+
     const discountRate = totalDiscountRate(booking.customer?.discounts);
     const lineItems = booking.booking_items.map((item) => {
       const unitPrice = Number.parseFloat(item.product?.price ?? "0");
@@ -59,6 +66,8 @@ export async function createInvoiceAfterPicking(bookingId: string) {
         product_id: item.product_id,
         product_name: item.product?.name ?? item.product_id,
         product_sku: item.product?.sku ?? null,
+        unit_weight_kg: item.product?.weight ?? null,
+        unit_label: item.product?.unit ?? "PK",
         qty_ordered: item.qty_ordered,
         unit_price: unitPrice,
         amount: unitPrice * item.qty_ordered,
@@ -82,7 +91,7 @@ export async function createInvoiceAfterPicking(bookingId: string) {
       gross_amount: gross.toFixed(2),
       discount_amount: discountAmount.toFixed(2),
       total_amount: (gross - discountAmount).toFixed(2),
-      prepared_by: booking.creator?.username ?? "",
+      prepared_by: preparedBy,
     });
 
     if (lineItems.length > 0) {
@@ -92,6 +101,8 @@ export async function createInvoiceAfterPicking(bookingId: string) {
         product_id: item.product_id,
         product_name: item.product_name,
         product_sku: item.product_sku,
+        unit_weight_kg: item.unit_weight_kg,
+        unit_label: item.unit_label,
         qty_ordered: item.qty_ordered,
         unit_price: item.unit_price.toFixed(2),
         amount: item.amount.toFixed(2),

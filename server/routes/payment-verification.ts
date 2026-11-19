@@ -4,6 +4,9 @@ import { db } from "../db";
 import { accounts_receivable, audit_logs, customers, delivery_items, invoices, receipts, users } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
+import { paymentNeedsClearance } from "../../shared/api";
+
+const MAX_REMARKS_LENGTH = 500;
 
 // Field staff (driver, agent) record payments on delivery stops; Accounting verifies them here.
 //
@@ -107,6 +110,15 @@ export const verifyReceiptPayment: RequestHandler = async (req: AuthRequest, res
   if (!req.user) return res.status(401).json({ error: "Authentication required" });
   if (!process.env.DATABASE_URL) return res.status(503).json({ error: "Database not configured" });
 
+  const rawRemarks = req.body?.remarks;
+  if (rawRemarks !== undefined && rawRemarks !== null && typeof rawRemarks !== "string") {
+    return res.status(400).json({ error: "Remarks must be text" });
+  }
+  const remarks = typeof rawRemarks === "string" ? rawRemarks.trim() : "";
+  if (remarks.length > MAX_REMARKS_LENGTH) {
+    return res.status(400).json({ error: `Remarks can be at most ${MAX_REMARKS_LENGTH} characters` });
+  }
+
   try {
     const [existing] = await db
       .select({ receipt: receipts, payment_method: delivery_items.payment_method })
@@ -122,6 +134,10 @@ export const verifyReceiptPayment: RequestHandler = async (req: AuthRequest, res
       return res.status(409).json({ error: "No payment has been recorded for this receipt" });
     }
 
+    if (paymentNeedsClearance(existing.payment_method) && !remarks) {
+      return res.status(400).json({ error: "Add a clearance remark before verifying a bank transfer or check" });
+    }
+
     // Separation of duties: whoever recorded the payment (same lookup as the unverified list) cannot
     // also verify it. This means a solo admin cannot verify payments they recorded themselves.
     const itemId = existing.receipt.delivery_item_id;
@@ -133,7 +149,11 @@ export const verifyReceiptPayment: RequestHandler = async (req: AuthRequest, res
     // Conditional on still being unverified, so two simultaneous verifications cannot both win.
     const [verified] = await db
       .update(receipts)
-      .set({ payment_verified_by: req.user.userId, payment_verified_at: new Date() })
+      .set({
+        payment_verified_by: req.user.userId,
+        payment_verified_at: new Date(),
+        payment_verification_remarks: remarks || null,
+      })
       .where(and(eq(receipts.id, id), isNull(receipts.payment_verified_at)))
       .returning();
 
@@ -149,6 +169,7 @@ export const verifyReceiptPayment: RequestHandler = async (req: AuthRequest, res
         receipt_number: verified.receipt_number,
         payment_verified_by: verified.payment_verified_by,
         payment_verified_at: verified.payment_verified_at,
+        payment_verification_remarks: verified.payment_verification_remarks,
       },
     );
 

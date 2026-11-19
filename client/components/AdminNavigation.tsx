@@ -3,6 +3,7 @@ import { SEEN_KEY_BY_PATH, useUnseenCounts, type SeenKey } from "@/lib/unseen";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   BadgeCheck,
+  Banknote,
   Boxes,
   ChartNoAxesCombined,
   ChevronDown,
@@ -73,6 +74,7 @@ const primaryGroups: NavigationGroup[] = [
     icon: Wallet,
     items: [
       { label: "Payments to verify", path: "/accounting/payments", icon: BadgeCheck },
+      { label: "End-of-day cash", path: "/accounting/cash", icon: Banknote },
       { label: "Expenses", path: "/accounting/expenses", icon: Receipt },
     ],
   },

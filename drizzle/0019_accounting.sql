@@ -11,7 +11,8 @@ ALTER TABLE "bookings"
 --> statement-breakpoint
 ALTER TABLE "receipts"
   ADD COLUMN IF NOT EXISTS "payment_verified_by" text,
-  ADD COLUMN IF NOT EXISTS "payment_verified_at" timestamp;
+  ADD COLUMN IF NOT EXISTS "payment_verified_at" timestamp,
+  ADD COLUMN IF NOT EXISTS "payment_verification_remarks" text;
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "expenses" (
 	"id" text PRIMARY KEY NOT NULL,

@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { AgentScheduleResponse, Booking, Delivery, DeliveryItem, DriverSchedule, Product } from "@shared/api";
+import type { AccountsReceivable, AgentScheduleResponse, Booking, Customer, Delivery, DeliveryItem, DriverSchedule, Product } from "@shared/api";
 import { useAuth } from "./useAuth";
+import { summarizeOverdue } from "@/lib/receivables";
 
-type NotificationType = "orders" | "stock" | "delivery";
+type NotificationType = "orders" | "stock" | "delivery" | "receivable";
 
 export interface AppNotification {
   id: string;
@@ -86,6 +87,23 @@ export function useNotifications() {
           fetchJson<AdminDelivery[]>("/api/deliveries?status=in_transit", token),
         ]);
         const deliveries = [...pendingRuns, ...inTransitRuns];
+
+        // Receivables are a secondary source: if they fail to load, keep the other notifications.
+        const [receivables, customers] = await Promise.all([
+          fetchJson<AccountsReceivable[]>("/api/accounts-receivable?status=outstanding", token).catch(() => []),
+          fetchJson<Customer[]>("/api/customers", token).catch(() => []),
+        ]);
+        for (const overdue of summarizeOverdue(receivables, customers)) {
+          next.push({
+            id: `receivable:${overdue.customerId}:${overdue.count}:${overdue.oldestDaysOverdue}`,
+            type: "receivable",
+            title: "Payment past due",
+            message: `${overdue.customerName} · ${overdue.count} unpaid ${overdue.count === 1 ? "balance" : "balances"} totalling ₱${overdue.total.toFixed(2)}, oldest ${overdue.oldestDaysOverdue} day${overdue.oldestDaysOverdue === 1 ? "" : "s"} overdue.`,
+            timestamp: overdue.since,
+            icon: "💸",
+            href: "/booking-dispatch/accounts",
+          });
+        }
 
         for (const booking of bookings) {
           next.push({

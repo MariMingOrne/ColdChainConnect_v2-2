@@ -151,7 +151,7 @@ export function Inventory() {
   const batchSearchTerm = batchSearch.trim().toLowerCase();
   const visibleBatches = activeBatches.filter((b) =>
     (!batchSearchTerm || b.name.toLowerCase().includes(batchSearchTerm) || b.pallets.some((p) => p.palletId.toLowerCase().includes(batchSearchTerm))) &&
-    (!batchCreatedSince || new Date(b.createdAt) >= new Date(batchCreatedSince))
+    (!batchCreatedSince || b.createdAt.slice(0, 10) >= batchCreatedSince)
   );
   const visiblePallets = currentBatch && currentBatch.id !== "batch-all"
     ? currentBatch.pallets.filter((p) => !batchSearchTerm || currentBatch.name.toLowerCase().includes(batchSearchTerm) || p.palletId.toLowerCase().includes(batchSearchTerm))
@@ -421,7 +421,7 @@ export function Inventory() {
             <div className="w-full sm:w-72">
               <SearchFilterBar searchTerm={batchSearch} onSearchChange={setBatchSearch} placeholder="Find a batch or pallet…" />
             </div>
-            <Input type="datetime-local" value={batchCreatedSince} onChange={(e) => setBatchCreatedSince(e.target.value)} title="Show batches created on or after this date and time"  />
+            <Input type="date" value={batchCreatedSince} onChange={(e) => setBatchCreatedSince(e.target.value)} title="Show batches created on or after this date" />
           </div>
           <Button onClick={() => setIsBatchModalOpen(true)} variant="outline" className="w-fit">Manage Batches</Button>
         </div>
@@ -699,7 +699,7 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
   const activeBatches = batches.filter((b) => {
     if (b.isArchived || b.id === "batch-all") return false;
     if (batchQuery.trim() && !b.name.toLowerCase().includes(batchQuery.trim().toLowerCase())) return false;
-    if (createdSince && new Date(b.createdAt) < new Date(createdSince)) return false;
+    if (createdSince && b.createdAt.slice(0, 10) < createdSince) return false;
     if (productFilter && !b.pallets.some((p: any) => p.items.some((item: any) => item.productId === productFilter))) return false;
     return true;
   });
@@ -765,10 +765,10 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                       className="flex-1"
                     />
                     <Input
-                      type="datetime-local"
+                      type="date"
                       value={createdSince}
                       onChange={(e) => setCreatedSince(e.target.value)}
-                      title="Show batches created on or after this date and time"
+                      title="Show batches created on or after this date"
                       
                     />
                     <NativeSelect

@@ -95,7 +95,7 @@ export function DeliveryDispatch() {
   const [selectedTruck,        setSelectedTruck]        = useState<Truck | null>(null);
   const [selectedDelivery,     setSelectedDelivery]     = useState<DeliveryExt | null>(null);
   const [scheduleSearch, setScheduleSearch] = useState("");
-  const [scheduleFromDateTime, setScheduleFromDateTime] = useState("");
+  const [scheduleFromDate, setScheduleFromDate] = useState("");
   const [scheduleDriverFilter, setScheduleDriverFilter] = useState("all");
   const [scheduleAgentFilter, setScheduleAgentFilter] = useState("all");
   const [showAddTruckModal,    setShowAddTruckModal]    = useState(false);
@@ -105,6 +105,7 @@ export function DeliveryDispatch() {
   const [showPaymentModal,     setShowPaymentModal]     = useState(false);
   const [paymentItem,          setPaymentItem]          = useState<{ delivery: DeliveryExt; item: DeliveryItemExt } | null>(null);
   const [confirmingItem,       setConfirmingItem]       = useState<string | null>(null);
+  const [forcedAgentChangeId, setForcedAgentChangeId] = useState<string | null>(null);
 
   // Mobile: track which "panel" is visible — "trucks" | "detail"
   const [mobileView, setMobileView] = useState<"trucks" | "detail">("trucks");
@@ -169,7 +170,7 @@ export function DeliveryDispatch() {
   const scheduleQuery = scheduleSearch.trim().toLowerCase();
   const filteredTruckDeliveries = truckDeliveries.filter((delivery) => {
     const driverId = delivery.driver_id ?? delivery.driver?.id ?? delivery.truck?.driver_id ?? "";
-    const scheduledAt = new Date(`${delivery.scheduled_date ?? localScheduleDate(new Date(delivery.created_at))}T${delivery.scheduled_time ?? "00:00"}`);
+    const scheduledDate = delivery.scheduled_date ?? localScheduleDate(new Date(delivery.created_at));
     const matchesSearch = !scheduleQuery || [
       delivery.id,
       delivery.agent?.full_name,
@@ -177,7 +178,7 @@ export function DeliveryDispatch() {
       ...delivery.delivery_items.flatMap((item) => [item.receipt_number, item.customer?.store_name, item.invoice?.receipt_number]),
     ].some((value) => value?.toLowerCase().includes(scheduleQuery));
     return matchesSearch &&
-      (!scheduleFromDateTime || scheduledAt >= new Date(scheduleFromDateTime)) &&
+      (!scheduleFromDate || scheduledDate >= scheduleFromDate) &&
       (scheduleDriverFilter === "all" || driverId === scheduleDriverFilter) &&
       (scheduleAgentFilter === "all" || (delivery.agent_id ?? delivery.agent?.id) === scheduleAgentFilter);
   });
@@ -249,18 +250,22 @@ export function DeliveryDispatch() {
     }
   };
 
-  const handleAssignDriver = async (deliveryId: string, driverId: string) => {
+  const handleAssignAgent = async (deliveryId: string, agentId: string) => {
     if (!token) return;
     try {
       const res = await fetch(`/api/deliveries/${deliveryId}/assign`, {
         method: "PATCH",
         headers: authHeaders(token),
-        body: JSON.stringify({ driver_id: driverId || null }),
+        body: JSON.stringify({
+          agent_id: agentId || null,
+          force: forcedAgentChangeId === deliveryId,
+        }),
       });
       if (!res.ok) throw new Error(await res.text());
+      setForcedAgentChangeId(null);
       await fetchAll();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not update delivery assignment.");
+      setError(err instanceof Error ? err.message : "Could not update agent assignment.");
     }
   };
 
@@ -401,7 +406,7 @@ export function DeliveryDispatch() {
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input type="search" aria-label="Search truck schedule" placeholder="Search runs, customers, agents…" value={scheduleSearch} onChange={(event) => setScheduleSearch(event.target.value)} className="w-full pl-9" />
           </div>
-          <Input type="datetime-local" aria-label="Scheduled from date and time" title="Show runs scheduled from this date and time" value={scheduleFromDateTime} onChange={(event) => setScheduleFromDateTime(event.target.value)}  />
+          <Input type="date" aria-label="Scheduled from date" title="Show runs scheduled from this date" value={scheduleFromDate} onChange={(event) => setScheduleFromDate(event.target.value)} />
           <NativeSelect aria-label="Filter by driver" value={scheduleDriverFilter} onChange={(event) => setScheduleDriverFilter(event.target.value)} >
             <option value="all">All drivers</option>
             {drivers.map((driver) => <option key={driver.id} value={driver.id}>{driver.full_name || driver.id.slice(0, 8)}</option>)}
@@ -444,32 +449,51 @@ export function DeliveryDispatch() {
                 <span className="text-xs text-muted-foreground hidden sm:block">
                   {formatRunDate(delivery)} · {formatRunTime(delivery.scheduled_time)}
                 </span>
-                {selectedDelivery?.id === delivery.id
-                  ? <ChevronUp size={14} className="text-muted-foreground" />
-                  : <ChevronDown size={14} className="text-muted-foreground" />
-                }
+                <Button
+                  type="button"
+                  size="lg"
+                  variant={selectedDelivery?.id === delivery.id ? "default" : "outline"}
+                  aria-expanded={selectedDelivery?.id === delivery.id}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setSelectedDelivery(selectedDelivery?.id === delivery.id ? null : delivery);
+                  }}
+                >
+                  {selectedDelivery?.id === delivery.id ? "Hide details" : "View details"}
+                  {selectedDelivery?.id === delivery.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </Button>
               </div>
             </div>
 
             <div className="flex items-center gap-3 px-4 pb-3 flex-wrap">
-              <span className="text-xs font-semibold text-muted-foreground">
-                Agent: <span className="font-medium text-foreground">{delivery.agent?.full_name || "No linked agent"}</span>
-              </span>
               <label className="inline-flex items-center gap-2 text-xs font-semibold text-muted-foreground">
-                Driver
+                Agent
                 <NativeSelect
-                  value={delivery.driver_id ?? delivery.truck?.driver_id ?? ""}
-                  onChange={(event) => void handleAssignDriver(delivery.id, event.target.value)}
+                  value={delivery.agent_id ?? ""}
+                  onChange={(event) => void handleAssignAgent(delivery.id, event.target.value)}
+                  disabled={!canUpdateDelivery || (delivery.status !== "completed" && forcedAgentChangeId !== delivery.id)}
                   className="font-normal"
                 >
                   <option value="">Unassigned</option>
-                  {drivers.filter((driver) => driver.is_active).map((driver) => (
-                    <option key={driver.id} value={driver.id}>
-                      {driver.full_name || driver.id.slice(0, 8)}{driver.id === delivery.truck?.driver_id ? " · truck default" : ""}
-                    </option>
+                  {agents.filter((agent) => agent.is_active || agent.id === delivery.agent_id).map((agent) => (
+                    <option key={agent.id} value={agent.id}>{agent.full_name || agent.user?.username || agent.id.slice(0, 8)}</option>
                   ))}
                 </NativeSelect>
               </label>
+              {canUpdateDelivery && delivery.status !== "completed" && forcedAgentChangeId !== delivery.id && (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={async () => {
+                    if (await confirmAction("This delivery still has incomplete stops. Force changing its assigned agent?")) {
+                      setForcedAgentChangeId(delivery.id);
+                    }
+                  }}
+                >
+                  Force change
+                </Button>
+              )}
               {delivery.status === "pending" && canUpdateDelivery && (
                 <Button
                   type="button"

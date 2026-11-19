@@ -248,7 +248,7 @@ export function AgentDeliverySchedule() {
               onChange={(event) => setSearch(event.target.value)}
               placeholder="Truck, agent, store, or invoice"
               aria-label={`Search delivery ${view}`}
-              className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+              className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-foreground/80 dark:placeholder:text-foreground/70"
             />
           </label>
           <label className="flex flex-col justify-center rounded-lg border border-border px-3 py-1 text-2xs font-semibold text-muted-foreground focus-within:border-accent-2">

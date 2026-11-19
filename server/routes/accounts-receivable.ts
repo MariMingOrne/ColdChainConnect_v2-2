@@ -121,3 +121,42 @@ export const updateARStatus: RequestHandler = async (
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+const MAX_NOTE_LENGTH = 500;
+
+export const updateARNotes: RequestHandler = async (req: AuthRequest, res) => {
+  const { id } = req.params;
+  const { notes } = req.body ?? {};
+
+  if (notes !== null && typeof notes !== "string") {
+    return res.status(400).json({ error: "Notes must be text or null" });
+  }
+  const cleaned = typeof notes === "string" ? notes.trim() : null;
+  if (cleaned && cleaned.length > MAX_NOTE_LENGTH) {
+    return res.status(400).json({ error: `Notes can be at most ${MAX_NOTE_LENGTH} characters` });
+  }
+
+  if (!process.env.DATABASE_URL) {
+    return res.status(503).json({ error: "Database not configured" });
+  }
+
+  try {
+    const existing = await db.query.accounts_receivable.findFirst({
+      where: eq(accounts_receivable.id, id),
+    });
+    if (!existing) {
+      return res.status(404).json({ error: "AR record not found" });
+    }
+
+    const [updated] = await db
+      .update(accounts_receivable)
+      .set({ notes: cleaned || null, updated_at: new Date() })
+      .where(eq(accounts_receivable.id, id))
+      .returning();
+
+    res.json(updated);
+  } catch (error) {
+    console.error("Error updating AR notes:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};

@@ -11,7 +11,7 @@ const statusTabs: { value: PalletStatusFilter; label: string }[] = [
   { value: "all", label: "All" },
   { value: "draft", label: "Draft" },
   { value: "prepared", label: "Prepared" },
-  { value: "approved", label: "Approved" },
+  { value: "approved", label: "In transit" },
   { value: "shipped", label: "Shipped" },
 ];
 

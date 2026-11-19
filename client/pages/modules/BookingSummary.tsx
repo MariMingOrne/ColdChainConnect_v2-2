@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 import { TruncatedText } from "@/components/ui/truncated-text";
 import { PageDialog } from "@/components/shared/PageDialog";
 import { useNewRows } from "@/lib/unseen";
@@ -39,6 +40,7 @@ export function BookingSummary() {
   const { token, logout, user, finishPostLoginLoading } = useAuth();
   const isAgent = user?.role === "agent";
   const canApprove = useCan("booking:approve");
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "approved" | "prep" | "ready">("all");
   const [approvalFilter, setApprovalFilter] = useState<"all" | "approved" | "unapproved">("all");
@@ -56,7 +58,6 @@ export function BookingSummary() {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [showApproveModal, setShowApproveModal] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
-  const [approveSuccess, setApproveSuccess] = useState<string | null>(null);
 
   // Reject booking modal
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -329,14 +330,12 @@ export function BookingSummary() {
   // ── Approve Booking ───────────────────────────────────────────
   const openApproveModal = (booking: Booking) => {
     setSelectedBooking(booking);
-    setApproveSuccess(null);
     setShowApproveModal(true);
   };
 
   const closeApproveModal = () => {
     setShowApproveModal(false);
     setSelectedBooking(null);
-    setApproveSuccess(null);
   };
 
   const handleApproveBooking = async () => {
@@ -355,7 +354,11 @@ export function BookingSummary() {
       const { booking: updated } = await res.json();
       setBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
       void fetchAll();
-      setApproveSuccess("Order approved. The invoice will be created after stock picking is complete.");
+      // Next step in the flow: build the order's pallets. The invoice follows once picking is complete.
+      toast.success("Order approved. Prepare its pallets next; the invoice is created once picking is complete.");
+      const approvedId = selectedBooking.id;
+      closeApproveModal();
+      navigate(`/booking-dispatch/preparation/${encodeURIComponent(approvedId)}`);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to approve booking");
     } finally {
@@ -777,30 +780,20 @@ export function BookingSummary() {
             </div>
           </div>
 
-          {approveSuccess ? (
-            <div className="px-4 py-3 bg-success-soft border border-success/30 rounded-lg text-sm text-success font-semibold">
-              ✓ {approveSuccess}
-            </div>
-          ) : (
-            <div className="px-4 py-3 bg-info-soft border border-link/30 rounded-lg text-sm text-link">
-              The truck will be automatically assigned based on the customer's truck district.
-            </div>
-          )}
+          <div className="px-4 py-3 bg-info-soft border border-link/30 rounded-lg text-sm text-link">
+            The truck will be automatically assigned based on the customer's truck district. After approving you will be taken to pallet preparation.
+          </div>
         </div>
 
         <div className="flex justify-end gap-2 max-w-2xl">
-          <Button onClick={closeApproveModal} variant="outline">
-            {approveSuccess ? "Close" : "Cancel"}
+          <Button onClick={closeApproveModal} variant="outline">Cancel</Button>
+          <Button
+            onClick={handleApproveBooking}
+            disabled={isApproving}
+            variant="default"
+          >
+            {isApproving ? "Approving…" : "Approve Order"}
           </Button>
-          {!approveSuccess && (
-            <Button
-              onClick={handleApproveBooking}
-              disabled={isApproving}
-              variant="default"
-            >
-              {isApproving ? "Approving…" : "Approve Order"}
-            </Button>
-          )}
         </div>
       </div>
         </PageDialog>

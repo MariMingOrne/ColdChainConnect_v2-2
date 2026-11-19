@@ -25,6 +25,7 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  listProductCosts,
 } from "./routes/products";
 import {
   listBatches,
@@ -85,6 +86,7 @@ import {
   listAccountsReceivable,
   getCustomerBalance,
   updateARStatus,
+  updateARNotes,
 } from "./routes/accounts-receivable";
 import {
   listAgentReturns,
@@ -116,10 +118,11 @@ import { getSalesForecast } from "./routes/forecast";
 import { getDashboardSummary } from "./routes/dashboard";
 import { getUnseenCounts } from "./routes/unseen";
 import { postSalesForecastChat } from "./routes/sales-forecast-chat";
-import { getCustomerReport, getSalesReport, getStockReport } from "./routes/reports";
+import { getCustomerReport, getProfitReport, getSalesReport, getStockReport } from "./routes/reports";
 import { authMiddleware, requireRole } from "./middleware/auth";
 import { requireAnyPermission, requirePermission, staffModuleGuard } from "./middleware/permissions";
 import { listUnverifiedPayments, verifyReceiptPayment } from "./routes/payment-verification";
+import { createCashRemittance, listCashCollections } from "./routes/cash-remittances";
 import { approveExpense, createExpense, listExpenses, payExpense, rejectExpense } from "./routes/expenses";
 
 export function createServer() {
@@ -182,6 +185,7 @@ export function createServer() {
 
   // Products routes
   app.get("/api/products", authMiddleware, listProducts);
+  app.get("/api/product-costs", authMiddleware, requireRole("admin"), listProductCosts);
   app.post("/api/products", authMiddleware, requireRole("admin"), createProduct);
   app.patch("/api/products/:id", authMiddleware, requireRole("admin"), updateProduct);
   app.delete("/api/products/:id", authMiddleware, requireRole("admin"), deleteProduct);
@@ -242,6 +246,7 @@ export function createServer() {
   // Reports routes
   app.get("/api/reports/sales", authMiddleware, requireRole("admin", "staff"), getSalesReport);
   app.get("/api/reports/stock", authMiddleware, requireRole("admin", "staff"), getStockReport);
+  app.get("/api/reports/profit", authMiddleware, requireRole("admin", "staff"), getProfitReport);
   app.get("/api/reports/customers", authMiddleware, requireRole("admin", "staff"), getCustomerReport);
 
   // Deliveries routes
@@ -260,6 +265,8 @@ export function createServer() {
   // Payment verification (accounting)
   app.get("/api/payments/unverified", authMiddleware, requirePermission("payment:verify"), listUnverifiedPayments);
   app.post("/api/receipts/:id/verify", authMiddleware, requirePermission("payment:verify"), verifyReceiptPayment);
+  app.get("/api/cash-remittances/collections", authMiddleware, requirePermission("cash:reconcile"), listCashCollections);
+  app.post("/api/cash-remittances", authMiddleware, requirePermission("cash:reconcile"), createCashRemittance);
 
   // Expenses: submit, approve or reject, pay
   app.get("/api/expenses", authMiddleware, requireAnyPermission("expense:submit", "expense:approve", "expense:pay"), listExpenses);
@@ -276,6 +283,7 @@ export function createServer() {
   app.get("/api/accounts-receivable", authMiddleware, listAccountsReceivable);
   app.get("/api/accounts-receivable/customer/:customerId", authMiddleware, getCustomerBalance);
   app.patch("/api/accounts-receivable/:id/status", authMiddleware, requireRole("admin"), updateARStatus);
+  app.patch("/api/accounts-receivable/:id/notes", authMiddleware, requireRole("admin"), updateARNotes);
 
   app.get("/api/agent-returns", authMiddleware, listAgentReturns);
   app.post("/api/agent-returns", authMiddleware, createAgentReturn);

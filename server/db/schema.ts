@@ -106,10 +106,42 @@ export const products = pgTable("products", {
   manufacturer: text("manufacturer"),
   reorder_point: integer("reorder_point"),
   weight: decimal("weight", { precision: 10, scale: 2 }),
+  unit: varchar("unit", { length: 10 }).default("PK").notNull(),
+  srp: decimal("srp", { precision: 10, scale: 2 }),
   is_discontinued: boolean("is_discontinued").default(false),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// What a product costs us. Separate from products on purpose: product rows are embedded in bookings
+// and lists that agents can read, and cost must never travel with them.
+export const product_costs = pgTable("product_costs", {
+  product_id: text("product_id")
+    .primaryKey()
+    .references(() => products.id, { onDelete: "cascade" }),
+  cost_price: decimal("cost_price", { precision: 10, scale: 2 }).notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  check("product_costs_cost_price_nonnegative", sql`${table.cost_price} >= 0`),
+]);
+
+// End-of-day cash hand-over: a collector gives the day's cash to the office, which counts it by
+// denomination and confirms. One per collector per day; expected is computed on the server.
+export const cash_remittances = pgTable("cash_remittances", {
+  id: text("id").primaryKey(),
+  remitted_by: text("remitted_by").notNull().references(() => users.id),
+  received_by: text("received_by").notNull().references(() => users.id),
+  business_date: text("business_date").notNull(),
+  expected_amount: decimal("expected_amount", { precision: 12, scale: 2 }).notNull(),
+  counted_amount: decimal("counted_amount", { precision: 12, scale: 2 }).notNull(),
+  denominations: jsonb("denominations").$type<Record<string, number>>().notNull(),
+  notes: text("notes"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("cash_remittances_remitter_day_idx").on(table.remitted_by, table.business_date),
+  index("cash_remittances_business_date_idx").on(table.business_date),
+  check("cash_remittances_amounts_nonnegative", sql`${table.expected_amount} >= 0 AND ${table.counted_amount} >= 0`),
+]);
 
 // Inventory batches table
 export const inventory_batches = pgTable("inventory_batches", {
@@ -342,6 +374,8 @@ export const invoice_items = pgTable("invoice_items", {
   qty_ordered: integer("qty_ordered").notNull(),
   unit_price: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  unit_weight_kg: decimal("unit_weight_kg", { precision: 10, scale: 2 }),
+  unit_label: varchar("unit_label", { length: 10 }),
   created_at: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("invoice_items_invoice_id_idx").on(table.invoice_id),
@@ -417,6 +451,7 @@ export const receipts = pgTable("receipts", {
   payment_reference: text("payment_reference"),
   payment_verified_by: text("payment_verified_by").references(() => users.id),
   payment_verified_at: timestamp("payment_verified_at"),
+  payment_verification_remarks: text("payment_verification_remarks"),
   confirmed_at: timestamp("confirmed_at").defaultNow().notNull(),
 }, (table) => [
   index("receipts_customer_id_idx").on(table.customer_id),

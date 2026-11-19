@@ -274,3 +274,51 @@ describe("staff module guard", () => {
     expect((await guardFor("/payments/unverified", ["order-fulfillment"])).status).toBe(403);
   });
 });
+
+describe("clearance remarks", () => {
+  beforeAll(async () => {
+    await db.insert(bookings).values({ id: "book-bank", customer_id: "cust-1", created_by: seeded.admin.id });
+    await db.insert(invoices).values({
+      id: "inv-bank", booking_id: "book-bank", agent_id: seeded.admin.id, receipt_number: "INV-bank", customer_name: "Store One", total_amount: "100.00",
+    });
+    await db.insert(delivery_items).values({
+      id: "di-bank", delivery_id: "del-1", invoice_id: "inv-bank", destination_customer_id: "cust-1", status: "completed", is_paid: true, payment_method: "bank_transfer",
+    });
+    await db.insert(receipts).values({
+      id: "rec-bank", receipt_number: "OR-bank", delivery_item_id: "di-bank", customer_id: "cust-1", truck_id: "truck-1", invoice_id: "inv-bank",
+      confirmed_by: seeded.driver.id, payment_reference: "BDO-12345",
+    });
+  });
+
+  const withRemarks = (remarks: unknown) => {
+    const req = asAccounting({ id: "rec-bank" });
+    (req as unknown as { body: unknown }).body = { remarks };
+    return req;
+  };
+
+  it("lists the bank reference so Accounting can match it", async () => {
+    const { body } = await run(list, asAccounting());
+    expect((body as Row[]).find((row) => row.id === "rec-bank")).toMatchObject({ payment_reference: "BDO-12345" });
+  });
+
+  it("refuses a bank transfer without a remark, and leaves it unverified", async () => {
+    for (const remarks of [undefined, "", "   "]) {
+      expect((await run(verify, withRemarks(remarks))).status).toBe(400);
+    }
+    const [row] = await db.select().from(receipts).where(eq(receipts.id, "rec-bank"));
+    expect(row.payment_verified_at).toBeNull();
+  });
+
+  it("rejects remarks that are not text or are too long", async () => {
+    expect((await run(verify, withRemarks(42))).status).toBe(400);
+    expect((await run(verify, withRemarks("x".repeat(501)))).status).toBe(400);
+  });
+
+  it("stores the trimmed remark and audit-logs it", async () => {
+    const { status, body } = await run(verify, withRemarks("  Cleared in BDO on Nov 20  "));
+    expect(status).toBe(200);
+    expect(body).toMatchObject({ payment_verification_remarks: "Cleared in BDO on Nov 20" });
+    const logs = await db.select().from(audit_logs).where(eq(audit_logs.resource_id, "rec-bank"));
+    expect(JSON.parse(logs[0].after_state!)).toMatchObject({ payment_verification_remarks: "Cleared in BDO on Nov 20" });
+  });
+});

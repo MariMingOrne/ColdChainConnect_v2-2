@@ -1,10 +1,10 @@
 import { sendRouteError } from "../utils";
 import { RequestHandler } from "express";
-import { desc, eq, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, ne, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { Pallet, PalletItem, CreatePalletSchema, UpdatePalletStatusSchema } from "../../shared/api";
 import { db } from "../db";
-import { inventory_batches, batch_pallets, pallet_items, order_pallets, order_pallet_items, products, invoices, bookings, booking_items } from "../db/schema";
+import { inventory_batches, batch_pallets, pallet_items, order_pallets, order_pallet_items, products, invoices, bookings, booking_items, agents, deliveries, delivery_items } from "../db/schema";
 import {
   convertBookingReservationsTx,
   getAvailableUnitsBySource,
@@ -259,6 +259,31 @@ export const updatePalletStatus: RequestHandler = async (req: AuthRequest, res) 
       if (!current) return { status: "not_found" as const };
 
       const invoice = await tx.query.invoices.findFirst({ where: eq(invoices.booking_id, current.order_id) });
+      if (req.user?.role === "agent" && (status === "approved" || status === "shipped")) {
+        const agent = await tx.query.agents.findFirst({
+          where: eq(agents.user_id, req.user.userId),
+          columns: { id: true },
+        });
+        const scheduledDispatches = agent && await tx.query.deliveries.findMany({
+          where: and(
+            eq(deliveries.agent_id, agent.id),
+            isNotNull(deliveries.scheduled_date),
+            ne(deliveries.scheduled_date, ""),
+            isNotNull(deliveries.scheduled_time),
+            ne(deliveries.scheduled_time, ""),
+          ),
+          with: {
+            delivery_items: {
+              with: { invoice: { columns: { booking_id: true } } },
+            },
+          },
+        });
+        if (!scheduledDispatches?.some((dispatch) =>
+          dispatch.delivery_items.some((item) => item.invoice.booking_id === current.order_id)
+        )) {
+          return { status: "dispatch_required" as const };
+        }
+      }
       if (req.user?.role === "agent") {
         const agentTransition =
           (current.status === "draft" && status === "prepared") ||
@@ -311,6 +336,9 @@ export const updatePalletStatus: RequestHandler = async (req: AuthRequest, res) 
 
     if (updateResult.status === "not_found") return res.status(404).json({ error: "Pallet not found" });
     if (updateResult.status === "invoiced") return res.status(409).json({ error: "Pallet status cannot be moved backward after invoicing." });
+    if (updateResult.status === "dispatch_required") {
+      return res.status(409).json({ error: "Schedule this order in Truck Dispatch for your account before moving its pallet into transit or shipping it." });
+    }
     if (updateResult.status === "invalid_transition") {
       return res.status(400).json({ error: "Prepare pallets before marking them ready, then mark ready pallets as shipped." });
     }

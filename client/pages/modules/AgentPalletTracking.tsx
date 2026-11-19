@@ -16,18 +16,26 @@ interface TrackingPallet extends Pallet {
   order?: Booking;
 }
 
+type AgentScheduleResponse = {
+  deliveries: {
+    scheduled_date: string | null;
+    scheduled_time: string | null;
+    delivery_items: { invoice: { booking_id: string } | null }[];
+  }[];
+};
+
 type PalletFilter = "all" | Pallet["status"];
 
 const statusLabels: Record<Pallet["status"], string> = {
   draft: "In preparation",
   prepared: "Prepared",
-  approved: "Ready to dispatch",
+  approved: "In transit",
   shipped: "Shipped",
 };
 
 const nextActionLabels: Record<Pallet["status"], string | null> = {
   draft: "Mark prepared",
-  prepared: "Mark ready",
+  prepared: "Mark in transit",
   approved: "Mark shipped",
   shipped: null,
 };
@@ -49,6 +57,7 @@ export function AgentPalletTracking() {
   const [pallets, setPallets] = useState<TrackingPallet[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [batches, setBatches] = useState<InventoryBatch[]>([]);
+  const [scheduledOrderIds, setScheduledOrderIds] = useState<Set<string>>(() => new Set());
   const [search, setSearch] = useState(searchParams.get("order") ?? "");
   const [filter, setFilter] = useState<PalletFilter>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -63,11 +72,12 @@ export function AgentPalletTracking() {
 
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const [bookingRes, palletRes, productRes, batchRes] = await Promise.all([
+      const [bookingRes, palletRes, productRes, batchRes, scheduleRes] = await Promise.all([
         fetch("/api/bookings", { headers }),
         fetch("/api/pallets", { headers }),
         fetch("/api/products", { headers }),
         fetch("/api/inventory-batches", { headers }),
+        fetch("/api/agent-schedule", { headers }),
       ]);
 
       if (!bookingRes.ok || !palletRes.ok || !productRes.ok) {
@@ -80,6 +90,12 @@ export function AgentPalletTracking() {
         productRes.json() as Promise<Product[]>,
       ]);
       const bookingsById = new Map(bookings.map((booking) => [booking.id, booking]));
+      const schedule = scheduleRes.ok
+        ? await scheduleRes.json() as AgentScheduleResponse
+        : { deliveries: [] };
+      setScheduledOrderIds(new Set(schedule.deliveries
+        .filter((delivery) => delivery.scheduled_date && delivery.scheduled_time)
+        .flatMap((delivery) => delivery.delivery_items.flatMap((stop) => stop.invoice?.booking_id ?? []))));
 
       setProducts(productList);
       setBatches(batchRes.ok ? await batchRes.json() : []);
@@ -146,6 +162,10 @@ export function AgentPalletTracking() {
 
   const handleAdvancePallet = async (pallet: TrackingPallet): Promise<boolean> => {
     if (!token) return false;
+    if ((pallet.status === "prepared" || pallet.status === "approved") && !scheduledOrderIds.has(pallet.order_id)) {
+      setError("Schedule this order in Truck Dispatch before moving the pallet into transit or shipping it.");
+      return false;
+    }
 
     setUpdatingPalletId(pallet.id);
     setError("");
@@ -222,6 +242,9 @@ export function AgentPalletTracking() {
           </div>
 
           {error && <p role="alert" className="mt-3 rounded-xl border border-red/20 bg-red/5 p-3 text-sm text-red">{error}</p>}
+          {(scanPallet.status === "prepared" || scanPallet.status === "approved") && !scheduledOrderIds.has(scanPallet.order_id) && (
+            <p className="mt-3 text-sm text-muted-foreground">Schedule this order in Truck Dispatch before moving the pallet into transit or shipping it.</p>
+          )}
 
           <div className="mt-4 grid grid-cols-2 gap-2">
             <Button
@@ -236,7 +259,7 @@ export function AgentPalletTracking() {
               <Button
                 type="button"
                 onClick={() => void confirmScannedPallet()}
-                disabled={updatingPalletId !== null}
+                disabled={updatingPalletId !== null || ((scanPallet.status === "prepared" || scanPallet.status === "approved") && !scheduledOrderIds.has(scanPallet.order_id))}
                 variant="default" className="min-h-11"
               >
                 {updatingPalletId === scanPallet.id ? "Updating…" : nextActionLabels[scanPallet.status]}
@@ -261,7 +284,7 @@ export function AgentPalletTracking() {
         {([
           ["Total", pallets.length],
           ["Preparing", pallets.filter((pallet) => pallet.status === "draft" || pallet.status === "prepared").length],
-          ["Ready", pallets.filter((pallet) => pallet.status === "approved").length],
+          ["In transit", pallets.filter((pallet) => pallet.status === "approved").length],
           ["Dispatched", pallets.filter((pallet) => pallet.status === "shipped").length],
         ] as const).map(([label, count]) => (
           <div key={label} className="rounded-2xl border border-border bg-card px-3 py-3">
@@ -277,7 +300,7 @@ export function AgentPalletTracking() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search pallet, order, or customer"
-          className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+          className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-foreground/80 dark:placeholder:text-foreground/70"
         />
       </label>
 
@@ -292,7 +315,7 @@ export function AgentPalletTracking() {
           ["all", "All"],
           ["draft", "Preparing"],
           ["prepared", "Prepared"],
-          ["approved", "Ready"],
+          ["approved", "In transit"],
           ["shipped", "Shipped"],
         ] as const).map(([value, label]) => (
           <ToggleGroupItem key={value} value={value} variant="pill" className="min-h-10 shrink-0 border border-border bg-card data-[state=on]:border-primary">
@@ -395,10 +418,13 @@ export function AgentPalletTracking() {
 
                 {pallet.status !== "shipped" && (
                   <div className="border-t border-border p-3">
+                    {(pallet.status === "prepared" || pallet.status === "approved") && !scheduledOrderIds.has(pallet.order_id) && (
+                      <p className="mb-2 text-xs text-muted-foreground">Schedule this order in Truck Dispatch before moving the pallet into transit or shipping it.</p>
+                    )}
                     <Button
                       type="button"
                       onClick={() => handleListAdvance(pallet)}
-                      disabled={updatingPalletId !== null}
+                      disabled={updatingPalletId !== null || ((pallet.status === "prepared" || pallet.status === "approved") && !scheduledOrderIds.has(pallet.order_id))}
                       variant="default" className="min-h-11 w-full"
                     >
                       {updatingPalletId === pallet.id ? "Updating…" : nextActionLabels[pallet.status]}

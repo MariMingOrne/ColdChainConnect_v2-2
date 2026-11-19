@@ -128,6 +128,8 @@ const POLICY: Record<string, Policy> = {
   "GET /api/dashboard/summary": staffOnly("dashboard"),
   "GET /api/sales/forecast": agentAnd("reports"),
   "POST /api/sales/forecast/chat": ADMIN_ONLY,
+  "GET /api/product-costs": ADMIN_ONLY,
+  "GET /api/reports/profit": staffOnly("reports"),
   "GET /api/reports/sales": staffOnly("reports"),
   "GET /api/reports/stock": staffOnly("reports"),
   "GET /api/reports/customers": staffOnly("reports"),
@@ -150,6 +152,8 @@ const POLICY: Record<string, Policy> = {
 
   // Accounting
   "GET /api/payments/unverified": staffOnly("accounting"),
+  "GET /api/cash-remittances/collections": staffOnly("accounting"),
+  "POST /api/cash-remittances": staffOnly("accounting"),
   "POST /api/receipts/:id/verify": staffOnly("accounting"),
   "GET /api/expenses": staffOnly("accounting"),
   "POST /api/expenses": staffOnly("accounting"),
@@ -165,6 +169,7 @@ const POLICY: Record<string, Policy> = {
   "GET /api/accounts-receivable": agentAnd("delivery-operations"),
   "GET /api/accounts-receivable/customer/:customerId": agentAnd("delivery-operations"),
   "PATCH /api/accounts-receivable/:id/status": ADMIN_ONLY,
+  "PATCH /api/accounts-receivable/:id/notes": ADMIN_ONLY,
   "GET /api/agent-returns": agentAnd("delivery-operations"),
   "POST /api/agent-returns": agentAnd("delivery-operations"),
   "POST /api/agent-returns/:id/accept": ADMIN_ONLY,

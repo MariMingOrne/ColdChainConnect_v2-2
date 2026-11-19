@@ -17,7 +17,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CheckCircle } from "lucide-react";
+import { CheckCircle, StickyNote } from "lucide-react";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import { dueInfo, isReceivableCollectable } from "@/lib/receivables";
 import { TableBulkAction, TableToolbar } from "@/components/TableToolbar";
 import { newestFirst } from "@/components/SortableHeader";
 import { TablePagination, paginate } from "@/components/TablePagination";
@@ -46,9 +49,12 @@ export function AccountsReceivable() {
   const [activeTab, setActiveTab] = useState<Tab>("outstanding");
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [fromDateTime, setFromDateTime] = useState("");
-  const [toDateTime, setToDateTime] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [page, setPage] = useState(1);
+  const [noteTarget, setNoteTarget] = useState<ARType | null>(null);
+  const [noteDraft, setNoteDraft] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
 
   const fetchData = async () => {
     if (!token) return;
@@ -99,6 +105,31 @@ export function AccountsReceivable() {
     }
   };
 
+  const openNote = (ar: ARType) => {
+    setNoteTarget(ar);
+    setNoteDraft(ar.notes ?? "");
+  };
+
+  const handleSaveNote = async () => {
+    if (!noteTarget) return;
+    setSavingNote(true);
+    try {
+      const res = await fetch(`/api/accounts-receivable/${noteTarget.id}/notes`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ notes: noteDraft.trim() || null }),
+      });
+      if (!res.ok) throw new Error((await res.json().catch(() => null))?.error ?? "Could not save the note");
+      setNoteTarget(null);
+      await fetchData();
+      toast.success("Note saved");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not save the note");
+    } finally {
+      setSavingNote(false);
+    }
+  };
+
   const handleMarkSelectedPaid = async () => {
     const eligible = arRecords.filter((ar) => selectedIds.includes(ar.id) && ar.status !== "paid" && parseFloat(ar.amount_due) >= 0);
     if (eligible.length === 0) return void toast.error("Select unpaid records to mark as paid");
@@ -129,6 +160,10 @@ export function AccountsReceivable() {
 
   const getCustomerName = (customerId: string) =>
     customers.find((c) => c.id === customerId)?.store_name || customerId.slice(0, 8);
+
+  const termsFor = (customerId: string) => customers.find((c) => c.id === customerId)?.credit_terms_days;
+  const dueFor = (ar: ARType) => dueInfo(ar.created_at, termsFor(ar.customer_id));
+  const isOverdue = (ar: ARType) => isReceivableCollectable(ar.status, ar.amount_due) && dueFor(ar).overdue;
 
   const daysCreated = (createdAt: string) => {
     const days = Math.floor(
@@ -164,6 +199,9 @@ export function AccountsReceivable() {
     all:         arRecords.length,
   };
 
+  const overdueRecords = arRecords.filter(isOverdue);
+  const totalOverdue = overdueRecords.reduce((sum, ar) => sum + parseFloat(ar.amount_due || "0"), 0);
+
   const totalOutstanding = outstandingRecords.reduce(
     (sum, ar) => sum + parseFloat(ar.amount_due || "0"), 0
   );
@@ -179,9 +217,9 @@ export function AccountsReceivable() {
 
   const filtered = newestFirst(tabFiltered.filter((ar) => {
     const q = searchTerm.toLowerCase();
-    const createdAt = new Date(ar.created_at).getTime();
-    if (fromDateTime && createdAt < new Date(fromDateTime).getTime()) return false;
-    if (toDateTime && createdAt > new Date(toDateTime).getTime()) return false;
+    const createdDate = ar.created_at.slice(0, 10);
+    if (fromDate && createdDate < fromDate) return false;
+    if (toDate && createdDate > toDate) return false;
     return (
       ar.id.toLowerCase().includes(q) ||
       getCustomerName(ar.customer_id).toLowerCase().includes(q)
@@ -220,7 +258,7 @@ export function AccountsReceivable() {
       )}
 
       {/* Summary Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card className="p-4">
           <div className="text-2xl font-bold text-foreground">{outstandingRecords.length}</div>
           <p className="text-xs text-muted-foreground font-semibold tracking-tight mt-1">Outstanding</p>
@@ -232,6 +270,12 @@ export function AccountsReceivable() {
         <Card className="p-4">
           <div className="text-2xl font-bold text-accent-2">{creditRecords.length}</div>
           <p className="text-xs text-muted-foreground font-semibold tracking-tight mt-1">Credits</p>
+        </Card>
+        <Card className={`p-4 ${overdueRecords.length > 0 ? "bg-destructive-soft" : ""}`}>
+          <div className={`text-2xl font-bold ${overdueRecords.length > 0 ? "text-destructive" : "text-foreground"}`}>{overdueRecords.length}</div>
+          <p className="text-xs text-muted-foreground font-semibold tracking-tight mt-1">
+            Past due{overdueRecords.length > 0 ? ` · ₱${totalOverdue.toFixed(2)}` : ""}
+          </p>
         </Card>
         <Card className="p-4 bg-info-soft">
           <div className="text-xs text-muted-foreground mb-1">Total Outstanding</div>
@@ -265,8 +309,8 @@ export function AccountsReceivable() {
           onSearchChange={(value) => { setSearchTerm(value); setPage(1); }}
           searchPlaceholder="Search by customer or AR ID…"
         >
-          <input type="datetime-local" aria-label="Created from date and time" title="Show records created from this date and time" value={fromDateTime} max={toDateTime || undefined} onChange={(event) => { setFromDateTime(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
-          <input type="datetime-local" aria-label="Created to date and time" title="Show records created up to this date and time" value={toDateTime} min={fromDateTime || undefined} onChange={(event) => { setToDateTime(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
+          <input type="date" aria-label="Created from date" title="Show records created from this date" value={fromDate} max={toDate || undefined} onChange={(event) => { setFromDate(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
+          <input type="date" aria-label="Created to date" title="Show records created through this date" value={toDate} min={fromDate || undefined} onChange={(event) => { setToDate(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
         </TableToolbar>
       </div>
 
@@ -286,6 +330,7 @@ export function AccountsReceivable() {
               <TableHead>Status</TableHead>
               <TableHead>Notes</TableHead>
               <TableHead>Created</TableHead>
+              {activeTab !== "paid" && <TableHead>Due</TableHead>}
               {activeTab !== "paid" && <TableHead>Age</TableHead>}
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -293,7 +338,7 @@ export function AccountsReceivable() {
           <TableBody>
             {paginated.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={canUpdateReceivable ? 9 : 8} className="text-center py-10 text-muted-foreground text-sm">
+                <TableCell colSpan={(canUpdateReceivable ? 9 : 8) + (activeTab !== "paid" ? 1 : 0)} className="text-center py-10 text-muted-foreground text-sm">
                   {activeTab === "outstanding" && "No outstanding balances — great job! 🎉"}
                   {activeTab === "paid"        && "No paid records yet."}
                   {activeTab === "credits"     && "No return credits yet."}
@@ -332,6 +377,20 @@ export function AccountsReceivable() {
                       {new Date(ar.created_at).toLocaleDateString("en-PH")}
                     </TableCell>
                     {activeTab !== "paid" && (
+                      <TableCell className="whitespace-nowrap text-xs">
+                        {!isReceivableCollectable(ar.status, ar.amount_due) ? (
+                          <span className="text-muted-foreground">—</span>
+                        ) : (
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-muted-foreground">{dueFor(ar).dueDate.toLocaleDateString("en-PH")}</span>
+                            {dueFor(ar).overdue
+                              ? <StatusBadge label={`${dueFor(ar).daysOverdue}d overdue`} tone="danger" />
+                              : <span className="text-muted-foreground">in {Math.max(0, -dueFor(ar).daysOverdue)}d</span>}
+                          </div>
+                        )}
+                      </TableCell>
+                    )}
+                    {activeTab !== "paid" && (
                       <TableCell>
                         <span className={`px-2 py-0.5 rounded text-xs font-semibold ${getAgeColor(days)}`}>
                           {days}d
@@ -339,6 +398,12 @@ export function AccountsReceivable() {
                       </TableCell>
                     )}
                     <TableCell className="text-right">
+                      {canUpdateReceivable && (
+                        <Button type="button" variant="outline" size="sm" className="mr-2" onClick={() => openNote(ar)}>
+                          <StickyNote size={13} />
+                          {ar.notes ? "Edit note" : "Add note"}
+                        </Button>
+                      )}
                       {ar.status !== "paid" && !isCredit && canUpdateReceivable ? (
                         <Button
                           onClick={() => handleMarkPaid(ar.id)}
@@ -362,6 +427,32 @@ export function AccountsReceivable() {
         </Table>
         <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </Card>
+
+      <Dialog open={noteTarget !== null} onOpenChange={(open) => { if (!open) setNoteTarget(null); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{noteTarget?.notes ? "Edit note" : "Add note"}</DialogTitle>
+            <DialogDescription>
+              {noteTarget ? `${getCustomerName(noteTarget.customer_id)} · AR ${noteTarget.id.slice(0, 8)}` : ""}
+            </DialogDescription>
+          </DialogHeader>
+          <Textarea
+            aria-label="AR note"
+            value={noteDraft}
+            maxLength={500}
+            rows={4}
+            placeholder="e.g. Promised to pay on the 25th"
+            onChange={(event) => setNoteDraft(event.target.value)}
+          />
+          <p className="text-right text-xs text-muted-foreground">{noteDraft.length}/500</p>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setNoteTarget(null)}>Cancel</Button>
+            <Button type="button" onClick={() => void handleSaveNote()} disabled={savingNote}>
+              {savingNote ? "Saving…" : "Save note"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -6,6 +6,7 @@ export type Action =
   | "booking:approve"
   | "booking:editItems"
   | "payment:verify"
+  | "cash:reconcile"
   | "expense:submit"
   | "expense:approve"
   | "expense:pay"
@@ -43,6 +44,7 @@ const ACTION_RULES: Record<Action, Rule> = {
   "booking:approve": { roles: ["admin"] },
   "booking:editItems": { roles: ["admin"] },
   "payment:verify": { roles: ["admin", "staff"], staffModules: ["accounting"] },
+  "cash:reconcile": { roles: ["admin", "staff"], staffModules: ["accounting"] },
   "expense:submit": { roles: ["admin", "staff"], staffModules: ["accounting"] },
   "expense:approve": { roles: ["admin"] },
   "expense:pay": { roles: ["admin", "staff"], staffModules: ["accounting"] },
@@ -87,6 +89,7 @@ export const STAFF_API_MODULES: Record<string, ModulePermission[]> = {
   "/receipts": ["delivery-operations", "accounting"],
   "/payments": ["accounting"],
   "/expenses": ["accounting"],
+  "/cash-remittances": ["accounting"],
   "/accounts-receivable": ["delivery-operations"],
   "/agent-returns": ["delivery-operations"],
   "/agents": ["manage-accounts"],

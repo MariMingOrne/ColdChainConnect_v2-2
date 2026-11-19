@@ -184,10 +184,39 @@ export interface Product {
   batch_tracking_enabled: boolean;
   reorder_point?: number;
   weight?: string | null;
+  /** Unit printed on receipts: PK (per pack) or PC (per piece). */
+  unit?: ProductUnit;
+  /** Suggested retail price: what the customer is expected to sell it for. */
+  srp?: string | null;
   manufacturer?: string;
   is_discontinued?: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export const PRODUCT_UNITS = ["PK", "PC"] as const;
+export type ProductUnit = (typeof PRODUCT_UNITS)[number];
+
+const toAmount = (value: string | number | null | undefined): number | null => {
+  if (value === null || value === undefined || value === "") return null;
+  const amount = typeof value === "number" ? value : parseFloat(value);
+  return Number.isFinite(amount) ? amount : null;
+};
+
+/** Customer's markup over our price, as a percent of our price. Null without an SRP or a positive price. */
+export function markupPercent(price: string | number | null | undefined, srp: string | number | null | undefined): number | null {
+  const sell = toAmount(price);
+  const retail = toAmount(srp);
+  if (sell === null || retail === null || sell <= 0) return null;
+  return Math.round(((retail - sell) / sell) * 1000) / 10;
+}
+
+/** Our profit margin, as a percent of our price. Null without a cost or a positive price. */
+export function marginPercent(price: string | number | null | undefined, cost: string | number | null | undefined): number | null {
+  const sell = toAmount(price);
+  const spent = toAmount(cost);
+  if (sell === null || spent === null || sell <= 0) return null;
+  return Math.round(((sell - spent) / sell) * 1000) / 10;
 }
 
 export const CreateProductSchema = z.object({
@@ -201,6 +230,9 @@ export const CreateProductSchema = z.object({
   batch_tracking_enabled: z.boolean().default(true),
   reorder_point: z.number().int().nonnegative().optional(),
   weight: z.number().nonnegative().optional(),
+  unit: z.enum(PRODUCT_UNITS).optional(),
+  srp: z.number().nonnegative().nullable().optional(),
+  cost_price: z.number().nonnegative().nullable().optional(),
   manufacturer: z.string().optional(),
   is_discontinued: z.boolean().optional(),
 });
@@ -478,6 +510,9 @@ export interface InvoiceItem {
   qty_ordered: number;
   unit_price: string;
   amount: string;
+  /** kg per unit, frozen from the product when the invoice was made. Null on older receipts. */
+  unit_weight_kg?: string | null;
+  unit_label?: string | null;
   created_at: string;
 }
 
@@ -579,6 +614,15 @@ export interface UnverifiedPayment {
   amount: string;
   recorded_by: string | null;
   recorded_by_username: string | null;
+  /** Bank transfer or check reference typed when the payment was recorded. */
+  payment_reference?: string | null;
+}
+
+/** Payment methods that need a clearance remark before Accounting can verify them. */
+export const PAYMENT_METHODS_NEEDING_CLEARANCE = ["bank_transfer", "check"] as const;
+
+export function paymentNeedsClearance(method: string | null | undefined): boolean {
+  return PAYMENT_METHODS_NEEDING_CLEARANCE.some((value) => value === method);
 }
 
 // Delivery types
@@ -801,6 +845,79 @@ export interface ReportProductPerformance {
 export interface ReportSalesResponse {
   periods: ReportSalesPeriod[];
   products: ReportProductPerformance[];
+}
+
+export interface ReportProfitRow {
+  productId: string;
+  productName: string;
+  unitsSold: number;
+  /** Net of the invoice discount. */
+  revenue: number;
+  /** Null when no cost price is recorded for the product. */
+  cost: number | null;
+  profit: number | null;
+  marginPercent: number | null;
+}
+
+export interface ReportProfitResponse {
+  rows: ReportProfitRow[];
+  /** Totals over the products that have a cost only, so margin is not distorted by missing costs. */
+  totals: { revenue: number; cost: number; profit: number; marginPercent: number | null };
+  productsMissingCost: number;
+}
+
+// ─── End-of-day cash reconciliation ───────────────────────────────────────────
+
+/** Philippine peso bills and coins counted at hand-over, largest first. Keys are the face values. */
+export const CASH_DENOMINATIONS = ["1000", "500", "200", "100", "50", "20", "10", "5", "1", "0.25"] as const;
+export type CashDenomination = (typeof CASH_DENOMINATIONS)[number];
+export type DenominationCounts = Partial<Record<CashDenomination, number>>;
+
+/**
+ * Exact total of a denomination count, in centavos. Null when a key is not a known
+ * denomination or a count is not a non-negative whole number.
+ */
+export function denominationTotalCents(counts: unknown): number | null {
+  if (typeof counts !== "object" || counts === null || Array.isArray(counts)) return null;
+  let cents = 0;
+  for (const [key, count] of Object.entries(counts)) {
+    if (!CASH_DENOMINATIONS.some((value) => value === key)) return null;
+    if (typeof count !== "number" || !Number.isInteger(count) || count < 0) return null;
+    cents += Math.round(parseFloat(key) * 100) * count;
+  }
+  return cents;
+}
+
+/** Today's date (YYYY-MM-DD) on the Philippine calendar, whatever timezone the caller is in. */
+export function todayInManila(now: Date = new Date()): string {
+  return new Date(now.getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+export interface CashRemittance {
+  id: string;
+  remitted_by: string;
+  remitted_by_username: string | null;
+  received_by: string;
+  received_by_username: string | null;
+  /** YYYY-MM-DD, Philippine time: the day the cash was collected. */
+  business_date: string;
+  /** Decimal strings. */
+  expected_amount: string;
+  counted_amount: string;
+  denominations: DenominationCounts;
+  notes: string | null;
+  created_at: string;
+}
+
+/** One collector's cash for a day, from GET /api/cash-remittances/collections. */
+export interface CashCollectionRow {
+  user_id: string;
+  username: string;
+  role: string;
+  /** Decimal string: cash recorded on deliveries by this person that day. */
+  expected: string;
+  payment_count: number;
+  remittance: CashRemittance | null;
 }
 
 export interface ReportStockRow {

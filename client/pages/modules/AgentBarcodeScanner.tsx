@@ -111,7 +111,7 @@ export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScanner
             onChange={(event) => setManualCode(event.target.value)}
             aria-label="Enter barcode manually"
             placeholder="Enter barcode or order code"
-            className="min-w-0 flex-1 rounded-lg border border-white/30 bg-card px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
+            className="min-w-0 flex-1 rounded-lg border border-white/30 bg-card px-3 py-2 text-sm text-foreground placeholder:text-foreground/80 dark:placeholder:text-foreground/70"
           />
           <Input
             type="file"
