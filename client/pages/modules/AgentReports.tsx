@@ -10,7 +10,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { StatusBadge, StatusTone } from "@/components/StatusBadge";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { RotateCcw, CheckCircle, XCircle } from "lucide-react";
-import { AgentReturn, Invoice, Customer, Product } from "@shared/api";
+import { AgentReturn, AgentScheduleResponse, Invoice, Customer, Product } from "@shared/api";
 import { LogReturnForm } from "./LogReturnForm";
 import { Table } from "@/components/ui/table";
 import { newestFirst } from "@/components/SortableHeader";
@@ -43,6 +43,17 @@ function AgentLogReturnScreen({
   invoices: Invoice[]; customers: Customer[]; products: Product[]; token: string;
 }) {
   const [logged, setLogged] = useState(false);
+  const [districts, setDistricts] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch("/api/agent-schedule", { headers: { Authorization: `Bearer ${token}` } })
+      .then((res) => (res.ok ? res.json() as Promise<AgentScheduleResponse> : null))
+      .then((schedule) => {
+        setDistricts([...new Set(schedule?.deliveries.map((delivery) => delivery.truck?.district).filter((d): d is string => Boolean(d)))]);
+      });
+  }, [token]);
+
+  const districtCustomers = customers.filter((customer) => customer.district && districts.includes(customer.district));
 
   return (
     <div className="px-4 md:px-6 lg:px-7 py-4 md:py-6 space-y-5 max-w-xl mx-auto">
@@ -60,7 +71,7 @@ function AgentLogReturnScreen({
       <div className="bg-card rounded-2xl border border-border flex flex-col">
         <LogReturnForm
           invoices={invoices}
-          customers={customers}
+          customers={districtCustomers}
           products={products}
           token={token}
           onSaved={() => setLogged(true)}

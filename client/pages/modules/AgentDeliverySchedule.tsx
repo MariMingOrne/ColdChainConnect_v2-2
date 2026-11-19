@@ -13,6 +13,7 @@ import { localScheduleDate, statusClasses } from "@/lib/agentSchedule";
 import { DeliveryRouteMap, type MapFocus } from "@/components/DeliveryRouteMap";
 import { AgentStopDetailDialog } from "@/components/AgentStopDetailDialog";
 import { DeliveryPaymentPrompt } from "@/components/shared/DeliveryPaymentPrompt";
+import { formatPeso } from "@/lib/format";
 
 function formatScheduleDate(value: string) {
   const [year, month, day] = value.split("-").map(Number);
@@ -128,6 +129,12 @@ export function AgentDeliverySchedule() {
       .map(([date, runs]) => [date, [...runs].sort((a, b) => (a.scheduled_time ?? "99:99").localeCompare(b.scheduled_time ?? "99:99"))] as const);
   }, [view, visibleDeliveries]);
 
+  const unconfirmedStops = deliveries.flatMap((delivery) =>
+    (delivery.delivery_items ?? [])
+      .filter((stop) => stop.status === "completed" && !stop.is_paid)
+      .map((stop) => ({ delivery, stop })),
+  );
+
   const stopCount = currentDeliveries.reduce((total, delivery) => total + (delivery.delivery_items?.length ?? 0), 0);
   const completedCount = currentDeliveries.reduce(
     (total, delivery) => total + (delivery.delivery_items ?? []).filter((stop) => stop.status === "completed").length,
@@ -199,7 +206,6 @@ export function AgentDeliverySchedule() {
       <div className="rounded-lg border border-border bg-card px-4 py-3 shadow-sm">
         <div className="grid grid-cols-2 gap-x-5 gap-y-1 sm:grid-cols-4">
           {[
-            ["Assigned runs", currentDeliveries.length, "text-foreground"],
             ["Stops", stopCount, "text-foreground"],
             ["Completed", completedCount, "text-green"],
             ["Remaining", stopCount - completedCount, "text-accent-2"],
@@ -211,6 +217,32 @@ export function AgentDeliverySchedule() {
           ))}
         </div>
       </div>
+
+      <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <h2 className="text-sm font-bold text-foreground">Unconfirmed payments</h2>
+          <span className="text-xs text-muted-foreground">{unconfirmedStops.length} stops</span>
+        </div>
+        {unconfirmedStops.length === 0 ? (
+          <p className="text-xs text-muted-foreground">No unconfirmed payments.</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {unconfirmedStops.map(({ delivery, stop }) => (
+              <li key={stop.id} className="flex items-center justify-between gap-3 py-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">{stop.destination_customer?.store_name ?? "Unknown customer"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {stop.invoice?.receipt_number ? `Invoice ${stop.invoice.receipt_number}` : "Invoice"} · {formatPeso(stop.invoice?.total_amount)}
+                  </p>
+                </div>
+                <Button type="button" size="sm" variant="outline" onClick={() => setDetailTarget({ delivery, stop })}>
+                  View
+                </Button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       <div className="grid grid-cols-2 gap-3">
         <button
