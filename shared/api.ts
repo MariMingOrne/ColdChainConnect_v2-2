@@ -543,7 +543,7 @@ export interface Expense {
 
 export const CreateExpenseSchema = z.object({
   category: z.string().min(1, "Category is required"),
-  description: z.string().optional(),
+  description: z.string().min(1, "Description is required"),
   amount: z
     .string()
     .regex(/^\d{1,10}(\.\d{1,2})?$/, "Amount must be a positive decimal with up to 2 places")

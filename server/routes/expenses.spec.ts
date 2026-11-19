@@ -8,6 +8,7 @@ import { audit_logs, expenses, users } from "../db/schema";
 import type { AuthRequest } from "../middleware/auth";
 import { requireAnyPermission, requirePermission, staffModuleGuard } from "../middleware/permissions";
 import { approveExpense, createExpense, listExpenses, payExpense, rejectExpense } from "./expenses";
+import { CreateExpenseSchema } from "../../shared/api";
 import { seedUsers } from "../test/test-db";
 
 vi.mock("../db", async () => {
@@ -326,5 +327,13 @@ describe("staff module guard", () => {
   it("does not stop admin", async () => {
     const adminReq = { ...admin(), path: "/expenses" } as AuthRequest;
     expect((await run([staffModuleGuard], adminReq)).status).toBe(200);
+  });
+});
+
+describe("CreateExpenseSchema", () => {
+  it("requires a description, like the server does", () => {
+    expect(CreateExpenseSchema.safeParse({ category: "Fuel", amount: "10.00" }).success).toBe(false);
+    expect(CreateExpenseSchema.safeParse({ category: "Fuel", description: "", amount: "10.00" }).success).toBe(false);
+    expect(CreateExpenseSchema.safeParse({ category: "Fuel", description: "Diesel", amount: "10.00" }).success).toBe(true);
   });
 });
