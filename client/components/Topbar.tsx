@@ -130,7 +130,7 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
   };
 
   return (
-    <header ref={headerRef} className="bg-navy px-4 md:px-8 py-3 sm:py-4 flex flex-wrap items-center flex-shrink-0 sticky top-0 z-10 shadow-sm gap-2 sm:gap-4 md:gap-6 animate-slide-down">
+    <header ref={headerRef} className="bg-navy px-4 md:px-8 py-3 sm:py-4 flex flex-wrap items-center flex-shrink-0 sticky top-0 z-10 shadow-sm gap-2 sm:gap-4 md:gap-6">
       <div className={`flex items-center gap-4 min-w-0 ${role === "agent" ? "flex-1" : "flex-1 sm:flex-none"}`}>
         {/* Left Section - Logo & Back Button */}
         <div className="flex items-center gap-3 flex-shrink-0">

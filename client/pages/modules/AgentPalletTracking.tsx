@@ -175,7 +175,7 @@ export function AgentPalletTracking() {
     void handleAdvancePallet(pallet);
   };
 
-  if (isLoading) return <LoadingSpinner className="fixed inset-0 z-0 min-h-0 bg-muted" slow />;
+  if (isLoading) return <LoadingSpinner className="min-h-[60vh] bg-transparent" slow />;
 
   if (scanPallet) {
     return (

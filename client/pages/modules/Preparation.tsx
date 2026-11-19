@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { TruncatedText } from "@/components/ui/truncated-text";
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -110,7 +111,7 @@ export function Preparation() {
     return true;
   };
 
-  if (isLoading) return <LoadingSpinner className="fixed inset-0 z-0 min-h-0 bg-muted" slow />;
+  if (isLoading) return <LoadingSpinner className="min-h-[60vh] bg-transparent" slow />;
 
   const filtered = orders.filter((order) => {
     const matchesSearch =
@@ -338,9 +339,9 @@ export function Preparation() {
                     </TableCell>
                     <TableCell className="text-sm">
                       <div className="flex flex-col">
-                        <span className="font-semibold text-foreground">{customer?.store_name || "Unknown"}</span>
+                        <TruncatedText className="font-semibold text-foreground">{customer?.store_name || "Unknown"}</TruncatedText>
                         {customer?.location && (
-                          <span className="text-xs text-muted-foreground">{customer.location}</span>
+                          <TruncatedText className="text-xs text-muted-foreground">{customer.location}</TruncatedText>
                         )}
                       </div>
                     </TableCell>

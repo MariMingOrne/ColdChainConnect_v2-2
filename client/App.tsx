@@ -1,5 +1,5 @@
 import "./global.css";
-import { lazy } from "react";
+import { lazy, Suspense } from "react";
 
 import { Toaster } from "@/components/ui/toaster";
 import { createRoot } from "react-dom/client";
@@ -11,7 +11,7 @@ installSessionGuard();
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "next-themes";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from "react-router-dom";
 import type { ModulePermission } from "@shared/api";
 import { useAuth } from "./hooks/useAuth";
 import { Login } from "./pages/Login";
@@ -20,7 +20,7 @@ import { AdminMobileNavigation, AdminNavigation } from "./components/AdminNaviga
 import { PostLoginLoadingScreen } from "./components/auth/PostLoginLoadingScreen";
 import { BottomNavBar } from "./components/BottomNavBar";
 import NotFound from "./pages/NotFound";
-import { RouteBoundary } from "./components/shared/RouteBoundary";
+import { PageSkeleton, RouteBoundary } from "./components/shared/RouteBoundary";
 
 // Route-level code splitting: each role downloads only the screens it opens.
 const named = <K extends string>(load: () => Promise<Record<K, React.ComponentType>>, key: K) =>
@@ -34,9 +34,12 @@ const Reports = named(() => import("./pages/Reports"), "Reports");
 const SearchResults = named(() => import("./pages/SearchResults"), "SearchResults");
 const DriverSchedule = named(() => import("./pages/DriverSchedule"), "DriverSchedule");
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 30_000, gcTime: 5 * 60_000, refetchOnWindowFocus: false, retry: 1 } },
+});
 
-const AppLayout = ({ children }: { children: React.ReactNode }) => {
+/** Mounted once as a layout route, so the top bar and sidebar stay put (and never re-animate) while pages switch. */
+const AppLayout = () => {
   const { logout, user } = useAuth();
   return (
     <div className="flex min-h-screen flex-col">
@@ -45,8 +48,8 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         <AdminNavigation />
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex flex-1">
-            <div className="flex min-w-0 flex-1 flex-col bg-background pb-32 animate-fade-in md:pb-0">
-              {children}
+            <div className="flex min-w-0 flex-1 flex-col bg-background pb-32 md:pb-0">
+              <RouteBoundary><Outlet /></RouteBoundary>
             </div>
           </div>
           <BottomNavBar onLogout={logout} />
@@ -57,13 +60,13 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 };
 
 /** Agent layout: topbar only, no bottom nav, no back-to-dashboard */
-const AgentLayout = ({ children, agentMode = false }: { children: React.ReactNode; agentMode?: boolean }) => {
+const AgentLayout = ({ agentMode = false }: { agentMode?: boolean }) => {
   const { logout, user } = useAuth();
   return (
     <div className={agentMode ? "flex h-dvh min-h-0 flex-col overflow-hidden" : "flex flex-col min-h-screen"}>
       <Topbar userName={user?.username || "User"} onLogout={logout} agentMode />
-      <div className={`flex-1 flex flex-col bg-background min-w-0 animate-fade-in ${agentMode ? "min-h-0" : ""}`}>
-        {children}
+      <div className={`flex-1 flex flex-col bg-background min-w-0 ${agentMode ? "min-h-0" : ""}`}>
+        <RouteBoundary><Outlet /></RouteBoundary>
       </div>
     </div>
   );
@@ -83,7 +86,7 @@ function StaffDispatchModule() {
   const { pathname } = useLocation();
   const deliveryPaths = ["/booking-dispatch/delivery", "/booking-dispatch/accounts", "/booking-dispatch/delivery-history", "/booking-dispatch/agent-returns"];
   const permission: ModulePermission = deliveryPaths.some((path) => pathname.startsWith(path)) ? "delivery-operations" : "order-fulfillment";
-  return <StaffModule permission={permission}><AppLayout><BookingDispatch /></AppLayout></StaffModule>;
+  return <StaffModule permission={permission}><BookingDispatch /></StaffModule>;
 }
 
 function StaffModule({ permission, children }: { permission: ModulePermission; children: React.ReactNode }) {
@@ -106,13 +109,15 @@ const AppContent = () => {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/" element={<StaffModule permission="dashboard"><AppLayout><Dashboard /></AppLayout></StaffModule>} />
-        <Route path="/information-management/*" element={<StaffModule permission="product-customer"><AppLayout><InformationManagement /></AppLayout></StaffModule>} />
+        <Route element={<AppLayout />}>
+        <Route path="/" element={<StaffModule permission="dashboard"><Dashboard /></StaffModule>} />
+        <Route path="/information-management/*" element={<StaffModule permission="product-customer"><InformationManagement /></StaffModule>} />
         <Route path="/booking-dispatch/*" element={<StaffDispatchModule />} />
-        <Route path="/manage-accounts/*" element={<StaffModule permission="manage-accounts"><AppLayout><ManageAccounts /></AppLayout></StaffModule>} />
-        <Route path="/audit" element={<StaffModule permission="administration"><AppLayout><AuditLogPage /></AppLayout></StaffModule>} />
-        <Route path="/reports" element={<StaffModule permission="reports"><AppLayout><Reports /></AppLayout></StaffModule>} />
-        <Route path="/search" element={<StaffModule permission="order-fulfillment"><AppLayout><SearchResults /></AppLayout></StaffModule>} />
+        <Route path="/manage-accounts/*" element={<StaffModule permission="manage-accounts"><ManageAccounts /></StaffModule>} />
+        <Route path="/audit" element={<StaffModule permission="administration"><AuditLogPage /></StaffModule>} />
+        <Route path="/reports" element={<StaffModule permission="reports"><Reports /></StaffModule>} />
+        <Route path="/search" element={<StaffModule permission="order-fulfillment"><SearchResults /></StaffModule>} />
+        </Route>
         <Route path="*" element={<Navigate to={staffModulePaths["dashboard"]} replace />} />
       </Routes>
     );
@@ -123,7 +128,9 @@ const AppContent = () => {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/driver-schedule" element={<AgentLayout><DriverSchedule /></AgentLayout>} />
+        <Route element={<AgentLayout />}>
+          <Route path="/driver-schedule" element={<DriverSchedule />} />
+        </Route>
         <Route path="*" element={<Navigate to="/driver-schedule" replace />} />
       </Routes>
     );
@@ -134,15 +141,10 @@ const AppContent = () => {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route
-          path="/booking-dispatch/*"
-          element={
-            <AgentLayout agentMode>
-              <BookingDispatch />
-            </AgentLayout>
-          }
-        />
-        <Route path="/search" element={<AgentLayout><SearchResults /></AgentLayout>} />
+        <Route element={<AgentLayout agentMode />}>
+          <Route path="/booking-dispatch/*" element={<BookingDispatch />} />
+          <Route path="/search" element={<SearchResults />} />
+        </Route>
         {/* Everything else → booking-dispatch */}
         <Route path="*" element={<Navigate to="/booking-dispatch/order-summary" replace />} />
       </Routes>
@@ -153,13 +155,15 @@ const AppContent = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
-      <Route path="/" element={isAuthenticated ? <AppLayout><Dashboard /></AppLayout> : <Login />} />
-      <Route path="/information-management/*" element={isAuthenticated ? <AppLayout><InformationManagement /></AppLayout> : <Login />} />
-      <Route path="/manage-accounts/*" element={isAuthenticated ? <AppLayout><ManageAccounts /></AppLayout> : <Login />} />
-      <Route path="/booking-dispatch/*" element={isAuthenticated ? <AppLayout><BookingDispatch /></AppLayout> : <Login />} />
-      <Route path="/audit" element={isAuthenticated ? <AppLayout><AuditLogPage /></AppLayout> : <Login />} />
-      <Route path="/reports" element={isAuthenticated ? <AppLayout><Reports /></AppLayout> : <Login />} />
-      <Route path="/search" element={isAuthenticated ? <AppLayout><SearchResults /></AppLayout> : <Login />} />
+      <Route element={isAuthenticated ? <AppLayout /> : <Login />}>
+      <Route path="/" element={<Dashboard />} />
+      <Route path="/information-management/*" element={<InformationManagement />} />
+      <Route path="/manage-accounts/*" element={<ManageAccounts />} />
+      <Route path="/booking-dispatch/*" element={<BookingDispatch />} />
+      <Route path="/audit" element={<AuditLogPage />} />
+      <Route path="/reports" element={<Reports />} />
+      <Route path="/search" element={<SearchResults />} />
+      </Route>
       <Route path="*" element={<NotFound />} />
     </Routes>
   );
@@ -178,9 +182,10 @@ const App = () => (
         <Sonner position="top-center" richColors closeButton />
         <ConfirmDialogHost />
         <BrowserRouter>
-          <RouteBoundary>
+          {/* Outside the layout routes only the login screen is lazy-free; page-level boundaries live inside each layout so the shell never remounts. */}
+          <Suspense fallback={<PageSkeleton />}>
             <AppContent />
-          </RouteBoundary>
+          </Suspense>
           <PostLoginLoadingGate />
         </BrowserRouter>
       </TooltipProvider>
