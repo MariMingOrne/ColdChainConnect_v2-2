@@ -6,11 +6,13 @@ import { eq } from "drizzle-orm";
 import { db } from "../db";
 import {
   accounts_receivable,
+  agents,
   audit_logs,
   bookings,
   customers,
   deliveries,
   delivery_items,
+  drivers,
   invoices,
   receipt_payment_entries,
   receipts,
@@ -19,7 +21,7 @@ import {
 } from "../db/schema";
 import type { AuthRequest } from "../middleware/auth";
 import { requirePermission, staffModuleGuard } from "../middleware/permissions";
-import { listUnverifiedPayments, verifyReceiptPayment } from "./payment-verification";
+import { getPaymentReceipt, listUnverifiedPayments, verifyReceiptPayment } from "./payment-verification";
 import { seedUsers } from "../test/test-db";
 
 vi.mock("../db", async () => {
@@ -37,6 +39,8 @@ beforeAll(async () => {
   await db.update(users).set({ module_permissions: ["accounting"] }).where(eq(users.id, seeded.staff.id));
   await db.insert(users).values({ id: "plain-staff", username: "plain_staff", password_hash: "x", role: "staff", mfa_required: false });
 
+  await db.insert(agents).values({ id: "agent-1", user_id: seeded.agent.id, full_name: "Alice Agent" });
+  await db.insert(drivers).values({ id: "driver-1", user_id: seeded.driver.id, full_name: "Dave Driver" });
   await db.insert(trucks).values({ id: "truck-1", license_plate: "AAA-111", district: "d" });
   await db.insert(customers).values([
     { id: "cust-1", store_name: "Store One", location: "Somewhere" },
@@ -154,6 +158,7 @@ describe("GET /api/payments/unverified", () => {
       payment_method: "cash",
       recorded_by: seeded.driver.id,
       recorded_by_username: "test_driver",
+      recorded_by_name: "Dave Driver",
       recorded_by_role: "driver",
     });
     // The later payment is included in the receipt's accumulated cash collected amount.
@@ -162,9 +167,17 @@ describe("GET /api/payments/unverified", () => {
       amount: "60.00",
       recorded_by: seeded.agent.id,
       recorded_by_username: "test_agent",
+      recorded_by_name: "Alice Agent",
       recorded_by_role: "agent",
     });
     expect(rows.find((r) => r.id === "pay-overpaid")).toMatchObject({ amount: "120.00" });
+  });
+
+  it("falls back to the username when no full name is available", async () => {
+    await db.update(agents).set({ full_name: null }).where(eq(agents.user_id, seeded.agent.id));
+    const { body } = await run(list, asAccounting());
+    expect((body as Row[]).find((row) => row.id === "pay-partial")).toMatchObject({ recorded_by_name: "test_agent" });
+    await db.update(agents).set({ full_name: "Alice Agent" }).where(eq(agents.user_id, seeded.agent.id));
   });
 
   it("is open to admin and denied to staff without accounting, agents and drivers", async () => {
@@ -172,6 +185,22 @@ describe("GET /api/payments/unverified", () => {
     expect((await run(list, reqFor("staff", "plain-staff", {}, []))).status).toBe(403);
     expect((await run(list, reqFor("agent", seeded.agent.id))).status).toBe(403);
     expect((await run(list, reqFor("driver", seeded.driver.id))).status).toBe(403);
+  });
+});
+
+describe("GET /api/payments/:id/receipt", () => {
+  const receipt = [requirePermission("payment:verify"), getPaymentReceipt];
+
+  it("returns the matching original receipt and its details", async () => {
+    const { status, body } = await run(receipt, asAccounting({ id: "pay-partial" }));
+    expect(status).toBe(200);
+    expect(body).toMatchObject({ id: "rec-partial", receipt_number: "OR-partial", customer: { store_name: "Store Two" }, truck: { license_plate: "AAA-111" } });
+    expect((await run(receipt, asAccounting({ id: "missing" }))).status).toBe(404);
+  });
+
+  it("denies users without accounting permission", async () => {
+    expect((await run(receipt, reqFor("staff", "plain-staff", { id: "pay-partial" }, []))).status).toBe(403);
+    expect((await run(receipt, reqFor("agent", seeded.agent.id, { id: "pay-partial" }))).status).toBe(403);
   });
 });
 

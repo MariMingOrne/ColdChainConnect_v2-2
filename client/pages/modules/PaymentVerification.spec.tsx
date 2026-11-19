@@ -2,10 +2,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
 import type { UnverifiedPayment } from "@shared/api";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth, type AuthUser } from "@/hooks/useAuth";
 import { PaymentVerification } from "./PaymentVerification";
+import { PaymentReceipt } from "./PaymentReceipt";
 
 const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("sonner", () => ({ toast }));
@@ -24,6 +26,7 @@ const payment: UnverifiedPayment = {
   amount: "250.00",
   recorded_by: "u-driver",
   recorded_by_username: "dave_driver",
+  recorded_by_name: "Dave Driver",
   recorded_by_role: "driver",
 };
 
@@ -35,7 +38,12 @@ function renderScreen() {
   render(
     <QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>
       <TooltipProvider>
-        <PaymentVerification />
+        <MemoryRouter initialEntries={["/accounting/payments"]}>
+          <Routes>
+            <Route path="/accounting/payments" element={<PaymentVerification />} />
+            <Route path="/accounting/payments/:id/receipt" element={<PaymentReceipt />} />
+          </Routes>
+        </MemoryRouter>
       </TooltipProvider>
     </QueryClientProvider>,
   );
@@ -66,9 +74,36 @@ describe("PaymentVerification", () => {
     expect(row.textContent).toContain("OR-0001");
     expect(row.textContent).toContain("INV-0001");
     expect(row.textContent).toContain("₱250.00");
-    expect(row.textContent).toContain("dave_driver");
+    expect(row.textContent).toContain("Dave Driver");
+    expect(within(row).getByRole("link", { name: /OR-0001 · INV-0001/ }).getAttribute("href")).toBe("/accounting/payments/pay-1/receipt");
     expect(fetchMock.mock.calls[0][0]).toBe("/api/payments/unverified");
     expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe("Bearer tok");
+  });
+
+  it("opens the matching receipt and returns to payments", async () => {
+    fetchMock.mockImplementation(async (url: string) => url === "/api/payments/pay-1/receipt"
+      ? json({ id: "rec-1", receipt_number: "OR-0001", customer_id: "cust-1", truck_id: "truck-1", invoice_id: "inv-1", confirmed_at: payment.confirmed_at, customer: { store_name: "Corner Store" }, truck: { license_plate: "AAA-111" }, invoice: { payment_status: "partial" } })
+      : json([payment]));
+    renderScreen();
+    fireEvent.click(await screen.findByRole("link", { name: /OR-0001 · INV-0001/ }));
+    expect(await screen.findByRole("heading", { name: "Original Receipt" })).toBeTruthy();
+    expect(screen.getByText("PARTIAL")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: /Back/ }));
+    expect(await screen.findByRole("row", { name: /Corner Store/ })).toBeTruthy();
+  });
+
+  it("shows an error when the receipt is unavailable", async () => {
+    fetchMock.mockImplementation(async (url: string) => url === "/api/payments/pay-1/receipt" ? json({ error: "Receipt not found" }, 404) : json([payment]));
+    renderScreen();
+    fireEvent.click(await screen.findByRole("link", { name: /OR-0001 · INV-0001/ }));
+    expect((await screen.findByRole("alert")).textContent).toContain("Receipt not found");
+    expect(screen.getByRole("link", { name: /Back to payments/ })).toBeTruthy();
+  });
+
+  it("finds payments by the recorder's name", async () => {
+    renderScreen();
+    fireEvent.change(await screen.findByPlaceholderText(/Search by customer/), { target: { value: "Dave Driver" } });
+    expect(screen.getByRole("row", { name: /Corner Store/ })).toBeTruthy();
   });
 
   it("offers bulk actions after selecting a payment", async () => {

@@ -95,7 +95,7 @@ function ReceiptModal({ invoice, onClose }: ReceiptModalProps) {
         </div>
       </div>
 
-      <div className="max-w-3xl w-full bg-card rounded-2xl border border-border">
+      <div className="max-w-3xl w-full rounded-2xl border border-border bg-white text-black">
         {/* Receipt body */}
         <div id="receipt-print-area" className="p-6 font-sans text-black">
           <style>{`

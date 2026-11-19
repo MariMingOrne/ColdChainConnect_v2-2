@@ -20,12 +20,14 @@ import { Input } from "@/components/ui/input";
 import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
 import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
 import { RecordTitleButton } from "@/components/RecordTitleButton";
+import type { ProductUnit } from "@shared/api";
 
 interface InventoryProduct {
   id: string;
   sku: string;
   description: string;
   unitPrice: number;
+  unit: ProductUnit;
   supplierId: string;
   weight: number;
   quantity: number;
@@ -83,7 +85,7 @@ export function Inventory() {
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
 
   const emptyForm = (): InventoryProduct => ({
-    id: "", sku: "", description: "", unitPrice: 0, supplierId: "",
+    id: "", sku: "", description: "", unitPrice: 0, unit: "PK", supplierId: "",
     weight: 0, quantity: 0, expiryDate: "", imageFilename: "",
     reorderPoint: 300, lastUpdated: new Date().toISOString().split("T")[0],
     createdAt: new Date().toISOString(), manufacturer: "", isDiscontinued: false,
@@ -124,6 +126,7 @@ export function Inventory() {
         sku: p.sku || p.name,
         description: p.name,
         unitPrice: parseFloat(p.price) || 0,
+        unit: p.unit ?? "PK",
         supplierId: p.supplier_id || "",
         weight: 0,
         quantity: qtyMap[p.id] ?? 0,
@@ -634,6 +637,7 @@ function ExtraInfoModal({ product, batches, onClose, onSelectPallet }: { product
         <div className="p-6 space-y-6">
           <div>
             <h3 className="text-xs font-bold text-muted-foreground mb-3">Summary</h3>
+            <p className="mb-3 text-sm text-foreground"><span className="text-muted-foreground">Unit type:</span> {product.unit}</p>
             <div className="grid grid-cols-3 gap-3">
               {[
                 ["Inventory Value", `₱${(product.unitPrice * product.batchQuantity).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`],

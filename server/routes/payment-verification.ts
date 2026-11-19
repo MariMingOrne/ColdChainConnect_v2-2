@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "../db";
-import { customers, invoices, receipt_payment_entries, receipts, users } from "../db/schema";
+import { agents, customers, drivers, invoices, receipt_payment_entries, receipts, trucks, users } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
 import { paymentNeedsClearance } from "../../shared/api";
@@ -33,13 +33,22 @@ export const listUnverifiedPayments: RequestHandler = async (_req: AuthRequest, 
     const recorderIds = rows
       .map((row) => row.payment.recorded_by)
       .filter((userId): userId is string => Boolean(userId));
-    const recorderDetails = new Map<string, { username: string; role: string }>();
+    const recorderDetails = new Map<string, { username: string; role: string; name: string }>();
     if (recorderIds.length > 0) {
-      const found = await db
-        .select({ id: users.id, username: users.username, role: users.role })
-        .from(users)
-        .where(inArray(users.id, [...new Set(recorderIds)]));
-      for (const user of found) recorderDetails.set(user.id, { username: user.username, role: user.role });
+      const ids = [...new Set(recorderIds)];
+      const [found, agentNames, driverNames] = await Promise.all([
+        db.select({ id: users.id, username: users.username, role: users.role }).from(users).where(inArray(users.id, ids)),
+        db.select({ userId: agents.user_id, name: agents.full_name }).from(agents).where(inArray(agents.user_id, ids)),
+        db.select({ userId: drivers.user_id, name: drivers.full_name }).from(drivers).where(inArray(drivers.user_id, ids)),
+      ]);
+      for (const user of found) {
+        const name = user.role === "agent"
+          ? agentNames.find((agent) => agent.userId === user.id)?.name
+          : user.role === "driver"
+            ? driverNames.find((driver) => driver.userId === user.id)?.name
+            : null;
+        recorderDetails.set(user.id, { username: user.username, role: user.role, name: name?.trim() || user.username });
+      }
     }
 
     res.json(rows.map(({ payment, receipt, customer_name, invoice_receipt_number }) => {
@@ -59,11 +68,37 @@ export const listUnverifiedPayments: RequestHandler = async (_req: AuthRequest, 
         amount: payment.amount,
         recorded_by: payment.recorded_by,
         recorded_by_username: recorder?.username ?? null,
+        recorded_by_name: recorder?.name ?? null,
         recorded_by_role: (recorder?.role as "admin" | "agent" | "driver" | "staff" | undefined) ?? null,
       };
     }));
   } catch (error) {
     console.error("Error fetching unverified payments:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getPaymentReceipt: RequestHandler = async (req: AuthRequest, res) => {
+  try {
+    if (!process.env.DATABASE_URL) return res.status(503).json({ error: "Database not configured" });
+
+    const [row] = await db.select({
+      receipt: receipts,
+      customer: { store_name: customers.store_name, location: customers.location, contact_info: customers.contact_info },
+      truck: { license_plate: trucks.license_plate },
+      invoice: { payment_status: invoices.payment_status },
+    })
+      .from(receipt_payment_entries)
+      .innerJoin(receipts, eq(receipts.id, receipt_payment_entries.receipt_id))
+      .innerJoin(customers, eq(customers.id, receipts.customer_id))
+      .innerJoin(trucks, eq(trucks.id, receipts.truck_id))
+      .innerJoin(invoices, eq(invoices.id, receipts.invoice_id))
+      .where(eq(receipt_payment_entries.id, req.params.id));
+
+    if (!row) return res.status(404).json({ error: "Receipt not found" });
+    res.json({ ...row.receipt, customer: row.customer, truck: row.truck, invoice: row.invoice });
+  } catch (error) {
+    console.error("Error fetching payment receipt:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };

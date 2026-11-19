@@ -24,10 +24,10 @@ interface Receipt {
   confirmed_by?: string;
 }
 
-interface ReceiptExt extends Receipt {
-  customer?: Customer;
-  truck?: Truck;
-  invoice?: Invoice;
+export interface ReceiptExt extends Receipt {
+  customer?: Pick<Customer, "store_name" | "location" | "contact_info">;
+  truck?: Pick<Truck, "license_plate">;
+  invoice?: Pick<Invoice, "payment_status">;
 }
 
 function authHeaders(token: string) {
@@ -240,11 +240,33 @@ export function DeliveryHistory() {
 
 // ─── Original Receipt Modal ───────────────────────────────────────────────────
 
-function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt; onClose: () => void }) {
+export function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt; onClose: () => void }) {
   const handlePrint = () => window.print();
 
   return (
     <div className="flex-1 flex flex-col gap-6 p-4 md:p-6">
+      <style>{`
+        #original-receipt-print-area { background: #fff; color: #111; }
+        #original-receipt-print-area .text-muted-foreground { color: #52525b !important; }
+        @media print {
+          @page { size: auto; margin: 0.35in; }
+          html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
+          body * { visibility: hidden !important; }
+          body:has(#original-receipt-print-area) [data-radix-dialog-overlay] { display: none !important; }
+          body:has(#original-receipt-print-area) [data-radix-dialog-content] {
+            position: static !important; display: block !important; width: auto !important; max-width: none !important;
+            max-height: none !important; overflow: visible !important; transform: none !important; border: 0 !important;
+            padding: 0 !important; box-shadow: none !important; background: transparent !important;
+          }
+          #original-receipt-print-area, #original-receipt-print-area * { visibility: visible !important; }
+          #original-receipt-print-area {
+            position: relative !important; width: 100% !important; max-width: 7.5in; margin: 0 auto !important;
+            padding: 0.2in !important; background: #fff !important; color: #111 !important; break-inside: avoid;
+          }
+          #original-receipt-print-area .text-muted-foreground { color: #52525b !important; }
+          .no-print { display: none !important; }
+        }
+      `}</style>
       <div className="page-header no-print">
         <div>
           <h1 className="page-title">Original Receipt</h1>
@@ -260,9 +282,8 @@ function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt; onClo
         </div>
       </div>
 
-      <div className="max-w-lg w-full bg-card rounded-2xl border border-border">
-        {/* Receipt body */}
-        <div className="p-8 space-y-6 font-mono text-sm" id="receipt-print-area">
+      <div className="max-w-lg w-full rounded-2xl border border-border bg-white text-black">
+        <div className="p-6 sm:p-8 space-y-6 font-mono text-sm" id="original-receipt-print-area">
           {/* Company header */}
           <div className="text-center border-b-2 border-dashed border-border pb-4">
             <p className="font-rajdhani text-2xl font-bold text-foreground tracking-tight">COLDCHAIN CONNECT</p>
@@ -306,10 +327,6 @@ function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt; onClo
 
           {/* Invoice status */}
           <div className="border-t border-dashed border-border pt-4 space-y-1 text-xs">
-            <div className="flex justify-between font-semibold">
-              <span>Invoice Status:</span>
-              <span className="text-green">PAID ✓</span>
-            </div>
             {receipt.invoice?.payment_status && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Payment Status:</span>

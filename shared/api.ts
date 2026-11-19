@@ -184,7 +184,7 @@ export interface Product {
   batch_tracking_enabled: boolean;
   reorder_point?: number;
   weight?: string | null;
-  /** Unit printed on receipts: PK (per pack) or PC (per piece). */
+  /** Unit type printed on receipts. */
   unit?: ProductUnit;
   /** Suggested retail price: what the customer is expected to sell it for. */
   srp?: string | null;
@@ -194,7 +194,7 @@ export interface Product {
   updated_at: string;
 }
 
-export const PRODUCT_UNITS = ["PK", "PC"] as const;
+export const PRODUCT_UNITS = ["PK", "EA"] as const;
 export type ProductUnit = (typeof PRODUCT_UNITS)[number];
 
 const toAmount = (value: string | number | null | undefined): number | null => {
@@ -352,6 +352,7 @@ export interface Agent {
   hire_date?: string;
   address?: string;
   is_active: boolean;
+  is_archived: boolean;
   created_at: string;
   updated_at: string;
   user?: User;
@@ -380,6 +381,7 @@ export interface Driver {
   hire_date?: string;
   employment_type?: "full_time" | "part_time";
   is_active: boolean;
+  is_archived: boolean;
   user_id?: string | null;
   user?: { id: string; username: string; mfa_enabled: boolean; mfa_required: boolean } | null;
   created_at: string;
@@ -617,6 +619,7 @@ export interface UnverifiedPayment {
   amount: string;
   recorded_by: string | null;
   recorded_by_username: string | null;
+  recorded_by_name: string | null;
   recorded_by_role: "admin" | "agent" | "driver" | "staff" | null;
   /** Bank transfer or check reference typed when the payment was recorded. */
   payment_reference?: string | null;

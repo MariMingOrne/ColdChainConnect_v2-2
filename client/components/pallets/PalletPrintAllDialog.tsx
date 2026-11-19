@@ -37,13 +37,13 @@ export function PalletPrintAllDialog({ entries, date, onClose }: {
           </div>
         </div>
 
-        <div className="no-print rounded-2xl border border-border bg-card p-5">
+        <div className="no-print rounded-2xl border border-border bg-white p-5 text-black">
           {entries.length === 0 ? (
             <p className="py-10 text-center text-sm text-muted-foreground">No pallets were created on this date.</p>
           ) : (
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {entries.map(({ pallet, customer }) => (
-                <article key={pallet.id} className="rounded-lg border border-border p-3 text-center">
+                <article key={pallet.id} className="rounded-lg border border-black/20 bg-white p-3 text-center">
                   <p className="text-xs font-semibold text-foreground">{customer?.store_name ?? "Unknown customer"}</p>
                   <p className="mt-1 break-all font-mono text-2xs text-muted-foreground">{pallet.id}</p>
                   <img src={barcodes[pallet.id]} alt={`Barcode for pallet ${pallet.id}`} className="mx-auto mt-2 h-auto w-full object-contain" />
@@ -72,15 +72,19 @@ export function PalletPrintAllDialog({ entries, date, onClose }: {
         <style>{`
           #bulk-pallet-print { display: none; }
           @media print {
-            @page { size: letter; margin: 0.35in; }
-            html, body { height: auto !important; overflow: visible !important; }
+            @page { size: auto; margin: 0.35in; }
+            html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
             body * { visibility: hidden !important; }
-            .bulk-pallet-print-overlay, .bulk-pallet-print-overlay * { visibility: visible !important; }
-            .bulk-pallet-print-overlay { position: absolute !important; top: 0 !important; left: 0 !important; display: block !important; width: 100% !important; padding: 0 !important; background: transparent !important; }
-            .bulk-pallet-print-dialog { display: block !important; width: 100% !important; max-width: none !important; max-height: none !important; overflow: visible !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
-            .bulk-pallet-print-content { display: block !important; }
-            .bulk-pallet-print-grid { display: grid !important; grid-template-columns: 1fr; gap: 0.15in; }
-            .bulk-pallet-label { break-inside: avoid; min-height: 1.55in; }
+            body:has(#bulk-pallet-print) .fixed.inset-0 { display: none !important; }
+            body:has(#bulk-pallet-print) [role="dialog"] {
+              position: static !important; display: block !important; width: auto !important; max-width: none !important;
+              max-height: none !important; overflow: visible !important; transform: none !important; border: 0 !important;
+              padding: 0 !important; box-shadow: none !important; background: transparent !important;
+            }
+            #bulk-pallet-print, #bulk-pallet-print * { visibility: visible !important; }
+            #bulk-pallet-print { position: relative !important; display: block !important; width: 100% !important; max-width: 7.5in; margin: 0 auto !important; background: #fff !important; color: #111 !important; }
+            .bulk-pallet-print-grid { display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.15in; }
+            .bulk-pallet-label { break-inside: avoid; min-height: 1.55in; background: #fff !important; color: #111 !important; }
             .no-print { display: none !important; }
           }
         `}</style>

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { BadgeCheck, Printer } from "lucide-react";
 import { createPortal } from "react-dom";
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import { paymentNeedsClearance, type UnverifiedPayment } from "@shared/api";
 import { PageDialog } from "@/components/shared/PageDialog";
@@ -28,13 +28,15 @@ function PaymentPrintSheet({ payments, date }: { payments: UnverifiedPayment[]; 
   const total = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
 
   return (
-    <div id="payment-print-area" aria-hidden="true" className="hidden p-6 font-sans text-black print:block">
+    <div id="payment-print-area" aria-hidden="true" className="hidden bg-white p-4 font-sans text-black print:block">
       <style>{`
         @media print {
-          body * { visibility: hidden; }
-          #payment-print-area, #payment-print-area * { visibility: visible; }
-          html, body { height: auto !important; overflow: visible !important; }
-          #payment-print-area { position: absolute; top: 0; left: 0; width: 100%; }
+          @page { size: auto; margin: 0.35in; }
+          html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
+          body * { visibility: hidden !important; }
+          #payment-print-area, #payment-print-area * { visibility: visible !important; }
+          #payment-print-area { position: absolute !important; top: 0; left: 0; width: 100%; padding: 0 !important; background: #fff !important; color: #111 !important; }
+          #payment-print-area tr, #payment-print-area th, #payment-print-area td { break-inside: avoid; }
         }
       `}</style>
       <h1 className="text-xl font-black">End-of-Day</h1>
@@ -46,7 +48,7 @@ function PaymentPrintSheet({ payments, date }: { payments: UnverifiedPayment[]; 
             <tr key={payment.id} className="border-b border-black/20">
               <td className="py-1">{payment.customer_name}</td>
               <td className="py-1">{payment.receipt_number} · {payment.invoice_receipt_number}</td>
-              <td className="py-1">{payment.recorded_by_username ?? "—"}</td>
+              <td className="py-1">{payment.recorded_by_name || "—"}</td>
               <td className="py-1 capitalize">{payment.payment_method?.replace(/_/g, " ") ?? "—"}</td>
               <td className="py-1 text-right">{formatPeso(payment.amount)}</td>
             </tr>
@@ -116,7 +118,7 @@ function VerifyDialog({
           ["Amount", formatPeso(payment.amount)],
           ["Method", payment.payment_method?.replace("_", " ") || "—"],
           ...(payment.payment_reference ? [["Reference no.", payment.payment_reference]] : []),
-          ["Recorded by", payment.recorded_by_username || "—"],
+          ["Recorded by", payment.recorded_by_name || "—"],
           ["Date", formatDate(payment.confirmed_at)],
         ].map(([label, value]) => (
           <div key={label}>
@@ -195,7 +197,7 @@ export function PaymentVerification() {
     new Map(
       payments
         .filter((payment) => payment.recorded_by_role === "agent" && payment.recorded_by)
-        .map((payment) => [payment.recorded_by!, payment.recorded_by_username || payment.recorded_by!]),
+        .map((payment) => [payment.recorded_by!, payment.recorded_by_name || payment.recorded_by!]),
     ),
   ).sort((a, b) => a[1].localeCompare(b[1]));
   const query = searchTerm.trim().toLowerCase();
@@ -203,7 +205,7 @@ export function PaymentVerification() {
     if (date && businessDate(payment.confirmed_at) !== date) return false;
     if (agentFilter !== "all" && payment.recorded_by !== agentFilter) return false;
     if (!query) return true;
-    return [payment.customer_name, payment.receipt_number, payment.invoice_receipt_number, payment.recorded_by_username, payment.payment_reference, payment.payment_method]
+    return [payment.customer_name, payment.receipt_number, payment.invoice_receipt_number, payment.recorded_by_name, payment.recorded_by_username, payment.payment_reference, payment.payment_method]
       .some((value) => value?.toLowerCase().includes(query));
   });
   const { currentPage, totalPages, pageItems } = paginate(filtered, page);
@@ -312,11 +314,13 @@ export function PaymentVerification() {
                     <TruncatedText>{payment.customer_name}</TruncatedText>
                   </TableCell>
                   <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground">
-                    {payment.receipt_number} · {payment.invoice_receipt_number}
+                    <Link to={`/accounting/payments/${encodeURIComponent(payment.id)}/receipt`} className="font-semibold text-primary underline-offset-2 hover:underline focus-visible:underline">
+                      {payment.receipt_number} · {payment.invoice_receipt_number}
+                    </Link>
                   </TableCell>
                   <TableCell className="text-sm capitalize text-muted-foreground">{payment.payment_method?.replace(/_/g, " ") || "—"}</TableCell>
                   <TableCell className="whitespace-nowrap text-sm font-bold">{formatPeso(payment.amount)}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{payment.recorded_by_username || "—"}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{payment.recorded_by_name || "—"}</TableCell>
                   <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{formatDate(payment.confirmed_at)}</TableCell>
                   {canVerify && (
                     <TableCell className="text-right">

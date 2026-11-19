@@ -44,7 +44,7 @@ export function BookingSummary() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "approved" | "prep" | "ready">("all");
   const [approvalFilter, setApprovalFilter] = useState<"all" | "approved" | "unapproved">("all");
-  const [dateRangeFilter, setDateRangeFilter] = useState<"all" | "today" | "week" | "month" | "custom">("today");
+  const [dateRangeFilter, setDateRangeFilter] = useState<"all" | "today" | "week" | "month" | "custom">("all");
   const [customDateStart, setCustomDateStart] = useState<string>("");
   const [customDateEnd, setCustomDateEnd] = useState<string>("");
   const [selectedBookingIds, setSelectedBookingIds] = useState<string[]>([]);
