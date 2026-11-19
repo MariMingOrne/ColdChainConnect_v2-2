@@ -43,6 +43,8 @@ export function DeliveryHistory() {
 
   const [search,       setSearch]       = useState("");
   const [customerFilter, setCustomerFilter] = useState("");
+  const [fromDateTime, setFromDateTime] = useState("");
+  const [toDateTime,   setToDateTime]   = useState("");
   const [page,         setPage]         = useState(1);
   const [viewReceipt,  setViewReceipt]  = useState<ReceiptExt | null>(null);
   const [sort, setSort] = useState<SortState<"receipt" | "customer" | "truck" | "confirmed" | "notes">>(null);
@@ -99,6 +101,9 @@ export function DeliveryHistory() {
 
     if (!matchesSearch) return false;
     if (customerFilter && customerFilter !== "all" && r.customer_id !== customerFilter) return false;
+    const confirmedAt = new Date(r.confirmed_at).getTime();
+    if (fromDateTime && confirmedAt < new Date(fromDateTime).getTime()) return false;
+    if (toDateTime && confirmedAt > new Date(toDateTime).getTime()) return false;
     return true;
   });
 
@@ -157,6 +162,8 @@ export function DeliveryHistory() {
             <option key={c.id} value={c.id}>{c.store_name || c.id.slice(0, 8)}</option>
           ))}
         </TableFilterSelect>
+        <input type="datetime-local" aria-label="Confirmed from date and time" title="Show deliveries confirmed from this date and time" value={fromDateTime} max={toDateTime || undefined} onChange={(event) => { setFromDateTime(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
+        <input type="datetime-local" aria-label="Confirmed to date and time" title="Show deliveries confirmed up to this date and time" value={toDateTime} min={fromDateTime || undefined} onChange={(event) => { setToDateTime(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
       </TableToolbar>
 
       {/* Table */}
