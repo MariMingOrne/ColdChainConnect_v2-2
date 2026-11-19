@@ -420,6 +420,7 @@ export interface DriverScheduleStop {
     id: string;
     receipt_number: string | null;
     total_amount: string | null;
+    credit_applied_amount?: string | null;
     payment_status: string;
     invoice_items: { id: string; product_name: string; qty_ordered: number }[];
   };
@@ -531,6 +532,7 @@ export interface Invoice {
   gross_amount?: string | null;
   discount_amount?: string | null;
   total_amount?: string | null;
+  credit_applied_amount?: string | null;
   prepared_by?: string | null;
   invoice_items?: InvoiceItem[];
   booking?: Booking;
@@ -599,9 +601,10 @@ export interface ExpenseResponse {
   expense: Expense;
 }
 
-/** One row of GET /api/payments/unverified: a delivery receipt whose recorded payment awaits Accounting. */
+/** One row of GET /api/payments/unverified: a collected payment awaiting Accounting. */
 export interface UnverifiedPayment {
   id: string;
+  receipt_id: string;
   receipt_number: string;
   delivery_item_id: string;
   customer_id: string;
@@ -667,7 +670,7 @@ export interface AgentSchedulePallet extends Pick<Pallet, "id" | "order_id" | "s
 
 export interface AgentScheduleStop extends DeliveryItem {
   destination_customer: Customer;
-  invoice: Pick<Invoice, "id" | "booking_id" | "receipt_number" | "total_amount"> | null;
+  invoice: Pick<Invoice, "id" | "booking_id" | "receipt_number" | "total_amount" | "credit_applied_amount"> | null;
   sale_agent: Pick<User, "id" | "username"> | null;
   pallets: AgentSchedulePallet[];
   outstanding_amount?: number;
@@ -719,9 +722,10 @@ export const ConfirmDeliveryItemSchema = z.object({
 export interface AccountsReceivable {
   id: string;
   customer_id: string;
-  delivery_item_id: string;
+  delivery_item_id: string | null;
   invoice_id: string;
   amount_due: string;
+  credit_type?: string | null;
   status: "outstanding" | "paid" | "partial";
   notes?: string;
   created_at: string;

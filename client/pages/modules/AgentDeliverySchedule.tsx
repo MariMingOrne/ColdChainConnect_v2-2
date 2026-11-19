@@ -134,7 +134,7 @@ export function AgentDeliverySchedule() {
     0,
   );
 
-  const confirmDelivery = async (isPaid: boolean, paymentAmount?: number, paymentMethod?: string, paymentReference?: string) => {
+  const confirmDelivery = async (isPaid: boolean, paymentAmount?: number, paymentMethod?: string, paymentReference?: string, paymentId?: string) => {
     if (!token || !paymentStop) return;
     const { delivery, stop, mode } = paymentStop;
     setConfirmingStopId(stop.id);
@@ -143,8 +143,8 @@ export function AgentDeliverySchedule() {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(mode === "payment"
-          ? { payment_amount: paymentAmount, payment_method: paymentMethod, payment_reference: paymentReference }
-          : { is_paid: isPaid, payment_amount: paymentAmount, payment_method: paymentMethod, payment_reference: paymentReference }),
+          ? { payment_amount: paymentAmount, payment_method: paymentMethod, payment_reference: paymentReference, payment_id: paymentId }
+          : { is_paid: isPaid, payment_amount: paymentAmount, payment_method: paymentMethod, payment_reference: paymentReference, payment_id: paymentId }),
       });
       if (!response.ok) {
         const result = await response.json().catch(() => ({}));

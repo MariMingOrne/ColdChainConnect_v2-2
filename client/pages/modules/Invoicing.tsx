@@ -58,6 +58,8 @@ function ReceiptModal({ invoice, onClose }: ReceiptModalProps) {
   const DISCOUNT = parseFloat(invoice.discount_rate || "0.02");
   const discount = parseFloat(invoice.discount_amount || "0") || gross * DISCOUNT;
   const total    = parseFloat(invoice.total_amount    || "0") || gross - discount;
+  const creditApplied = Math.min(total, Math.max(0, parseFloat(invoice.credit_applied_amount || "0")));
+  const amountDue = Math.max(0, total - creditApplied);
   // kg comes from each product's weight frozen on the invoice; older receipts have none and show a dash.
   const lineKg = (item: InvoiceItem): number | null => {
     const unitKg = item.unit_weight_kg == null ? null : parseFloat(item.unit_weight_kg);
@@ -203,7 +205,7 @@ function ReceiptModal({ invoice, onClose }: ReceiptModalProps) {
                 <td className="border-r border-black px-2 py-1 text-right font-bold">GROSS</td>
                 <td className="px-2 py-1 text-right">₱ {fmt(gross)}</td>
               </tr>
-              {/* Less 2% row */}
+              {/* Less discount row */}
               <tr>
                 <td className="border-r border-black px-2 py-1" colSpan={5}></td>
                 <td className="border-r border-black px-2 py-1 text-right font-bold">
@@ -211,6 +213,13 @@ function ReceiptModal({ invoice, onClose }: ReceiptModalProps) {
                 </td>
                 <td className="px-2 py-1 text-right">{fmt(discount)}</td>
               </tr>
+              {creditApplied > 0 && (
+                <tr>
+                  <td className="border-r border-black px-2 py-1" colSpan={5}></td>
+                  <td className="border-r border-black px-2 py-1 text-right font-bold">CREDIT APPLIED</td>
+                  <td className="px-2 py-1 text-right">−{fmt(creditApplied)}</td>
+                </tr>
+              )}
             </tbody>
           </table>
 
@@ -224,7 +233,7 @@ function ReceiptModal({ invoice, onClose }: ReceiptModalProps) {
               <span className="font-extrabold uppercase tracking-wide">TOTAL AMOUNT DUE</span>
             </div>
             <div className="px-4 py-2 flex items-center">
-              <span className="text-base font-extrabold">₱ {fmt(total)}</span>
+              <span className="text-base font-extrabold">₱ {fmt(amountDue)}</span>
             </div>
           </div>
 
@@ -257,7 +266,7 @@ export function Invoicing() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "issued" | "paid">("all");
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "partial" | "unpaid">("all");
-  const [dateRangeFilter, setDateRangeFilter] = useState<"all" | "today" | "week" | "month" | "custom">("today");
+  const [dateRangeFilter, setDateRangeFilter] = useState<"all" | "today" | "week" | "month" | "custom">("all");
   const [customDateStart, setCustomDateStart] = useState("");
   const [customDateEnd, setCustomDateEnd] = useState("");
   const [receiptInvoice, setReceiptInvoice] = useState<Invoice | null>(null);
@@ -427,6 +436,7 @@ export function Invoicing() {
                 const DISCOUNT = parseFloat(inv.discount_rate || "0.02");
                 const snapshotTotal = parseFloat(inv.total_amount || "0");
                 const total = snapshotTotal > 0 ? snapshotTotal : gross * (1 - DISCOUNT);
+                const amountDue = Math.max(0, total - Number(inv.credit_applied_amount || 0));
                 const fmt = (n: number) =>
                   n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 return (
@@ -465,7 +475,7 @@ export function Invoicing() {
                       })()}
                     </TableCell>
                     <TableCell className="text-sm">₱ {fmt(gross)}</TableCell>
-                    <TableCell className="text-sm font-semibold text-foreground">₱ {fmt(total)}</TableCell>
+                    <TableCell className="text-sm font-semibold text-foreground">₱ {fmt(amountDue)}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(inv.status)}`}>
                         {inv.status}

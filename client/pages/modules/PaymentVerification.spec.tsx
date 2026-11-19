@@ -11,7 +11,8 @@ const toast = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock("sonner", () => ({ toast }));
 
 const payment: UnverifiedPayment = {
-  id: "rec-1",
+  id: "pay-1",
+  receipt_id: "rec-1",
   receipt_number: "OR-0001",
   delivery_item_id: "di-1",
   customer_id: "cust-1",
@@ -94,7 +95,7 @@ describe("PaymentVerification", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: /Confirm payment received/ }));
 
     await waitFor(() => expect(verifyCalls()).toHaveLength(1));
-    expect(verifyCalls()[0][0]).toBe("/api/receipts/rec-1/verify");
+    expect(verifyCalls()[0][0]).toBe("/api/payments/pay-1/verify");
     expect(verifyCalls()[0][1].headers.Authorization).toBe("Bearer tok");
     await waitFor(() => expect(fetchMock.mock.calls.filter(([url]) => url === "/api/payments/unverified").length).toBeGreaterThan(1));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());

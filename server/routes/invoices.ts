@@ -14,6 +14,10 @@ async function fetchInvoiceWithItems(id: string) {
     where: eq(invoices.id, id),
     with: {
       invoice_items: true,
+      agent: {
+        columns: { id: true },
+        with: { agents: { columns: { full_name: true } } },
+      },
       booking: {
         with: {
           customer: true,
@@ -38,6 +42,10 @@ export const listInvoices: RequestHandler = async (req: AuthRequest, res) => {
       orderBy: [desc(invoices.created_at)],
       with: {
         invoice_items: true,
+        agent: {
+          columns: { id: true },
+          with: { agents: { columns: { full_name: true } } },
+        },
         booking: {
           with: {
             customer: true,
@@ -47,7 +55,11 @@ export const listInvoices: RequestHandler = async (req: AuthRequest, res) => {
       },
     });
 
-    let result = allInvoices;
+    let result = allInvoices.map((invoice) => {
+      const fullName = invoice.agent?.agents.find((profile) => profile.full_name?.trim())?.full_name?.trim();
+      const { agent, ...invoiceData } = invoice;
+      return { ...invoiceData, prepared_by: fullName || invoice.prepared_by };
+    });
     if (status) result = result.filter((i) => i.status === status);
     if (unpaid === "true") result = result.filter((i) => i.payment_status === "unpaid");
     else if (payment_status) result = result.filter((i) => i.payment_status === payment_status);
@@ -68,7 +80,9 @@ export const getInvoice: RequestHandler = async (req: AuthRequest, res) => {
     if (scope && !scope.includes(id)) return res.status(404).json({ error: "Invoice not found" });
     const invoice = await fetchInvoiceWithItems(id);
     if (!invoice) return res.status(404).json({ error: "Invoice not found" });
-    res.json(invoice);
+    const fullName = invoice.agent?.agents.find((profile) => profile.full_name?.trim())?.full_name?.trim();
+    const { agent, ...invoiceData } = invoice;
+    res.json({ ...invoiceData, prepared_by: fullName || invoice.prepared_by });
   } catch (error) {
     console.error("Error fetching invoice:", error);
     res.status(500).json({ error: "Internal server error" });
