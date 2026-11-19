@@ -97,7 +97,7 @@ export function Login() {
       <aside className="login-brand relative hidden flex-col justify-between overflow-hidden p-12 text-white lg:flex xl:p-16">
         <div className="flex items-center gap-3">
           <span className="h-11 w-11 overflow-hidden rounded-full ring-2 ring-white/30">
-            <img src="https://cdn.builder.io/api/v1/image/assets%2F95235f61d85340cc8929dd5e2ec9cafe%2F04690f469f254fd393684ed5411b7cab?format=webp&width=800&height=1200" alt="ACDP logo" className="h-full w-full object-cover" style={{ borderStyle: "none", borderWidth: "1px" }} />
+            <img src="https://cdn.builder.io/api/v1/image/assets%2Feac2d0d867f54007b4538c37b7be16a7%2F29275c5234184b8a9c0e21283e9dec28?format=webp&width=800&height=1200" alt="ACDP logo" className="h-full w-full object-cover" style={{ borderStyle: "none", borderWidth: "1px" }} />
           </span>
           <span className="font-rajdhani text-lg font-bold tracking-wide">ACDP</span>
         </div>
@@ -118,7 +118,7 @@ export function Login() {
       <main className="flex flex-col px-6 py-8 sm:px-12">
         <div className="flex items-center gap-3 lg:hidden">
           <span className="h-10 w-10 overflow-hidden rounded-full ring-1 ring-border">
-            <img src="https://cdn.builder.io/api/v1/image/assets%2F95235f61d85340cc8929dd5e2ec9cafe%2F04690f469f254fd393684ed5411b7cab?format=webp&width=800&height=1200" alt="ACDP logo" className="h-full w-full object-cover" />
+            <img src="https://cdn.builder.io/api/v1/image/assets%2Feac2d0d867f54007b4538c37b7be16a7%2F29275c5234184b8a9c0e21283e9dec28?format=webp&width=800&height=1200" alt="ACDP logo" className="h-full w-full object-cover" />
           </span>
           <span className="font-rajdhani text-lg font-bold text-foreground">Cold Chain Connect</span>
         </div>
