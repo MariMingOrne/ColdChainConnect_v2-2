@@ -332,13 +332,14 @@ export function AccountsReceivable() {
               <TableHead>Created</TableHead>
               {activeTab !== "paid" && <TableHead>Due</TableHead>}
               {activeTab !== "paid" && <TableHead>Age</TableHead>}
+              {canUpdateReceivable && <TableHead>Edit</TableHead>}
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {paginated.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={(canUpdateReceivable ? 9 : 8) + (activeTab !== "paid" ? 1 : 0)} className="text-center py-10 text-muted-foreground text-sm">
+                <TableCell colSpan={(canUpdateReceivable ? 9 : 7) + (activeTab !== "paid" ? 2 : 0)} className="text-center py-10 text-muted-foreground text-sm">
                   {activeTab === "outstanding" && "No outstanding balances — great job! 🎉"}
                   {activeTab === "paid"        && "No paid records yet."}
                   {activeTab === "credits"     && "No customer credits yet."}
@@ -397,13 +398,15 @@ export function AccountsReceivable() {
                         </span>
                       </TableCell>
                     )}
-                    <TableCell className="text-right">
-                      {canUpdateReceivable && (
-                        <Button type="button" variant="outline" size="sm" className="mr-2" onClick={() => openNote(ar)}>
+                    {canUpdateReceivable && (
+                      <TableCell>
+                        <Button type="button" variant="outline" size="sm" onClick={() => openNote(ar)}>
                           <StickyNote size={13} />
-                          {ar.notes ? "Edit note" : "Add note"}
+                          Edit
                         </Button>
-                      )}
+                      </TableCell>
+                    )}
+                    <TableCell className="text-right">
                       {ar.status !== "paid" && !isCredit && canUpdateReceivable ? (
                         <Button
                           onClick={() => handleMarkPaid(ar.id)}

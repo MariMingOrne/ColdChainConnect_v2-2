@@ -90,15 +90,21 @@ export function DeliverySheet({ order, pallets, batches, onClose }: DeliveryShee
           </div>
         </div>
 
-        <div id="delivery-sheet" className={`overflow-y-auto rounded-2xl border border-border bg-card p-5 font-sans text-black ${cardMode ? "card-mode" : ""}`}>
+        <div id="delivery-sheet" className={`overflow-y-auto rounded-2xl border border-border bg-white p-5 font-sans text-black ${cardMode ? "card-mode" : ""}`}>
           <style>{`
             @media print {
               @page {
                 size: ${cardMode ? "5in 3in" : "letter"};
                 margin: ${cardMode ? "0.15in" : "0.35in"};
               }
-              html, body { height: auto !important; overflow: visible !important; }
+              html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
               body * { visibility: hidden !important; }
+              body:has(#delivery-sheet) [data-radix-dialog-overlay] { display: none !important; }
+              body:has(#delivery-sheet) [data-radix-dialog-content] {
+                position: static !important; display: block !important; width: auto !important; max-width: none !important;
+                max-height: none !important; overflow: visible !important; transform: none !important; border: 0 !important;
+                padding: 0 !important; box-shadow: none !important; background: transparent !important;
+              }
               .delivery-sheet-overlay, .delivery-sheet-overlay * { visibility: visible !important; }
               .delivery-sheet-overlay {
                 position: absolute !important;
@@ -119,14 +125,18 @@ export function DeliverySheet({ order, pallets, batches, onClose }: DeliveryShee
                 border-radius: 0 !important;
               }
               #delivery-sheet {
-                position: static !important;
-                width: 100%;
+                position: relative !important;
+                width: 100% !important;
+                max-width: 7.5in;
+                margin: 0 auto !important;
                 max-height: none !important;
                 overflow: visible !important;
-                padding: 0;
+                padding: 0.15in !important;
+                background: #fff !important;
+                color: #111 !important;
               }
               .no-print { display: none !important; }
-              .label-card { break-inside: avoid; }
+              .label-card { break-inside: avoid; color: #111 !important; background: #fff !important; }
               .card-mode .sheet-header, .card-mode .pick-list { display: none !important; }
               .card-mode .label-section { margin-top: 0 !important; }
               .card-mode .label-section h2 { display: none; }

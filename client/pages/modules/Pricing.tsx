@@ -185,6 +185,16 @@ function ProductPage({
           </div>
 
           <div>
+            <label htmlFor="pricing-unit" className="block text-xs font-semibold text-foreground mb-1">Unit type</label>
+            <NativeSelect id="pricing-unit" value={formData.unit} onChange={(e) => setFormData({ ...formData, unit: e.target.value as ProductUnit })}>
+              {PRODUCT_UNITS.map((unit) => (
+                <option key={unit} value={unit}>{unit === "PK" ? "PK — per pack" : "PC — per piece"}</option>
+              ))}
+            </NativeSelect>
+            <p className="text-xs text-muted-foreground mt-1">Printed in the UNIT column of the receipt.</p>
+          </div>
+
+          <div>
             <label htmlFor="pricing-weight-kg" className="block text-xs font-semibold text-foreground mb-1">Weight (kg)</label>
             <Input id="pricing-weight-kg"
               type="number"
@@ -195,16 +205,6 @@ function ProductPage({
               className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
               placeholder="e.g., 25"
             />
-          </div>
-
-          <div>
-            <label htmlFor="pricing-unit" className="block text-xs font-semibold text-foreground mb-1">Receipt unit</label>
-            <NativeSelect id="pricing-unit" value={formData.unit} onChange={(e) => setFormData({ ...formData, unit: e.target.value as ProductUnit })}>
-              {PRODUCT_UNITS.map((unit) => (
-                <option key={unit} value={unit}>{unit === "PK" ? "PK — per pack" : "PC — per piece"}</option>
-              ))}
-            </NativeSelect>
-            <p className="text-xs text-muted-foreground mt-1">Printed in the UNIT column of the receipt.</p>
           </div>
 
           <div>
@@ -299,7 +299,7 @@ function ViewProductPage({ product, onClose }: { product: Product; onClose: () =
             <div className="text-sm text-foreground font-semibold">₱{parseFloat(product.price ?? "0").toLocaleString("en-PH", { minimumFractionDigits: 2 })}</div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">Receipt unit</label>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Unit type</label>
             <div className="text-sm text-foreground">{product.unit === "PC" ? "PC — per piece" : "PK — per pack"}</div>
           </div>
           <div>
@@ -658,6 +658,7 @@ export function Pricing({ onBack }: PricingProps) {
                 <SortableHeader label="Product Name" sortKey="name" sort={productSort} onSort={setProductSort} />
                 <SortableHeader label="Unit Price" sortKey="price" sort={productSort} onSort={setProductSort} />
                 <SortableHeader label="Reorder Level" sortKey="reorder" sort={productSort} onSort={setProductSort} />
+                <th className="px-3 py-3 text-left text-xs font-semibold text-muted-foreground">Unit type</th>
                 <SortableHeader label="Weight" sortKey="weight" sort={productSort} onSort={setProductSort} />
                 <SortableHeader label="Status" sortKey="status" sort={productSort} onSort={setProductSort} className="hidden md:table-cell" />
               </tr>
@@ -665,7 +666,7 @@ export function Pricing({ onBack }: PricingProps) {
             <tbody>
               {paginatedProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
                     {products.length === 0 ? "No products found" : "No results matching your search"}
                   </td>
                 </tr>
@@ -694,6 +695,7 @@ export function Pricing({ onBack }: PricingProps) {
                               { label: "SKU", value: product.sku || "—" },
                               { label: "Unit Price", value: `₱${parseFloat(product.price ?? "0").toLocaleString("en-PH", { minimumFractionDigits: 2 })}` },
                               { label: "Reorder Level", value: product.reorder_point?.toLocaleString() || "—" },
+                              { label: "Unit type", value: product.unit === "PC" ? "PC — per piece" : "PK — per pack" },
                               { label: "Weight", value: product.weight != null ? `${Number(product.weight).toLocaleString()} kg` : "—" },
                               { label: "Status", value: product.is_discontinued ? "Discontinued" : "Active" },
                               { label: "Manufacturer", value: product.manufacturer || "—" },
@@ -714,6 +716,9 @@ export function Pricing({ onBack }: PricingProps) {
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap font-semibold text-foreground">
                       {product.reorder_point?.toLocaleString() || "—"}
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap text-foreground">
+                      {product.unit === "PC" ? "PC — per piece" : "PK — per pack"}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-foreground">
                       {product.weight != null ? `${Number(product.weight).toLocaleString()} kg` : "—"}

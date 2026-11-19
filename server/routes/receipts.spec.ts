@@ -14,6 +14,7 @@ import {
   drivers,
   invoices,
   order_pallets,
+  receipt_payment_entries,
   receipts,
   trucks,
 } from "../db/schema";

@@ -28,13 +28,15 @@ function PaymentPrintSheet({ payments, date }: { payments: UnverifiedPayment[]; 
   const total = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
 
   return (
-    <div id="payment-print-area" aria-hidden="true" className="hidden p-6 font-sans text-black print:block">
+    <div id="payment-print-area" aria-hidden="true" className="hidden bg-white p-4 font-sans text-black print:block">
       <style>{`
         @media print {
-          body * { visibility: hidden; }
-          #payment-print-area, #payment-print-area * { visibility: visible; }
-          html, body { height: auto !important; overflow: visible !important; }
-          #payment-print-area { position: absolute; top: 0; left: 0; width: 100%; }
+          @page { size: auto; margin: 0.35in; }
+          html, body { height: auto !important; overflow: visible !important; background: #fff !important; }
+          body * { visibility: hidden !important; }
+          #payment-print-area, #payment-print-area * { visibility: visible !important; }
+          #payment-print-area { position: absolute !important; top: 0; left: 0; width: 100%; padding: 0 !important; background: #fff !important; color: #111 !important; }
+          #payment-print-area tr, #payment-print-area th, #payment-print-area td { break-inside: avoid; }
         }
       `}</style>
       <h1 className="text-xl font-black">End-of-Day</h1>

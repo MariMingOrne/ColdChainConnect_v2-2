@@ -200,6 +200,7 @@ export const agents = pgTable("agents", {
   hire_date: text("hire_date"),
   address: text("address"),
   is_active: boolean("is_active").default(true),
+  is_archived: boolean("is_archived").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
@@ -216,6 +217,7 @@ export const drivers = pgTable("drivers", {
   hire_date: text("hire_date"),
   employment_type: text("employment_type"), // "full_time" or "part_time"
   is_active: boolean("is_active").default(true),
+  is_archived: boolean("is_archived").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [

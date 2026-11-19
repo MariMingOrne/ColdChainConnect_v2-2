@@ -6,7 +6,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useCan } from "@/hooks/useCan";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { ArrowLeft } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -213,21 +213,21 @@ function DriverModal({
 
 function DriverCard({
   driver,
-  showDelete,
+  showArchive,
   onView,
   onEdit,
   onSchedule,
-  onDelete,
+  onArchive,
   canManageMfa,
   isSavingMfa,
   onMfaRequirementChange,
 }: {
   driver: Driver;
-  showDelete: boolean;
+  showArchive: boolean;
   onView: () => void;
   onEdit?: () => void;
   onSchedule: () => void;
-  onDelete: () => void;
+  onArchive: () => void;
   canManageMfa: boolean;
   isSavingMfa: boolean;
   onMfaRequirementChange: (required: boolean) => void;
@@ -254,6 +254,7 @@ function DriverCard({
         <span className={`shrink-0 inline-block px-2 py-0.5 rounded text-xs font-bold ${driver.is_active ? "badge-green" : "badge-red"}`}>
           {driver.is_active ? "Active" : "Inactive"}
         </span>
+        {driver.is_archived && <span className="rounded bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">Archived</span>}
       </div>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
@@ -286,8 +287,11 @@ function DriverCard({
         <Button onClick={onView} variant="outline" size="sm" className="flex-1">View</Button>
         <Button onClick={onSchedule} variant="outline" size="sm" className="flex-1">Schedule</Button>
         {onEdit && <Button onClick={onEdit} variant="outline" size="sm" className="flex-1">Edit</Button>}
-        {showDelete && (
-          <Button onClick={onDelete} variant="danger" size="sm" className="flex-1">Delete</Button>
+        {showArchive && (
+          <Button onClick={onArchive} variant={driver.is_archived ? "outline" : "danger"} size="sm" className="flex-1">
+            {driver.is_archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+            {driver.is_archived ? "Restore" : "Archive"}
+          </Button>
         )}
       </div>
     </div>
@@ -302,6 +306,7 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [showArchived, setShowArchived] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
@@ -351,6 +356,7 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
       ((d.full_name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (d.contact_info?.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (d.license?.toLowerCase().includes(searchQuery.toLowerCase()))) &&
+      (showArchived ? d.is_archived : !d.is_archived) &&
       (statusFilter === "all" || (statusFilter === "active" ? d.is_active : !d.is_active))
   );
 
@@ -481,16 +487,25 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!(await confirmAction("Delete this driver?"))) return;
+  const updateArchiveStatus = async (driver: Driver) => {
+    const archived = !driver.is_archived;
+    const name = driver.full_name || driver.user?.username || "this driver";
+    const prompt = archived
+      ? `Archive ${name}? Their profile will be hidden and any linked login disabled.`
+      : `Restore ${name}? Their linked login will be re-enabled.`;
+    if (!(await confirmAction(prompt))) return;
     try {
-      await fetch(`/api/drivers/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch(`/api/drivers/${driver.id}/archive`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ is_archived: archived }),
       });
-      setDrivers(drivers.filter((d) => d.id !== id));
-    } catch {
-      toast.error("Failed to delete driver");
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.error || "Could not update driver archive status");
+      setDrivers((current) => current.map((item) => item.id === driver.id ? body as Driver : item));
+      toast.success(`${name} ${archived ? "archived" : "restored"}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update driver archive status");
     }
   };
 
@@ -521,7 +536,13 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {canManageDrivers && (
-            <Button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} variant="default">Create Accounts</Button>
+            <>
+              <Button type="button" variant="outline" onClick={() => { setShowArchived((current) => !current); setCurrentPage(1); }}>
+                {showArchived ? <ArchiveRestore size={15} /> : <Archive size={15} />}
+                {showArchived ? "Active Accounts" : `Archived Accounts (${drivers.filter((driver) => driver.is_archived).length})`}
+              </Button>
+              {!showArchived && <Button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} variant="default">Create Accounts</Button>}
+            </>
           )}
         </div>
       </div>
@@ -542,7 +563,7 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
 
       {paginatedDrivers.length === 0 ? (
         <div className="text-center text-muted-foreground text-sm py-12">
-          {drivers.length === 0 ? "No drivers found" : "No results matching your search"}
+          {showArchived ? "No archived drivers match your search" : drivers.length === 0 ? "No drivers found" : "No results matching your search"}
         </div>
       ) : (
         <div className="grid flex-1 content-start grid-cols-1 gap-3 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 stagger-children">
@@ -550,11 +571,11 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
             <DriverCard
               key={driver.id}
               driver={driver}
-              showDelete={canManageDrivers}
+              showArchive={canManageDrivers}
               onView={() => setViewingDriver(driver)}
               onEdit={canManageDrivers ? () => openEditModal(driver) : undefined}
               onSchedule={() => setSchedulingDriver(driver)}
-              onDelete={() => handleDelete(driver.id)}
+              onArchive={() => void updateArchiveStatus(driver)}
               canManageMfa={canManageDrivers}
               isSavingMfa={mfaSavingDriverId === driver.id}
               onMfaRequirementChange={(required) => void updateDriverMfaRequirement(driver, required)}
@@ -565,7 +586,7 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
 
       <div className="mt-auto flex items-center justify-between px-2 py-2">
         <div className="text-xs text-muted-foreground">
-          Page {currentPage} of {Math.max(1, totalPages)} · {filteredDrivers.length} drivers
+          Page {currentPage} of {Math.max(1, totalPages)} · {filteredDrivers.length} {showArchived ? "archived " : ""}drivers
         </div>
         <div className="flex gap-2 items-center">
           <Button

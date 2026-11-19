@@ -352,6 +352,7 @@ export interface Agent {
   hire_date?: string;
   address?: string;
   is_active: boolean;
+  is_archived: boolean;
   created_at: string;
   updated_at: string;
   user?: User;
@@ -380,6 +381,7 @@ export interface Driver {
   hire_date?: string;
   employment_type?: "full_time" | "part_time";
   is_active: boolean;
+  is_archived: boolean;
   user_id?: string | null;
   user?: { id: string; username: string; mfa_enabled: boolean; mfa_required: boolean } | null;
   created_at: string;
