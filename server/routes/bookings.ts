@@ -237,6 +237,12 @@ export const updateBookingStatus: RequestHandler = async (req: AuthRequest, res)
 
     const updates: any = {};
     if (status) updates.status = status;
+    // Re-sending "approved" for an already approved order keeps the original approver and time.
+    const newlyApproved = status === "approved" && existing.status !== "approved" && Boolean(req.user);
+    if (newlyApproved) {
+      updates.approved_by = req.user!.userId;
+      updates.approved_at = new Date();
+    }
 
     const updateResult = await db.transaction(async (tx) => {
       await tx.select({ id: bookings.id }).from(bookings).where(eq(bookings.id, id)).for("update");
@@ -267,7 +273,9 @@ export const updateBookingStatus: RequestHandler = async (req: AuthRequest, res)
     });
 
     if (req.user) {
-      await logAction(req.user.userId, "update", "booking", id, existing, updated);
+      // Self-approval is allowed, but the audit trail says so (separation-of-duties review).
+      const after = newlyApproved ? { ...updated, selfApproved: existing.created_by === req.user.userId } : updated;
+      await logAction(req.user.userId, "update", "booking", id, existing, after);
     }
 
     res.json({ booking: updated, invoice: null });

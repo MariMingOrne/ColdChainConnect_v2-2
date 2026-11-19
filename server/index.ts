@@ -116,7 +116,8 @@ import { getUnseenCounts } from "./routes/unseen";
 import { postSalesForecastChat } from "./routes/sales-forecast-chat";
 import { getCustomerReport, getSalesReport, getStockReport } from "./routes/reports";
 import { authMiddleware, requireRole } from "./middleware/auth";
-import { staffModuleGuard } from "./middleware/permissions";
+import { requirePermission, staffModuleGuard } from "./middleware/permissions";
+import { listUnverifiedPayments, verifyReceiptPayment } from "./routes/payment-verification";
 
 export function createServer() {
   const app = express();
@@ -249,6 +250,10 @@ export function createServer() {
   app.get("/api/receipts", authMiddleware, listReceipts);
   app.post("/api/deliveries/:id/items/:itemId/confirm", authMiddleware, confirmDeliveryItem);
   app.post("/api/deliveries/:id/items/:itemId/payment", authMiddleware, recordDeliveryItemPayment);
+
+  // Payment verification (accounting)
+  app.get("/api/payments/unverified", authMiddleware, requirePermission("payment:verify"), listUnverifiedPayments);
+  app.post("/api/receipts/:id/verify", authMiddleware, requirePermission("payment:verify"), verifyReceiptPayment);
 
   // Audit logs routes
   app.get("/api/audit-logs", authMiddleware, requireRole("admin", "staff"), listAuditLogs);
