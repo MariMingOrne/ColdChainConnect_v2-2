@@ -142,10 +142,10 @@ const POLICY: Record<string, Policy> = {
   // Receipts. Reading is open to delivery-operations and accounting; the only writes are a driver's or
   // agent's confirm/payment on a stop (the handler checks it is their own) and accounting's verify.
   "GET /api/receipts": agentAnd("delivery-operations", "accounting"),
-  // Staff with delivery-operations get past the middleware; the handler then refuses them unless
-  // the stop is theirs, which staff never are. No persona here holds that module.
-  "POST /api/deliveries/:id/items/:itemId/confirm": { agent: true, driver: true, staff: ["delivery-operations"] },
-  "POST /api/deliveries/:id/items/:itemId/payment": { agent: true, driver: true, staff: ["delivery-operations"] },
+  // requirePermission("delivery:confirm") answers before any validation: admin, agent and driver reach
+  // the handler (which then checks the stop is theirs); staff never do, whatever their modules.
+  "POST /api/deliveries/:id/items/:itemId/confirm": { agent: true, driver: true, staff: "none" },
+  "POST /api/deliveries/:id/items/:itemId/payment": { agent: true, driver: true, staff: "none" },
 
   // Accounting
   "GET /api/payments/unverified": staffOnly("accounting"),
@@ -203,6 +203,7 @@ const PERSONAS: Persona[] = [
   { name: "admin", userId: "test-admin", role: "admin" },
   { name: "staff (accounting only)", userId: "staff-accounting", role: "staff", modules: ["accounting"] },
   { name: "staff (order-fulfillment only)", userId: "staff-orders", role: "staff", modules: ["order-fulfillment"] },
+  { name: "staff (delivery-operations only)", userId: "staff-delivery", role: "staff", modules: ["delivery-operations"] },
   { name: "staff (no modules)", userId: "staff-none", role: "staff", modules: [] },
   { name: "agent", userId: "test-agent", role: "agent" },
   { name: "driver", userId: "test-driver", role: "driver" },

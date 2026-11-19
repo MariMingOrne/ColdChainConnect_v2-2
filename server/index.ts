@@ -254,8 +254,8 @@ export function createServer() {
 
   // Receipts routes
   app.get("/api/receipts", authMiddleware, listReceipts);
-  app.post("/api/deliveries/:id/items/:itemId/confirm", authMiddleware, confirmDeliveryItem);
-  app.post("/api/deliveries/:id/items/:itemId/payment", authMiddleware, recordDeliveryItemPayment);
+  app.post("/api/deliveries/:id/items/:itemId/confirm", authMiddleware, requirePermission("delivery:confirm"), confirmDeliveryItem);
+  app.post("/api/deliveries/:id/items/:itemId/payment", authMiddleware, requirePermission("delivery:confirm"), recordDeliveryItemPayment);
 
   // Payment verification (accounting)
   app.get("/api/payments/unverified", authMiddleware, requirePermission("payment:verify"), listUnverifiedPayments);
