@@ -463,6 +463,25 @@ export const receipts = pgTable("receipts", {
   index("receipts_confirmed_at_idx").on(table.confirmed_at),
 ]);
 
+export const receipt_payment_entries = pgTable("receipt_payment_entries", {
+  id: text("id").primaryKey(),
+  receipt_id: text("receipt_id")
+    .notNull()
+    .references(() => receipts.id, { onDelete: "cascade" }),
+  idempotency_key: text("idempotency_key").notNull().unique(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  payment_method: varchar("payment_method", { length: 50 }).notNull(),
+  payment_reference: text("payment_reference"),
+  recorded_by: text("recorded_by").references(() => users.id),
+  verified_by: text("verified_by").references(() => users.id),
+  verified_at: timestamp("verified_at"),
+  verification_remarks: text("verification_remarks"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("receipt_payment_entries_receipt_id_idx").on(table.receipt_id),
+  index("receipt_payment_entries_verified_at_idx").on(table.verified_at),
+]);
+
 // Accounts Receivable table — tracks unpaid delivery amounts
 export const accounts_receivable = pgTable("accounts_receivable", {
   id: text("id").primaryKey(),
@@ -697,11 +716,18 @@ export const accountsReceivableRelations = relations(accounts_receivable, ({ one
   delivery_item: one(delivery_items, { fields: [accounts_receivable.delivery_item_id], references: [delivery_items.id] }),
 }));
 
-export const receiptsRelations = relations(receipts, ({ one }) => ({
+export const receiptsRelations = relations(receipts, ({ one, many }) => ({
   delivery_item: one(delivery_items, { fields: [receipts.delivery_item_id], references: [delivery_items.id] }),
   customer: one(customers, { fields: [receipts.customer_id], references: [customers.id] }),
   truck: one(trucks, { fields: [receipts.truck_id], references: [trucks.id] }),
   invoice: one(invoices, { fields: [receipts.invoice_id], references: [invoices.id] }),
+  payment_entries: many(receipt_payment_entries),
+}));
+
+export const receiptPaymentEntriesRelations = relations(receipt_payment_entries, ({ one }) => ({
+  receipt: one(receipts, { fields: [receipt_payment_entries.receipt_id], references: [receipts.id] }),
+  recorder: one(users, { fields: [receipt_payment_entries.recorded_by], references: [users.id] }),
+  verifier: one(users, { fields: [receipt_payment_entries.verified_by], references: [users.id] }),
 }));
 
 export const auditLogsRelations = relations(audit_logs, ({ one }) => ({

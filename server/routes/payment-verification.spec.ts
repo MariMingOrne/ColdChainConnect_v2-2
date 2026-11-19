@@ -12,6 +12,7 @@ import {
   deliveries,
   delivery_items,
   invoices,
+  receipt_payment_entries,
   receipts,
   trucks,
   users,
@@ -75,10 +76,12 @@ beforeAll(async () => {
       cash_collected_amount: id === "partial" ? "60.00" : id === "overpaid" ? "120.00" : id === "unpaid" ? "0.00" : "100.00",
     })),
   );
-  await db
-    .update(receipts)
-    .set({ payment_verified_by: seeded.admin.id, payment_verified_at: new Date() })
-    .where(eq(receipts.id, "rec-verified"));
+  await db.insert(receipt_payment_entries).values([
+    { id: "pay-full", receipt_id: "rec-full", idempotency_key: "key-full", amount: "100.00", payment_method: "cash", recorded_by: seeded.driver.id },
+    { id: "pay-partial", receipt_id: "rec-partial", idempotency_key: "key-partial", amount: "60.00", payment_method: "cash", recorded_by: seeded.agent.id },
+    { id: "pay-verified", receipt_id: "rec-verified", idempotency_key: "key-verified", amount: "100.00", payment_method: "cash", recorded_by: seeded.driver.id, verified_by: seeded.admin.id, verified_at: new Date() },
+    { id: "pay-overpaid", receipt_id: "rec-overpaid", idempotency_key: "key-overpaid", amount: "120.00", payment_method: "cash", recorded_by: seeded.driver.id },
+  ]);
 
   // 60.00 collected on the partial stop, 40.00 still owed; the unpaid stop owes everything.
   await db.insert(accounts_receivable).values([
@@ -137,13 +140,13 @@ describe("GET /api/payments/unverified", () => {
   it("lists receipts with a recorded payment that is not yet verified", async () => {
     const { status, body } = await run(list, asAccounting());
     expect(status).toBe(200);
-    expect((body as Row[]).map((r) => r.id).sort()).toEqual(["rec-full", "rec-overpaid", "rec-partial"]);
+    expect((body as Row[]).map((r) => r.id).sort()).toEqual(["pay-full", "pay-overpaid", "pay-partial"]);
   });
 
   it("shows what accounting needs to check a row", async () => {
     const { body } = await run(list, asAccounting());
     const rows = body as Row[];
-    expect(rows.find((r) => r.id === "rec-full")).toMatchObject({
+    expect(rows.find((r) => r.id === "pay-full")).toMatchObject({
       receipt_number: "OR-full",
       invoice_receipt_number: "INV-full",
       customer_name: "Store One",
@@ -154,14 +157,14 @@ describe("GET /api/payments/unverified", () => {
       recorded_by_role: "driver",
     });
     // The later payment is included in the receipt's accumulated cash collected amount.
-    expect(rows.find((r) => r.id === "rec-partial")).toMatchObject({
+    expect(rows.find((r) => r.id === "pay-partial")).toMatchObject({
       customer_name: "Store Two",
       amount: "60.00",
       recorded_by: seeded.agent.id,
       recorded_by_username: "test_agent",
       recorded_by_role: "agent",
     });
-    expect(rows.find((r) => r.id === "rec-overpaid")).toMatchObject({ amount: "120.00" });
+    expect(rows.find((r) => r.id === "pay-overpaid")).toMatchObject({ amount: "120.00" });
   });
 
   it("is open to admin and denied to staff without accounting, agents and drivers", async () => {
@@ -174,39 +177,39 @@ describe("GET /api/payments/unverified", () => {
 
 describe("POST /api/receipts/:id/verify", () => {
   it("verifies once, then answers 409", async () => {
-    const first = await run(verify, asAccounting({ id: "rec-full" }));
+    const first = await run(verify, asAccounting({ id: "pay-full" }));
     expect(first.status).toBe(200);
-    expect(first.body).toMatchObject({ id: "rec-full", payment_verified_by: seeded.staff.id });
-    expect((first.body as Row).payment_verified_at).toBeTruthy();
+    expect(first.body).toMatchObject({ id: "pay-full", verified_by: seeded.staff.id });
+    expect((first.body as Row).verified_at).toBeTruthy();
 
-    const again = await run(verify, asAccounting({ id: "rec-full" }));
+    const again = await run(verify, asAccounting({ id: "pay-full" }));
     expect(again.status).toBe(409);
   });
 
   it("takes the verifier from the token, never from the request body", async () => {
-    const req = asAccounting({ id: "rec-partial" });
+    const req = asAccounting({ id: "pay-partial" });
     (req as unknown as { body: unknown }).body = { payment_verified_by: seeded.admin.id };
     const { body } = await run(verify, req);
-    expect(body).toMatchObject({ payment_verified_by: seeded.staff.id });
+    expect(body).toMatchObject({ verified_by: seeded.staff.id });
   });
 
   it("removes verified rows from the unverified list", async () => {
-    await run(verify, asAccounting({ id: "rec-overpaid" }));
+    await run(verify, asAccounting({ id: "pay-overpaid" }));
     const { body } = await run(list, asAccounting());
     expect(body).toEqual([]);
   });
 
   it("audit-logs the verification with the actor", async () => {
-    const [entry] = await db.select().from(audit_logs).where(eq(audit_logs.resource_id, "rec-full"));
-    expect(entry).toMatchObject({ user_id: seeded.staff.id, action: "verify_payment", resource_type: "receipt" });
-    expect(JSON.parse(entry.after_state!)).toMatchObject({ payment_verified_by: seeded.staff.id });
+    const [entry] = await db.select().from(audit_logs).where(eq(audit_logs.resource_id, "pay-full"));
+    expect(entry).toMatchObject({ user_id: seeded.staff.id, action: "verify_payment", resource_type: "receipt_payment" });
+    expect(JSON.parse(entry.after_state!)).toMatchObject({ verified_by: seeded.staff.id });
   });
 
   it("does not let two simultaneous verifications both succeed", async () => {
-    await db.update(receipts).set({ payment_verified_by: null, payment_verified_at: null }).where(eq(receipts.id, "rec-full"));
+    await db.update(receipt_payment_entries).set({ verified_by: null, verified_at: null }).where(eq(receipt_payment_entries.id, "pay-full"));
     const results = await Promise.all([
-      run(verify, asAccounting({ id: "rec-full" })),
-      run(verify, reqFor("admin", seeded.admin.id, { id: "rec-full" })),
+      run(verify, asAccounting({ id: "pay-full" })),
+      run(verify, reqFor("admin", seeded.admin.id, { id: "pay-full" })),
     ]);
     expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
   });
@@ -219,6 +222,14 @@ describe("POST /api/receipts/:id/verify", () => {
       await db.insert(invoices).values({ id: `inv-${id}`, booking_id: `book-${id}`, agent_id: seeded.admin.id, receipt_number: `INV-${id}`, customer_name: "Store One", total_amount: "100.00" });
       await db.insert(delivery_items).values({ id: `di-${id}`, delivery_id: "del-1", invoice_id: `inv-${id}`, destination_customer_id: "cust-1", status: "completed", is_paid: true, payment_method: "cash" });
       await db.insert(receipts).values({ id: `rec-${id}`, receipt_number: `OR-${id}`, delivery_item_id: `di-${id}`, customer_id: "cust-1", truck_id: "truck-1", invoice_id: `inv-${id}`, confirmed_by: recordedBy });
+      await db.insert(receipt_payment_entries).values({
+        id: `pay-${id}`,
+        receipt_id: `rec-${id}`,
+        idempotency_key: `key-${id}`,
+        amount: "100.00",
+        payment_method: "cash",
+        recorded_by: audit?.user ?? recordedBy,
+      });
       if (audit) {
         await db.insert(audit_logs).values({ id: `log-${id}`, user_id: audit.user, action: "record_payment", resource_type: "delivery_item", resource_id: `di-${id}` });
       }
@@ -226,23 +237,23 @@ describe("POST /api/receipts/:id/verify", () => {
 
     it("answers 409 when the verifier is the user who recorded the payment", async () => {
       await addStop("self", seeded.staff.id);
-      const { status, body } = await run(verify, asAccounting({ id: "rec-self" }));
+      const { status, body } = await run(verify, asAccounting({ id: "pay-self" }));
       expect(status).toBe(409);
       expect(body).toMatchObject({ error: expect.stringContaining("recorded") });
-      const [row] = await db.select().from(receipts).where(eq(receipts.id, "rec-self"));
-      expect(row.payment_verified_at).toBeNull();
+      const [row] = await db.select().from(receipt_payment_entries).where(eq(receipt_payment_entries.id, "pay-self"));
+      expect(row.verified_at).toBeNull();
     });
 
     it("uses the latest audit entry as the recorder, like the unverified list", async () => {
       // Confirmed by the driver, but the accounting user took the later payment.
       await addStop("later", seeded.driver.id, { user: seeded.staff.id });
-      expect((await run(verify, asAccounting({ id: "rec-later" }))).status).toBe(409);
+      expect((await run(verify, asAccounting({ id: "pay-later" }))).status).toBe(409);
     });
 
     it("lets a different user verify the same receipt", async () => {
-      const { status, body } = await run(verify, reqFor("admin", seeded.admin.id, { id: "rec-self" }));
+      const { status, body } = await run(verify, reqFor("admin", seeded.admin.id, { id: "pay-self" }));
       expect(status).toBe(200);
-      expect(body).toMatchObject({ payment_verified_by: seeded.admin.id });
+      expect(body).toMatchObject({ verified_by: seeded.admin.id });
     });
   });
 
@@ -262,16 +273,14 @@ describe("POST /api/receipts/:id/verify", () => {
 
   it("refuses to verify a receipt where no payment was recorded", async () => {
     const { status } = await run(verify, asAccounting({ id: "rec-unpaid" }));
-    expect(status).toBe(409);
-    const [row] = await db.select().from(receipts).where(eq(receipts.id, "rec-unpaid"));
-    expect(row.payment_verified_at).toBeNull();
+    expect(status).toBe(404);
   });
 });
 
 describe("staff module guard", () => {
   const guardFor = (path: string, modules: string[]) => run([staffModuleGuard], { ...reqFor("staff", seeded.staff.id, {}, modules), path } as AuthRequest);
 
-  it.each(["/payments/unverified", "/receipts/rec-1/verify"])("lets an accounting-only staff account reach %s", async (path) => {
+  it.each(["/payments/unverified", "/payments/pay-1/verify"])("lets an accounting-only staff account reach %s", async (path) => {
     expect((await guardFor(path, ["accounting"])).status).toBe(200);
   });
 
@@ -293,25 +302,29 @@ describe("clearance remarks", () => {
       id: "rec-bank", receipt_number: "OR-bank", delivery_item_id: "di-bank", customer_id: "cust-1", truck_id: "truck-1", invoice_id: "inv-bank",
       confirmed_by: seeded.driver.id, payment_reference: "BDO-12345",
     });
+    await db.insert(receipt_payment_entries).values({
+      id: "pay-bank", receipt_id: "rec-bank", idempotency_key: "key-bank", amount: "100.00",
+      payment_method: "bank_transfer", payment_reference: "BDO-12345", recorded_by: seeded.driver.id,
+    });
   });
 
   const withRemarks = (remarks: unknown) => {
-    const req = asAccounting({ id: "rec-bank" });
+    const req = asAccounting({ id: "pay-bank" });
     (req as unknown as { body: unknown }).body = { remarks };
     return req;
   };
 
   it("lists the bank reference so Accounting can match it", async () => {
     const { body } = await run(list, asAccounting());
-    expect((body as Row[]).find((row) => row.id === "rec-bank")).toMatchObject({ payment_reference: "BDO-12345" });
+    expect((body as Row[]).find((row) => row.id === "pay-bank")).toMatchObject({ payment_reference: "BDO-12345" });
   });
 
   it("refuses a bank transfer without a remark, and leaves it unverified", async () => {
     for (const remarks of [undefined, "", "   "]) {
       expect((await run(verify, withRemarks(remarks))).status).toBe(400);
     }
-    const [row] = await db.select().from(receipts).where(eq(receipts.id, "rec-bank"));
-    expect(row.payment_verified_at).toBeNull();
+    const [row] = await db.select().from(receipt_payment_entries).where(eq(receipt_payment_entries.id, "pay-bank"));
+    expect(row.verified_at).toBeNull();
   });
 
   it("rejects remarks that are not text or are too long", async () => {
@@ -322,8 +335,8 @@ describe("clearance remarks", () => {
   it("stores the trimmed remark and audit-logs it", async () => {
     const { status, body } = await run(verify, withRemarks("  Cleared in BDO on Nov 20  "));
     expect(status).toBe(200);
-    expect(body).toMatchObject({ payment_verification_remarks: "Cleared in BDO on Nov 20" });
-    const logs = await db.select().from(audit_logs).where(eq(audit_logs.resource_id, "rec-bank"));
-    expect(JSON.parse(logs[0].after_state!)).toMatchObject({ payment_verification_remarks: "Cleared in BDO on Nov 20" });
+    expect(body).toMatchObject({ verification_remarks: "Cleared in BDO on Nov 20" });
+    const logs = await db.select().from(audit_logs).where(eq(audit_logs.resource_id, "pay-bank"));
+    expect(JSON.parse(logs[0].after_state!)).toMatchObject({ verification_remarks: "Cleared in BDO on Nov 20" });
   });
 });

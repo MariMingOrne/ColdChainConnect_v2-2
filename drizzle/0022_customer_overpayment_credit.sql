@@ -10,7 +10,7 @@ ALTER TABLE "accounts_receivable"
 UPDATE "receipts" r
 SET "cash_collected_amount" = CASE
   WHEN di."payment_method" IS NULL THEN 0
-  ELSE GREATEST(COALESCE(i."total_amount", i."gross_amount", 0) - COALESCE(ar."amount_due", 0), 0)
+  ELSE GREATEST(COALESCE(NULLIF(i."total_amount", 0), NULLIF(i."gross_amount", 0), 0) - COALESCE(ar."amount_due", 0), 0)
 END
 FROM "delivery_items" di
 JOIN "invoices" i ON i."id" = di."invoice_id"

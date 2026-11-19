@@ -12,6 +12,7 @@ import {
   agents,
   drivers,
   order_pallets,
+  receipt_payment_entries,
 } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
@@ -58,7 +59,7 @@ export const confirmDeliveryItem: RequestHandler = async (
   res
 ) => {
   const { id: deliveryId, itemId } = req.params;
-  const { notes, is_paid, payment_amount, payment_method, payment_reference } = req.body ?? {};
+  const { notes, is_paid, payment_amount, payment_method, payment_reference, payment_id } = req.body ?? {};
 
   if (!process.env.DATABASE_URL) {
     return res.status(503).json({ error: "Database not configured" });
@@ -106,8 +107,8 @@ export const confirmDeliveryItem: RequestHandler = async (
     if (!Number.isFinite(collectedAmount) || collectedAmount < 0) {
       return res.status(400).json({ error: "Payment amount must be zero or greater" });
     }
-    if (collectedAmount > 0 && !payment_method) {
-      return res.status(400).json({ error: "Payment method is required when recording a payment" });
+    if (collectedAmount > 0 && (typeof payment_method !== "string" || !payment_method || typeof payment_id !== "string" || !payment_id || payment_id.length > 100)) {
+      return res.status(400).json({ error: "Payment method and payment ID are required when recording a payment" });
     }
 
     const collectedCents = Math.round(collectedAmount * 100);
@@ -196,6 +197,18 @@ export const confirmDeliveryItem: RequestHandler = async (
           cash_collected_amount: (collectedCents / 100).toFixed(2),
           confirmed_at: now,
         }).returning();
+
+        if (collectedCents > 0) {
+          await tx.insert(receipt_payment_entries).values({
+            id: randomUUID(),
+            receipt_id: createdReceipt.id,
+            idempotency_key: payment_id,
+            amount: (collectedCents / 100).toFixed(2),
+            payment_method,
+            payment_reference: payment_reference ?? null,
+            recorded_by: req.user?.userId ?? null,
+          });
+        }
 
         if (remainingCents > 0) {
           await tx.insert(accounts_receivable).values({
@@ -293,16 +306,19 @@ export const recordDeliveryItemPayment: RequestHandler = async (
   res
 ) => {
   const { id: deliveryId, itemId } = req.params;
-  const { payment_amount, payment_method, payment_reference } = req.body ?? {};
+  const { payment_amount, payment_method, payment_reference, payment_id } = req.body ?? {};
 
   if (!process.env.DATABASE_URL) {
     return res.status(503).json({ error: "Database not configured" });
   }
-  if (!payment_method) {
+  if (typeof payment_method !== "string" || !payment_method) {
     return res.status(400).json({ error: "Payment method is required" });
   }
   if (payment_amount === undefined || !Number.isFinite(Number(payment_amount)) || Number(payment_amount) <= 0) {
     return res.status(400).json({ error: "A payment amount greater than zero is required" });
+  }
+  if (typeof payment_id !== "string" || !payment_id || payment_id.length > 100) {
+    return res.status(400).json({ error: "Payment ID is required" });
   }
 
   try {
@@ -319,10 +335,6 @@ export const recordDeliveryItemPayment: RequestHandler = async (
     if (item.status !== "completed") {
       return res.status(409).json({ error: "Confirm the delivery before recording payment" });
     }
-    if (item.is_paid) {
-      return res.status(409).json({ error: "Payment is already recorded for this delivery item" });
-    }
-
     const delivery = await db.query.deliveries.findFirst({
       where: eq(deliveries.id, deliveryId),
       with: { truck: { columns: { driver_id: true } } },
@@ -352,7 +364,7 @@ export const recordDeliveryItemPayment: RequestHandler = async (
       return res.status(403).json({ error: "Not authorized to record payment for this delivery" });
     }
 
-    let result: { paymentCents: number; remainingCents: number; overpaidCents: number; isFullyPaid: boolean };
+    let result: { paymentCents: number; remainingCents: number; overpaidCents: number; isFullyPaid: boolean; duplicate: boolean };
     try {
       // One transaction with the AR row locked: two simultaneous submissions
       // (double tap, agent + admin) cannot both spend the same balance, and a
@@ -360,7 +372,17 @@ export const recordDeliveryItemPayment: RequestHandler = async (
       result = await db.transaction(async (tx) => {
         const [lockedItem] = await tx.select({ is_paid: delivery_items.is_paid }).from(delivery_items)
           .where(eq(delivery_items.id, itemId)).for("update");
-        if (lockedItem?.is_paid) throw new PaymentConflict(409, "Payment is already recorded for this delivery item");
+        const [existingReceipt] = await tx.select().from(receipts)
+          .where(eq(receipts.delivery_item_id, itemId)).limit(1).for("update");
+        if (!lockedItem || !existingReceipt) throw new PaymentConflict(409, "Receipt not found for this delivery item");
+
+        const [priorPayment] = await tx.select().from(receipt_payment_entries)
+          .where(eq(receipt_payment_entries.idempotency_key, payment_id)).limit(1);
+        if (priorPayment) {
+          if (priorPayment.receipt_id !== existingReceipt.id) throw new PaymentConflict(409, "Payment ID has already been used");
+          return { paymentCents: 0, remainingCents: 0, overpaidCents: 0, isFullyPaid: lockedItem.is_paid ?? false, duplicate: true };
+        }
+        if (lockedItem.is_paid) throw new PaymentConflict(409, "Payment is already recorded for this delivery item");
 
         const [outstanding] = await tx.select().from(accounts_receivable)
           .where(and(eq(accounts_receivable.delivery_item_id, itemId), eq(accounts_receivable.status, "outstanding")))
@@ -377,9 +399,6 @@ export const recordDeliveryItemPayment: RequestHandler = async (
         const isFullyPaid = remainingCents === 0;
         const now = new Date();
 
-        const [existingReceipt] = await tx.select().from(receipts)
-          .where(eq(receipts.delivery_item_id, itemId)).limit(1).for("update");
-        if (!existingReceipt) throw new PaymentConflict(409, "Receipt not found for this delivery item");
         const totalCollectedCents = Math.round(Number(existingReceipt.cash_collected_amount) * 100) + paymentCents;
 
         await tx.update(delivery_items).set({
@@ -390,13 +409,20 @@ export const recordDeliveryItemPayment: RequestHandler = async (
           updated_at: now,
         }).where(eq(delivery_items.id, itemId));
 
-        // A changed payment must be checked again, so a verified receipt returns to the accounting queue.
         await tx.update(receipts).set({
           payment_reference: payment_reference ?? null,
           cash_collected_amount: (totalCollectedCents / 100).toFixed(2),
-          payment_verified_by: null,
-          payment_verified_at: null,
         }).where(eq(receipts.delivery_item_id, itemId));
+
+        await tx.insert(receipt_payment_entries).values({
+          id: randomUUID(),
+          receipt_id: existingReceipt.id,
+          idempotency_key: payment_id,
+          amount: (paymentCents / 100).toFixed(2),
+          payment_method,
+          payment_reference: payment_reference ?? null,
+          recorded_by: req.user?.userId ?? null,
+        });
 
         await tx.update(accounts_receivable).set({
           amount_due: (remainingCents / 100).toFixed(2),
@@ -422,7 +448,7 @@ export const recordDeliveryItemPayment: RequestHandler = async (
           updated_at: now,
         }).where(eq(invoices.id, item.invoice_id));
 
-        return { paymentCents, remainingCents, overpaidCents, isFullyPaid };
+        return { paymentCents, remainingCents, overpaidCents, isFullyPaid, duplicate: false };
       });
     } catch (error) {
       if (error instanceof PaymentConflict) return res.status(error.status).json({ error: error.message });
@@ -430,7 +456,7 @@ export const recordDeliveryItemPayment: RequestHandler = async (
     }
     const { paymentCents, remainingCents, overpaidCents, isFullyPaid } = result;
 
-    if (req.user) {
+    if (req.user && !result.duplicate) {
       await logAction(
         req.user.userId,
         "record_payment",

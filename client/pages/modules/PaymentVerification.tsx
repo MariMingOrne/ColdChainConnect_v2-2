@@ -79,7 +79,7 @@ function VerifyDialog({
   const verify = async () => {
     setBusy(true);
     try {
-      const res = await fetch(`/api/receipts/${payment.id}/verify`, {
+      const res = await fetch(`/api/payments/${payment.id}/verify`, {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ remarks: remarks.trim() || undefined }),

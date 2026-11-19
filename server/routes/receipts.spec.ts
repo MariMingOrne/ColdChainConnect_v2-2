@@ -96,7 +96,7 @@ describe("receipts.confirmed_by", () => {
       seeded.agent.id,
       "agent",
       { id: "del-1", itemId: "di-partial" },
-      { payment_amount: 40, payment_method: "cash", confirmed_by: "test-admin" },
+      { payment_amount: 40, payment_method: "cash", payment_id: "partial-payment-1", confirmed_by: "test-admin" },
     );
     expect(status).toBe(200);
     const [row] = await db.select().from(receipts).where(eq(receipts.delivery_item_id, "di-partial"));
@@ -110,6 +110,7 @@ describe("receipt overpayments", () => {
       is_paid: true,
       payment_amount: 120,
       payment_method: "cash",
+      payment_id: "overpay-confirm-key",
     });
     expect(status).toBe(201);
 
@@ -124,11 +125,28 @@ describe("receipt overpayments", () => {
     }));
   });
 
+  it("does not count a retried partial-payment request twice", async () => {
+    await run(confirmDeliveryItem, seeded.driver.id, "driver", { id: "del-1", itemId: "di-overpay-later" }, { is_paid: false });
+    const body = { payment_amount: 40, payment_method: "cash", payment_id: "partial-retry-key" };
+    const first = await run(recordDeliveryItemPayment, seeded.agent.id, "agent", { id: "del-1", itemId: "di-overpay-later" }, body);
+    const retry = await run(recordDeliveryItemPayment, seeded.agent.id, "agent", { id: "del-1", itemId: "di-overpay-later" }, body);
+    expect(first.status).toBe(200);
+    expect(retry.status).toBe(200);
+
+    const [ar] = await db.select().from(accounts_receivable).where(eq(accounts_receivable.delivery_item_id, "di-overpay-later"));
+    const [receipt] = await db.select().from(receipts).where(eq(receipts.delivery_item_id, "di-overpay-later"));
+    const events = await db.select().from(receipt_payment_entries).where(eq(receipt_payment_entries.idempotency_key, "partial-retry-key"));
+    expect(ar.amount_due).toBe("60.00");
+    expect(receipt.cash_collected_amount).toBe("40.00");
+    expect(events).toHaveLength(1);
+  });
+
   it("creates customer credit when a later payment exceeds the remaining balance", async () => {
     await run(confirmDeliveryItem, seeded.driver.id, "driver", { id: "del-1", itemId: "di-overpay-later" }, { is_paid: false });
     const { status } = await run(recordDeliveryItemPayment, seeded.agent.id, "agent", { id: "del-1", itemId: "di-overpay-later" }, {
       payment_amount: 120,
       payment_method: "cash",
+      payment_id: "overpay-later-key",
     });
     expect(status).toBe(200);
 
@@ -157,7 +175,7 @@ describe("a payment recorded after verification", () => {
       seeded.agent.id,
       "agent",
       { id: "del-1", itemId: "di-partial" },
-      { payment_amount: 10, payment_method: "gcash", payment_reference: "REF-2" },
+      { payment_amount: 10, payment_method: "gcash", payment_reference: "REF-2", payment_id: "partial-payment-2" },
     );
     expect(status).toBe(200);
 

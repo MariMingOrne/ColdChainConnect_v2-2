@@ -1,5 +1,6 @@
 import { NativeSelect } from "@/components/ui/native-select";
 import { PageDialog } from "@/components/shared/PageDialog";
+import { DeliveryPaymentPrompt } from "@/components/shared/DeliveryPaymentPrompt";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -195,7 +196,7 @@ export function DeliveryDispatch() {
     setShowPaymentModal(true);
   };
 
-  const handleConfirmWithPayment = async (isPaid: boolean, paymentMethod?: string, paymentReference?: string) => {
+  const handleConfirmWithPayment = async (isPaid: boolean, paymentAmount?: number, paymentMethod?: string, paymentReference?: string, paymentId?: string) => {
     if (!token || !paymentItem) return;
     const { delivery, item } = paymentItem;
     setConfirmingItem(item.id);
@@ -207,8 +208,10 @@ export function DeliveryDispatch() {
           headers: authHeaders(token),
           body: JSON.stringify({
             is_paid: isPaid,
+            payment_amount: paymentAmount,
             payment_method: paymentMethod,
             payment_reference: paymentReference,
+            payment_id: paymentId,
           })
         }
       );
@@ -839,15 +842,17 @@ export function DeliveryDispatch() {
         </PageDialog>
       )}
       {(showPaymentModal && paymentItem) && (
-        <PageDialog onClose={() => { setShowPaymentModal(false); setPaymentItem(null); }}>
-<PaymentConfirmationModal
-      item={paymentItem.item}
-      customer={paymentItem.item.customer}
-      invoice={paymentItem.item.invoice}
-      onClose={() => { setShowPaymentModal(false); setPaymentItem(null); }}
-      onConfirm={handleConfirmWithPayment}
-      isConfirming={confirmingItem === paymentItem.item.id}
-    />
+        <PageDialog onClose={() => { setShowPaymentModal(false); setPaymentItem(null); }} label="Confirm delivery">
+          <DeliveryPaymentPrompt
+            stop={{
+              destination_customer: { store_name: paymentItem.item.customer?.store_name ?? "Customer" },
+              invoice: paymentItem.item.invoice ?? null,
+            }}
+            mode="confirm"
+            isConfirming={confirmingItem === paymentItem.item.id}
+            onClose={() => { setShowPaymentModal(false); setPaymentItem(null); }}
+            onConfirm={handleConfirmWithPayment}
+          />
         </PageDialog>
       )}
     </>
@@ -1326,141 +1331,5 @@ function ModalShell({ title, onClose, children }: {
       </div>
       <div className="max-w-2xl w-full bg-card rounded-xl border border-border p-5 space-y-4">{children}</div>
     </div>
-  );
-}
-
-// ─── Payment Confirmation Modal ────────────────────────────────────────────────
-
-function PaymentConfirmationModal({
-  item,
-  customer,
-  invoice,
-  onClose,
-  onConfirm,
-  isConfirming
-}: {
-  item: DeliveryItemExt;
-  customer?: any;
-  invoice?: any;
-  onClose: () => void;
-  onConfirm: (isPaid: boolean, paymentMethod?: string, paymentReference?: string) => Promise<void>;
-  isConfirming: boolean;
-}) {
-  const [isPaid, setIsPaid] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState("cash");
-  const [paymentReference, setPaymentReference] = useState("");
-
-  const PAYMENT_METHODS = [
-    { value: "cash", label: "Cash" },
-    { value: "check", label: "✓ Check" },
-    { value: "bank_transfer", label: "Bank Transfer" },
-    { value: "online", label: "Online Payment" },
-  ];
-
-  const handleConfirm = async () => {
-    await onConfirm(isPaid, isPaid ? paymentMethod : undefined, isPaid ? paymentReference : undefined);
-  };
-
-  return (
-    <ModalShell
-      title="Complete Delivery"
-      onClose={onClose}
-    >
-      <div className="space-y-5">
-        {/* Delivery Summary */}
-        <div className="bg-muted rounded-lg p-4 space-y-2">
-          <p className="text-xs font-semibold text-muted-foreground">Delivery Details</p>
-          <p className="font-semibold text-foreground">{customer?.store_name || "Customer"}</p>
-          <p className="text-xs text-muted-foreground">{customer ? formatCustomerAddress(customer) : "—"}</p>
-          {invoice && (
-            <p className="text-xs text-muted-foreground">Invoice: {invoice.id.slice(0, 8)}…</p>
-          )}
-        </div>
-
-        {/* Payment Status Question */}
-        <div className="space-y-3">
-          <p className="text-sm font-semibold text-foreground">Was payment received at delivery?</p>
-
-          <div className="space-y-2">
-            <label className="flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition"
-              style={{ borderColor: !isPaid ? 'hsl(var(--link))' : 'hsl(var(--border))', backgroundColor: !isPaid ? 'hsl(var(--info-soft))' : 'transparent' }}>
-              <Input
-                type="radio"
-                checked={!isPaid}
-                onChange={() => setIsPaid(false)}
-                className="w-4 h-4"
-              />
-              <span className="text-sm font-semibold text-foreground">Not Paid</span>
-            </label>
-
-            <label className="flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition"
-              style={{ borderColor: isPaid ? 'hsl(var(--success))' : 'hsl(var(--border))', backgroundColor: isPaid ? 'hsl(var(--success-soft))' : 'transparent' }}>
-              <Input
-                type="radio"
-                checked={isPaid}
-                onChange={() => setIsPaid(true)}
-                className="w-4 h-4"
-              />
-              <span className="text-sm font-semibold text-foreground">Paid</span>
-            </label>
-          </div>
-        </div>
-
-        {/* Payment Method Selection (only if paid) */}
-        {isPaid && (
-          <div className="space-y-3 p-4 bg-success-soft rounded-lg border border-success/30">
-            <p className="text-xs font-semibold text-muted-foreground">Payment Method</p>
-            <div className="space-y-2">
-              {PAYMENT_METHODS.map((method) => (
-                <label key={method.value} className="flex items-center gap-3 p-3 border border-border rounded-lg cursor-pointer hover:bg-card transition-colors">
-                  <Input
-                    type="radio"
-                    checked={paymentMethod === method.value}
-                    onChange={() => setPaymentMethod(method.value)}
-                    className="w-4 h-4"
-                  />
-                  <span className="text-sm font-semibold text-foreground">{method.label}</span>
-                </label>
-              ))}
-            </div>
-            <div>
-              <label htmlFor="delivery-reference-receipt-no-optional" className="block text-xs font-semibold text-foreground mb-1">Reference / Receipt No. (optional)</label>
-              <Input id="delivery-reference-receipt-no-optional"
-                type="text"
-                value={paymentReference}
-                onChange={(e) => setPaymentReference(e.target.value)}
-                placeholder="e.g. check #, transfer ref, OR number…"
-                className="w-full"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Warning if not paid */}
-        {!isPaid && (
-          <div className="p-4 bg-warning-soft rounded-lg border border-warning/30">
-            <p className="text-xs font-semibold text-warning mb-1">Accounts Receivable</p>
-            <p className="text-xs text-warning">
-              Since payment was not received, this amount will be recorded in Accounts Receivable. {customer?.store_name} will show as owing this amount.
-            </p>
-          </div>
-        )}
-      </div>
-
-      <div className="flex justify-end gap-2 pt-4 border-t border-border">
-        <Button
-          onClick={onClose}
-          disabled={isConfirming}
-          variant="outline"
-        >
-          Cancel
-        </Button>
-        <Button
-          onClick={handleConfirm}
-          disabled={isConfirming} variant={isPaid ? "success" : "default"}>
-          {isConfirming ? "Processing…" : (isPaid ? "✓ Confirm Paid" : "✓ Confirm Not Paid")}
-        </Button>
-      </div>
-    </ModalShell>
   );
 }

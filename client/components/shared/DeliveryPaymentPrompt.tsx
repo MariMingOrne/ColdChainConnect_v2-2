@@ -17,7 +17,7 @@ export function DeliveryPaymentPrompt({ stop, mode, isConfirming, error, onClose
   isConfirming: boolean;
   error?: string | null;
   onClose: () => void;
-  onConfirm: (isPaid: boolean, paymentAmount?: number, paymentMethod?: string, paymentReference?: string) => Promise<void>;
+  onConfirm: (isPaid: boolean, paymentAmount?: number, paymentMethod?: string, paymentReference?: string, paymentId?: string) => Promise<void>;
 }) {
   const isRecordingPayment = mode === "payment";
   const invoiceAmount = Math.max(0, Number(stop.invoice?.total_amount ?? 0) - Number(stop.invoice?.credit_applied_amount ?? 0));
@@ -27,6 +27,7 @@ export function DeliveryPaymentPrompt({ stop, mode, isConfirming, error, onClose
   const [paymentAmount, setPaymentAmount] = useState(amountDue.toFixed(2));
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [paymentReference, setPaymentReference] = useState("");
+  const [paymentId] = useState(() => crypto.randomUUID());
   const paymentMethods = [
     ["cash", "Cash"],
     ["check", "Check"],
@@ -99,7 +100,7 @@ export function DeliveryPaymentPrompt({ stop, mode, isConfirming, error, onClose
         {error && <p role="alert" className="mt-4 text-sm text-red">{error}</p>}
         <div className="mt-5 flex gap-2 border-t border-border pt-4">
           <Button type="button" variant="ghost" onClick={onClose} disabled={isConfirming} className="min-h-11 h-auto flex-1">Cancel</Button>
-          <Button type="button" variant="success" onClick={() => void onConfirm(creditSettled || paymentStatus === "paid", creditSettled || paymentStatus === "unpaid" ? 0 : Number(paymentAmount), creditSettled || paymentStatus === "unpaid" ? undefined : paymentMethod, creditSettled || paymentStatus === "unpaid" ? undefined : paymentReference)} disabled={isConfirming || (!creditSettled && paymentStatus !== "unpaid" && (!Number.isFinite(Number(paymentAmount)) || Number(paymentAmount) <= 0 || (!isRecordingPayment && paymentStatus === "partial" && Number(paymentAmount) >= amountDue)))} className="min-h-11 h-auto flex-1">{isConfirming ? "Saving…" : isRecordingPayment ? "Save payment" : "Confirm delivery"}</Button>
+          <Button type="button" variant="success" onClick={() => void onConfirm(creditSettled || paymentStatus === "paid", creditSettled || paymentStatus === "unpaid" ? 0 : Number(paymentAmount), creditSettled || paymentStatus === "unpaid" ? undefined : paymentMethod, creditSettled || paymentStatus === "unpaid" ? undefined : paymentReference, paymentId)} disabled={isConfirming || (!creditSettled && paymentStatus !== "unpaid" && (!Number.isFinite(Number(paymentAmount)) || Number(paymentAmount) <= 0 || (!isRecordingPayment && paymentStatus === "partial" && Number(paymentAmount) >= amountDue)))} className="min-h-11 h-auto flex-1">{isConfirming ? "Saving…" : isRecordingPayment ? "Save payment" : "Confirm delivery"}</Button>
         </div>
       </section>
     </div>
