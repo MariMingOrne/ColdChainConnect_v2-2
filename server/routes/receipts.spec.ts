@@ -1,0 +1,132 @@
+// Receipt attribution and payment handling on the confirm / payment endpoints. Runs against the
+// in-memory Postgres harness; the shared database is never touched.
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import type { RequestHandler, Response } from "express";
+import { eq } from "drizzle-orm";
+import { db } from "../db";
+import {
+  accounts_receivable,
+  agents,
+  bookings,
+  customers,
+  deliveries,
+  delivery_items,
+  drivers,
+  invoices,
+  order_pallets,
+  receipts,
+  trucks,
+} from "../db/schema";
+import type { AuthRequest } from "../middleware/auth";
+import { confirmDeliveryItem, recordDeliveryItemPayment } from "./receipts";
+import { seedUsers } from "../test/test-db";
+
+vi.mock("../db", async () => {
+  const { createTestDb: create } = await import("../test/test-db");
+  return { db: (await create()).db };
+});
+
+let seeded: Awaited<ReturnType<typeof seedUsers>>;
+
+beforeAll(async () => {
+  vi.stubEnv("DATABASE_URL", "postgres://unused-the-db-module-is-mocked");
+  seeded = await seedUsers(db as never);
+  await db.insert(drivers).values({ id: "drv-a", user_id: seeded.driver.id, full_name: "Driver A" });
+  await db.insert(agents).values({ id: "agt-a", user_id: seeded.agent.id, full_name: "Agent A" });
+  await db.insert(trucks).values({ id: "truck-a", license_plate: "AAA-111", district: "d", driver_id: "drv-a" });
+  await db.insert(customers).values({ id: "cust-1", store_name: "Store", location: "Somewhere" });
+  await db.insert(deliveries).values({ id: "del-1", truck_id: "truck-a", driver_id: "drv-a", agent_id: "agt-a" });
+
+  const stops = ["drv-confirm", "agt-confirm", "partial"];
+  await db.insert(bookings).values(stops.map((id) => ({ id: `book-${id}`, customer_id: "cust-1", created_by: seeded.admin.id })));
+  await db.insert(invoices).values(
+    stops.map((id) => ({ id: `inv-${id}`, booking_id: `book-${id}`, agent_id: seeded.admin.id, total_amount: "100.00" })),
+  );
+  await db.insert(order_pallets).values(stops.map((id) => ({ id: `pal-${id}`, order_id: `book-${id}`, status: "shipped" })));
+  await db.insert(delivery_items).values(
+    stops.map((id) => ({ id: `di-${id}`, delivery_id: "del-1", invoice_id: `inv-${id}`, destination_customer_id: "cust-1" })),
+  );
+});
+
+afterAll(() => {
+  vi.unstubAllEnvs();
+});
+
+async function run(handler: RequestHandler, userId: string, role: "driver" | "agent", params: Record<string, string>, body: object = {}) {
+  let status = 200;
+  let payload: unknown;
+  const res = {
+    status(code: number) {
+      status = code;
+      return res;
+    },
+    json(value: unknown) {
+      payload = value;
+      return res;
+    },
+  } as unknown as Response;
+  const req = { user: { userId, username: userId, role }, query: {}, params, body } as unknown as AuthRequest;
+  await handler(req, res, () => undefined);
+  return { status, payload };
+}
+
+const confirmBody = { is_paid: false, confirmed_by: "test-admin" };
+
+describe("receipts.confirmed_by", () => {
+  it("records the signed-in driver even when the body names someone else", async () => {
+    const { status, payload } = await run(confirmDeliveryItem, seeded.driver.id, "driver", { id: "del-1", itemId: "di-drv-confirm" }, confirmBody);
+    expect(status).toBe(201);
+    const [row] = await db.select().from(receipts).where(eq(receipts.delivery_item_id, "di-drv-confirm"));
+    expect(row.confirmed_by).toBe(seeded.driver.id);
+    // The response is the row that was written (no second read that could fail after the commit).
+    expect(payload).toEqual(row);
+  });
+
+  it("records the signed-in agent even when the body names someone else", async () => {
+    const { status } = await run(confirmDeliveryItem, seeded.agent.id, "agent", { id: "del-1", itemId: "di-agt-confirm" }, confirmBody);
+    expect(status).toBe(201);
+    const [row] = await db.select().from(receipts).where(eq(receipts.delivery_item_id, "di-agt-confirm"));
+    expect(row.confirmed_by).toBe(seeded.agent.id);
+  });
+
+  it("ignores confirmed_by in the body of a later payment", async () => {
+    await run(confirmDeliveryItem, seeded.driver.id, "driver", { id: "del-1", itemId: "di-partial" }, { is_paid: false });
+    const { status } = await run(
+      recordDeliveryItemPayment,
+      seeded.agent.id,
+      "agent",
+      { id: "del-1", itemId: "di-partial" },
+      { payment_amount: 40, payment_method: "cash", confirmed_by: "test-admin" },
+    );
+    expect(status).toBe(200);
+    const [row] = await db.select().from(receipts).where(eq(receipts.delivery_item_id, "di-partial"));
+    expect(row.confirmed_by).toBe(seeded.driver.id);
+  });
+});
+
+describe("a payment recorded after verification", () => {
+  it("sends the receipt back to the accounting queue", async () => {
+    const [before] = await db.select().from(receipts).where(eq(receipts.delivery_item_id, "di-partial"));
+    expect(before.payment_verified_at).toBeNull();
+    await db
+      .update(receipts)
+      .set({ payment_verified_by: seeded.admin.id, payment_verified_at: new Date() })
+      .where(eq(receipts.id, before.id));
+
+    const { status } = await run(
+      recordDeliveryItemPayment,
+      seeded.agent.id,
+      "agent",
+      { id: "del-1", itemId: "di-partial" },
+      { payment_amount: 10, payment_method: "gcash", payment_reference: "REF-2" },
+    );
+    expect(status).toBe(200);
+
+    const [after] = await db.select().from(receipts).where(eq(receipts.id, before.id));
+    expect(after.payment_verified_by).toBeNull();
+    expect(after.payment_verified_at).toBeNull();
+    expect(after.payment_reference).toBe("REF-2");
+    const [ar] = await db.select().from(accounts_receivable).where(eq(accounts_receivable.delivery_item_id, "di-partial"));
+    expect(ar.amount_due).toBe("50.00");
+  });
+});

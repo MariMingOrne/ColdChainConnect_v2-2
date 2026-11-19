@@ -52,7 +52,7 @@ export const confirmDeliveryItem: RequestHandler = async (
   res
 ) => {
   const { id: deliveryId, itemId } = req.params;
-  const { notes, confirmed_by, is_paid, payment_amount, payment_method, payment_reference } = req.body ?? {};
+  const { notes, is_paid, payment_amount, payment_method, payment_reference } = req.body ?? {};
 
   if (!process.env.DATABASE_URL) {
     return res.status(503).json({ error: "Database not configured" });
@@ -172,18 +172,19 @@ export const confirmDeliveryItem: RequestHandler = async (
       .where(eq(delivery_items.id, itemId));
 
     // 6. Create the receipt record
-    await db.insert(receipts).values({
+    // confirmed_by is always the authenticated user; a value in the request body is ignored.
+    const [newReceipt] = await db.insert(receipts).values({
       id: receiptId,
       receipt_number: receiptNumber,
       delivery_item_id: itemId,
       customer_id: item.destination_customer_id,
       truck_id: delivery.truck_id,
       invoice_id: item.invoice_id,
-      confirmed_by: confirmed_by ?? req.user?.userId ?? null,
+      confirmed_by: req.user?.userId ?? null,
       notes: notes ?? null,
       payment_reference: collectedCents > 0 ? (payment_reference ?? null) : null,
       confirmed_at: now,
-    });
+    }).returning();
 
     if (remainingCents > 0) {
       const arId = randomUUID();
@@ -244,10 +245,8 @@ export const confirmDeliveryItem: RequestHandler = async (
       );
     }
 
-    const newReceipt = await db.query.receipts.findFirst({
-      where: eq(receipts.id, receiptId),
-    });
-
+    // Answer with the row just written: a read-back after the commit could fail and report an
+    // error for a confirmation that went through.
     res.status(201).json(newReceipt);
   } catch (error) {
     console.error("Error confirming delivery item:", error);
@@ -365,8 +364,12 @@ export const recordDeliveryItemPayment: RequestHandler = async (
           updated_at: now,
         }).where(eq(delivery_items.id, itemId));
 
-        await tx.update(receipts).set({ payment_reference: payment_reference ?? null })
-          .where(eq(receipts.delivery_item_id, itemId));
+        // A changed payment must be checked again, so a verified receipt returns to the accounting queue.
+        await tx.update(receipts).set({
+          payment_reference: payment_reference ?? null,
+          payment_verified_by: null,
+          payment_verified_at: null,
+        }).where(eq(receipts.delivery_item_id, itemId));
 
         await tx.update(accounts_receivable).set({
           amount_due: (remainingCents / 100).toFixed(2),
