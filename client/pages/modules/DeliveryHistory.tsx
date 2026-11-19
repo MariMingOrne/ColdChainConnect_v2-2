@@ -6,6 +6,7 @@ import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { ArrowLeft } from "lucide-react";
 import { RecordTitleButton } from "@/components/RecordTitleButton";
 import { TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
+import { TablePagination, paginate } from "@/components/TablePagination";
 import { Customer, Truck, Invoice } from "@shared/api";
 import { Table } from "@/components/ui/table";
 import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
@@ -43,13 +44,10 @@ export function DeliveryHistory() {
 
   const [search,       setSearch]       = useState("");
   const [customerFilter, setCustomerFilter] = useState("");
-  const [fromDateTime, setFromDateTime] = useState("");
-  const [toDateTime,   setToDateTime]   = useState("");
+  const [dateFilter,   setDateFilter]   = useState("");
   const [page,         setPage]         = useState(1);
   const [viewReceipt,  setViewReceipt]  = useState<ReceiptExt | null>(null);
   const [sort, setSort] = useState<SortState<"receipt" | "customer" | "truck" | "confirmed" | "notes">>(null);
-
-  const PER_PAGE = 15;
 
   const fetchAll = useCallback(async () => {
     if (!token) return;
@@ -101,9 +99,7 @@ export function DeliveryHistory() {
 
     if (!matchesSearch) return false;
     if (customerFilter && customerFilter !== "all" && r.customer_id !== customerFilter) return false;
-    const confirmedAt = new Date(r.confirmed_at).getTime();
-    if (fromDateTime && confirmedAt < new Date(fromDateTime).getTime()) return false;
-    if (toDateTime && confirmedAt > new Date(toDateTime).getTime()) return false;
+    if (dateFilter && new Date(r.confirmed_at).toLocaleDateString("en-CA") !== dateFilter) return false;
     return true;
   });
 
@@ -112,8 +108,7 @@ export function DeliveryHistory() {
     const value = (receipt: ReceiptExt) => ({ receipt: receipt.receipt_number, customer: receipt.customer?.store_name, truck: receipt.truck?.license_plate, confirmed: receipt.confirmed_at, notes: receipt.notes })[sort.key];
     return compareValues(value(a), value(b)) * (sort.direction === "asc" ? 1 : -1);
   });
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
-  const paginated  = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const { currentPage, totalPages, pageItems: paginated } = paginate(sorted, page);
 
   if (viewReceipt) return <OriginalReceiptModal receipt={viewReceipt} onClose={() => setViewReceipt(null)} />;
 
@@ -162,8 +157,7 @@ export function DeliveryHistory() {
             <option key={c.id} value={c.id}>{c.store_name || c.id.slice(0, 8)}</option>
           ))}
         </TableFilterSelect>
-        <input type="datetime-local" aria-label="Confirmed from date and time" title="Show deliveries confirmed from this date and time" value={fromDateTime} max={toDateTime || undefined} onChange={(event) => { setFromDateTime(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
-        <input type="datetime-local" aria-label="Confirmed to date and time" title="Show deliveries confirmed up to this date and time" value={toDateTime} min={fromDateTime || undefined} onChange={(event) => { setToDateTime(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
+        <input type="date" aria-label="Confirmed on date" title="Show deliveries confirmed on this date" value={dateFilter} onChange={(event) => { setDateFilter(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
       </TableToolbar>
 
       {/* Table */}
@@ -223,31 +217,7 @@ export function DeliveryHistory() {
           </div>
         )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-muted/50">
-            <span className="text-xs text-muted-foreground">
-              {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length}
-            </span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="px-3 py-1 border border-border rounded text-xs font-semibold disabled:opacity-40 hover:bg-card"
-              >
-                Previous
-              </button>
-              <span className="px-3 py-1 text-xs font-semibold text-foreground">{page} / {totalPages}</span>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="px-3 py-1 border border-border rounded text-xs font-semibold disabled:opacity-40 hover:bg-card"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
+        <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </div>
 
     </div>

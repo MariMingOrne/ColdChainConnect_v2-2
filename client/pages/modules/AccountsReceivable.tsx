@@ -16,6 +16,7 @@ import {
 import { CheckCircle } from "lucide-react";
 import { TableBulkAction, TableToolbar } from "@/components/TableToolbar";
 import { newestFirst } from "@/components/SortableHeader";
+import { TablePagination, paginate } from "@/components/TablePagination";
 import { AccountsReceivable as ARType, Customer } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -27,8 +28,6 @@ const TABS: { key: Tab; label: string }[] = [
   { key: "credits",     label: "Credits" },
   { key: "all",         label: "All" },
 ];
-
-const PER_PAGE = 15;
 
 export function AccountsReceivable() {
   const [arRecords, setARRecords] = useState<ARType[]>([]);
@@ -182,9 +181,7 @@ export function AccountsReceivable() {
     );
   }));
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
-  const currentPage = Math.min(page, totalPages);
-  const paginated = filtered.slice((currentPage - 1) * PER_PAGE, currentPage * PER_PAGE);
+  const { currentPage, totalPages, pageItems: paginated } = paginate(filtered, page);
   const pageIds = paginated.map((ar) => ar.id);
   const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
   const selectedRecords = arRecords.filter((ar) => selectedIds.includes(ar.id));
@@ -354,30 +351,7 @@ export function AccountsReceivable() {
             )}
           </TableBody>
         </Table>
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-muted/50">
-            <span className="text-xs text-muted-foreground">
-              {(currentPage - 1) * PER_PAGE + 1}–{Math.min(currentPage * PER_PAGE, filtered.length)} of {filtered.length}
-            </span>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage === 1}
-                className="px-3 py-1 border border-border rounded text-xs font-semibold disabled:opacity-40 hover:bg-card"
-              >
-                Previous
-              </button>
-              <span className="px-3 py-1 text-xs font-semibold text-foreground">{currentPage} / {totalPages}</span>
-              <button
-                onClick={() => setPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage === totalPages}
-                className="px-3 py-1 border border-border rounded text-xs font-semibold disabled:opacity-40 hover:bg-card"
-              >
-                Next
-              </button>
-            </div>
-          </div>
-        )}
+        <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </Card>
     </div>
   );
