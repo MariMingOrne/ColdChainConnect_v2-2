@@ -57,6 +57,7 @@ import {
 } from "./routes/trucks";
 import {
   listBookings,
+  listAgentDistricts,
   createBooking,
   updateBookingStatus,
   updateBookingItems,
@@ -230,6 +231,7 @@ export function createServer() {
 
   // Bookings routes
   app.get("/api/bookings", authMiddleware, listBookings);
+  app.get("/api/agent-districts", authMiddleware, requireRole("agent"), listAgentDistricts);
   app.post("/api/bookings", authMiddleware, createBooking);
   app.patch("/api/bookings/:id/status", authMiddleware, requireRole("admin"), updateBookingStatus);
   app.patch("/api/bookings/:id/items", authMiddleware, requireRole("admin"), updateBookingItems);

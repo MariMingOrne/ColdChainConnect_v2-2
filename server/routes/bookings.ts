@@ -2,13 +2,13 @@ import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "../db";
-import { bookings, booking_items, invoices, agents, trucks, users, order_pallets, order_item_reservations } from "../db/schema";
+import { bookings, booking_items, invoices, agents, customers, trucks, users, order_pallets, order_item_reservations } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
 import { CreditBlockResponse } from "../../shared/api";
 import { evaluateCreditRules } from "../services/credit-rules";
 import { estimateOrderTotal, loadCustomerCredit } from "../services/customer-credit";
-import { getAgentOrderIds } from "../services/agent-bookings";
+import { getAgentDistricts, getAgentOrderIds } from "../services/agent-bookings";
 import { getAvailableUnitsByProduct, releaseBookingReservationsTx, reserveBookingItemsTx } from "../services/inventory-reservations";
 
 class StockReservationConflict extends Error {
@@ -79,6 +79,16 @@ export const listBookings: RequestHandler = async (req: AuthRequest, res) => {
   }
 };
 
+export const listAgentDistricts: RequestHandler = async (req: AuthRequest, res) => {
+  try {
+    if (!process.env.DATABASE_URL || !req.user) return res.json([]);
+    res.json(await getAgentDistricts(req.user.userId));
+  } catch (error) {
+    console.error("Error fetching agent districts:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 export const createBooking: RequestHandler = async (req: AuthRequest, res) => {
   const { customer_id, prepared_delivery_date, items, ar_override, ar_override_reason } = req.body;
 
@@ -109,6 +119,17 @@ export const createBooking: RequestHandler = async (req: AuthRequest, res) => {
     });
     if (!creatorExists) {
       return res.status(401).json({ error: "User account not found. Please log in again." });
+    }
+
+    if (req.user.role === "agent") {
+      const customer = await db.query.customers.findFirst({
+        where: eq(customers.id, customer_id),
+        columns: { district: true },
+      });
+      const districts = await getAgentDistricts(req.user.userId);
+      if (!customer?.district || !districts.includes(customer.district)) {
+        return res.status(403).json({ error: "You can only create orders for customers in your assigned districts" });
+      }
     }
 
     if (items.some((item: { product_id?: string; qty_ordered?: unknown }) =>

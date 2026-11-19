@@ -25,6 +25,7 @@ export function BookingSummary() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [agentDistricts, setAgentDistricts] = useState<string[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [productStock, setProductStock] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -80,18 +81,20 @@ export function BookingSummary() {
 
   const fetchAll = async () => {
     try {
-      const [bRes, tRes, cRes, pRes, invRes] = await Promise.all([
+      const [bRes, tRes, cRes, pRes, invRes, dRes] = await Promise.all([
         fetch("/api/bookings", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/trucks", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/customers", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/products", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/products/inventory", { headers: { Authorization: `Bearer ${token}` } }),
+        isAgent ? fetch("/api/agent-districts", { headers: { Authorization: `Bearer ${token}` } }) : Promise.resolve(null),
       ]);
       if (bRes.ok) setBookings(await bRes.json());
       if (tRes.ok) setTrucks(await tRes.json());
       if (cRes.ok) setCustomers(await cRes.json());
       if (pRes.ok) setProducts(await pRes.json());
       if (invRes.ok) setProductStock(await invRes.json());
+      if (dRes?.ok) setAgentDistricts(await dRes.json());
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error loading data");
@@ -438,7 +441,7 @@ export function BookingSummary() {
   if (isAgent) {
     return (
       <AgentOrderScreen
-        customers={customers}
+        customers={customers.filter((customer) => customer.district && agentDistricts.includes(customer.district))}
         products={products}
         productStock={productStock}
         orderItems={orderItems}

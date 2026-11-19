@@ -106,6 +106,9 @@ export function AgentOrderScreen({
                     ))}
                   </SelectContent>
                 </Select>
+                {customers.length === 0 && (
+                  <p className="mt-2 text-xs text-muted-foreground">No customers are available in your assigned districts.</p>
+                )}
               </div>
               <div>
                 <label className="block text-xs font-semibold text-foreground mb-2">Prepared Delivery Date</label>
