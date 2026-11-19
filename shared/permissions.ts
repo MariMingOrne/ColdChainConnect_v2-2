@@ -10,7 +10,18 @@ export type Action =
   | "expense:approve"
   | "expense:pay"
   | "return:decide"
-  | "delivery:confirm";
+  | "delivery:confirm"
+  // Mutations the server currently restricts to admin (requireRole("admin")); the client mirrors them.
+  | "invoice:update"
+  | "receivable:update"
+  | "delivery:update"
+  | "agentReturn:decide"
+  | "customer:manage"
+  | "product:manage"
+  | "batch:manage"
+  | "driver:manage"
+  | "agent:manage"
+  | "truck:manage";
 
 export interface PermissionSubject {
   role: Role;
@@ -33,6 +44,16 @@ const ACTION_RULES: Record<Action, Rule> = {
   "expense:pay": { roles: ["admin", "staff"], staffModules: ["accounting"] },
   "return:decide": { roles: ["admin", "staff"], staffModules: ["accounting"] },
   "delivery:confirm": { roles: ["admin", "agent", "driver"] },
+  "invoice:update": { roles: ["admin"] },
+  "receivable:update": { roles: ["admin"] },
+  "delivery:update": { roles: ["admin"] },
+  "agentReturn:decide": { roles: ["admin"] },
+  "customer:manage": { roles: ["admin"] },
+  "product:manage": { roles: ["admin"] },
+  "batch:manage": { roles: ["admin"] },
+  "driver:manage": { roles: ["admin"] },
+  "agent:manage": { roles: ["admin"] },
+  "truck:manage": { roles: ["admin"] },
 };
 
 export function can(user: PermissionSubject, action: Action): boolean {

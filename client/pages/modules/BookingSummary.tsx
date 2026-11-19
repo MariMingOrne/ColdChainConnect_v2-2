@@ -16,6 +16,7 @@ import { ArrowLeft, Plus, Calendar, CheckCircle, XCircle } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Booking, Truck, Customer, Product } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 import { useSearchParams } from "react-router-dom";
 import { AddOrderModal } from "./AddOrderModal";
 import { BookingDetailPage } from "./BookingDetailPage";
@@ -33,6 +34,7 @@ export function BookingSummary() {
   const [error, setError] = useState<string | null>(null);
   const { token, logout, user, finishPostLoginLoading } = useAuth();
   const isAgent = user?.role === "agent";
+  const canApprove = useCan("booking:approve");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "approved" | "prep" | "ready">("all");
   const [approvalFilter, setApprovalFilter] = useState<"all" | "approved" | "unapproved">("all");
@@ -601,7 +603,7 @@ export function BookingSummary() {
                       {new Date(booking.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      {booking.status === "pending" ? (
+                      {booking.status === "pending" && canApprove ? (
                         <div className="flex gap-2 justify-end">
                           <Button
                             onClick={() => openApproveModal(booking)}
@@ -618,7 +620,7 @@ export function BookingSummary() {
                             Reject
                           </Button>
                         </div>
-                      ) : booking.status === "approved" ? (
+                      ) : booking.status === "approved" && canApprove ? (
                         <div className="flex justify-end">
                           <Button
                             onClick={() => handleUnapproveBooking(booking)}

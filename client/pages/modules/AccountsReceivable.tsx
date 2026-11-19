@@ -20,6 +20,7 @@ import { CheckCircle } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { AccountsReceivable as ARType, Customer } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 
 type Tab = "outstanding" | "paid" | "credits" | "all";
 
@@ -37,6 +38,7 @@ export function AccountsReceivable() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { token } = useAuth();
+  const canUpdateReceivable = useCan("receivable:update");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("outstanding");
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
@@ -280,7 +282,7 @@ export function AccountsReceivable() {
                       </TableCell>
                     )}
                     <TableCell className="text-right">
-                      {ar.status !== "paid" && !isCredit ? (
+                      {ar.status !== "paid" && !isCredit && canUpdateReceivable ? (
                         <Button
                           onClick={() => handleMarkPaid(ar.id)}
                           disabled={markingPaid === ar.id}

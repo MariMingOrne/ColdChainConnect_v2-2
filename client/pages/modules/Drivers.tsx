@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ArrowLeft } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
@@ -196,7 +197,7 @@ function DriverCard({
   driver: Driver;
   showDelete: boolean;
   onView: () => void;
-  onEdit: () => void;
+  onEdit?: () => void;
   onSchedule: () => void;
   onDelete: () => void;
 }) {
@@ -246,7 +247,7 @@ function DriverCard({
       <div className="flex gap-2 pt-1 border-t border-border">
         <Button onClick={onView} variant="outline" size="sm" className="flex-1">View</Button>
         <Button onClick={onSchedule} variant="outline" size="sm" className="flex-1">Schedule</Button>
-        <Button onClick={onEdit} variant="outline" size="sm" className="flex-1">Edit</Button>
+        {onEdit && <Button onClick={onEdit} variant="outline" size="sm" className="flex-1">Edit</Button>}
         {showDelete && (
           <Button onClick={onDelete} variant="danger" size="sm" className="flex-1">Delete</Button>
         )}
@@ -269,6 +270,7 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
   const [viewingDriver, setViewingDriver] = useState<Driver | null>(null);
   const [schedulingDriver, setSchedulingDriver] = useState<Driver | null>(null);
   const { token } = useAuth();
+  const canManageDrivers = useCan("driver:manage");
 
   const emptyForm = (): DriverForm => ({
     full_name: "",
@@ -429,7 +431,9 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
           <p className="text-xs text-muted-foreground mt-1">Manage field drivers</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} variant="default">Create Accounts</Button>
+          {canManageDrivers && (
+            <Button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} variant="default">Create Accounts</Button>
+          )}
         </div>
       </div>
 
@@ -457,9 +461,9 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
             <DriverCard
               key={driver.id}
               driver={driver}
-              showDelete
+              showDelete={canManageDrivers}
               onView={() => setViewingDriver(driver)}
-              onEdit={() => openEditModal(driver)}
+              onEdit={canManageDrivers ? () => openEditModal(driver) : undefined}
               onSchedule={() => setSchedulingDriver(driver)}
               onDelete={() => handleDelete(driver.id)}
             />

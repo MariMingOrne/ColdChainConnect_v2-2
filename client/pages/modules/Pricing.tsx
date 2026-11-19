@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useInventoryContext } from "../../context/InventoryContext";
 import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
@@ -318,6 +319,7 @@ export function Pricing({ onBack }: PricingProps) {
     weight: undefined,
   });
   const { token } = useAuth();
+  const canManageProducts = useCan("product:manage");
 
   const itemsPerPage = 10;
 
@@ -501,14 +503,16 @@ export function Pricing({ onBack }: PricingProps) {
           <p className="page-subtitle">Manage your products</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            onClick={openAddModal}
-            variant="default"
-          >
-            Add Product
-          </Button>
+          {canManageProducts && (
+            <Button
+              onClick={openAddModal}
+              variant="default"
+            >
+              Add Product
+            </Button>
+          )}
           <ExcelActionsDropdown
-            onImport={() => setShowExcelImport(true)}
+            onImport={canManageProducts ? () => setShowExcelImport(true) : undefined}
             onExport={handleProductExport}
           />
         </div>
@@ -533,7 +537,7 @@ export function Pricing({ onBack }: PricingProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
-              disabled={selectedProducts.length === 0}
+              disabled={canManageProducts ? selectedProducts.length === 0 : selectedProducts.length !== 1}
               variant="default"
             >
               <MoreHorizontal size={16} /> Actions ({selectedProducts.length})
@@ -543,10 +547,12 @@ export function Pricing({ onBack }: PricingProps) {
             {selectedProducts.length === 1 && (
               <>
                 <DropdownMenuItem onClick={() => setViewingProduct(selectedProducts[0])}>View product</DropdownMenuItem>
-                <DropdownMenuItem onClick={() => openEditModal(selectedProducts[0])}>Edit product</DropdownMenuItem>
+                {canManageProducts && (
+                  <DropdownMenuItem onClick={() => openEditModal(selectedProducts[0])}>Edit product</DropdownMenuItem>
+                )}
               </>
             )}
-            {selectedProducts.length > 0 && (
+            {canManageProducts && selectedProducts.length > 0 && (
               <DropdownMenuItem className="text-red focus:text-red" onClick={() => void handleDeleteSelected()}>
                 Delete selected {selectedProducts.length === 1 ? "product" : "products"}
               </DropdownMenuItem>

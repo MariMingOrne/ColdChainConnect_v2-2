@@ -40,10 +40,17 @@ describe("staffModuleGuard", () => {
   });
 });
 
+/** Mutations the server guards with requireRole("admin"); the client hides them with useCan. */
+const ADMIN_ONLY_MUTATIONS: Action[] = [
+  "invoice:update", "receivable:update", "delivery:update", "agentReturn:decide",
+  "customer:manage", "product:manage", "batch:manage", "driver:manage", "agent:manage", "truck:manage",
+];
+
 describe("can", () => {
   const actions: Action[] = [
     "booking:approve", "invoice:markPaid", "payment:verify", "expense:submit",
     "expense:approve", "expense:pay", "return:decide", "delivery:confirm",
+    ...ADMIN_ONLY_MUTATIONS,
   ];
 
   it("allows admin everything", () => {
@@ -65,6 +72,15 @@ describe("can", () => {
     const accountant = { role: "staff" as const, module_permissions: ["accounting"] };
     expect(can(accountant, "expense:approve")).toBe(false);
     expect(can(accountant, "booking:approve")).toBe(false);
+  });
+
+  it("keeps the admin-only server mutations closed to every other role and module", () => {
+    const everything = ["accounting", "order-fulfillment", "delivery-operations", "product-customer", "manage-accounts"];
+    for (const action of ADMIN_ONLY_MUTATIONS) {
+      expect(can({ role: "staff", module_permissions: everything }, action), action).toBe(false);
+      expect(can({ role: "agent" }, action), action).toBe(false);
+      expect(can({ role: "driver" }, action), action).toBe(false);
+    }
   });
 
   it("lets admin, agent and driver confirm deliveries but not staff", () => {

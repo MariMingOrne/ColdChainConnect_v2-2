@@ -11,6 +11,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { Archive, ArchiveRestore, ArrowLeft, Search, Trash2 } from "lucide-react";
 import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
 import { ActionButtons } from "@/components/ActionButtons";
+import { useCan } from "@/hooks/useCan";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
@@ -61,6 +62,8 @@ interface PalletDisplay {
 }
 
 export function Inventory() {
+  const canManageBatches = useCan("batch:manage");
+  const canManageProducts = useCan("product:manage");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState<InventoryProduct[]>([]);
@@ -347,9 +350,11 @@ export function Inventory() {
           <p className="page-subtitle">Track, manage, and monitor all frozen goods SKUs</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={() => { setNewBatchName(""); setStartBatchCreation(true); setIsBatchModalOpen(true); }} variant="default">Add Items</Button>
+          {canManageBatches && (
+            <Button onClick={() => { setNewBatchName(""); setStartBatchCreation(true); setIsBatchModalOpen(true); }} variant="default">Add Items</Button>
+          )}
           <ExcelActionsDropdown
-            onImport={() => setShowExcelImport(true)}
+            onImport={canManageBatches ? () => setShowExcelImport(true) : undefined}
             onExport={handleInventoryExport}
           />
         </div>
@@ -492,7 +497,7 @@ export function Inventory() {
                             onView={() => setExtraInfoProduct(product)}
                             onEdit={undefined}
                             onDelete={() => handleDelete(product.id)}
-                            showDelete
+                            showDelete={canManageProducts}
                           />
                         </div>
                       </td>
@@ -670,7 +675,8 @@ function ExtraInfoModal({ product, batches, onClose, onSelectPallet }: { product
 
 // ─── BatchModal ────────────────────────────────────────────────────────────────
 function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, onCreateBatch, onEditBatch, onClose, newBatchName, setNewBatchName, products, startCreating = false, onRefresh }: { batches: any[]; selectedBatchId: string; onSelectBatch: (id: string) => void; onDeleteBatch: (id: string) => void; onCreateBatch: (items: any[], batchName: string) => void; onEditBatch: (id: string, items: any[]) => void; onClose: () => void; newBatchName: string; setNewBatchName: (n: string) => void; products: InventoryProduct[]; startCreating?: boolean; onRefresh: () => void }) {
-  const [isCreatingBatch, setIsCreatingBatch] = useState(startCreating);
+  const canManageBatches = useCan("batch:manage");
+  const [isCreatingBatch, setIsCreatingBatch] = useState(startCreating && canManageBatches);
   const [pallets, setPallets] = useState<any[]>([]);
   const [showArchived, setShowArchived] = useState(false);
   const [batchQuery, setBatchQuery] = useState("");
@@ -787,10 +793,10 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                               <div className="text-sm font-semibold text-foreground">{batch.name}</div>
                               <div className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
                             </div>
-                            <div className="flex gap-1">
+                            {canManageBatches && <div className="flex gap-1">
                               <Button onClick={(e) => { e.stopPropagation(); handleArchiveBatch(batch.id); }} variant="ghost" size="icon" className="h-8 w-8" aria-label={`Archive batch ${batch.name}`} title="Archive batch"><Archive size={15} aria-hidden="true" /></Button>
                               <Button onClick={(e) => { e.stopPropagation(); onDeleteBatch(batch.id); }} variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label={`Delete batch ${batch.name}`} title="Delete batch"><Trash2 size={15} aria-hidden="true" /></Button>
-                            </div>
+                            </div>}
                           </div>
                         );
                       })
@@ -798,7 +804,7 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                   </div>
                   <div className="flex gap-2 justify-between">
                     <Button onClick={() => setShowArchived(true)} variant="secondary">View Archived ({archivedBatches.length})</Button>
-                    <Button onClick={() => { setIsCreatingBatch(true); setPallets([]); setNewBatchName(""); }} variant="success">Create New Batch</Button>
+                    {canManageBatches && <Button onClick={() => { setIsCreatingBatch(true); setPallets([]); setNewBatchName(""); }} variant="success">Create New Batch</Button>}
                   </div>
                 </>
               ) : (
@@ -816,10 +822,10 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                               <div className="text-sm font-semibold text-foreground">{batch.name}</div>
                               <div className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
                             </div>
-                            <div className="flex gap-1">
+                            {canManageBatches && <div className="flex gap-1">
                               <Button onClick={() => handleUnarchiveBatch(batch.id)} variant="ghost" size="icon" className="h-8 w-8" aria-label={`Restore batch ${batch.name}`} title="Restore batch"><ArchiveRestore size={15} aria-hidden="true" /></Button>
                               <Button onClick={() => onDeleteBatch(batch.id)} variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label={`Delete batch ${batch.name}`} title="Delete batch"><Trash2 size={15} aria-hidden="true" /></Button>
-                            </div>
+                            </div>}
                           </div>
                         );
                       })

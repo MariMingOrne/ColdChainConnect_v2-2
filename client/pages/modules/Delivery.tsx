@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 import { Table } from "@/components/ui/table";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { localScheduleDate } from "@/lib/agentSchedule";
@@ -69,6 +70,9 @@ function truckStatusLabel(status: string) {
 
 export function DeliveryDispatch() {
   const { token } = useAuth();
+  const canUpdateDelivery = useCan("delivery:update");
+  const canConfirmDelivery = useCan("delivery:confirm");
+  const canManageTrucks = useCan("truck:manage");
 
   const [trucks,      setTrucks]      = useState<Truck[]>([]);
   const [drivers,     setDrivers]     = useState<Driver[]>([]);
@@ -332,9 +336,11 @@ export function DeliveryDispatch() {
             <span className={`px-2 py-0.5 rounded text-xs font-semibold ${statusBadgeClass(selectedTruck!.status)}`}>
               {truckStatusLabel(selectedTruck!.status)}
             </span>
-            <Button onClick={() => setShowEditTruckModal(true)} variant="link" className="h-auto p-0">
-              Edit
-            </Button>
+            {canManageTrucks && (
+              <Button onClick={() => setShowEditTruckModal(true)} variant="link" className="h-auto p-0">
+                Edit
+              </Button>
+            )}
           </div>
         </div>
 
@@ -342,12 +348,14 @@ export function DeliveryDispatch() {
         <div className="border-t border-border pt-3">
           <div className="flex items-center justify-between mb-2">
             <p className="text-xs font-semibold text-muted-foreground">Driver</p>
-            <Button
-              onClick={() => setShowChangeTruckDriverModal(true)}
-              variant="link" className="h-auto p-0"
-            >
-              {selectedTruck!.driver_id ? "Change" : "Assign"}
-            </Button>
+            {canManageTrucks && (
+              <Button
+                onClick={() => setShowChangeTruckDriverModal(true)}
+                variant="link" className="h-auto p-0"
+              >
+                {selectedTruck!.driver_id ? "Change" : "Assign"}
+              </Button>
+            )}
           </div>
           {selectedTruck!.driver_id ? (() => {
             const d = drivers.find((dr) => dr.id === selectedTruck!.driver_id);
@@ -455,7 +463,7 @@ export function DeliveryDispatch() {
                   ))}
                 </NativeSelect>
               </label>
-              {delivery.status === "pending" && (
+              {delivery.status === "pending" && canUpdateDelivery && (
                 <Button
                   type="button"
                   onClick={() => void handleStartRun(delivery.id)}
@@ -510,14 +518,16 @@ export function DeliveryDispatch() {
                             <span className="text-xs text-green font-semibold">Done</span>
                           ) : (
                             <>
-                              <Button
-                                disabled={confirmingItem === item.id}
-                                onClick={() => handleConfirm(delivery, item)}
-                                variant="success" size="sm" className="w-full mt-1"
-                              >
-                                {confirmingItem === item.id ? "Confirming…" : "✓ Confirm Delivery"}
-                              </Button>
-                              {item.status === "pending" && (
+                              {canConfirmDelivery && (
+                                <Button
+                                  disabled={confirmingItem === item.id}
+                                  onClick={() => handleConfirm(delivery, item)}
+                                  variant="success" size="sm" className="w-full mt-1"
+                                >
+                                  {confirmingItem === item.id ? "Confirming…" : "✓ Confirm Delivery"}
+                                </Button>
+                              )}
+                              {item.status === "pending" && canUpdateDelivery && (
                                 <Button
                                   type="button"
                                   onClick={() => void handleRemoveStop(delivery, item)}
@@ -582,14 +592,16 @@ export function DeliveryDispatch() {
                                   <span className="text-xs text-green font-semibold">Done</span>
                                 ) : (
                                   <div className="flex items-center gap-2">
-                                    <Button
-                                      disabled={confirmingItem === item.id}
-                                      onClick={() => handleConfirm(delivery, item)}
-                                      variant="success" size="sm"
-                                    >
-                                      {confirmingItem === item.id ? "Confirming…" : "✓ Confirm Delivery"}
-                                    </Button>
-                                    {item.status === "pending" && (
+                                    {canConfirmDelivery && (
+                                      <Button
+                                        disabled={confirmingItem === item.id}
+                                        onClick={() => handleConfirm(delivery, item)}
+                                        variant="success" size="sm"
+                                      >
+                                        {confirmingItem === item.id ? "Confirming…" : "✓ Confirm Delivery"}
+                                      </Button>
+                                    )}
+                                    {item.status === "pending" && canUpdateDelivery && (
                                       <Button
                                         type="button"
                                         onClick={() => void handleRemoveStop(delivery, item)} variant="ghost" size="sm" className="h-8 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive">
@@ -638,14 +650,16 @@ export function DeliveryDispatch() {
           <h1 className="font-rajdhani text-2xl md:text-3xl font-bold text-foreground">Truck Dispatch</h1>
           <p className="text-xs text-muted-foreground mt-0.5">Assign receipts to trucks and track each stop</p>
         </div>
-        <div className="flex gap-2">
-          <Button
-            onClick={() => setShowAddTruckModal(true)}
-            variant="default"
-          >
-            + Add Truck
-          </Button>
-        </div>
+        {canManageTrucks && (
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setShowAddTruckModal(true)}
+              variant="default"
+            >
+              + Add Truck
+            </Button>
+          </div>
+        )}
       </div>
 
       {error && (

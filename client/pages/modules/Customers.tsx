@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Customer, Truck, formatCustomerAddress, totalDiscountRate } from "@shared/api";
 import { ArrowLeft, Search } from "lucide-react";
@@ -364,6 +365,7 @@ export function Customers({ onBack }: CustomersProps) {
     discounts: [],
   });
   const { token } = useAuth();
+  const canManageCustomers = useCan("customer:manage");
 
   const itemsPerPage = 10;
 
@@ -611,11 +613,13 @@ export function Customers({ onBack }: CustomersProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={openAddModal} variant="default">
-            Add Customer
-          </Button>
+          {canManageCustomers && (
+            <Button onClick={openAddModal} variant="default">
+              Add Customer
+            </Button>
+          )}
           <ExcelActionsDropdown
-            onImport={() => setShowExcelImport(true)}
+            onImport={canManageCustomers ? () => setShowExcelImport(true) : undefined}
             onExport={handleCustomerExport}
           />
         </div>
@@ -715,9 +719,9 @@ export function Customers({ onBack }: CustomersProps) {
                     <TableCell style={{ width: '120px' }} className="sticky right-0 z-10 px-3 py-3 bg-card border-l border-border shadow-left">
                       <ActionButtons
                         onView={() => setViewingCustomer(customer)}
-                        onEdit={() => openEditModal(customer)}
+                        onEdit={canManageCustomers ? () => openEditModal(customer) : undefined}
                         onDelete={() => handleDelete(customer.id)}
-                        showDelete
+                        showDelete={canManageCustomers}
                       />
                     </TableCell>
                   </TableRow>

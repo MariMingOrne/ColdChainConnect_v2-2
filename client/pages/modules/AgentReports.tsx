@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { ArrowLeft, RotateCcw, CheckCircle, XCircle, Search } from "lucide-react";
@@ -100,6 +101,7 @@ export function AgentReports() {
   const { token, user } = useAuth();
   const role = user?.role;
   const isAgent = role === "agent";
+  const canDecideReturns = useCan("agentReturn:decide");
 
   const [returns,   setReturns]   = useState<AgentReturn[]>([]);
   const [invoices,  setInvoices]  = useState<Invoice[]>([]);
@@ -325,7 +327,7 @@ export function AgentReports() {
                           )}
                         </td>
                         <td className="px-3 py-3">
-                          {ret.status === "pending" ? (
+                          {ret.status === "pending" && canDecideReturns ? (
                             <div className="flex gap-1">
                               <Button
                                 disabled={processing === ret.id}

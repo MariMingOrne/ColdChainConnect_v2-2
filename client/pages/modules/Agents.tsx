@@ -3,6 +3,7 @@ import { PageDialog } from "@/components/shared/PageDialog";
 import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
@@ -225,7 +226,7 @@ function AgentCard({
   agent: Agent;
   showDelete: boolean;
   onView: () => void;
-  onEdit: () => void;
+  onEdit?: () => void;
   onDelete: () => void;
   canManageMfa: boolean;
   isSavingMfa: boolean;
@@ -283,7 +284,7 @@ function AgentCard({
 
       <div className="flex gap-2 pt-1 border-t border-border">
         <Button onClick={onView} variant="outline" size="sm" className="flex-1">View</Button>
-        <Button onClick={onEdit} variant="outline" size="sm" className="flex-1">Edit</Button>
+        {onEdit && <Button onClick={onEdit} variant="outline" size="sm" className="flex-1">Edit</Button>}
         {showDelete && (
           <Button onClick={onDelete} variant="danger" size="sm" className="flex-1">Delete</Button>
         )}
@@ -308,6 +309,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
   const [mfaMessage, setMfaMessage] = useState<string | null>(null);
   const [mfaSavingAgentId, setMfaSavingAgentId] = useState<string | null>(null);
   const { token, user: currentUser } = useAuth();
+  const canManageAgents = useCan("agent:manage");
 
   const emptyForm = (): AgentForm => ({
     full_name: "",
@@ -531,7 +533,9 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
           <p className="text-xs text-muted-foreground mt-1">Manage agents — account-linked field staff</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} variant="default">Create Accounts</Button>
+          {canManageAgents && (
+            <Button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} variant="default">Create Accounts</Button>
+          )}
         </div>
       </div>
 
@@ -561,12 +565,12 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
             <AgentCard
               key={agent.id}
               agent={agent}
-              showDelete
+              showDelete={canManageAgents}
               canManageMfa={currentUser?.role === "admin"}
               isSavingMfa={mfaSavingAgentId === agent.id}
               onMfaRequirementChange={(required) => void updateAgentMfaRequirement(agent, required)}
               onView={() => setViewingAgent(agent)}
-              onEdit={() => openEditModal(agent)}
+              onEdit={canManageAgents ? () => openEditModal(agent) : undefined}
               onDelete={() => handleDelete(agent.id)}
             />
           ))}
