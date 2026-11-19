@@ -96,12 +96,16 @@ export function AgentOrderScreen({
                 <label className="block text-xs font-semibold text-foreground mb-2">Customer *</label>
                 <Select value={newCustomerId || undefined} onValueChange={onCustomerChange}>
                   <SelectTrigger aria-label="Select a customer store">
-                    <SelectValue placeholder="Select a customer store" />
+                    <SelectValue placeholder="Select a customer store" className="min-w-0 truncate" />
                   </SelectTrigger>
                   <SelectContent>
                     {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.store_name} — {customer.location}
+                      <SelectItem
+                        key={customer.id}
+                        value={customer.id}
+                        className="[&>span:last-child]:min-w-0 [&>span:last-child]:truncate"
+                      >
+                        {customer.store_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
