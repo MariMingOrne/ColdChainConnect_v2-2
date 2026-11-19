@@ -121,7 +121,7 @@ import { postSalesForecastChat } from "./routes/sales-forecast-chat";
 import { getCustomerReport, getProfitReport, getSalesReport, getStockReport } from "./routes/reports";
 import { authMiddleware, requireRole } from "./middleware/auth";
 import { requireAnyPermission, requirePermission, staffModuleGuard } from "./middleware/permissions";
-import { listUnverifiedPayments, verifyReceiptPayment } from "./routes/payment-verification";
+import { getPaymentReceipt, listUnverifiedPayments, verifyReceiptPayment } from "./routes/payment-verification";
 import { createCashRemittance, listCashCollections } from "./routes/cash-remittances";
 import { approveExpense, createExpense, listExpenses, payExpense, rejectExpense } from "./routes/expenses";
 
@@ -264,6 +264,7 @@ export function createServer() {
 
   // Payment verification (accounting)
   app.get("/api/payments/unverified", authMiddleware, requirePermission("payment:verify"), listUnverifiedPayments);
+  app.get("/api/payments/:id/receipt", authMiddleware, requirePermission("payment:verify"), getPaymentReceipt);
   app.post("/api/payments/:id/verify", authMiddleware, requirePermission("payment:verify"), verifyReceiptPayment);
   app.get("/api/cash-remittances/collections", authMiddleware, requirePermission("cash:reconcile"), listCashCollections);
   app.post("/api/cash-remittances", authMiddleware, requirePermission("cash:reconcile"), createCashRemittance);

@@ -24,10 +24,10 @@ interface Receipt {
   confirmed_by?: string;
 }
 
-interface ReceiptExt extends Receipt {
-  customer?: Customer;
-  truck?: Truck;
-  invoice?: Invoice;
+export interface ReceiptExt extends Receipt {
+  customer?: Pick<Customer, "store_name" | "location" | "contact_info">;
+  truck?: Pick<Truck, "license_plate">;
+  invoice?: Pick<Invoice, "payment_status">;
 }
 
 function authHeaders(token: string) {
@@ -240,7 +240,7 @@ export function DeliveryHistory() {
 
 // ─── Original Receipt Modal ───────────────────────────────────────────────────
 
-function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt; onClose: () => void }) {
+export function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt; onClose: () => void }) {
   const handlePrint = () => window.print();
 
   return (
@@ -306,10 +306,6 @@ function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt; onClo
 
           {/* Invoice status */}
           <div className="border-t border-dashed border-border pt-4 space-y-1 text-xs">
-            <div className="flex justify-between font-semibold">
-              <span>Invoice Status:</span>
-              <span className="text-green">PAID ✓</span>
-            </div>
             {receipt.invoice?.payment_status && (
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Payment Status:</span>

@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import NotFound from "./NotFound";
 import { Expenses } from "./modules/Expenses";
 import { PaymentVerification } from "./modules/PaymentVerification";
+import { PaymentReceipt } from "./modules/PaymentReceipt";
 
 /** Accounting hub: verify field-recorded payments and run the expense workflow. */
 export function Accounting() {
@@ -11,6 +12,7 @@ export function Accounting() {
         <div className="h-full min-h-0 overflow-y-auto">
           <Routes>
             <Route path="/payments" element={<PaymentVerification />} />
+            <Route path="/payments/:id/receipt" element={<PaymentReceipt />} />
             <Route path="/cash" element={<Navigate to="/accounting/payments" replace />} />
             <Route path="/expenses" element={<Expenses />} />
             <Route path="/" element={<Navigate to="/accounting/payments" replace />} />
