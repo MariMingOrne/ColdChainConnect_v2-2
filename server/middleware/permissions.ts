@@ -13,6 +13,19 @@ export function requirePermission(action: Action): RequestHandler {
   };
 }
 
+/** Allows the request when the user holds at least one of the given actions. */
+export function requireAnyPermission(...actions: Action[]): RequestHandler {
+  return (req, res, next) => {
+    const { user, modulePermissions } = req as AuthRequest;
+    if (!user) return res.status(401).json({ error: "Not authenticated" });
+    const subject = { role: user.role, module_permissions: modulePermissions };
+    if (!actions.some((action) => can(subject, action))) {
+      return res.status(403).json({ error: "Insufficient permissions" });
+    }
+    next();
+  };
+}
+
 /** Mounted on /api after authMiddleware: staff only reach the API prefixes their modules unlock. */
 export const staffModuleGuard: RequestHandler = (req, res, next) => {
   const authReq = req as AuthRequest;

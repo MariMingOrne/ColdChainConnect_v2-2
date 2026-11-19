@@ -83,6 +83,7 @@ export const STAFF_API_MODULES: Record<string, ModulePermission[]> = {
   "/deliveries": ["delivery-operations"],
   "/receipts": ["delivery-operations", "accounting"],
   "/payments": ["accounting"],
+  "/expenses": ["accounting"],
   "/accounts-receivable": ["delivery-operations"],
   "/agent-returns": ["delivery-operations"],
   "/agents": ["manage-accounts"],

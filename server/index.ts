@@ -118,8 +118,9 @@ import { getUnseenCounts } from "./routes/unseen";
 import { postSalesForecastChat } from "./routes/sales-forecast-chat";
 import { getCustomerReport, getSalesReport, getStockReport } from "./routes/reports";
 import { authMiddleware, requireRole } from "./middleware/auth";
-import { requirePermission, staffModuleGuard } from "./middleware/permissions";
+import { requireAnyPermission, requirePermission, staffModuleGuard } from "./middleware/permissions";
 import { listUnverifiedPayments, verifyReceiptPayment } from "./routes/payment-verification";
+import { approveExpense, createExpense, listExpenses, payExpense, rejectExpense } from "./routes/expenses";
 
 export function createServer() {
   const app = express();
@@ -259,6 +260,13 @@ export function createServer() {
   // Payment verification (accounting)
   app.get("/api/payments/unverified", authMiddleware, requirePermission("payment:verify"), listUnverifiedPayments);
   app.post("/api/receipts/:id/verify", authMiddleware, requirePermission("payment:verify"), verifyReceiptPayment);
+
+  // Expenses: submit, approve or reject, pay
+  app.get("/api/expenses", authMiddleware, requireAnyPermission("expense:submit", "expense:approve", "expense:pay"), listExpenses);
+  app.post("/api/expenses", authMiddleware, requirePermission("expense:submit"), createExpense);
+  app.post("/api/expenses/:id/approve", authMiddleware, requirePermission("expense:approve"), approveExpense);
+  app.post("/api/expenses/:id/reject", authMiddleware, requirePermission("expense:approve"), rejectExpense);
+  app.post("/api/expenses/:id/pay", authMiddleware, requirePermission("expense:pay"), payExpense);
 
   // Audit logs routes
   app.get("/api/audit-logs", authMiddleware, requireRole("admin", "staff"), listAuditLogs);

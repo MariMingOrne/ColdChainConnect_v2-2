@@ -535,6 +535,10 @@ export interface Expense {
   updated_at: string;
   approved_at?: string | null;
   paid_at?: string | null;
+  /** Usernames, present on list responses. */
+  submitted_by_name?: string | null;
+  approved_by_name?: string | null;
+  paid_by_name?: string | null;
 }
 
 export const CreateExpenseSchema = z.object({
