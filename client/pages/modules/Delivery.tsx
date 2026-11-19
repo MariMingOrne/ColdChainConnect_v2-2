@@ -14,7 +14,8 @@ import { StatusBadge, StatusTone } from "@/components/StatusBadge";
 import { localScheduleDate } from "@/lib/agentSchedule";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { CalendarDays, Clock3, ChevronLeft, Truck as TruckIcon, ChevronDown, ChevronUp, ArrowLeft, Search, X } from "lucide-react";
-import { Delivery, DeliveryItem, Truck, Invoice, Customer, Driver, Agent, formatCustomerAddress } from "@shared/api";
+import { Delivery, DeliveryItem, Truck, Invoice, Customer, Driver, Agent, Pallet, Product, formatCustomerAddress } from "@shared/api";
+import { TruckLoad, TruckLoadStop } from "@/components/delivery/TruckLoad";
 
 // ─── Extended types ────────────────────────────────────────────────────────────
 
@@ -90,6 +91,8 @@ export function DeliveryDispatch() {
   const [deliveries,  setDeliveries]  = useState<DeliveryExt[]>([]);
   const [invoices,    setInvoices]    = useState<Invoice[]>([]);
   const [customers,   setCustomers]   = useState<Customer[]>([]);
+  const [pallets,     setPallets]     = useState<Pallet[]>([]);
+  const [products,    setProducts]    = useState<Product[]>([]);
   const [loading,     setLoading]     = useState(true);
   const [error,       setError]       = useState<string | null>(null);
 
@@ -115,24 +118,30 @@ export function DeliveryDispatch() {
   const fetchAll = useCallback(async () => {
     if (!token) return;
     try {
-      const [truckRes, driverRes, agentRes, deliveryRes, invoiceRes, customerRes] = await Promise.all([
+      const [truckRes, driverRes, agentRes, deliveryRes, invoiceRes, customerRes, palletRes, productRes] = await Promise.all([
         fetch("/api/trucks",     { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/drivers",    { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/agents",     { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/deliveries", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/invoices",   { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/customers",  { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/pallets",    { headers: { Authorization: `Bearer ${token}` } }),
+        fetch("/api/products",   { headers: { Authorization: `Bearer ${token}` } }),
       ]);
 
-      const [trucksData, driversData, agentsData, deliveriesData, invoicesData, customersData] = await Promise.all([
+      const [trucksData, driversData, agentsData, deliveriesData, invoicesData, customersData, palletsData, productsData] = await Promise.all([
         truckRes.ok    ? truckRes.json()    : [],
         driverRes.ok   ? driverRes.json()   : [],
         agentRes.ok    ? agentRes.json()    : [],
         deliveryRes.ok ? deliveryRes.json() : [],
         invoiceRes.ok  ? invoiceRes.json()  : [],
         customerRes.ok ? customerRes.json() : [],
+        palletRes.ok   ? palletRes.json()   : [],
+        productRes.ok  ? productRes.json()  : [],
       ]);
 
+      setPallets(palletsData);
+      setProducts(productsData);
       setTrucks(trucksData);
       setDrivers(driversData);
       setAgents(agentsData);
@@ -190,6 +199,19 @@ export function DeliveryDispatch() {
   }, new Map<string, DeliveryExt[]>()).entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([date, runs]) => [date, [...runs].sort((a, b) => (a.scheduled_time ?? "").localeCompare(b.scheduled_time ?? ""))] as const);
+
+  const productNames = new Map(products.map((product) => [product.id, product.name]));
+  const truckLoadStops: TruckLoadStop[] = truckDeliveries
+    .filter((delivery) => delivery.status !== "completed")
+    .flatMap((delivery) => delivery.delivery_items
+      .filter((item) => item.status !== "completed")
+      .map((item) => ({
+        id: item.id,
+        customerName: item.customer?.store_name ?? item.destination_customer_id.slice(0, 8),
+        receipt: item.invoice?.receipt_number,
+        runLabel: `${formatRunDate(delivery)} · ${formatRunTime(delivery.scheduled_time)}`,
+        pallets: item.invoice ? pallets.filter((pallet) => pallet.order_id === item.invoice!.booking_id) : [],
+      })));
 
   const handleConfirm = (delivery: DeliveryExt, item: DeliveryItemExt) => {
     setPaymentItem({ delivery, item });
@@ -397,6 +419,8 @@ export function DeliveryDispatch() {
           + Add Delivery
         </Button>
       </div>
+
+      <TruckLoad stops={truckLoadStops} productNames={productNames} />
 
       <div className="space-y-5">
         <div className="flex items-center justify-between gap-3">
