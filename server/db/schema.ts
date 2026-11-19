@@ -518,6 +518,8 @@ export const expenses = pgTable("expenses", {
 }, (table) => [
   index("expenses_status_idx").on(table.status),
   index("expenses_submitted_by_idx").on(table.submitted_by),
+  check("expenses_amount_positive", sql`${table.amount} > 0`),
+  check("expenses_status_check", sql`${table.status} IN ('submitted', 'approved', 'rejected', 'paid')`),
 ]);
 
 // ─── Relations ────────────────────────────────────────────────────────────────

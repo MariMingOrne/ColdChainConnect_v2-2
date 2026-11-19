@@ -337,3 +337,17 @@ describe("CreateExpenseSchema", () => {
     expect(CreateExpenseSchema.safeParse({ category: "Fuel", description: "Diesel", amount: "10.00" }).success).toBe(true);
   });
 });
+
+describe("expenses table constraints", () => {
+  const base = { category: "Fuel", description: "d", submitted_by: "test-admin" };
+
+  it("rejects a zero or negative amount at the database", async () => {
+    await expect(db.insert(expenses).values({ ...base, id: "chk-zero", amount: "0.00" })).rejects.toThrow();
+    await expect(db.insert(expenses).values({ ...base, id: "chk-neg", amount: "-5.00" })).rejects.toThrow();
+  });
+
+  it("rejects a status outside the four workflow values", async () => {
+    await expect(db.insert(expenses).values({ ...base, id: "chk-status", amount: "5.00", status: "bogus" })).rejects.toThrow();
+    await expect(db.insert(expenses).values({ ...base, id: "chk-ok", amount: "5.00", status: "paid" })).resolves.toBeDefined();
+  });
+});

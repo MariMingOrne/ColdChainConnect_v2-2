@@ -57,3 +57,13 @@ END $$;
 CREATE INDEX IF NOT EXISTS "expenses_status_idx" ON "expenses" ("status");
 --> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "expenses_submitted_by_idx" ON "expenses" ("submitted_by");
+--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "expenses" ADD CONSTRAINT "expenses_amount_positive" CHECK ("amount" > 0);
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
+--> statement-breakpoint
+DO $$ BEGIN
+  ALTER TABLE "expenses" ADD CONSTRAINT "expenses_status_check" CHECK ("status" IN ('submitted', 'approved', 'rejected', 'paid'));
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
