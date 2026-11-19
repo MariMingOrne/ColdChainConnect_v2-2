@@ -94,7 +94,7 @@ function ProductPage({
   };
 
   return (
-    <div className="flex-1 p-6 overflow-y-auto scrollbar-visible space-y-6">
+    <div className="mx-auto w-full max-w-xl flex-1 p-6 overflow-y-auto scrollbar-visible space-y-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">{title}</h1>
