@@ -188,6 +188,9 @@ export function Preparation() {
         if (!response.ok) throw new Error("Failed to mark pallet as prepared.");
       }
       void fetchAll();
+      // Next step in the flow: follow the prepared pallets in Pallet Tracking.
+      toast.success("Pallets prepared. Opening Pallet Tracking.");
+      navigate("/booking-dispatch/inventory");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to mark pallets as prepared");
     }

@@ -388,7 +388,7 @@ export function CreatePalletForm({
                                         availableForThisPallet,
                                         PALLET_CAPACITY - pallet.totalQty + (selected?.qty_units || 0)
                                       )}
-                                      value={selected?.qty_units || 0}
+                                      value={selected?.qty_units ? selected.qty_units : ""}
                                       onChange={(e) =>
                                         handleManualSelect(
                                           palletIdx,
@@ -398,7 +398,8 @@ export function CreatePalletForm({
                                         )
                                       }
                                       className="w-16 px-2 py-1 border border-border rounded text-xs text-center"
-                                      placeholder="qty"
+                                      placeholder="0"
+                                      aria-label={`Units of ${orderItem.product?.name || orderItem.product_id} from ${batch.batch_name}`}
                                     />
                                   </div>
                                 );
