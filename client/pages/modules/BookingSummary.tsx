@@ -13,6 +13,7 @@ import {
 import { ArrowLeft, Plus, Calendar, CheckCircle, XCircle } from "lucide-react";
 import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
 import { newestFirst } from "@/components/SortableHeader";
+import { TablePagination, paginate } from "@/components/TablePagination";
 import { Booking, Truck, Customer, Product } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { useSearchParams } from "react-router-dom";
@@ -25,6 +26,7 @@ export function BookingSummary() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [agentDistricts, setAgentDistricts] = useState<string[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [productStock, setProductStock] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -38,6 +40,11 @@ export function BookingSummary() {
   const [customDateStart, setCustomDateStart] = useState<string>("");
   const [customDateEnd, setCustomDateEnd] = useState<string>("");
   const [selectedBookingIds, setSelectedBookingIds] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter, approvalFilter, dateRangeFilter, customDateStart, customDateEnd]);
 
   // Approve booking modal
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -80,18 +87,20 @@ export function BookingSummary() {
 
   const fetchAll = async () => {
     try {
-      const [bRes, tRes, cRes, pRes, invRes] = await Promise.all([
+      const [bRes, tRes, cRes, pRes, invRes, dRes] = await Promise.all([
         fetch("/api/bookings", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/trucks", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/customers", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/products", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/products/inventory", { headers: { Authorization: `Bearer ${token}` } }),
+        isAgent ? fetch("/api/agent-districts", { headers: { Authorization: `Bearer ${token}` } }) : Promise.resolve(null),
       ]);
       if (bRes.ok) setBookings(await bRes.json());
       if (tRes.ok) setTrucks(await tRes.json());
       if (cRes.ok) setCustomers(await cRes.json());
       if (pRes.ok) setProducts(await pRes.json());
       if (invRes.ok) setProductStock(await invRes.json());
+      if (dRes?.ok) setAgentDistricts(await dRes.json());
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error loading data");
@@ -438,7 +447,7 @@ export function BookingSummary() {
   if (isAgent) {
     return (
       <AgentOrderScreen
-        customers={customers}
+        customers={customers.filter((customer) => customer.district && agentDistricts.includes(customer.district))}
         products={products}
         productStock={productStock}
         orderItems={orderItems}
@@ -637,13 +646,14 @@ export function BookingSummary() {
     return true;
   }));
 
-  const filteredIds = filtered.map((booking) => booking.id);
-  const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedBookingIds.includes(id));
+  const { currentPage, totalPages, pageItems: paginated } = paginate(filtered, page);
+  const pageIds = paginated.map((booking) => booking.id);
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedBookingIds.includes(id));
   const selectedBookings = bookings.filter((booking) => selectedBookingIds.includes(booking.id));
   const toggleBookingSelection = (id: string, checked: boolean) =>
     setSelectedBookingIds((current) => (checked ? [...current, id] : current.filter((selectedId) => selectedId !== id)));
-  const toggleFilteredSelection = (checked: boolean) =>
-    setSelectedBookingIds((current) => (checked ? Array.from(new Set([...current, ...filteredIds])) : current.filter((id) => !filteredIds.includes(id))));
+  const togglePageSelection = (checked: boolean) =>
+    setSelectedBookingIds((current) => (checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id))));
   const bulkActions: TableBulkAction[] = [
     { label: "Approve selected orders", onSelect: () => void handleApproveSelected() },
   ];
@@ -737,12 +747,11 @@ export function BookingSummary() {
           <TableHeader>
             <TableRow className="whitespace-nowrap">
               <TableHead className="w-10 px-3">
-                <input aria-label="Select all orders" type="checkbox" checked={allFilteredSelected} onChange={(event) => toggleFilteredSelection(event.target.checked)} />
+                <input aria-label="Select all orders on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
               </TableHead>
               <TableHead>Order ID</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Agent</TableHead>
-              <TableHead>Approval</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Prepared Delivery Date</TableHead>
               <TableHead>Created</TableHead>
@@ -750,17 +759,16 @@ export function BookingSummary() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+            {paginated.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   {bookings.length === 0 ? "No orders found" : "No orders match your search"}
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((booking) => {
+              paginated.map((booking) => {
                 const customer = booking.customer;
                 const creator = (booking as any).creator;
-                const isApproved = booking.status === "approved";
                 return (
                   <TableRow key={booking.id}>
                     <TableCell className="w-10 px-3">
@@ -788,19 +796,10 @@ export function BookingSummary() {
                     </TableCell>
                     <TableCell className="text-sm">
                       {creator ? (
-                        <span className="font-semibold text-foreground">{creator.username}</span>
+                        <span className="font-semibold text-foreground">{creator.agent?.full_name ?? creator.username}</span>
                       ) : (
                         <span className="text-muted-foreground italic">Unknown</span>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded text-sm ${
-                        isApproved
-                          ? "bg-success-soft text-success"
-                          : "bg-warning-soft text-warning"
-                      }`}>
-                        {isApproved ? "Approved" : "Pending"}
-                      </span>
                     </TableCell>
                     <TableCell>
                       <StatusBadge label={booking.status} tone={getStatusTone(booking.status)} />
@@ -851,6 +850,7 @@ export function BookingSummary() {
             )}
           </TableBody>
         </Table>
+        <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </Card>
 
     </div>

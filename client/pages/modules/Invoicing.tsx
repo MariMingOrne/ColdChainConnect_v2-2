@@ -15,6 +15,7 @@ import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { RecordTitleButton } from "@/components/RecordTitleButton";
 import { TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
 import { newestFirst } from "@/components/SortableHeader";
+import { TablePagination, paginate } from "@/components/TablePagination";
 import { Invoice, InvoiceItem, BookingItem } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -249,6 +250,11 @@ export function Invoicing() {
   const [customDateStart, setCustomDateStart] = useState("");
   const [customDateEnd, setCustomDateEnd] = useState("");
   const [receiptInvoice, setReceiptInvoice] = useState<Invoice | null>(null);
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter, paymentFilter, dateRangeFilter, customDateStart, customDateEnd]);
 
   const fetchInvoices = async () => {
     try {
@@ -310,6 +316,8 @@ export function Invoicing() {
     if (!isDateInRange(inv.created_at)) return false;
     return true;
   }));
+
+  const { currentPage, totalPages, pageItems: paginated } = paginate(filtered, page);
 
   return (
     <div className="flex-1 flex flex-col p-6 gap-6">
@@ -390,14 +398,14 @@ export function Invoicing() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+            {paginated.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                   {invoices.length === 0 ? "No invoices found" : "No invoices match your search"}
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((inv) => {
+              paginated.map((inv) => {
                 const itemCount = inv.invoice_items?.length ?? 0;
                 const legacyItems = inv.booking?.booking_items ?? [];
                 const snapshotGross = parseFloat(inv.gross_amount || "0");
@@ -480,6 +488,7 @@ export function Invoicing() {
             )}
           </TableBody>
         </Table>
+        <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </Card>
 
     </div>

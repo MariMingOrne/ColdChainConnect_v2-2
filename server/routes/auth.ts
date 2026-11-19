@@ -78,6 +78,10 @@ export const handleLogin: RequestHandler<{}, LoginResponse | object> = async (
     }
     loginLimiter.reset(userKey);
 
+    if (user.is_archived) {
+      return res.status(403).json({ error: "This account has been archived. Contact an administrator." });
+    }
+
     if (!user.mfa_required) {
       const token = signToken({ userId: user.id, username: user.username, role: user.role });
       return res.json({

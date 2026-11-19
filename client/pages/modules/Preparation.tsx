@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
 import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
 import { newestFirst } from "@/components/SortableHeader";
+import { TablePagination, paginate } from "@/components/TablePagination";
 import { Booking, Customer, InventoryBatch, Pallet } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
@@ -37,6 +38,11 @@ export function Preparation() {
   const [customDateStart, setCustomDateStart] = useState<string>(filters?.customDateStart ?? "");
   const [customDateEnd, setCustomDateEnd] = useState<string>(filters?.customDateEnd ?? "");
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter, dateRangeFilter, customDateStart, customDateEnd]);
 
   const fetchAll = async () => {
     try {
@@ -128,13 +134,14 @@ export function Preparation() {
     return true;
   }));
 
-  const filteredIds = filtered.map((order) => order.id);
-  const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedOrderIds.includes(id));
+  const { currentPage, totalPages, pageItems: paginated } = paginate(filtered, page);
+  const pageIds = paginated.map((order) => order.id);
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedOrderIds.includes(id));
   const selectedOrders = orders.filter((order) => selectedOrderIds.includes(order.id));
   const toggleOrderSelection = (id: string, checked: boolean) =>
     setSelectedOrderIds((current) => (checked ? [...current, id] : current.filter((selectedId) => selectedId !== id)));
-  const toggleFilteredSelection = (checked: boolean) =>
-    setSelectedOrderIds((current) => (checked ? Array.from(new Set([...current, ...filteredIds])) : current.filter((id) => !filteredIds.includes(id))));
+  const togglePageSelection = (checked: boolean) =>
+    setSelectedOrderIds((current) => (checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id))));
 
   const ordersReadyForPrep = filtered.length;
   const pendingPalletItems = orders.reduce((sum, order) => {
@@ -372,7 +379,7 @@ export function Preparation() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-10 px-3">
-                <input aria-label="Select all orders" type="checkbox" checked={allFilteredSelected} onChange={(event) => toggleFilteredSelection(event.target.checked)} />
+                <input aria-label="Select all orders on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
               </TableHead>
               <TableHead>Order ID</TableHead>
               <TableHead>Customer</TableHead>
@@ -382,14 +389,14 @@ export function Preparation() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+            {paginated.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   {orders.length === 0 ? "No orders found" : "No orders match your search"}
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((order) => {
+              paginated.map((order) => {
                 const customer = customers.find((c) => c.id === order.customer_id);
                 const itemCount = order.booking_items?.length ?? 0;
                 const orderPallets = pallets.filter((p) => p.order_id === order.id);
@@ -494,6 +501,7 @@ export function Preparation() {
             )}
           </TableBody>
         </Table>
+        <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </Card>
 
     </div>

@@ -104,6 +104,7 @@ export const updateAgent: RequestHandler = async (req: AuthRequest, res) => {
     hire_date,
     address,
     is_active,
+    username,
   } = req.body;
 
   try {
@@ -114,6 +115,15 @@ export const updateAgent: RequestHandler = async (req: AuthRequest, res) => {
 
     if (!existing) {
       return res.status(404).json({ error: "Agent not found" });
+    }
+
+    const nextUsername = typeof username === "string" ? username.trim() : "";
+    if (nextUsername && nextUsername !== existing.user?.username) {
+      const taken = await db.query.users.findFirst({ where: eq(users.username, nextUsername) });
+      if (taken && taken.id !== existing.user_id) {
+        return res.status(400).json({ error: "Username already exists" });
+      }
+      await db.update(users).set({ username: nextUsername, updated_at: new Date() }).where(eq(users.id, existing.user_id));
     }
 
     await db.update(agents).set({

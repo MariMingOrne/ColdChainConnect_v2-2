@@ -7,7 +7,7 @@ import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Agent } from "@shared/api";
+import { Agent, MIN_PASSWORD_LENGTH } from "@shared/api";
 
 interface AgentForm {
   full_name: string;
@@ -143,6 +143,7 @@ function AgentModal({
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="w-full px-3 py-2 pr-10 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
@@ -251,21 +252,21 @@ function AgentCard({
       </div>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-        <div>
+        <div className="min-w-0">
           <span className="text-muted-foreground block">Email</span>
-          <span className="text-foreground font-medium truncate">{agent.email || "—"}</span>
+          <span className="block truncate text-foreground font-medium">{agent.email || "—"}</span>
         </div>
-        <div>
+        <div className="min-w-0">
           <span className="text-muted-foreground block">Contact</span>
-          <span className="text-foreground font-medium">{agent.contact_info || "—"}</span>
+          <span className="block truncate text-foreground font-medium">{agent.contact_info || "—"}</span>
         </div>
-        <div>
+        <div className="min-w-0">
           <span className="text-muted-foreground block">Hired</span>
-          <span className="text-foreground font-medium">{agent.hire_date || "—"}</span>
+          <span className="block truncate text-foreground font-medium">{agent.hire_date || "—"}</span>
         </div>
-        <div>
+        <div className="min-w-0">
           <span className="text-muted-foreground block">Address</span>
-          <span className="text-foreground font-medium truncate">{agent.address || "—"}</span>
+          <span className="block truncate text-foreground font-medium">{agent.address || "—"}</span>
         </div>
       </div>
 
@@ -379,6 +380,10 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
   const handleSave = async () => {
     try {
       if (editingAgent) {
+        if (formData.password && formData.password.trim().length < MIN_PASSWORD_LENGTH) {
+          toast.error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+          return;
+        }
         // PATCH agent profile
         const agentRes = await fetch(`/api/agents/${editingAgent.id}`, {
           method: "PATCH",
@@ -391,9 +396,13 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
             hire_date: formData.hire_date,
             address: formData.address,
             is_active: formData.is_active,
+            username: formData.username || undefined,
           }),
         });
-        if (!agentRes.ok) throw new Error("Failed to update agent");
+        if (!agentRes.ok) {
+          const err = await agentRes.json().catch(() => null);
+          throw new Error(err?.error || "Failed to update agent");
+        }
         const saved = await agentRes.json();
 
         // Update password if provided

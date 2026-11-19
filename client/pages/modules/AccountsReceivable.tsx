@@ -16,6 +16,7 @@ import {
 import { CheckCircle } from "lucide-react";
 import { TableBulkAction, TableToolbar } from "@/components/TableToolbar";
 import { newestFirst } from "@/components/SortableHeader";
+import { TablePagination, paginate } from "@/components/TablePagination";
 import { AccountsReceivable as ARType, Customer } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -38,6 +39,9 @@ export function AccountsReceivable() {
   const [activeTab, setActiveTab] = useState<Tab>("outstanding");
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [fromDateTime, setFromDateTime] = useState("");
+  const [toDateTime, setToDateTime] = useState("");
+  const [page, setPage] = useState(1);
 
   const fetchData = async () => {
     if (!token) return;
@@ -168,19 +172,23 @@ export function AccountsReceivable() {
 
   const filtered = newestFirst(tabFiltered.filter((ar) => {
     const q = searchTerm.toLowerCase();
+    const createdAt = new Date(ar.created_at).getTime();
+    if (fromDateTime && createdAt < new Date(fromDateTime).getTime()) return false;
+    if (toDateTime && createdAt > new Date(toDateTime).getTime()) return false;
     return (
       ar.id.toLowerCase().includes(q) ||
       getCustomerName(ar.customer_id).toLowerCase().includes(q)
     );
   }));
 
-  const filteredIds = filtered.map((ar) => ar.id);
-  const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedIds.includes(id));
+  const { currentPage, totalPages, pageItems: paginated } = paginate(filtered, page);
+  const pageIds = paginated.map((ar) => ar.id);
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
   const selectedRecords = arRecords.filter((ar) => selectedIds.includes(ar.id));
   const toggleRecordSelection = (id: string, checked: boolean) =>
     setSelectedIds((current) => (checked ? [...current, id] : current.filter((selectedId) => selectedId !== id)));
-  const toggleFilteredSelection = (checked: boolean) =>
-    setSelectedIds((current) => (checked ? Array.from(new Set([...current, ...filteredIds])) : current.filter((id) => !filteredIds.includes(id))));
+  const togglePageSelection = (checked: boolean) =>
+    setSelectedIds((current) => (checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id))));
   const bulkActions: TableBulkAction[] = [
     { label: "Mark selected as paid", onSelect: () => void handleMarkSelectedPaid() },
   ];
@@ -229,7 +237,7 @@ export function AccountsReceivable() {
           {TABS.map((tab) => (
             <button
               key={tab.key}
-              onClick={() => { setActiveTab(tab.key); setSearchTerm(""); setSelectedIds([]); }}
+              onClick={() => { setActiveTab(tab.key); setSearchTerm(""); setSelectedIds([]); setPage(1); }}
               className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition ${
                 activeTab === tab.key
                   ? "bg-primary text-primary-foreground"
@@ -249,9 +257,12 @@ export function AccountsReceivable() {
           selectedCount={selectedRecords.length}
           bulkActions={bulkActions}
           searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
+          onSearchChange={(value) => { setSearchTerm(value); setPage(1); }}
           searchPlaceholder="Search by customer or AR ID…"
-        />
+        >
+          <input type="datetime-local" aria-label="Created from date and time" title="Show records created from this date and time" value={fromDateTime} max={toDateTime || undefined} onChange={(event) => { setFromDateTime(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
+          <input type="datetime-local" aria-label="Created to date and time" title="Show records created up to this date and time" value={toDateTime} min={fromDateTime || undefined} onChange={(event) => { setToDateTime(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
+        </TableToolbar>
       </div>
 
       {/* Table */}
@@ -260,7 +271,7 @@ export function AccountsReceivable() {
           <TableHeader>
             <TableRow>
               <TableHead className="w-10 px-3">
-                <input aria-label="Select all AR records" type="checkbox" checked={allFilteredSelected} onChange={(event) => toggleFilteredSelection(event.target.checked)} />
+                <input aria-label="Select all AR records on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
               </TableHead>
               <TableHead>AR ID</TableHead>
               <TableHead>Customer</TableHead>
@@ -273,7 +284,7 @@ export function AccountsReceivable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+            {paginated.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={9} className="text-center py-10 text-muted-foreground text-sm">
                   {activeTab === "outstanding" && "No outstanding balances — great job! 🎉"}
@@ -283,7 +294,7 @@ export function AccountsReceivable() {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((ar) => {
+              paginated.map((ar) => {
                 const days = daysCreated(ar.created_at);
                 const amountNum = parseFloat(ar.amount_due);
                 const isCredit = amountNum < 0;
@@ -340,6 +351,7 @@ export function AccountsReceivable() {
             )}
           </TableBody>
         </Table>
+        <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </Card>
     </div>
   );
