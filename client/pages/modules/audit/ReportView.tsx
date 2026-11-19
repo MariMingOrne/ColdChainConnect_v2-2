@@ -16,6 +16,7 @@ interface ReportViewProps<T> {
   title: string;
   subtitle?: string;
   chart: ReactNode;
+  filters?: ReactNode;
   rows: T[];
   columns: ReportColumn<T>[];
 }
@@ -36,7 +37,7 @@ function downloadCsv<T>(title: string, columns: ReportColumn<T>[], rows: T[]) {
   URL.revokeObjectURL(url);
 }
 
-export function ReportView<T>({ title, subtitle, chart, rows, columns }: ReportViewProps<T>) {
+export function ReportView<T>({ title, subtitle, chart, filters, rows, columns }: ReportViewProps<T>) {
   const [showTable, setShowTable] = useState(false);
   const { toast } = useToast();
 
@@ -65,6 +66,8 @@ export function ReportView<T>({ title, subtitle, chart, rows, columns }: ReportV
           </Button>
         </div>
       </div>
+
+      {filters}
 
       {chart}
 

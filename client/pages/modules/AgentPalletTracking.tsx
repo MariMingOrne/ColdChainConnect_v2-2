@@ -300,7 +300,7 @@ export function AgentPalletTracking() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search pallet, order, or customer"
-          className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+          className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-foreground/80 dark:placeholder:text-foreground/70"
         />
       </label>
 

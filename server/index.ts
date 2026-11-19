@@ -85,6 +85,7 @@ import {
   listAccountsReceivable,
   getCustomerBalance,
   updateARStatus,
+  updateARNotes,
 } from "./routes/accounts-receivable";
 import {
   listAgentReturns,
@@ -276,6 +277,7 @@ export function createServer() {
   app.get("/api/accounts-receivable", authMiddleware, listAccountsReceivable);
   app.get("/api/accounts-receivable/customer/:customerId", authMiddleware, getCustomerBalance);
   app.patch("/api/accounts-receivable/:id/status", authMiddleware, requireRole("admin"), updateARStatus);
+  app.patch("/api/accounts-receivable/:id/notes", authMiddleware, requireRole("admin"), updateARNotes);
 
   app.get("/api/agent-returns", authMiddleware, listAgentReturns);
   app.post("/api/agent-returns", authMiddleware, createAgentReturn);

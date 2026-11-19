@@ -3,6 +3,7 @@ import {
 } from "recharts";
 import type { ReportCustomerRow, ReportSalesResponse, ReportStockRow } from "@shared/api";
 import { Card } from "@/components/ui/card";
+import { DateRangeFilter, useDateRange } from "@/components/DateRangeFilter";
 import { ReportView } from "./ReportView";
 import { CHART_COLORS } from "./reportData";
 import { useReportData } from "./useReportData";
@@ -39,7 +40,8 @@ function ReportStatus({ title, subtitle, message }: { title: string; subtitle: s
 }
 
 export function SalesReport() {
-  const { data, error } = useReportData<ReportSalesResponse>("/api/reports/sales");
+  const { range, setRange, query } = useDateRange();
+  const { data, error } = useReportData<ReportSalesResponse>(`/api/reports/sales${query}`);
   const title = "Sales Reports";
   const subtitle = "Revenue and transactions by period";
 
@@ -49,6 +51,7 @@ export function SalesReport() {
     <ReportView
       title={title}
       subtitle={subtitle}
+      filters={<DateRangeFilter range={range} onChange={setRange} />}
       rows={data.periods}
       chart={
         <ChartFrame>
@@ -121,7 +124,8 @@ export function InventoryReport() {
 }
 
 export function CustomerReport() {
-  const { data, error } = useReportData<ReportCustomerRow[]>("/api/reports/customers");
+  const { range, setRange, query } = useDateRange();
+  const { data, error } = useReportData<ReportCustomerRow[]>(`/api/reports/customers${query}`);
   const title = "Customer Purchase History";
   const subtitle = "Total spend and purchase count per customer";
 
@@ -131,6 +135,7 @@ export function CustomerReport() {
     <ReportView
       title={title}
       subtitle={subtitle}
+      filters={<DateRangeFilter range={range} onChange={setRange} />}
       rows={data}
       chart={
         <ChartFrame>
@@ -156,7 +161,8 @@ export function CustomerReport() {
 }
 
 export function PerformanceReport() {
-  const { data, error } = useReportData<ReportSalesResponse>("/api/reports/sales");
+  const { range, setRange, query } = useDateRange();
+  const { data, error } = useReportData<ReportSalesResponse>(`/api/reports/sales${query}`);
   const title = "Sales Performance Metrics";
   const subtitle = "Revenue and units sold by product, ranked";
 
@@ -166,6 +172,7 @@ export function PerformanceReport() {
     <ReportView
       title={title}
       subtitle={subtitle}
+      filters={<DateRangeFilter range={range} onChange={setRange} />}
       rows={data.products}
       chart={
         <ChartFrame>

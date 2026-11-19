@@ -6,6 +6,7 @@ export function useReportData<T>(path: string) {
 
   useEffect(() => {
     const controller = new AbortController();
+    setError(null);
     const token = localStorage.getItem("auth_token") || "";
 
     fetch(path, { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal })

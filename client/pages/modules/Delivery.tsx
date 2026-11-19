@@ -449,10 +449,19 @@ export function DeliveryDispatch() {
                 <span className="text-xs text-muted-foreground hidden sm:block">
                   {formatRunDate(delivery)} · {formatRunTime(delivery.scheduled_time)}
                 </span>
-                {selectedDelivery?.id === delivery.id
-                  ? <ChevronUp size={14} className="text-muted-foreground" />
-                  : <ChevronDown size={14} className="text-muted-foreground" />
-                }
+                <Button
+                  type="button"
+                  size="lg"
+                  variant={selectedDelivery?.id === delivery.id ? "default" : "outline"}
+                  aria-expanded={selectedDelivery?.id === delivery.id}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setSelectedDelivery(selectedDelivery?.id === delivery.id ? null : delivery);
+                  }}
+                >
+                  {selectedDelivery?.id === delivery.id ? "Hide details" : "View details"}
+                  {selectedDelivery?.id === delivery.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                </Button>
               </div>
             </div>
 

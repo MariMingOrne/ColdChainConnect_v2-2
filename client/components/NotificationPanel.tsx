@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Boxes, ClipboardList, Inbox, LoaderCircle, RefreshCw, Truck, X, type LucideIcon } from "lucide-react";
+import { Banknote, Boxes, ClipboardList, Inbox, LoaderCircle, RefreshCw, Truck, X, type LucideIcon } from "lucide-react";
 import type { AppNotification } from "@/hooks/useNotifications";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,7 @@ const TYPE: Record<AppNotification["type"], { label: string; icon: LucideIcon }>
   orders: { label: "Orders", icon: ClipboardList },
   stock: { label: "Low stock", icon: Boxes },
   delivery: { label: "Delivery", icon: Truck },
+  receivable: { label: "Receivables", icon: Banknote },
 };
 
 const FILTERS: { value: NotificationFilter; label: string }[] = [
@@ -32,6 +33,7 @@ const FILTERS: { value: NotificationFilter; label: string }[] = [
   { value: "orders", label: "Orders" },
   { value: "stock", label: "Stock" },
   { value: "delivery", label: "Delivery" },
+  { value: "receivable", label: "Receivables" },
 ];
 
 function formatWhen(timestamp: string) {

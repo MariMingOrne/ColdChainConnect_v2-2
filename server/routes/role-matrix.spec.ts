@@ -165,6 +165,7 @@ const POLICY: Record<string, Policy> = {
   "GET /api/accounts-receivable": agentAnd("delivery-operations"),
   "GET /api/accounts-receivable/customer/:customerId": agentAnd("delivery-operations"),
   "PATCH /api/accounts-receivable/:id/status": ADMIN_ONLY,
+  "PATCH /api/accounts-receivable/:id/notes": ADMIN_ONLY,
   "GET /api/agent-returns": agentAnd("delivery-operations"),
   "POST /api/agent-returns": agentAnd("delivery-operations"),
   "POST /api/agent-returns/:id/accept": ADMIN_ONLY,

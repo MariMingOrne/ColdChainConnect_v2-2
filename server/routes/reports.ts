@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { and, eq, gte, ne } from "drizzle-orm";
+import { and, eq, gte, lt, ne } from "drizzle-orm";
 import { db } from "../db";
 import { bookings, customers, inventory_batches, invoice_items, invoices, products } from "../db/schema";
 import { getAvailableUnitsBySource } from "../services/inventory-reservations";
@@ -22,12 +22,38 @@ const startOfUtcMonth = (date: Date) => new Date(Date.UTC(date.getUTCFullYear(),
 const roundTo = (value: number, places: number) => Math.round(value * 10 ** places) / 10 ** places;
 const toNumber = (value: string | null | undefined) => parseFloat(value ?? "0") || 0;
 
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+
+// Optional ?from=YYYY-MM-DD&to=YYYY-MM-DD. Both are inclusive calendar days (UTC).
+// Returns null when neither is given, "invalid" for a malformed or reversed range.
+export function parseReportRange(query: { from?: unknown; to?: unknown }): { from: Date | null; to: Date | null } | null | "invalid" {
+  const { from, to } = query;
+  if (from === undefined && to === undefined) return null;
+  const parse = (value: unknown) => {
+    if (value === undefined || value === "") return null;
+    if (typeof value !== "string" || !ISO_DATE.test(value)) return "invalid" as const;
+    const date = new Date(`${value}T00:00:00.000Z`);
+    return Number.isNaN(date.getTime()) ? "invalid" as const : date;
+  };
+  const start = parse(from);
+  const end = parse(to);
+  if (start === "invalid" || end === "invalid") return "invalid";
+  if (start && end && start > end) return "invalid";
+  if (!start && !end) return null;
+  // "to" is inclusive, so the exclusive bound is the start of the next day.
+  return { from: start, to: end ? new Date(end.getTime() + DAY_MS) : null };
+}
+
 function startOfPreviousMonth(now: Date) {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
 }
 
-async function fetchSalesRows(since: Date) {
-  const billable = and(gte(invoices.created_at, since), ne(invoices.status, "draft"));
+async function fetchSalesRows(since: Date, until: Date | null = null) {
+  const billable = and(
+    gte(invoices.created_at, since),
+    until ? lt(invoices.created_at, until) : undefined,
+    ne(invoices.status, "draft"),
+  );
 
   const [invoiceRows, itemRows] = await Promise.all([
     db
@@ -116,9 +142,54 @@ function buildProductPerformance(rows: SalesRows, now: Date): ReportProductPerfo
     .map((row, index) => ({ ...row, ranking: index + 1 }));
 }
 
-export const getSalesReport: RequestHandler = async (_req, res) => {
+function buildRangePeriod(rows: SalesRows, label: string): ReportSalesPeriod {
+  const revenue = rows.invoiceRows.reduce((sum, row) => sum + toNumber(row.total), 0);
+  const revenueByProduct = new Map<string, number>();
+  for (const item of rows.itemRows) {
+    revenueByProduct.set(item.productName, (revenueByProduct.get(item.productName) ?? 0) + toNumber(item.amount));
+  }
+  const [topProduct, topProductRevenue] = [...revenueByProduct.entries()].sort((a, b) => b[1] - a[1])[0] ?? ["No sales", 0];
+  return {
+    period: label,
+    totalRevenue: roundTo(revenue, 2),
+    totalTransactions: rows.invoiceRows.length,
+    averageTransaction: rows.invoiceRows.length > 0 ? roundTo(revenue / rows.invoiceRows.length, 2) : 0,
+    topProduct,
+    topProductSales: roundTo(topProductRevenue, 2),
+  };
+}
+
+function buildRangeProducts(rows: SalesRows): ReportProductPerformance[] {
+  const byProduct = new Map<string, { name: string; units: number; revenue: number }>();
+  for (const item of rows.itemRows) {
+    const entry = byProduct.get(item.productId) ?? { name: item.productName, units: 0, revenue: 0 };
+    entry.units += item.qty;
+    entry.revenue += toNumber(item.amount);
+    byProduct.set(item.productId, entry);
+  }
+  return [...byProduct.values()]
+    .map((entry) => ({ productName: entry.name, unitsSold: entry.units, revenue: roundTo(entry.revenue, 2), growth: 0 }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, TOP_PRODUCTS)
+    .map((row, index) => ({ ...row, ranking: index + 1 }));
+}
+
+export const getSalesReport: RequestHandler = async (req, res) => {
   try {
+    const range = parseReportRange(req.query);
+    if (range === "invalid") return res.status(400).json({ error: "from and to must be YYYY-MM-DD dates, with from not after to" });
+
     const now = new Date();
+    if (range) {
+      const rows = await fetchSalesRows(range.from ?? new Date(0), range.to);
+      const label = `${range.from ? toIsoDate(range.from) : "Start"} to ${range.to ? toIsoDate(new Date(range.to.getTime() - DAY_MS)) : "today"}`;
+      const response: ReportSalesResponse = {
+        periods: [buildRangePeriod(rows, label)],
+        products: buildRangeProducts(rows),
+      };
+      return res.json(response);
+    }
+
     const rows = await fetchSalesRows(startOfPreviousMonth(now));
     const response: ReportSalesResponse = {
       periods: buildPeriods(rows, now),
@@ -183,8 +254,11 @@ export const getStockReport: RequestHandler = async (_req, res) => {
   }
 };
 
-export const getCustomerReport: RequestHandler = async (_req, res) => {
+export const getCustomerReport: RequestHandler = async (req, res) => {
   try {
+    const range = parseReportRange(req.query);
+    if (range === "invalid") return res.status(400).json({ error: "from and to must be YYYY-MM-DD dates, with from not after to" });
+
     const rows = await db
       .select({
         customerId: customers.id,
@@ -195,7 +269,11 @@ export const getCustomerReport: RequestHandler = async (_req, res) => {
       .from(invoices)
       .innerJoin(bookings, eq(invoices.booking_id, bookings.id))
       .innerJoin(customers, eq(bookings.customer_id, customers.id))
-      .where(ne(invoices.status, "draft"));
+      .where(and(
+        ne(invoices.status, "draft"),
+        range?.from ? gte(invoices.created_at, range.from) : undefined,
+        range?.to ? lt(invoices.created_at, range.to) : undefined,
+      ));
 
     const byCustomer = new Map<string, { name: string; purchases: Date[]; spent: number }>();
     for (const row of rows) {
