@@ -121,20 +121,23 @@ export function SalesForecastWidget() {
 
   if (!isOpen) {
     return (
-      <Button
-        type="button"
-        onClick={() => setIsOpen(true)}
-        variant="outline"
-        aria-label="Open sales forecast"
-      >
-        <TrendingUp className="h-4 w-4" />
-        <span>Sales Forecast</span>
-      </Button>
+      <div className="fixed bottom-24 right-4 z-50 md:bottom-6 md:right-6">
+        <Button
+          type="button"
+          onClick={() => setIsOpen(true)}
+          variant="outline"
+          aria-label="Open sales forecast"
+          className="shadow-md"
+        >
+          <TrendingUp className="h-4 w-4" />
+          <span>Sales Forecast</span>
+        </Button>
+      </div>
     );
   }
 
   return (
-    <div className="absolute right-0 top-full z-50 mt-2 max-h-[min(75vh,640px)] w-[min(440px,calc(100vw-2rem))] overflow-y-auto rounded-xl border border-border bg-card p-4 shadow-xl animate-fade-in-up">
+    <div className="fixed bottom-24 right-4 z-50 max-h-[min(75vh,640px)] w-[min(440px,calc(100vw-2rem))] overflow-y-auto rounded-xl border border-border bg-card p-4 shadow-xl animate-fade-in-up md:bottom-6 md:right-6">
       <div className="mb-3 flex items-start justify-between gap-2">
         <div>
           <h2 className="text-base font-semibold">Sales Forecast</h2>

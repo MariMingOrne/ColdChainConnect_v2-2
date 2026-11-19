@@ -3,7 +3,7 @@ import { Customer, Pallet, formatCustomerAddress } from "@shared/api";
 import { Table } from "@/components/ui/table";
 import { compareNewestFirst } from "@/components/SortableHeader";
 import { cn } from "@/lib/utils";
-import { formatMoney, palletStatusStyles, palletTotal } from "./palletUtils";
+import { formatMoney, palletStatusLabels, palletStatusStyles, palletTotal } from "./palletUtils";
 
 export interface PalletEntry {
   pallet: Pallet;
@@ -23,7 +23,7 @@ export function PalletStatusBadge({ status }: { status: Pallet["status"] }) {
         palletStatusStyles[status]
       )}
     >
-      {status}
+      {palletStatusLabels[status]}
     </span>
   );
 }

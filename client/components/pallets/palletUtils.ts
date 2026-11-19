@@ -62,10 +62,17 @@ export function formatMoney(amount: number): string {
   return `₱${amount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+export const palletStatusLabels: Record<Pallet["status"], string> = {
+  draft: "Draft",
+  prepared: "Prepared",
+  approved: "In transit",
+  shipped: "Shipped",
+};
+
 export const palletStatusOptions: { value: Pallet["status"]; label: string }[] = [
   { value: "draft", label: "Draft" },
   { value: "prepared", label: "Prepared" },
-  { value: "approved", label: "Approved" },
+  { value: "approved", label: "In transit" },
   { value: "shipped", label: "Shipped" },
 ];
 

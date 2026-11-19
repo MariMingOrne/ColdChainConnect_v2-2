@@ -13,7 +13,7 @@ export function PalletStats({ pallets }: PalletStatsProps) {
   const cards = [
     { label: "Total pallets", value: pallets.length, icon: Layers, tone: "bg-primary/10 text-foreground" },
     { label: "Draft", value: countWithStatus("draft"), icon: FileEdit, tone: "bg-warning-soft text-warning" },
-    { label: "Approved", value: countWithStatus("approved"), icon: CheckCircle2, tone: "bg-success-soft text-success" },
+    { label: "In transit", value: countWithStatus("approved"), icon: CheckCircle2, tone: "bg-success-soft text-success" },
     { label: "Shipped", value: countWithStatus("shipped"), icon: Truck, tone: "bg-info-soft text-link" },
   ];
 
