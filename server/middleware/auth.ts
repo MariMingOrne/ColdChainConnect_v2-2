@@ -15,6 +15,15 @@ const DRIVER_ALLOWED_PATHS = new Set([
   "/api/auth/refresh",
 ]);
 
+// The only writes a driver makes: confirming a stop and recording payment on it. The handlers
+// themselves check that the stop belongs to the driver's own run.
+const DRIVER_STOP_ACTION = /^\/api\/deliveries\/[^/]+\/items\/[^/]+\/(confirm|payment)$/;
+
+function driverMayReach(req: Request) {
+  const path = `${req.baseUrl}${req.path}`;
+  return DRIVER_ALLOWED_PATHS.has(path) || (req.method === "POST" && DRIVER_STOP_ACTION.test(path));
+}
+
 export async function authMiddleware(
   req: AuthRequest,
   res: Response,
@@ -35,7 +44,7 @@ export async function authMiddleware(
   }
 
   // Compare the full path: under app.use("/api", ...) req.path has the mount stripped.
-  if (payload.role === "driver" && !DRIVER_ALLOWED_PATHS.has(`${req.baseUrl}${req.path}`)) {
+  if (payload.role === "driver" && !driverMayReach(req)) {
     return res.status(403).json({ error: "Insufficient permissions" });
   }
 
