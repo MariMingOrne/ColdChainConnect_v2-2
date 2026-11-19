@@ -112,6 +112,7 @@ import {
 } from "./routes/pallets";
 import { getSalesForecast } from "./routes/forecast";
 import { getDashboardSummary } from "./routes/dashboard";
+import { getUnseenCounts } from "./routes/unseen";
 import { postSalesForecastChat } from "./routes/sales-forecast-chat";
 import { getCustomerReport, getSalesReport, getStockReport } from "./routes/reports";
 import { authMiddleware, requireRole, type AuthRequest } from "./middleware/auth";
@@ -161,6 +162,9 @@ export function createServer() {
   app.post("/api/users", authMiddleware, requireRole("admin"), handleCreateAccount);
   app.patch("/api/users/:userId/password", authMiddleware, requireRole("admin"), updateUserPassword);
   app.post("/api/users/:userId/mfa/reset", authMiddleware, requireRole("admin"), resetUserMfa);
+
+  // Sidebar "new" badges: registered ahead of the staff module guard because it filters per module itself.
+  app.get("/api/unseen", authMiddleware, requireRole("admin", "staff"), getUnseenCounts);
 
   app.use("/api", authMiddleware, (req, res, next) => {
     const authReq = req as AuthRequest;

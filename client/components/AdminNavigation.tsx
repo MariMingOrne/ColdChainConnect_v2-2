@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { SEEN_KEY_BY_PATH, useUnseenCounts, type SeenKey } from "@/lib/unseen";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   Boxes,
@@ -88,6 +89,18 @@ function isItemActive(path: string, pathname: string) {
   return pathname === path || pathname.startsWith(`${path}/`);
 }
 
+function NewBadge({ count, collapsed }: { count: number; collapsed?: boolean }) {
+  if (count <= 0) return null;
+  return (
+    <span
+      aria-label={`${count} new`}
+      className={`flex h-5 min-w-5 items-center justify-center rounded-full bg-destructive px-1.5 text-[11px] font-bold leading-none text-white tabular-nums ${collapsed ? "absolute right-1 top-1" : "shrink-0"}`}
+    >
+      {count > 99 ? "99+" : count}
+    </span>
+  );
+}
+
 function NavigationLink({
   item,
   collapsed,
@@ -98,6 +111,8 @@ function NavigationLink({
   onNavigate?: () => void;
 }) {
   const Icon = item.icon;
+  const seenKey = SEEN_KEY_BY_PATH[item.path];
+  const unseen = useUnseenCounts()[seenKey as SeenKey] ?? 0;
   return (
     <NavLink
       to={item.path}
@@ -105,7 +120,7 @@ function NavigationLink({
       onClick={onNavigate}
       title={collapsed ? item.label : undefined}
       className={({ isActive }) =>
-        `group flex min-h-10 items-center rounded-lg text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
+        `group relative flex min-h-10 items-center rounded-lg text-sm font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
           collapsed ? "justify-center px-2" : "gap-3 px-3"
         } ${
           isActive
@@ -116,6 +131,7 @@ function NavigationLink({
     >
       <Icon size={18} className="shrink-0" aria-hidden="true" />
       {!collapsed && <span className="min-w-0 flex-1 truncate">{item.label}</span>}
+      {seenKey && <NewBadge count={unseen} collapsed={collapsed} />}
     </NavLink>
   );
 }
@@ -147,8 +163,10 @@ function NavigationMenu({
     }
   }, [pathname]);
 
+  const unseenCounts = useUnseenCounts();
   const renderGroup = (group: NavigationGroup) => {
     const Icon = group.icon;
+    const groupUnseen = group.items.reduce((sum, item) => sum + (unseenCounts[SEEN_KEY_BY_PATH[item.path]] ?? 0), 0);
     const isActive = group.items.some((item) => isItemActive(item.path, pathname));
     const isOpen = expandedGroups[group.label] ?? isActive;
 
@@ -171,12 +189,14 @@ function NavigationMenu({
             }}
             className={`flex min-h-10 w-full items-center rounded-lg text-left text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${
               collapsed ? "justify-center px-2" : "gap-3 px-3"
-            } ${isActive ? "bg-white/10 text-white" : "text-white/75 hover:bg-white/10 hover:text-white"}`}
+            } relative ${isActive ? "bg-white/10 text-white" : "text-white/75 hover:bg-white/10 hover:text-white"}`}
           >
             <Icon size={18} className="shrink-0" aria-hidden="true" />
+            {collapsed && <NewBadge count={groupUnseen} collapsed />}
             {!collapsed && (
               <>
                 <span className="min-w-0 flex-1">{group.label}</span>
+                {!isOpen && <NewBadge count={groupUnseen} />}
                 <ChevronDown size={15} className={`shrink-0 transition-transform ${isOpen ? "rotate-180" : ""}`} aria-hidden="true" />
               </>
             )}
