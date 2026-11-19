@@ -24,5 +24,8 @@ if (process.env.DATABASE_URL && process.env.DATABASE_URL.trim()) {
 
 export const db = drizzle(pool, { schema });
 
+// Lets the test setup know a real pool exists to close (see server/test-setup.ts).
+(globalThis as { __coldchainPoolOpen?: boolean }).__coldchainPoolOpen = true;
+
 /** Close the connection pool (tests, graceful shutdown). */
 export const closeDb = () => pool.end();

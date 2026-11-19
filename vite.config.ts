@@ -15,7 +15,8 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: "dist/spa",
   },
-  plugins: [react(), expressPlugin()],
+  // Vitest also runs in "serve" mode; keep the API (and its database pool) out of it.
+  plugins: [react(), ...(mode === "test" ? [] : [expressPlugin()])],
   test: {
     setupFiles: ["./server/test-setup.ts"],
     // API tests talk to a remote Postgres; allow for network latency.
