@@ -122,7 +122,7 @@ export function PalletDetail({
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="overflow-hidden rounded-xl bg-card shadow-sm lg:col-span-2">
-          <Table className="w-full text-sm">
+          <Table>
             <thead>
               <tr className="border-b border-border bg-muted text-xs text-muted-foreground">
                 <th className="px-4 py-3 text-left font-semibold">Product</th>

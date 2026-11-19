@@ -70,7 +70,7 @@ export function ReportView<T>({ title, subtitle, chart, rows, columns }: ReportV
 
       {showTable && (
         <div className="data-table-frame overflow-x-auto">
-          <Table className="w-full text-sm">
+          <Table>
             <thead>
               <tr className="border-b border-border bg-muted">
                 {columns.map((column) => (

@@ -451,7 +451,7 @@ export function FinanceLedger() {
 
   return (
     <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
         {/* Header */}
         <div className="mb-6">
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Expenses & Finance</h1>
@@ -708,7 +708,7 @@ export function FinanceLedger() {
 
             <Card className="overflow-hidden rounded-xl shadow-sm">
               <div className="overflow-x-auto scrollbar-visible">
-                <Table className="w-full text-sm">
+                <Table>
                   <thead>
                     <tr className="border-b border-border bg-navy-mid">
                       <th className="text-left py-3 px-4 font-semibold text-white">
@@ -782,7 +782,7 @@ export function FinanceLedger() {
 
             <Card className="overflow-hidden rounded-xl shadow-sm">
               <div className="overflow-x-auto scrollbar-visible">
-                <Table className="w-full text-sm">
+                <Table>
                   <thead>
                     <tr className="border-b border-border bg-navy-mid">
                       <th className="text-left py-3 px-4 font-semibold text-white">
@@ -870,7 +870,7 @@ export function FinanceLedger() {
 
             <Card className="overflow-hidden rounded-xl shadow-sm">
               <div className="overflow-x-auto scrollbar-visible">
-                <Table className="w-full text-sm">
+                <Table>
                   <thead>
                     <tr className="border-b border-border bg-navy-mid">
                       <th className="text-left py-3 px-4 font-semibold text-white">

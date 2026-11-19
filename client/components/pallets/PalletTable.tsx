@@ -30,7 +30,7 @@ export function PalletStatusBadge({ status }: { status: Pallet["status"] }) {
 export function PalletTable({ entries, onSelect }: PalletTableProps) {
   return (
     <div className="overflow-x-auto rounded-xl border border-border bg-card shadow-sm">
-      <Table className="w-full text-sm">
+      <Table>
         <thead>
           <tr className="border-b border-border bg-muted text-left text-xs text-muted-foreground">
             <th className="whitespace-nowrap px-4 py-3 font-semibold">Pallet</th>

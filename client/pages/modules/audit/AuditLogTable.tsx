@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { TruncatedText } from "@/components/ui/truncated-text";
 import { useMemo, useState } from "react";
 import { Check, Copy, Eye } from "lucide-react";
 import { AuditLog } from "@shared/api";
@@ -92,8 +93,8 @@ export function AuditLogTable({ logs, onView }: AuditLogTableProps) {
       />
 
       <div className="data-table-frame overflow-hidden">
-        <div className="overflow-x-auto text-xs md:text-sm">
-          <Table className="w-full">
+        <div className="overflow-x-auto">
+          <Table>
             <thead>
               <tr>
                 <SortableHeader label="Timestamp" sortKey="timestamp" sort={sort} onSort={setSort} />
@@ -130,7 +131,7 @@ export function AuditLogTable({ logs, onView }: AuditLogTableProps) {
                         {getActionLabel(log.action)}
                       </span>
                     </td>
-                    <td className="px-3 py-3 text-foreground">{describeLog(log)}</td>
+                    <td className="max-w-[28rem] px-3 py-3 text-foreground"><TruncatedText>{describeLog(log)}</TruncatedText></td>
                     <td className="px-3 py-3 capitalize text-foreground whitespace-nowrap">
                       {log.resource_type.replace(/_/g, " ")}
                     </td>

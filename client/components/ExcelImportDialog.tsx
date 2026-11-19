@@ -87,7 +87,7 @@ export function ExcelImportDialog({ title, columns, validateRow, onImport, onClo
                 <span>{validCount} valid · {invalidCount} with errors</span>
               </div>
               <div className="data-table-frame overflow-x-auto">
-                <Table className="w-full text-left text-xs">
+                <Table>
                   <thead className="bg-muted text-muted-foreground"><tr>{columns.map((column) => <th key={column.key} className="whitespace-nowrap px-3 py-2">{column.header}{column.required ? " *" : ""}</th>)}<th className="px-3 py-2">Validation</th></tr></thead>
                   <tbody>{rowErrors.slice(0, 30).map(({ row, errors: messages }) => (
                     <tr key={row.rowNumber} className="border-t border-border align-top">

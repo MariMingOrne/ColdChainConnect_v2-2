@@ -1,6 +1,7 @@
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
+import { TruncatedText } from "@/components/ui/truncated-text";
 
 const Table = React.forwardRef<
   HTMLTableElement,
@@ -84,13 +85,19 @@ TableHead.displayName = "TableHead";
 const TableCell = React.forwardRef<
   HTMLTableCellElement,
   React.TdHTMLAttributes<HTMLTableCellElement>
->(({ className, ...props }, ref) => (
-  <td
-    ref={ref}
-    className={cn("px-4 py-3 align-middle [&:has([role=checkbox])]:pr-0", className)}
-    {...props}
-  />
-));
+>(({ className, children, ...props }, ref) => {
+  // Plain text cells truncate with a tooltip; cells holding components (buttons, badges) are left alone.
+  const isPlainText = typeof children === "string" && children.length > 24 && !props.colSpan;
+  return (
+    <td
+      ref={ref}
+      className={cn("px-4 py-3 align-middle [&:has([role=checkbox])]:pr-0", isPlainText && "max-w-[20rem]", className)}
+      {...props}
+    >
+      {isPlainText ? <TruncatedText>{children}</TruncatedText> : children}
+    </td>
+  );
+});
 TableCell.displayName = "TableCell";
 
 const TableCaption = React.forwardRef<
