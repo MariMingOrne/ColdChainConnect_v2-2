@@ -12,6 +12,27 @@ import { logAction } from "../middleware/audit-logger";
 // /payment call. A confirmation with nothing collected leaves it null, and a receipt row exists
 // for every confirmed stop whether or not money changed hands, so the receipt alone proves nothing.
 
+/** The user behind the latest confirm / record_payment audit entry of each delivery item. */
+async function latestRecorders(itemIds: string[]): Promise<Map<string, string>> {
+  const recorderByItem = new Map<string, string>();
+  if (itemIds.length === 0) return recorderByItem;
+  const entries = await db
+    .select({ resource_id: audit_logs.resource_id, user_id: audit_logs.user_id })
+    .from(audit_logs)
+    .where(
+      and(
+        eq(audit_logs.resource_type, "delivery_item"),
+        inArray(audit_logs.action, ["confirm", "record_payment"]),
+        inArray(audit_logs.resource_id, itemIds),
+      ),
+    )
+    .orderBy(desc(audit_logs.created_at));
+  for (const entry of entries) {
+    if (entry.resource_id && !recorderByItem.has(entry.resource_id)) recorderByItem.set(entry.resource_id, entry.user_id);
+  }
+  return recorderByItem;
+}
+
 // ─── GET /api/payments/unverified ─────────────────────────────────────────────
 
 export const listUnverifiedPayments: RequestHandler = async (_req: AuthRequest, res) => {
@@ -42,23 +63,7 @@ export const listUnverifiedPayments: RequestHandler = async (_req: AuthRequest, 
     // Who recorded the payment: the latest confirm / record_payment entry for the stop, falling
     // back to the receipt's confirmed_by when the audit log has nothing.
     const itemIds = rows.map((row) => row.receipt.delivery_item_id);
-    const recorderByItem = new Map<string, string>();
-    if (itemIds.length > 0) {
-      const entries = await db
-        .select({ resource_id: audit_logs.resource_id, user_id: audit_logs.user_id })
-        .from(audit_logs)
-        .where(
-          and(
-            eq(audit_logs.resource_type, "delivery_item"),
-            inArray(audit_logs.action, ["confirm", "record_payment"]),
-            inArray(audit_logs.resource_id, itemIds),
-          ),
-        )
-        .orderBy(desc(audit_logs.created_at));
-      for (const entry of entries) {
-        if (entry.resource_id && !recorderByItem.has(entry.resource_id)) recorderByItem.set(entry.resource_id, entry.user_id);
-      }
-    }
+    const recorderByItem = await latestRecorders(itemIds);
     const recorderIds = rows
       .map((row) => recorderByItem.get(row.receipt.delivery_item_id) ?? row.receipt.confirmed_by)
       .filter((userId): userId is string => Boolean(userId));
@@ -115,6 +120,14 @@ export const verifyReceiptPayment: RequestHandler = async (req: AuthRequest, res
     }
     if (!existing.payment_method) {
       return res.status(409).json({ error: "No payment has been recorded for this receipt" });
+    }
+
+    // Separation of duties: whoever recorded the payment (same lookup as the unverified list) cannot
+    // also verify it. This means a solo admin cannot verify payments they recorded themselves.
+    const itemId = existing.receipt.delivery_item_id;
+    const recordedBy = (await latestRecorders([itemId])).get(itemId) ?? existing.receipt.confirmed_by;
+    if (recordedBy && recordedBy === req.user.userId) {
+      return res.status(409).json({ error: "You recorded this payment, so someone else must verify it" });
     }
 
     // Conditional on still being unverified, so two simultaneous verifications cannot both win.

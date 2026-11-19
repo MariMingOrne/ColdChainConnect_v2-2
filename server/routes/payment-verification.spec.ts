@@ -206,6 +206,41 @@ describe("POST /api/receipts/:id/verify", () => {
     expect(results.map((r) => r.status).sort()).toEqual([200, 409]);
   });
 
+  describe("separation of duties", () => {
+    // A stop whose payment was recorded by the accounting user, with no audit entry: the receipt's
+    // confirmed_by is the recorder, as in the unverified list.
+    async function addStop(id: string, recordedBy: string, audit?: { user: string }) {
+      await db.insert(bookings).values({ id: `book-${id}`, customer_id: "cust-1", created_by: seeded.admin.id });
+      await db.insert(invoices).values({ id: `inv-${id}`, booking_id: `book-${id}`, agent_id: seeded.admin.id, receipt_number: `INV-${id}`, customer_name: "Store One", total_amount: "100.00" });
+      await db.insert(delivery_items).values({ id: `di-${id}`, delivery_id: "del-1", invoice_id: `inv-${id}`, destination_customer_id: "cust-1", status: "completed", is_paid: true, payment_method: "cash" });
+      await db.insert(receipts).values({ id: `rec-${id}`, receipt_number: `OR-${id}`, delivery_item_id: `di-${id}`, customer_id: "cust-1", truck_id: "truck-1", invoice_id: `inv-${id}`, confirmed_by: recordedBy });
+      if (audit) {
+        await db.insert(audit_logs).values({ id: `log-${id}`, user_id: audit.user, action: "record_payment", resource_type: "delivery_item", resource_id: `di-${id}` });
+      }
+    }
+
+    it("answers 409 when the verifier is the user who recorded the payment", async () => {
+      await addStop("self", seeded.staff.id);
+      const { status, body } = await run(verify, asAccounting({ id: "rec-self" }));
+      expect(status).toBe(409);
+      expect(body).toMatchObject({ error: expect.stringContaining("recorded") });
+      const [row] = await db.select().from(receipts).where(eq(receipts.id, "rec-self"));
+      expect(row.payment_verified_at).toBeNull();
+    });
+
+    it("uses the latest audit entry as the recorder, like the unverified list", async () => {
+      // Confirmed by the driver, but the accounting user took the later payment.
+      await addStop("later", seeded.driver.id, { user: seeded.staff.id });
+      expect((await run(verify, asAccounting({ id: "rec-later" }))).status).toBe(409);
+    });
+
+    it("lets a different user verify the same receipt", async () => {
+      const { status, body } = await run(verify, reqFor("admin", seeded.admin.id, { id: "rec-self" }));
+      expect(status).toBe(200);
+      expect(body).toMatchObject({ payment_verified_by: seeded.admin.id });
+    });
+  });
+
   it("denies staff without accounting, agents and drivers", async () => {
     for (const req of [
       reqFor("staff", "plain-staff", { id: "rec-unpaid" }, []),
