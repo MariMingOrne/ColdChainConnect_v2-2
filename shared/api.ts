@@ -369,7 +369,11 @@ export interface DriverScheduleRun {
 
 export interface DriverScheduleStop {
   id: string;
+  delivery_id: string;
   status: "pending" | "in_transit" | "completed";
+  is_paid: boolean | null;
+  /** Balance still owed on this stop after any payment taken at confirmation. */
+  outstanding_amount: number;
   destination_customer: {
     id: string;
     store_name: string;

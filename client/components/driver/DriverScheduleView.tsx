@@ -24,6 +24,8 @@ export function DriverScheduleView({ driverId }: { driverId?: string }) {
   const [schedule, setSchedule] = useState<DriverSchedule | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Bumped after a stop is confirmed or paid so the effect below fetches the schedule again.
+  const [reloadKey, setReloadKey] = useState(0);
 
   useEffect(() => {
     if (!token) return;
@@ -50,7 +52,7 @@ export function DriverScheduleView({ driverId }: { driverId?: string }) {
         setIsLoading(false);
         finishPostLoginLoading();
       });
-  }, [token, date, driverId]);
+  }, [token, date, driverId, reloadKey]);
 
   const stops: DriverScheduleStop[] = schedule?.deliveries.flatMap((run) => run.delivery_items) ?? [];
 
@@ -94,7 +96,7 @@ export function DriverScheduleView({ driverId }: { driverId?: string }) {
           ) : (
             <div className="space-y-3">
               {stops.map((stop, index) => (
-                <DriverStopCard key={stop.id} stop={stop} index={index + 1} />
+                <DriverStopCard key={stop.id} stop={stop} index={index + 1} onChanged={() => setReloadKey((key) => key + 1)} />
               ))}
             </div>
           )}
