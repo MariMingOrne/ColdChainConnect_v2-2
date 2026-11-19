@@ -1,8 +1,8 @@
 import { randomUUID } from "crypto";
-import { eq } from "drizzle-orm";
+import { and, asc, eq, lt } from "drizzle-orm";
 import { totalDiscountRate } from "../../shared/api";
 import { db } from "../db";
-import { agents, bookings, invoices, invoice_items } from "../db/schema";
+import { accounts_receivable, agents, bookings, invoices, invoice_credit_applications, invoice_items } from "../db/schema";
 
 function generateReceiptNumber(): string {
   const num = Math.floor(Math.random() * 99999).toString().padStart(6, "0");
@@ -75,14 +75,39 @@ export async function createInvoiceAfterPicking(bookingId: string) {
     });
     const gross = lineItems.reduce((sum, item) => sum + item.amount, 0);
     const discountAmount = gross * discountRate;
+    const totalAmountCents = Math.round((gross - discountAmount) * 100);
     const invoiceId = randomUUID();
+    const availableCredits = await tx.select().from(accounts_receivable)
+      .where(and(
+        eq(accounts_receivable.customer_id, booking.customer_id),
+        eq(accounts_receivable.credit_type, "overpayment"),
+        eq(accounts_receivable.status, "outstanding"),
+        lt(accounts_receivable.amount_due, "0"),
+      ))
+      .orderBy(asc(accounts_receivable.created_at), asc(accounts_receivable.id))
+      .for("update");
+    let remainingInvoiceCents = totalAmountCents;
+    let creditAppliedCents = 0;
+    const creditApplications: Array<{ creditId: string; amountCents: number; remainingCreditCents: number }> = [];
+    for (const credit of availableCredits) {
+      if (remainingInvoiceCents === 0) break;
+      const availableCents = Math.abs(Math.round(Number(credit.amount_due) * 100));
+      const amountCents = Math.min(availableCents, remainingInvoiceCents);
+      creditAppliedCents += amountCents;
+      remainingInvoiceCents -= amountCents;
+      creditApplications.push({
+        creditId: credit.id,
+        amountCents,
+        remainingCreditCents: availableCents - amountCents,
+      });
+    }
 
     await tx.insert(invoices).values({
       id: invoiceId,
       booking_id: bookingId,
       agent_id: booking.created_by,
-      status: "issued",
-      payment_status: "unpaid",
+      status: remainingInvoiceCents === 0 ? "paid" : "issued",
+      payment_status: creditAppliedCents === 0 ? "unpaid" : remainingInvoiceCents === 0 ? "paid" : "partial",
       receipt_number: generateReceiptNumber(),
       customer_name: booking.customer?.store_name ?? "",
       customer_address: booking.customer?.location ?? "",
@@ -90,9 +115,24 @@ export async function createInvoiceAfterPicking(bookingId: string) {
       discount_rate: String(discountRate),
       gross_amount: gross.toFixed(2),
       discount_amount: discountAmount.toFixed(2),
-      total_amount: (gross - discountAmount).toFixed(2),
+      total_amount: (totalAmountCents / 100).toFixed(2),
+      credit_applied_amount: (creditAppliedCents / 100).toFixed(2),
       prepared_by: preparedBy,
     });
+
+    for (const application of creditApplications) {
+      await tx.update(accounts_receivable).set({
+        amount_due: (-application.remainingCreditCents / 100).toFixed(2),
+        status: application.remainingCreditCents === 0 ? "paid" : "outstanding",
+        updated_at: new Date(),
+      }).where(eq(accounts_receivable.id, application.creditId));
+      await tx.insert(invoice_credit_applications).values({
+        id: randomUUID(),
+        credit_ar_id: application.creditId,
+        invoice_id: invoiceId,
+        amount_applied: (application.amountCents / 100).toFixed(2),
+      });
+    }
 
     if (lineItems.length > 0) {
       await tx.insert(invoice_items).values(lineItems.map((item) => ({

@@ -43,7 +43,7 @@ beforeAll(async () => {
   ]);
   await db.insert(deliveries).values({ id: "del-1", truck_id: "truck-1" });
 
-  const ids = ["full", "partial", "unpaid", "verified"];
+  const ids = ["full", "partial", "unpaid", "verified", "overpaid"];
   await db.insert(bookings).values(ids.map((id) => ({ id: `book-${id}`, customer_id: "cust-1", created_by: seeded.admin.id })));
   await db.insert(invoices).values(
     ids.map((id) => ({
@@ -61,6 +61,7 @@ beforeAll(async () => {
     { id: "di-partial", delivery_id: "del-1", invoice_id: "inv-partial", destination_customer_id: "cust-2", ...paid },
     { id: "di-unpaid", delivery_id: "del-1", invoice_id: "inv-unpaid", destination_customer_id: "cust-1", status: "completed" },
     { id: "di-verified", delivery_id: "del-1", invoice_id: "inv-verified", destination_customer_id: "cust-1", is_paid: true, ...paid },
+    { id: "di-overpaid", delivery_id: "del-1", invoice_id: "inv-overpaid", destination_customer_id: "cust-1", is_paid: true, ...paid },
   ]);
   await db.insert(receipts).values(
     ids.map((id) => ({
@@ -71,6 +72,7 @@ beforeAll(async () => {
       truck_id: "truck-1",
       invoice_id: `inv-${id}`,
       confirmed_by: seeded.driver.id,
+      cash_collected_amount: id === "partial" ? "60.00" : id === "overpaid" ? "120.00" : id === "unpaid" ? "0.00" : "100.00",
     })),
   );
   await db
@@ -135,7 +137,7 @@ describe("GET /api/payments/unverified", () => {
   it("lists receipts with a recorded payment that is not yet verified", async () => {
     const { status, body } = await run(list, asAccounting());
     expect(status).toBe(200);
-    expect((body as Row[]).map((r) => r.id).sort()).toEqual(["rec-full", "rec-partial"]);
+    expect((body as Row[]).map((r) => r.id).sort()).toEqual(["rec-full", "rec-overpaid", "rec-partial"]);
   });
 
   it("shows what accounting needs to check a row", async () => {
@@ -151,8 +153,7 @@ describe("GET /api/payments/unverified", () => {
       recorded_by_username: "test_driver",
       recorded_by_role: "driver",
     });
-    // The collected amount is the invoice total minus what is still outstanding; the later
-    // record_payment entry wins over the original confirmation.
+    // The later payment is included in the receipt's accumulated cash collected amount.
     expect(rows.find((r) => r.id === "rec-partial")).toMatchObject({
       customer_name: "Store Two",
       amount: "60.00",
@@ -160,6 +161,7 @@ describe("GET /api/payments/unverified", () => {
       recorded_by_username: "test_agent",
       recorded_by_role: "agent",
     });
+    expect(rows.find((r) => r.id === "rec-overpaid")).toMatchObject({ amount: "120.00" });
   });
 
   it("is open to admin and denied to staff without accounting, agents and drivers", async () => {
@@ -189,6 +191,7 @@ describe("POST /api/receipts/:id/verify", () => {
   });
 
   it("removes verified rows from the unverified list", async () => {
+    await run(verify, asAccounting({ id: "rec-overpaid" }));
     const { body } = await run(list, asAccounting());
     expect(body).toEqual([]);
   });

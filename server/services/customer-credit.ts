@@ -57,12 +57,12 @@ export async function loadCustomerCredit(
     const unpaidInvoices = await db.query.invoices.findMany({
       where: and(
         inArray(invoices.booking_id, customerBookings.map((b) => b.id)),
-        eq(invoices.payment_status, "unpaid")
+        inArray(invoices.payment_status, ["unpaid", "partial"])
       ),
     });
     for (const invoice of unpaidInvoices) {
       if (deliveredInvoiceIds.has(invoice.id)) continue;
-      undeliveredInvoiceTotal += Number(invoice.total_amount ?? 0);
+      undeliveredInvoiceTotal += Math.max(0, Number(invoice.total_amount ?? 0) - Number(invoice.credit_applied_amount ?? 0));
     }
   }
 

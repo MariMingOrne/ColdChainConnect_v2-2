@@ -95,6 +95,24 @@ describe("DriverStopCard actions", () => {
     });
   });
 
+  it("shows the excess as customer credit and sends the full collected amount", async () => {
+    render(<DriverStopCard stop={stop()} index={1} onChanged={() => {}} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Confirm delivery" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Paid" }));
+    fireEvent.change(within(dialog).getByLabelText("Amount collected (₱)"), { target: { value: "300" } });
+    expect(within(dialog).getByText("Credit for next order: ₱50.00")).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Confirm delivery" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({
+      is_paid: true,
+      payment_amount: 300,
+      payment_method: "cash",
+    });
+  });
+
   it("shows the server's reason inside the modal and does not refresh when confirming fails", async () => {
     fetchMock.mockResolvedValue({
       ok: false,
@@ -129,6 +147,36 @@ describe("DriverStopCard actions", () => {
     expect(init.headers.Authorization).toBe("Bearer driver-token");
     expect(JSON.parse(init.body)).toEqual({ payment_amount: 100, payment_method: "cash", payment_reference: "" });
     await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
+  });
+
+  it("shows credit when a later payment exceeds the outstanding balance", async () => {
+    render(<DriverStopCard stop={stop({ status: "completed", outstanding_amount: 100 })} index={1} onChanged={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: "Record payment" }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.change(within(dialog).getByLabelText("Amount collected (₱)"), { target: { value: "115" } });
+    expect(within(dialog).getByText("Credit for next order: ₱15.00")).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save payment" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ payment_amount: 115, payment_method: "cash", payment_reference: "" });
+  });
+
+  it("confirms an order that is fully covered by existing credit without collecting cash", async () => {
+    render(<DriverStopCard stop={stop({ invoice: {
+      id: "inv-credit",
+      receipt_number: "INV-CREDIT",
+      total_amount: "250.00",
+      credit_applied_amount: "250.00",
+      payment_status: "paid",
+      invoice_items: [],
+    } })} index={1} onChanged={() => {}} />);
+    fireEvent.click(screen.getByRole("button", { name: "Confirm delivery" }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/covered by Corner Store's available credit/)).toBeTruthy();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Confirm delivery" }));
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ is_paid: true, payment_amount: 0 });
   });
 
   it("offers no action on a stop that is delivered and paid", () => {

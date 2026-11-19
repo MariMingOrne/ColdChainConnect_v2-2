@@ -39,6 +39,12 @@ export const listReceipts: RequestHandler = async (req: AuthRequest, res) => {
   }
 };
 
+class PaymentConflict extends Error {
+  constructor(public status: number, message: string) {
+    super(message);
+  }
+}
+
 // ─── POST /api/deliveries/:id/items/:itemId/confirm ───────────────────────────
 // Called by the mobile app (or the admin UI) to confirm a delivery stop.
 // Side-effects:
@@ -90,21 +96,23 @@ export const confirmDeliveryItem: RequestHandler = async (
       return res.status(404).json({ error: "Invoice not found" });
     }
 
-    const invoiceTotal = Number(invoice.total_amount ?? invoice.gross_amount ?? 0);
-    const invoiceTotalCents = Math.round(invoiceTotal * 100);
+    const invoiceTotalCents = Math.round(Number(invoice.total_amount ?? invoice.gross_amount ?? 0) * 100);
+    const creditAppliedCents = Math.round(Number(invoice.credit_applied_amount ?? 0) * 100);
+    const amountDueCents = Math.max(0, invoiceTotalCents - creditAppliedCents);
     const collectedAmount = payment_amount === undefined
-      ? (is_paid ? invoiceTotal : 0)
+      ? (is_paid ? amountDueCents / 100 : 0)
       : Number(payment_amount);
 
-    if (!Number.isFinite(collectedAmount) || collectedAmount < 0 || Math.round(collectedAmount * 100) > invoiceTotalCents) {
-      return res.status(400).json({ error: "Payment amount must be between zero and the invoice total" });
+    if (!Number.isFinite(collectedAmount) || collectedAmount < 0) {
+      return res.status(400).json({ error: "Payment amount must be zero or greater" });
     }
     if (collectedAmount > 0 && !payment_method) {
       return res.status(400).json({ error: "Payment method is required when recording a payment" });
     }
 
     const collectedCents = Math.round(collectedAmount * 100);
-    const remainingCents = invoiceTotalCents - collectedCents;
+    const remainingCents = Math.max(0, amountDueCents - collectedCents);
+    const overpaidCents = Math.max(0, collectedCents - amountDueCents);
     const isFullyPaid = remainingCents === 0;
 
     // 3. Load the parent delivery to get the truck_id
@@ -156,57 +164,76 @@ export const confirmDeliveryItem: RequestHandler = async (
 
     const receiptId = randomUUID();
 
-    // 5. Mark delivery item as completed with payment info
-    await db
-      .update(delivery_items)
-      .set({
-        status: "completed",
-        completed_at: now,
-        receipt_number: receiptNumber,
-        is_paid: isFullyPaid,
-        payment_method: collectedCents > 0 ? payment_method : null,
-        payment_reference: collectedCents > 0 ? (payment_reference ?? null) : null,
-        paid_at: isFullyPaid ? now : null,
-        updated_at: now,
-      })
-      .where(eq(delivery_items.id, itemId));
+    let newReceipt;
+    try {
+      newReceipt = await db.transaction(async (tx) => {
+        const [lockedItem] = await tx.select({ status: delivery_items.status }).from(delivery_items)
+          .where(eq(delivery_items.id, itemId)).for("update");
+        if (!lockedItem) throw new PaymentConflict(404, "Delivery item not found");
+        if (lockedItem.status === "completed") throw new PaymentConflict(409, "Delivery item already confirmed");
 
-    // 6. Create the receipt record
-    // confirmed_by is always the authenticated user; a value in the request body is ignored.
-    const [newReceipt] = await db.insert(receipts).values({
-      id: receiptId,
-      receipt_number: receiptNumber,
-      delivery_item_id: itemId,
-      customer_id: item.destination_customer_id,
-      truck_id: delivery.truck_id,
-      invoice_id: item.invoice_id,
-      confirmed_by: req.user?.userId ?? null,
-      notes: notes ?? null,
-      payment_reference: collectedCents > 0 ? (payment_reference ?? null) : null,
-      confirmed_at: now,
-    }).returning();
-
-    if (remainingCents > 0) {
-      const arId = randomUUID();
-      await db.insert(accounts_receivable).values({
-        id: arId,
-        customer_id: item.destination_customer_id,
-        delivery_item_id: itemId,
-        invoice_id: item.invoice_id,
-        amount_due: (remainingCents / 100).toFixed(2),
-        status: "outstanding",
-        notes: `Delivery confirmed on ${now.toISOString()}. ${collectedCents > 0 ? `Partial payment of ${(collectedCents / 100).toFixed(2)} received.` : "Payment pending."}`,
-      });
-    }
-
-    if (isFullyPaid || collectedCents > 0) {
-      await db
-        .update(invoices)
-        .set({
-          ...(isFullyPaid ? { status: "paid" as const, payment_status: "paid" } : { payment_status: "partial" }),
+        await tx.update(delivery_items).set({
+          status: "completed",
+          completed_at: now,
+          receipt_number: receiptNumber,
+          is_paid: isFullyPaid,
+          payment_method: collectedCents > 0 ? payment_method : null,
+          payment_reference: collectedCents > 0 ? (payment_reference ?? null) : null,
+          paid_at: isFullyPaid ? now : null,
           updated_at: now,
-        })
-        .where(eq(invoices.id, item.invoice_id));
+        }).where(eq(delivery_items.id, itemId));
+
+        const [createdReceipt] = await tx.insert(receipts).values({
+          id: receiptId,
+          receipt_number: receiptNumber,
+          delivery_item_id: itemId,
+          customer_id: item.destination_customer_id,
+          truck_id: delivery.truck_id,
+          invoice_id: item.invoice_id,
+          confirmed_by: req.user?.userId ?? null,
+          notes: notes ?? null,
+          payment_reference: collectedCents > 0 ? (payment_reference ?? null) : null,
+          cash_collected_amount: (collectedCents / 100).toFixed(2),
+          confirmed_at: now,
+        }).returning();
+
+        if (remainingCents > 0) {
+          await tx.insert(accounts_receivable).values({
+            id: randomUUID(),
+            customer_id: item.destination_customer_id,
+            delivery_item_id: itemId,
+            invoice_id: item.invoice_id,
+            amount_due: (remainingCents / 100).toFixed(2),
+            status: "outstanding",
+            notes: `Delivery confirmed on ${now.toISOString()}. ${collectedCents > 0 ? `Partial payment of ${(collectedCents / 100).toFixed(2)} received.` : "Payment pending."}`,
+          });
+        }
+
+        if (overpaidCents > 0) {
+          await tx.insert(accounts_receivable).values({
+            id: randomUUID(),
+            customer_id: item.destination_customer_id,
+            delivery_item_id: null,
+            invoice_id: item.invoice_id,
+            amount_due: (-overpaidCents / 100).toFixed(2),
+            credit_type: "overpayment",
+            status: "outstanding",
+            notes: `Delivery overpayment on ${receiptNumber}; available for a future order.`,
+          });
+        }
+
+        if (isFullyPaid || collectedCents > 0) {
+          await tx.update(invoices).set({
+            ...(isFullyPaid ? { status: "paid" as const, payment_status: "paid" } : { payment_status: "partial" }),
+            updated_at: now,
+          }).where(eq(invoices.id, item.invoice_id));
+        }
+
+        return createdReceipt;
+      });
+    } catch (error) {
+      if (error instanceof PaymentConflict) return res.status(error.status).json({ error: error.message });
+      throw error;
     }
 
     // 9. Check if all items in the delivery are completed → mark delivery done
@@ -260,13 +287,6 @@ export const confirmDeliveryItem: RequestHandler = async (
 //   1. Sets delivery_item.is_paid = true with payment method, reference and paid_at
 //   2. Marks the outstanding accounts_receivable entry for this stop as paid
 //   3. Sets invoice.status = "paid", payment_status = "paid"
-
-/** A business-rule rejection raised inside the payment transaction. */
-class PaymentConflict extends Error {
-  constructor(public status: number, message: string) {
-    super(message);
-  }
-}
 
 export const recordDeliveryItemPayment: RequestHandler = async (
   req: AuthRequest,
@@ -332,7 +352,7 @@ export const recordDeliveryItemPayment: RequestHandler = async (
       return res.status(403).json({ error: "Not authorized to record payment for this delivery" });
     }
 
-    let result: { paymentCents: number; remainingCents: number; isFullyPaid: boolean };
+    let result: { paymentCents: number; remainingCents: number; overpaidCents: number; isFullyPaid: boolean };
     try {
       // One transaction with the AR row locked: two simultaneous submissions
       // (double tap, agent + admin) cannot both spend the same balance, and a
@@ -349,12 +369,18 @@ export const recordDeliveryItemPayment: RequestHandler = async (
 
         const paymentCents = Math.round(Number(payment_amount) * 100);
         const outstandingCents = Math.round(Number(outstanding.amount_due) * 100);
-        if (paymentCents <= 0 || paymentCents > outstandingCents) {
-          throw new PaymentConflict(400, "Payment amount must be greater than zero and no more than the outstanding balance");
+        if (paymentCents <= 0) {
+          throw new PaymentConflict(400, "Payment amount must be greater than zero");
         }
-        const remainingCents = outstandingCents - paymentCents;
+        const remainingCents = Math.max(0, outstandingCents - paymentCents);
+        const overpaidCents = Math.max(0, paymentCents - outstandingCents);
         const isFullyPaid = remainingCents === 0;
         const now = new Date();
+
+        const [existingReceipt] = await tx.select().from(receipts)
+          .where(eq(receipts.delivery_item_id, itemId)).limit(1).for("update");
+        if (!existingReceipt) throw new PaymentConflict(409, "Receipt not found for this delivery item");
+        const totalCollectedCents = Math.round(Number(existingReceipt.cash_collected_amount) * 100) + paymentCents;
 
         await tx.update(delivery_items).set({
           is_paid: isFullyPaid,
@@ -367,6 +393,7 @@ export const recordDeliveryItemPayment: RequestHandler = async (
         // A changed payment must be checked again, so a verified receipt returns to the accounting queue.
         await tx.update(receipts).set({
           payment_reference: payment_reference ?? null,
+          cash_collected_amount: (totalCollectedCents / 100).toFixed(2),
           payment_verified_by: null,
           payment_verified_at: null,
         }).where(eq(receipts.delivery_item_id, itemId));
@@ -377,18 +404,31 @@ export const recordDeliveryItemPayment: RequestHandler = async (
           updated_at: now,
         }).where(eq(accounts_receivable.id, outstanding.id));
 
+        if (overpaidCents > 0) {
+          await tx.insert(accounts_receivable).values({
+            id: randomUUID(),
+            customer_id: item.destination_customer_id,
+            delivery_item_id: null,
+            invoice_id: item.invoice_id,
+            amount_due: (-overpaidCents / 100).toFixed(2),
+            credit_type: "overpayment",
+            status: "outstanding",
+            notes: `Delivery overpayment on ${existingReceipt.receipt_number}; available for a future order.`,
+          });
+        }
+
         await tx.update(invoices).set({
           ...(isFullyPaid ? { status: "paid" as const, payment_status: "paid" } : { payment_status: "partial" }),
           updated_at: now,
         }).where(eq(invoices.id, item.invoice_id));
 
-        return { paymentCents, remainingCents, isFullyPaid };
+        return { paymentCents, remainingCents, overpaidCents, isFullyPaid };
       });
     } catch (error) {
       if (error instanceof PaymentConflict) return res.status(error.status).json({ error: error.message });
       throw error;
     }
-    const { paymentCents, remainingCents, isFullyPaid } = result;
+    const { paymentCents, remainingCents, overpaidCents, isFullyPaid } = result;
 
     if (req.user) {
       await logAction(
@@ -397,7 +437,7 @@ export const recordDeliveryItemPayment: RequestHandler = async (
         "delivery_item",
         itemId,
         { is_paid: false },
-        { is_paid: isFullyPaid, payment_amount: (paymentCents / 100).toFixed(2), remaining_amount: (remainingCents / 100).toFixed(2), payment_method }
+        { is_paid: isFullyPaid, payment_amount: (paymentCents / 100).toFixed(2), remaining_amount: (remainingCents / 100).toFixed(2), overpayment_credit: (overpaidCents / 100).toFixed(2), payment_method }
       );
     }
 

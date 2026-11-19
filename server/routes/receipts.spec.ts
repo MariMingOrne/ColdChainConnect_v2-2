@@ -37,7 +37,7 @@ beforeAll(async () => {
   await db.insert(customers).values({ id: "cust-1", store_name: "Store", location: "Somewhere" });
   await db.insert(deliveries).values({ id: "del-1", truck_id: "truck-a", driver_id: "drv-a", agent_id: "agt-a" });
 
-  const stops = ["drv-confirm", "agt-confirm", "partial"];
+  const stops = ["drv-confirm", "agt-confirm", "partial", "overpay-confirm", "overpay-later"];
   await db.insert(bookings).values(stops.map((id) => ({ id: `book-${id}`, customer_id: "cust-1", created_by: seeded.admin.id })));
   await db.insert(invoices).values(
     stops.map((id) => ({ id: `inv-${id}`, booking_id: `book-${id}`, agent_id: seeded.admin.id, total_amount: "100.00" })),
@@ -104,6 +104,45 @@ describe("receipts.confirmed_by", () => {
   });
 });
 
+describe("receipt overpayments", () => {
+  it("creates customer credit when the collected amount exceeds the invoice at confirmation", async () => {
+    const { status } = await run(confirmDeliveryItem, seeded.driver.id, "driver", { id: "del-1", itemId: "di-overpay-confirm" }, {
+      is_paid: true,
+      payment_amount: 120,
+      payment_method: "cash",
+    });
+    expect(status).toBe(201);
+
+    const [receipt] = await db.select().from(receipts).where(eq(receipts.delivery_item_id, "di-overpay-confirm"));
+    const credits = await db.select().from(accounts_receivable).where(eq(accounts_receivable.credit_type, "overpayment"));
+    expect(receipt.cash_collected_amount).toBe("120.00");
+    expect(credits).toContainEqual(expect.objectContaining({
+      customer_id: "cust-1",
+      invoice_id: "inv-overpay-confirm",
+      amount_due: "-20.00",
+      status: "outstanding",
+    }));
+  });
+
+  it("creates customer credit when a later payment exceeds the remaining balance", async () => {
+    await run(confirmDeliveryItem, seeded.driver.id, "driver", { id: "del-1", itemId: "di-overpay-later" }, { is_paid: false });
+    const { status } = await run(recordDeliveryItemPayment, seeded.agent.id, "agent", { id: "del-1", itemId: "di-overpay-later" }, {
+      payment_amount: 120,
+      payment_method: "cash",
+    });
+    expect(status).toBe(200);
+
+    const [receipt] = await db.select().from(receipts).where(eq(receipts.delivery_item_id, "di-overpay-later"));
+    const credit = await db.select().from(accounts_receivable).where(eq(accounts_receivable.invoice_id, "inv-overpay-later"));
+    expect(receipt.cash_collected_amount).toBe("120.00");
+    expect(credit).toContainEqual(expect.objectContaining({
+      credit_type: "overpayment",
+      amount_due: "-20.00",
+      status: "outstanding",
+    }));
+  });
+});
+
 describe("a payment recorded after verification", () => {
   it("sends the receipt back to the accounting queue", async () => {
     const [before] = await db.select().from(receipts).where(eq(receipts.delivery_item_id, "di-partial"));
@@ -126,6 +165,7 @@ describe("a payment recorded after verification", () => {
     expect(after.payment_verified_by).toBeNull();
     expect(after.payment_verified_at).toBeNull();
     expect(after.payment_reference).toBe("REF-2");
+    expect(after.cash_collected_amount).toBe("50.00");
     const [ar] = await db.select().from(accounts_receivable).where(eq(accounts_receivable.delivery_item_id, "di-partial"));
     expect(ar.amount_due).toBe("50.00");
   });

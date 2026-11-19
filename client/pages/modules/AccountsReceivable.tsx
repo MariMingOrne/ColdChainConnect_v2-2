@@ -247,7 +247,7 @@ export function AccountsReceivable() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="page-title">Accounts Receivable</h1>
-          <p className="page-subtitle">Track customer balances and unpaid deliveries</p>
+          <p className="page-subtitle">Track customer balances, unpaid deliveries, and available credits</p>
         </div>
       </div>
 
@@ -341,7 +341,7 @@ export function AccountsReceivable() {
                 <TableCell colSpan={(canUpdateReceivable ? 9 : 8) + (activeTab !== "paid" ? 1 : 0)} className="text-center py-10 text-muted-foreground text-sm">
                   {activeTab === "outstanding" && "No outstanding balances — great job! 🎉"}
                   {activeTab === "paid"        && "No paid records yet."}
-                  {activeTab === "credits"     && "No return credits yet."}
+                  {activeTab === "credits"     && "No customer credits yet."}
                   {activeTab === "all"         && (arRecords.length === 0 ? "No AR records yet." : "No records match your search.")}
                 </TableCell>
               </TableRow>

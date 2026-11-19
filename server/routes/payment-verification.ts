@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { and, asc, desc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import { db } from "../db";
-import { accounts_receivable, audit_logs, customers, delivery_items, invoices, receipts, users } from "../db/schema";
+import { audit_logs, customers, delivery_items, invoices, receipts, users } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
 import { paymentNeedsClearance } from "../../shared/api";
@@ -47,19 +47,12 @@ export const listUnverifiedPayments: RequestHandler = async (_req: AuthRequest, 
         receipt: receipts,
         customer_name: customers.store_name,
         invoice_receipt_number: invoices.receipt_number,
-        invoice_total: invoices.total_amount,
-        invoice_gross: invoices.gross_amount,
         payment_method: delivery_items.payment_method,
-        outstanding: accounts_receivable.amount_due,
       })
       .from(receipts)
       .innerJoin(delivery_items, eq(delivery_items.id, receipts.delivery_item_id))
       .innerJoin(customers, eq(customers.id, receipts.customer_id))
       .innerJoin(invoices, eq(invoices.id, receipts.invoice_id))
-      .leftJoin(
-        accounts_receivable,
-        and(eq(accounts_receivable.delivery_item_id, receipts.delivery_item_id), eq(accounts_receivable.status, "outstanding")),
-      )
       .where(and(isNull(receipts.payment_verified_at), isNotNull(delivery_items.payment_method)))
       .orderBy(asc(receipts.confirmed_at));
 
@@ -83,15 +76,12 @@ export const listUnverifiedPayments: RequestHandler = async (_req: AuthRequest, 
       rows.map((row) => {
         const recordedBy = recorderByItem.get(row.receipt.delivery_item_id) ?? row.receipt.confirmed_by ?? null;
         const recorder = recordedBy ? recorderDetails.get(recordedBy) : undefined;
-        // Collected so far = invoice total minus the balance still outstanding on the stop.
-        const totalCents = Math.round(Number(row.invoice_total ?? row.invoice_gross ?? 0) * 100);
-        const outstandingCents = Math.round(Number(row.outstanding ?? 0) * 100);
         return {
           ...row.receipt,
           customer_name: row.customer_name,
           invoice_receipt_number: row.invoice_receipt_number,
           payment_method: row.payment_method,
-          amount: (Math.max(totalCents - outstandingCents, 0) / 100).toFixed(2),
+          amount: Number(row.receipt.cash_collected_amount).toFixed(2),
           recorded_by: recordedBy,
           recorded_by_username: recorder?.username ?? null,
           recorded_by_role: recorder?.role ?? null,
