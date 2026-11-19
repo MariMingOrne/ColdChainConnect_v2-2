@@ -56,10 +56,10 @@ beforeAll(async () => {
   ]);
 });
 
-async function counts(role: "admin" | "staff", modulePermissions: string[] | undefined, keys: string[]) {
+async function counts(role: "admin" | "staff", modulePermissions: string[] | undefined, keys: string[], userId = "u") {
   let body: Record<string, number> = {};
   const query = Object.fromEntries(keys.map((key) => [key, SINCE]));
-  const req = { user: { userId: "u", username: "u", role }, modulePermissions, query } as unknown as AuthRequest;
+  const req = { user: { userId, username: userId, role }, modulePermissions, query } as unknown as AuthRequest;
   const res = { json: (payload: Record<string, number>) => (body = payload), status: () => res } as unknown as Response;
   await getUnseenCounts(req as Request, res, () => {});
   return body;
@@ -74,6 +74,12 @@ describe("GET /api/unseen accounting tabs", () => {
   it("counts expenses created since last seen", async () => {
     const result = await counts("admin", undefined, ["payments", "expenses"]);
     expect(result.expenses).toBe(1);
+  });
+
+  it("does not count expenses the viewer submitted themselves", async () => {
+    // exp-new was submitted by the admin: it is news to everyone else, not to them.
+    expect((await counts("admin", undefined, ["expenses"], seeded.admin.id)).expenses).toBe(0);
+    expect((await counts("staff", ["accounting"], ["expenses"], seeded.staff.id)).expenses).toBe(1);
   });
 
   it("gives staff with the accounting module the same counts", async () => {

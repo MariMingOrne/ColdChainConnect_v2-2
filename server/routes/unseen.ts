@@ -7,7 +7,7 @@ import { accounts_receivable, agent_returns, bookings, customers, deliveries, de
 import type { AuthRequest } from "../middleware/auth";
 
 /** Sidebar tabs that show a "new" badge; each counts rows created after the viewer last opened the tab. */
-const SECTIONS: Record<string, { table: PgTable; column: PgColumn; module: ModulePermission; /** Extra condition on top of "created after the viewer last looked". */ where?: SQL }> = {
+const SECTIONS: Record<string, { table: PgTable; column: PgColumn; module: ModulePermission; /** Extra condition on top of "created after the viewer last looked"; may depend on the viewer. */ where?: SQL | ((viewerId: string | undefined) => SQL) }> = {
   orders: { table: bookings, column: bookings.created_at, module: "order-fulfillment" },
   receipts: { table: invoices, column: invoices.created_at, module: "order-fulfillment" },
   inventory: { table: inventory_batches, column: inventory_batches.created_at, module: "product-customer" },
@@ -22,7 +22,8 @@ const SECTIONS: Record<string, { table: PgTable; column: PgColumn; module: Modul
     module: "accounting",
     where: sql`${receipts.payment_verified_at} is null and exists (select 1 from ${delivery_items} where ${delivery_items.id} = ${receipts.delivery_item_id} and ${delivery_items.payment_method} is not null)`,
   },
-  expenses: { table: expenses, column: expenses.created_at, module: "accounting" },
+  // Expenses the viewer submitted themselves are not news to them.
+  expenses: { table: expenses, column: expenses.created_at, module: "accounting", where: (viewerId) => sql`${expenses.submitted_by} is distinct from ${viewerId ?? null}` },
 };
 
 /** GET /api/unseen?orders=<ISO>&receipts=<ISO>...: how many records each tab gained since the given time. One round trip to the database for all tabs. */
@@ -38,7 +39,8 @@ export const getUnseenCounts: RequestHandler = async (req, res) => {
       const since = typeof raw === "string" ? new Date(raw) : null;
       const allowed = user?.role === "admin" || permissions?.includes(section.module);
       if (!allowed || !since || Number.isNaN(since.getTime())) continue;
-      parts.push(sql`(select count(*)::int from ${section.table} where ${section.column} > ${since.toISOString()}::timestamp${section.where ? sql` and ${section.where}` : sql``}) as ${sql.identifier(key)}`);
+      const extra = typeof section.where === "function" ? section.where(user?.userId) : section.where;
+      parts.push(sql`(select count(*)::int from ${section.table} where ${section.column} > ${since.toISOString()}::timestamp${extra ? sql` and ${extra}` : sql``}) as ${sql.identifier(key)}`);
     }
     if (parts.length > 0) {
       const { rows } = await db.execute(sql`select ${sql.join(parts, sql`, `)}`);
