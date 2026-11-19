@@ -85,8 +85,8 @@ const ADMIN_ONLY_MUTATIONS: Action[] = [
 
 describe("can", () => {
   const actions: Action[] = [
-    "booking:approve", "invoice:markPaid", "payment:verify", "expense:submit",
-    "expense:approve", "expense:pay", "return:decide", "delivery:confirm",
+    "booking:approve", "payment:verify", "expense:submit",
+    "expense:approve", "expense:pay", "delivery:confirm",
     ...ADMIN_ONLY_MUTATIONS,
   ];
 
@@ -94,12 +94,14 @@ describe("can", () => {
     for (const action of actions) expect(can({ role: "admin" }, action)).toBe(true);
   });
 
-  it("denies agent invoice:markPaid", () => {
-    expect(can({ role: "agent" }, "invoice:markPaid")).toBe(false);
+  it("denies agents the accounting actions", () => {
+    for (const action of ["payment:verify", "expense:submit", "expense:pay"] as Action[]) {
+      expect(can({ role: "agent" }, action)).toBe(false);
+    }
   });
 
   it("gates accounting actions on the accounting module for staff", () => {
-    for (const action of ["payment:verify", "expense:submit", "expense:pay", "invoice:markPaid", "return:decide"] as Action[]) {
+    for (const action of ["payment:verify", "expense:submit", "expense:pay"] as Action[]) {
       expect(can({ role: "staff", module_permissions: ["accounting"] }, action)).toBe(true);
       expect(can({ role: "staff", module_permissions: ["order-fulfillment"] }, action)).toBe(false);
     }

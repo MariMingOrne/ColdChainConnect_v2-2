@@ -5,12 +5,10 @@ export type Role = "admin" | "agent" | "driver" | "staff";
 export type Action =
   | "booking:approve"
   | "booking:editItems"
-  | "invoice:markPaid"
   | "payment:verify"
   | "expense:submit"
   | "expense:approve"
   | "expense:pay"
-  | "return:decide"
   | "delivery:confirm"
   // Mutations the server currently restricts to admin (requireRole("admin")); the client mirrors them.
   | "invoice:update"
@@ -40,12 +38,10 @@ interface Rule {
 const ACTION_RULES: Record<Action, Rule> = {
   "booking:approve": { roles: ["admin"] },
   "booking:editItems": { roles: ["admin"] },
-  "invoice:markPaid": { roles: ["admin", "staff"], staffModules: ["accounting"] },
   "payment:verify": { roles: ["admin", "staff"], staffModules: ["accounting"] },
   "expense:submit": { roles: ["admin", "staff"], staffModules: ["accounting"] },
   "expense:approve": { roles: ["admin"] },
   "expense:pay": { roles: ["admin", "staff"], staffModules: ["accounting"] },
-  "return:decide": { roles: ["admin", "staff"], staffModules: ["accounting"] },
   "delivery:confirm": { roles: ["admin", "agent", "driver"] },
   "invoice:update": { roles: ["admin"] },
   "receivable:update": { roles: ["admin"] },
