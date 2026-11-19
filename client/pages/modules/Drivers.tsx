@@ -224,21 +224,21 @@ function DriverCard({
       </div>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-        <div>
+        <div className="min-w-0">
           <span className="text-muted-foreground block">Contact</span>
-          <span className="text-foreground font-medium">{driver.contact_info || "—"}</span>
+          <span className="block truncate text-foreground font-medium">{driver.contact_info || "—"}</span>
         </div>
-        <div>
+        <div className="min-w-0">
           <span className="text-muted-foreground block">Employment</span>
-          <span className="text-foreground font-medium capitalize">{driver.employment_type?.replace("_", " ") || "—"}</span>
+          <span className="block truncate text-foreground font-medium capitalize">{driver.employment_type?.replace("_", " ") || "—"}</span>
         </div>
-        <div>
+        <div className="min-w-0">
           <span className="text-muted-foreground block">Hired</span>
-          <span className="text-foreground font-medium">{driver.hire_date || "—"}</span>
+          <span className="block truncate text-foreground font-medium">{driver.hire_date || "—"}</span>
         </div>
-        <div>
+        <div className="min-w-0">
           <span className="text-muted-foreground block">Login</span>
-          <span className="text-foreground font-medium">{driver.user?.username || "No login"}</span>
+          <span className="block truncate text-foreground font-medium">{driver.user?.username || "No login"}</span>
         </div>
       </div>
 

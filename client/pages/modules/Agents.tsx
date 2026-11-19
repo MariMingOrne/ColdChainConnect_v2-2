@@ -252,21 +252,21 @@ function AgentCard({
       </div>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-        <div>
+        <div className="min-w-0">
           <span className="text-muted-foreground block">Email</span>
-          <span className="text-foreground font-medium truncate">{agent.email || "—"}</span>
+          <span className="block truncate text-foreground font-medium">{agent.email || "—"}</span>
         </div>
-        <div>
+        <div className="min-w-0">
           <span className="text-muted-foreground block">Contact</span>
-          <span className="text-foreground font-medium">{agent.contact_info || "—"}</span>
+          <span className="block truncate text-foreground font-medium">{agent.contact_info || "—"}</span>
         </div>
-        <div>
+        <div className="min-w-0">
           <span className="text-muted-foreground block">Hired</span>
-          <span className="text-foreground font-medium">{agent.hire_date || "—"}</span>
+          <span className="block truncate text-foreground font-medium">{agent.hire_date || "—"}</span>
         </div>
-        <div>
+        <div className="min-w-0">
           <span className="text-muted-foreground block">Address</span>
-          <span className="text-foreground font-medium truncate">{agent.address || "—"}</span>
+          <span className="block truncate text-foreground font-medium">{agent.address || "—"}</span>
         </div>
       </div>
 
