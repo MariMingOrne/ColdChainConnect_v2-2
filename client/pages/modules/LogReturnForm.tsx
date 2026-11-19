@@ -34,9 +34,14 @@ export function LogReturnForm({
   const invoiceProducts = invoiceId
     ? Array.from(new Map((invoices.find((i) => i.id === invoiceId)?.invoice_items ?? []).map((item) => [
         item.product_id,
-        { id: item.product_id, name: item.product_name },
+        { id: item.product_id, name: item.product_name, ordered: item.qty_ordered },
       ])).values())
     : [];
+  const orderedQty = (productId: string) => invoiceProducts.find((product) => product.id === productId)?.ordered;
+  const overOrdered = (item: { product_id: string; qty_returned: number }) => {
+    const ordered = orderedQty(item.product_id);
+    return ordered !== undefined && item.qty_returned > ordered;
+  };
 
   const handleCustomerChange = (id: string) => {
     setCustomerId(id);
@@ -60,6 +65,10 @@ export function LogReturnForm({
   const handleSave = async () => {
     if (!customerId || !invoiceId || items.some((item) => !item.product_id || !Number.isInteger(item.qty_returned) || item.qty_returned < 1)) {
       toast.error("Select a product and enter a valid quantity for every item.");
+      return;
+    }
+    if (items.some(overOrdered)) {
+      toast.error("A returned quantity is more than was ordered.");
       return;
     }
     setSaving(true);
@@ -102,7 +111,7 @@ export function LogReturnForm({
             <SelectContent>
               {customers.map((customer) => (
                 <SelectItem key={customer.id} value={customer.id}>
-                  {customer.store_name}{customer.contact_person ? ` — ${customer.contact_person}` : ""}
+                  {customer.store_name}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -156,7 +165,7 @@ export function LogReturnForm({
                     </SelectTrigger>
                     <SelectContent>
                       {invoiceProducts.filter((product) => !selectedElsewhere.has(product.id) || product.id === item.product_id).map((product) => (
-                        <SelectItem key={product.id} value={product.id}>{product.name}</SelectItem>
+                        <SelectItem key={product.id} value={product.id}>{product.name} (ordered {product.ordered})</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -166,10 +175,15 @@ export function LogReturnForm({
                   <Input
                     type="number"
                     min={1}
+                    max={orderedQty(item.product_id)}
                     step={1}
+                    aria-invalid={overOrdered(item) || undefined}
                     value={item.qty_returned}
                     onChange={(e) => setItems((current) => current.map((entry, itemIndex) => itemIndex === index ? { ...entry, qty_returned: Number(e.target.value) } : entry))}
                   />
+                  {overOrdered(item) && (
+                    <p role="alert" className="mt-1 text-xs text-red">Only {orderedQty(item.product_id)} ordered</p>
+                  )}
                 </div>
                 <Button
                   type="button"
@@ -211,7 +225,7 @@ export function LogReturnForm({
 
       <div className="flex justify-end gap-2 p-5 border-t border-border flex-shrink-0">
         <Button type="button" variant="ghost" onClick={() => { reset(); onCancel(); }}>Cancel</Button>
-        <Button type="button" onClick={handleSave} disabled={!customerId || !invoiceId || items.some((item) => !item.product_id || !Number.isInteger(item.qty_returned) || item.qty_returned < 1) || saving}>
+        <Button type="button" onClick={handleSave} disabled={!customerId || !invoiceId || items.some((item) => !item.product_id || !Number.isInteger(item.qty_returned) || item.qty_returned < 1 || overOrdered(item)) || saving}>
           {saving ? "Saving…" : "Log Return"}
         </Button>
       </div>

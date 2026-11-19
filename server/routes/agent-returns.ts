@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { eq, desc, sql } from "drizzle-orm";
+import { and, eq, desc, ne, sql } from "drizzle-orm";
 import { agentInvoiceFilter } from "../services/agent-bookings";
 import { db } from "../db";
 import {
@@ -31,6 +31,8 @@ export const listAgentReturns: RequestHandler = async (req: AuthRequest, res) =>
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+class ReturnQuantityError extends Error {}
 
 // ─── POST /api/agent-returns ──────────────────────────────────────────────────
 export const createAgentReturn: RequestHandler = async (req: AuthRequest, res) => {
@@ -71,6 +73,29 @@ export const createAgentReturn: RequestHandler = async (req: AuthRequest, res) =
     }
 
     const created = await db.transaction(async (tx) => {
+      // Lock the invoice so two simultaneous returns cannot both pass the quantity check.
+      await tx.select({ id: invoices.id }).from(invoices).where(eq(invoices.id, invoice_id)).for("update");
+
+      // Rejected returns do not count: those goods were never taken back.
+      const earlier = await tx
+        .select({ product_id: agent_returns.product_id, qty: agent_returns.qty_returned })
+        .from(agent_returns)
+        .where(and(eq(agent_returns.invoice_id, invoice_id), ne(agent_returns.status, "rejected")));
+      const alreadyReturned = new Map<string, number>();
+      for (const row of earlier) alreadyReturned.set(row.product_id, (alreadyReturned.get(row.product_id) ?? 0) + row.qty);
+
+      for (const item of items as { product_id: string; qty_returned: number }[]) {
+        const line = invoiceLines.get(item.product_id)!;
+        const left = line.qty_ordered - (alreadyReturned.get(item.product_id) ?? 0);
+        if (item.qty_returned > left) {
+          throw new ReturnQuantityError(
+            left > 0
+              ? `Only ${left} of ${line.product_name} can still be returned on this order (${line.qty_ordered} ordered)`
+              : `All ${line.qty_ordered} of ${line.product_name} on this order have already been returned`,
+          );
+        }
+      }
+
       const values = items.map((item: { product_id: string; qty_returned: number }) => {
         const line = invoiceLines.get(item.product_id)!;
         return {
@@ -94,6 +119,7 @@ export const createAgentReturn: RequestHandler = async (req: AuthRequest, res) =
     }
     res.status(201).json(created);
   } catch (err) {
+    if (err instanceof ReturnQuantityError) return res.status(409).json({ error: err.message });
     console.error("Error creating agent return:", err);
     res.status(500).json({ error: "Internal server error" });
   }

@@ -17,6 +17,8 @@ import { newestFirst } from "@/components/SortableHeader";
 import { TableBulkAction, TableToolbar } from "@/components/TableToolbar";
 import { TablePagination, paginate } from "@/components/TablePagination";
 import { confirmAction } from "@/lib/confirm";
+import { RecordTitleButton } from "@/components/RecordTitleButton";
+import { formatPeso } from "@/lib/format";
 
 function authHeaders(token: string) {
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
@@ -102,6 +104,63 @@ function CreateReturnModal({
 }
 
 // ─── Main Returns Component ───────────────────────────────────────────────────
+function OrderInfo({ invoice, customerName, ret, onClose }: { invoice: Invoice | undefined; customerName: string; ret: AgentReturn; onClose: () => void }) {
+  const items = invoice?.invoice_items ?? [];
+  return (
+    <div className="space-y-5 px-4 py-4 md:px-6 md:py-6">
+      <div>
+        <h1 className="page-title">Order {invoice?.receipt_number || ret.invoice_id.slice(0, 8).toUpperCase()}</h1>
+        <p className="page-subtitle">The order this return was logged against</p>
+      </div>
+      <dl className="grid gap-4 sm:grid-cols-2">
+        {[
+          ["Customer", customerName],
+          ["Order date", invoice ? new Date(invoice.created_at).toLocaleDateString("en-PH") : "—"],
+          ["Invoice status", invoice?.status ?? "—"],
+          ["Payment", invoice?.payment_status ?? "—"],
+          ["Total", formatPeso(invoice?.total_amount)],
+          ["Prepared by", invoice?.prepared_by || "—"],
+        ].map(([label, value]) => (
+          <div key={label}>
+            <dt className="mb-1 text-xs font-semibold text-muted-foreground">{label}</dt>
+            <dd className="text-sm font-medium capitalize text-foreground">{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <div className="data-table-frame overflow-x-auto">
+        <Table>
+          <thead>
+            <tr className="border-b border-border bg-muted text-left">
+              <th className="px-3 py-2 font-semibold">Product</th>
+              <th className="px-3 py-2 text-right font-semibold">Ordered</th>
+              <th className="px-3 py-2 text-right font-semibold">Unit price</th>
+              <th className="px-3 py-2 text-right font-semibold">Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.length === 0 ? (
+              <tr><td colSpan={4} className="px-3 py-6 text-center text-muted-foreground">No line items on this order.</td></tr>
+            ) : items.map((item) => (
+              <tr key={item.id} className={`border-b border-border last:border-b-0 ${item.product_id === ret.product_id ? "bg-warning-soft" : ""}`}>
+                <td className="px-3 py-2 text-foreground">
+                  {item.product_name}
+                  {item.product_id === ret.product_id && <span className="ml-2 text-xs font-semibold text-warning">returning {ret.qty_returned}</span>}
+                </td>
+                <td className="px-3 py-2 text-right">{item.qty_ordered}</td>
+                <td className="px-3 py-2 text-right">{formatPeso(item.unit_price)}</td>
+                <td className="px-3 py-2 text-right">{formatPeso(item.amount)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </Table>
+      </div>
+      <div className="flex justify-end border-t border-border pt-4">
+        <Button type="button" variant="outline" onClick={onClose}>Close</Button>
+      </div>
+    </div>
+  );
+}
+
 export function AgentReports() {
   const { token, user } = useAuth();
   const role = user?.role;
@@ -115,6 +174,7 @@ export function AgentReports() {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [viewingOrder, setViewingOrder] = useState<AgentReturn | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "accepted" | "rejected">("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -362,7 +422,9 @@ export function AgentReports() {
                           {new Date(ret.created_at).toLocaleDateString("en-PH")}
                         </td>
                         <td className="px-3 py-3 font-mono text-foreground">
-                          {inv?.receipt_number || ret.invoice_id.slice(0, 8).toUpperCase()}
+                          <RecordTitleButton onClick={() => setViewingOrder(ret)} className="font-mono">
+                            {inv?.receipt_number || ret.invoice_id.slice(0, 8).toUpperCase()}
+                          </RecordTitleButton>
                         </td>
                         <td className="px-3 py-3 text-foreground font-semibold">
                           {cust?.store_name || ret.customer_id.slice(0, 8)}
@@ -422,6 +484,16 @@ export function AgentReports() {
       </div>
 
     </div>
+      {viewingOrder && (
+        <PageDialog onClose={() => setViewingOrder(null)} label="Order details">
+          <OrderInfo
+            invoice={invoices.find((entry) => entry.id === viewingOrder.invoice_id)}
+            customerName={customers.find((entry) => entry.id === viewingOrder.customer_id)?.store_name ?? viewingOrder.customer_id.slice(0, 8)}
+            ret={viewingOrder}
+            onClose={() => setViewingOrder(null)}
+          />
+        </PageDialog>
+      )}
       {showCreate && (
         <PageDialog onClose={() => setShowCreate(false)} label="Log return">
       <CreateReturnModal
