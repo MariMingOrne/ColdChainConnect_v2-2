@@ -14,7 +14,6 @@ import {
   History,
   RotateCcw,
   BadgeCheck,
-  Banknote,
   Receipt,
 } from "lucide-react";
 
@@ -48,8 +47,7 @@ const hubModulesByPath: Record<string, Array<{ path: string; label: string; icon
     { path: "/agent-returns", label: "Returns", icon: RotateCcw },
   ],
   "/accounting": [
-    { path: "/payments", label: "Payments to verify", icon: BadgeCheck },
-    { path: "/cash", label: "End-of-day cash", icon: Banknote },
+    { path: "/payments", label: "End-of-Day", icon: BadgeCheck },
     { path: "/expenses", label: "Expenses", icon: Receipt },
   ],
   "/manage-accounts": [

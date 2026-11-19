@@ -70,18 +70,19 @@ export const listUnverifiedPayments: RequestHandler = async (_req: AuthRequest, 
     const recorderIds = rows
       .map((row) => recorderByItem.get(row.receipt.delivery_item_id) ?? row.receipt.confirmed_by)
       .filter((userId): userId is string => Boolean(userId));
-    const usernames = new Map<string, string>();
+    const recorderDetails = new Map<string, { username: string; role: string }>();
     if (recorderIds.length > 0) {
       const found = await db
-        .select({ id: users.id, username: users.username })
+        .select({ id: users.id, username: users.username, role: users.role })
         .from(users)
         .where(inArray(users.id, [...new Set(recorderIds)]));
-      for (const user of found) usernames.set(user.id, user.username);
+      for (const user of found) recorderDetails.set(user.id, { username: user.username, role: user.role });
     }
 
     res.json(
       rows.map((row) => {
         const recordedBy = recorderByItem.get(row.receipt.delivery_item_id) ?? row.receipt.confirmed_by ?? null;
+        const recorder = recordedBy ? recorderDetails.get(recordedBy) : undefined;
         // Collected so far = invoice total minus the balance still outstanding on the stop.
         const totalCents = Math.round(Number(row.invoice_total ?? row.invoice_gross ?? 0) * 100);
         const outstandingCents = Math.round(Number(row.outstanding ?? 0) * 100);
@@ -92,7 +93,8 @@ export const listUnverifiedPayments: RequestHandler = async (_req: AuthRequest, 
           payment_method: row.payment_method,
           amount: (Math.max(totalCents - outstandingCents, 0) / 100).toFixed(2),
           recorded_by: recordedBy,
-          recorded_by_username: recordedBy ? usernames.get(recordedBy) ?? null : null,
+          recorded_by_username: recorder?.username ?? null,
+          recorded_by_role: recorder?.role ?? null,
         };
       }),
     );

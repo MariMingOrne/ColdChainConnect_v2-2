@@ -614,6 +614,7 @@ export interface UnverifiedPayment {
   amount: string;
   recorded_by: string | null;
   recorded_by_username: string | null;
+  recorded_by_role: "admin" | "agent" | "driver" | "staff" | null;
   /** Bank transfer or check reference typed when the payment was recorded. */
   payment_reference?: string | null;
 }
