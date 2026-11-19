@@ -1,6 +1,7 @@
 -- Accounting workflow: booking approval trail, receipt payment verification, and the expenses table.
 -- Additive and safe to re-run: nullable columns, a new table, IF NOT EXISTS, guarded constraints.
--- Numbering note: 0009_customer_district.sql already exists; these hand-written files are not in
+-- Numbering note: originally drafted as 0009_accounting.sql, renamed to 0019 after merging origin/main
+-- (which added 0017_order_item_reservations and 0018_user_archive). These hand-written files are not in
 -- drizzle/meta/_journal.json (it stops at 0004), so the prefix does not affect ordering and the
 -- statements here do not depend on any other file.
 

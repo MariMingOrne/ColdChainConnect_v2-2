@@ -435,6 +435,8 @@ export interface Booking {
   prepared_delivery_date?: string | null;
   /** User id of whoever approved the booking, with the ISO timestamp. */
   approved_by?: string | null;
+  /** Username of the approver, resolved by GET /api/bookings. */
+  approved_by_name?: string | null;
   approved_at?: string | null;
   created_at: string;
   customer?: Customer;

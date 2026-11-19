@@ -6,7 +6,9 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { ArrowLeft } from "lucide-react";
-import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { RecordTitleButton } from "@/components/RecordTitleButton";
+import { TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
+import { TablePagination, paginate } from "@/components/TablePagination";
 import { Customer, Truck, Invoice } from "@shared/api";
 import { Table } from "@/components/ui/table";
 import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
@@ -44,11 +46,10 @@ export function DeliveryHistory() {
 
   const [search,       setSearch]       = useState("");
   const [customerFilter, setCustomerFilter] = useState("");
+  const [dateFilter,   setDateFilter]   = useState("");
   const [page,         setPage]         = useState(1);
   const [viewReceipt,  setViewReceipt]  = useState<ReceiptExt | null>(null);
   const [sort, setSort] = useState<SortState<"receipt" | "customer" | "truck" | "confirmed" | "notes">>(null);
-
-  const PER_PAGE = 15;
 
   const fetchAll = useCallback(async () => {
     if (!token) return;
@@ -100,16 +101,16 @@ export function DeliveryHistory() {
 
     if (!matchesSearch) return false;
     if (customerFilter && customerFilter !== "all" && r.customer_id !== customerFilter) return false;
+    if (dateFilter && new Date(r.confirmed_at).toLocaleDateString("en-CA") !== dateFilter) return false;
     return true;
   });
 
   const sorted = [...filtered].sort((a, b) => {
-    if (!sort) return 0;
+    if (!sort) return (Date.parse(b.confirmed_at) || 0) - (Date.parse(a.confirmed_at) || 0);
     const value = (receipt: ReceiptExt) => ({ receipt: receipt.receipt_number, customer: receipt.customer?.store_name, truck: receipt.truck?.license_plate, confirmed: receipt.confirmed_at, notes: receipt.notes })[sort.key];
     return compareValues(value(a), value(b)) * (sort.direction === "asc" ? 1 : -1);
   });
-  const totalPages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
-  const paginated  = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  const { currentPage, totalPages, pageItems: paginated } = paginate(sorted, page);
 
 
 
@@ -149,26 +150,19 @@ export function DeliveryHistory() {
       </div>
 
       {/* Search and Filters */}
-      <SearchFilterBar
-        searchTerm={search}
+      <TableToolbar
+        searchValue={search}
         onSearchChange={(value) => { setSearch(value); setPage(1); }}
-        placeholder="Search by receipt #, customer, truck, or invoice…"
-        className="!justify-start"
-        filters={[
-          {
-            name: "customerFilter",
-            value: customerFilter,
-            onChange: (value) => { setCustomerFilter(value); setPage(1); },
-            options: [
-              { label: "All Customers", value: "all" },
-              ...customers.map((c) => ({
-                label: c.store_name || c.id.slice(0, 8),
-                value: c.id,
-              })),
-            ],
-          },
-        ]}
-      />
+        searchPlaceholder="Search by receipt #, customer, truck, or invoice…"
+      >
+        <TableFilterSelect label="Customer" value={customerFilter} onChange={(value) => { setCustomerFilter(value); setPage(1); }}>
+          <option value="">All Customers</option>
+          {customers.map((c) => (
+            <option key={c.id} value={c.id}>{c.store_name || c.id.slice(0, 8)}</option>
+          ))}
+        </TableFilterSelect>
+        <input type="date" aria-label="Confirmed on date" title="Show deliveries confirmed on this date" value={dateFilter} onChange={(event) => { setDateFilter(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
+      </TableToolbar>
 
       {/* Table */}
       <div className="data-table-frame overflow-hidden">
@@ -197,7 +191,9 @@ export function DeliveryHistory() {
                 ) : (
                   paginated.map((r) => (
                     <tr key={r.id} className="border-b border-border hover:bg-accent/50 transition-colors">
-                      <td className="px-3 py-3 font-mono font-semibold text-accent-2">{r.receipt_number}</td>
+                      <td className="px-3 py-3 font-mono font-semibold">
+                        <RecordTitleButton onClick={() => setViewReceipt(r)}>{r.receipt_number}</RecordTitleButton>
+                      </td>
                       <td className="px-3 py-3 text-foreground font-semibold">
                         {r.customer?.store_name ?? <span className="text-muted-foreground font-normal">{r.customer_id.slice(0, 8)}…</span>}
                         {r.customer?.location && <p className="text-muted-foreground font-normal text-xs">{r.customer.location}</p>}
@@ -225,31 +221,7 @@ export function DeliveryHistory() {
           </div>
         )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-muted/50">
-            <span className="text-xs text-muted-foreground">
-              {(page - 1) * PER_PAGE + 1}–{Math.min(page * PER_PAGE, filtered.length)} of {filtered.length}
-            </span>
-            <div className="flex gap-2">
-              <Button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                variant="outline" size="sm"
-              >
-                Previous
-              </Button>
-              <span className="px-3 py-1 text-xs font-semibold text-foreground">{page} / {totalPages}</span>
-              <Button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                variant="outline" size="sm"
-              >
-                Next
-              </Button>
-            </div>
-          </div>
-        )}
+        <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </div>
 
     </div>

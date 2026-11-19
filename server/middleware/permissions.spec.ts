@@ -44,6 +44,7 @@ describe("staffModuleGuard", () => {
 const ADMIN_ONLY_MUTATIONS: Action[] = [
   "invoice:update", "receivable:update", "delivery:update", "agentReturn:decide",
   "customer:manage", "product:manage", "batch:manage", "driver:manage", "agent:manage", "truck:manage",
+  "booking:editItems", "user:archive",
 ];
 
 describe("can", () => {

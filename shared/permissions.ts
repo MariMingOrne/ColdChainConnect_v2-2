@@ -4,6 +4,7 @@ export type Role = "admin" | "agent" | "driver" | "staff";
 
 export type Action =
   | "booking:approve"
+  | "booking:editItems"
   | "invoice:markPaid"
   | "payment:verify"
   | "expense:submit"
@@ -21,7 +22,8 @@ export type Action =
   | "batch:manage"
   | "driver:manage"
   | "agent:manage"
-  | "truck:manage";
+  | "truck:manage"
+  | "user:archive";
 
 export interface PermissionSubject {
   role: Role;
@@ -37,6 +39,7 @@ interface Rule {
 /** Single table of who may do what. Admin is always allowed. */
 const ACTION_RULES: Record<Action, Rule> = {
   "booking:approve": { roles: ["admin"] },
+  "booking:editItems": { roles: ["admin"] },
   "invoice:markPaid": { roles: ["admin", "staff"], staffModules: ["accounting"] },
   "payment:verify": { roles: ["admin", "staff"], staffModules: ["accounting"] },
   "expense:submit": { roles: ["admin", "staff"], staffModules: ["accounting"] },
@@ -54,6 +57,7 @@ const ACTION_RULES: Record<Action, Rule> = {
   "driver:manage": { roles: ["admin"] },
   "agent:manage": { roles: ["admin"] },
   "truck:manage": { roles: ["admin"] },
+  "user:archive": { roles: ["admin"] },
 };
 
 export function can(user: PermissionSubject, action: Action): boolean {

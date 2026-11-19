@@ -2,10 +2,12 @@ import { Input } from "@/components/ui/input";
 import { useEffect, useMemo, useState } from "react";
 import { ShieldCheck, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { confirmAction } from "@/lib/confirm";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { modulePermissionKeys, modulePermissionLabels, type ModulePermission } from "@shared/api";
 import { Button } from "@/components/ui/button";
+import { useCan } from "@/hooks/useCan";
 
 type ManagedUser = {
   id: string;
@@ -14,20 +16,24 @@ type ManagedUser = {
   created_at: string;
   mfa_enabled: boolean;
   mfa_required: boolean;
+  is_archived: boolean;
   module_permissions: ModulePermission[];
 };
 
 export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["role"]; onCreateAccount?: () => void }) {
   const token = useAuth((state) => state.token);
   const currentUser = useAuth((state) => state.user);
+  const canArchiveUsers = useCan("user:archive");
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [mfaSavingId, setMfaSavingId] = useState<string | null>(null);
+  const [archiveSavingId, setArchiveSavingId] = useState<string | null>(null);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [mfaFilter, setMfaFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("active");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 12;
 
@@ -50,9 +56,14 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
 
   const filteredUsers = useMemo(() => users.filter((account) =>
     account.username.toLowerCase().includes(search.toLowerCase()) &&
+    (statusFilter === "archived" ? account.is_archived : !account.is_archived) &&
     (mfaFilter === "all" || (mfaFilter === "enabled" ? account.mfa_enabled : !account.mfa_enabled))
-  ), [users, search, mfaFilter]);
+  ), [users, search, statusFilter, mfaFilter]);
   const totalPages = Math.ceil(filteredUsers.length / itemsPerPage);
+
+  useEffect(() => {
+    if (totalPages > 0 && currentPage > totalPages) setCurrentPage(totalPages);
+  }, [currentPage, totalPages]);
   const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const updateMfaRequirement = async (account: ManagedUser, required: boolean) => {
@@ -71,6 +82,33 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
       setSaveMessage(cause instanceof Error ? cause.message : "Could not update MFA requirement");
     } finally {
       setMfaSavingId(null);
+    }
+  };
+
+  const updateArchiveStatus = async (account: ManagedUser, archived: boolean) => {
+    const prompt = archived
+      ? `Archive ${account.username}? They will not be able to sign in until restored.`
+      : `Restore ${account.username}? They will be able to sign in again.`;
+    if (!(await confirmAction(prompt))) return;
+
+    setArchiveSavingId(account.id);
+    setSaveMessage(null);
+    try {
+      const response = await fetch(`/api/users/${account.id}/archive`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ is_archived: archived }),
+      });
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error || "Could not update account status");
+      }
+      setUsers((current) => current.map((user) => user.id === account.id ? { ...user, is_archived: archived } : user));
+      setSaveMessage(`${account.username} ${archived ? "archived" : "restored"}.`);
+    } catch (cause) {
+      setSaveMessage(cause instanceof Error ? cause.message : "Could not update account status");
+    } finally {
+      setArchiveSavingId(null);
     }
   };
 
@@ -102,8 +140,8 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
   };
 
   const Icon = role === "admin" ? ShieldCheck : Users;
-  const roleLabel = role === "admin" ? "Admin" : "Accounting";
-  const title = role === "admin" ? "Admin Management" : "Accounting Management";
+  const roleLabel = role === "admin" ? "Admin" : "Staff";
+  const title = role === "admin" ? "Admin Management" : "Staff Management";
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden px-4 py-4 md:px-6 md:py-5">
@@ -114,7 +152,7 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
         </div>
       </div>
       {error && <p className="rounded-lg border border-red/30 bg-red/10 px-4 py-3 text-sm text-red">{error}</p>}
-      <SearchFilterBar searchTerm={search} onSearchChange={(value) => { setSearch(value); setCurrentPage(1); }} placeholder={`Search ${roleLabel.toLowerCase()} accounts by username…`} className="!flex-none" filters={[{ name: "MFA Status", value: mfaFilter, onChange: (value) => { setMfaFilter(value); setCurrentPage(1); }, options: [{ label: "All MFA Status", value: "all" }, { label: "Enabled", value: "enabled" }, { label: "Not set up", value: "not-enabled" }] }]} />
+      <SearchFilterBar searchTerm={search} onSearchChange={(value) => { setSearch(value); setCurrentPage(1); }} placeholder={`Search ${roleLabel.toLowerCase()} accounts by username…`} className="!flex-none" filters={[{ name: "Status", value: statusFilter, onChange: (value) => { setStatusFilter(value); setCurrentPage(1); }, options: [{ label: "Active accounts", value: "active" }, { label: "Archived accounts", value: "archived" }] }, { name: "MFA Status", value: mfaFilter, onChange: (value) => { setMfaFilter(value); setCurrentPage(1); }, options: [{ label: "All MFA Status", value: "all" }, { label: "Enabled", value: "enabled" }, { label: "Not set up", value: "not-enabled" }] }]} />
       {saveMessage && <p role="status" className="text-sm text-foreground">{saveMessage}</p>}
       {isLoading ? <div className="flex flex-1 items-center justify-center"><LoadingSpinner /></div> : paginatedUsers.length === 0 ? (
         <div className="flex flex-1 items-center justify-center text-center text-sm text-muted-foreground">No {roleLabel.toLowerCase()} accounts match your search.</div>
@@ -125,7 +163,8 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-navy-mid"><span className="font-rajdhani text-sm font-bold text-white">{account.username.slice(0, 2).toUpperCase()}</span></div>
                 <div className="min-w-0 flex-1"><div className="truncate text-sm font-semibold text-foreground">{account.username}</div><div className="truncate text-xs text-muted-foreground">@{account.username}</div></div>
-                <span className="shrink-0 rounded px-2 py-0.5 text-xs font-bold badge-green">{account.role === "staff" ? "Accounting" : "Admin"}</span>
+                <span className="shrink-0 rounded px-2 py-0.5 text-xs font-bold badge-green">{account.role === "staff" ? "Staff" : "Admin"}</span>
+                {account.is_archived && <span className="shrink-0 rounded bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">Archived</span>}
               </div>
               <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 border-t border-border pt-2 text-xs">
                 <div><span className="block text-muted-foreground">MFA enrollment</span><span className="font-medium text-foreground">{account.mfa_enabled ? "Set up" : "Not set up"}</span></div>
@@ -136,6 +175,11 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
                   <span>Require MFA at sign-in</span>
                   <Input type="checkbox" checked={account.mfa_required} disabled={mfaSavingId === account.id} onChange={(event) => void updateMfaRequirement(account, event.target.checked)} className="h-4 w-4 accent-navy" />
                 </label>
+              )}
+              {canArchiveUsers && account.id !== currentUser?.id && (
+                <Button type="button" variant={account.is_archived ? "outline" : "destructive"} size="sm" disabled={archiveSavingId === account.id} onClick={() => void updateArchiveStatus(account, !account.is_archived)}>
+                  {archiveSavingId === account.id ? "Saving…" : account.is_archived ? "Restore Account" : "Archive Account"}
+                </Button>
               )}
               {account.role === "staff" && currentUser?.role === "admin" && (
                 <div className="border-t border-border pt-2">

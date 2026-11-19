@@ -492,7 +492,7 @@ export function Settings() {
                     </tr>
                   </thead>
                   <tbody>
-                    {mockAuditLog.map((entry) => (
+                    {[...mockAuditLog].sort((a, b) => b.timestamp.localeCompare(a.timestamp)).map((entry) => (
                       <tr
                         key={entry.id}
                         className="border-b border-border hover:bg-accent transition-colors"

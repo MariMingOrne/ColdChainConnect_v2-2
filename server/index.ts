@@ -12,7 +12,7 @@ import {
   updateUserPassword,
   resetUserMfa,
 } from "./routes/auth";
-import { handleCreateAccount, handleListManagedAccounts, handleUpdateStaffPermissions, handleUpdateMfaRequirement } from "./routes/users";
+import { handleCreateAccount, handleListManagedAccounts, handleUpdateStaffPermissions, handleUpdateMfaRequirement, handleUpdateArchiveStatus } from "./routes/users";
 import {
   listCustomers,
   createCustomer,
@@ -57,8 +57,10 @@ import {
 } from "./routes/trucks";
 import {
   listBookings,
+  listAgentDistricts,
   createBooking,
   updateBookingStatus,
+  updateBookingItems,
   deleteBooking,
 } from "./routes/bookings";
 import {
@@ -160,6 +162,7 @@ export function createServer() {
   app.get("/api/users", authMiddleware, requireRole("admin", "staff"), handleListManagedAccounts);
   app.patch("/api/users/:userId/module-permissions", authMiddleware, requireRole("admin"), handleUpdateStaffPermissions);
   app.patch("/api/users/:userId/mfa-required", authMiddleware, requireRole("admin"), handleUpdateMfaRequirement);
+  app.patch("/api/users/:userId/archive", authMiddleware, requireRole("admin"), handleUpdateArchiveStatus);
   app.post("/api/users", authMiddleware, requireRole("admin"), handleCreateAccount);
   app.patch("/api/users/:userId/password", authMiddleware, requireRole("admin"), updateUserPassword);
   app.post("/api/users/:userId/mfa/reset", authMiddleware, requireRole("admin"), resetUserMfa);
@@ -215,8 +218,10 @@ export function createServer() {
 
   // Bookings routes
   app.get("/api/bookings", authMiddleware, listBookings);
+  app.get("/api/agent-districts", authMiddleware, requireRole("agent"), listAgentDistricts);
   app.post("/api/bookings", authMiddleware, createBooking);
   app.patch("/api/bookings/:id/status", authMiddleware, requireRole("admin"), updateBookingStatus);
+  app.patch("/api/bookings/:id/items", authMiddleware, requireRole("admin"), updateBookingItems);
   app.delete("/api/bookings/:id", authMiddleware, deleteBooking);
 
   // Invoices routes

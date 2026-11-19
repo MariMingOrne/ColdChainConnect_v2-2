@@ -211,6 +211,7 @@ export function BookingInventory() {
           pallet={selected.pallet}
           order={bookings.find((b) => b.id === selected.pallet.order_id) ?? null}
           customer={selected.customer}
+          batches={batches}
           getProductName={getProductName}
           onStatusChange={(status) => handleStatusChange(selected.pallet.id, status)}
           onPrintSheet={() => setSheetOrder(bookings.find((b) => b.id === selected.pallet.order_id) ?? null)}

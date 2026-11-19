@@ -8,12 +8,15 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { StatusBadge, StatusTone } from "@/components/StatusBadge";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { ArrowLeft, Plus, Calendar, CheckCircle, XCircle } from "lucide-react";
-import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
+import { newestFirst } from "@/components/SortableHeader";
+import { TablePagination, paginate } from "@/components/TablePagination";
 import { Booking, Truck, Customer, Product } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { useCan } from "@/hooks/useCan";
@@ -28,6 +31,7 @@ export function BookingSummary() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [agentDistricts, setAgentDistricts] = useState<string[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [productStock, setProductStock] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -41,6 +45,12 @@ export function BookingSummary() {
   const [dateRangeFilter, setDateRangeFilter] = useState<"all" | "today" | "week" | "month" | "custom">("today");
   const [customDateStart, setCustomDateStart] = useState<string>("");
   const [customDateEnd, setCustomDateEnd] = useState<string>("");
+  const [selectedBookingIds, setSelectedBookingIds] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter, approvalFilter, dateRangeFilter, customDateStart, customDateEnd]);
 
   // Approve booking modal
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -83,18 +93,20 @@ export function BookingSummary() {
 
   const fetchAll = async () => {
     try {
-      const [bRes, tRes, cRes, pRes, invRes] = await Promise.all([
+      const [bRes, tRes, cRes, pRes, invRes, dRes] = await Promise.all([
         fetch("/api/bookings", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/trucks", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/customers", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/products", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/products/inventory", { headers: { Authorization: `Bearer ${token}` } }),
+        isAgent ? fetch("/api/agent-districts", { headers: { Authorization: `Bearer ${token}` } }) : Promise.resolve(null),
       ]);
       if (bRes.ok) setBookings(await bRes.json());
       if (tRes.ok) setTrucks(await tRes.json());
       if (cRes.ok) setCustomers(await cRes.json());
       if (pRes.ok) setProducts(await pRes.json());
       if (invRes.ok) setProductStock(await invRes.json());
+      if (dRes?.ok) setAgentDistricts(await dRes.json());
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error loading data");
@@ -107,15 +119,15 @@ export function BookingSummary() {
   useEffect(() => { if (token) fetchAll(); }, [token]);
   useAutoRefresh(fetchAll, { enabled: Boolean(token) });
 
-  const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      pending: "bg-warning-soft text-warning",
-      approved: "bg-info-soft text-link",
-      rejected: "bg-destructive-soft text-destructive",
-      prep: "bg-info-soft text-link",
-      ready: "bg-success-soft text-success",
+  const getStatusTone = (status: string): StatusTone => {
+    const tones: Record<string, StatusTone> = {
+      pending: "warning",
+      prep: "info",
+      approved: "success",
+      ready: "success",
+      rejected: "danger",
     };
-    return colors[status] || "bg-muted text-foreground";
+    return tones[status] ?? "warning";
   };
 
   const isDateInRange = (dateStr: string): boolean => {
@@ -229,6 +241,7 @@ export function BookingSummary() {
       }
       const created = await res.json();
       setBookings((prev) => [created, ...prev]);
+      void fetchAll();
       setShowAddModal(false);
       setNewCustomerId("");
       setPreparedDeliveryDate("");
@@ -279,6 +292,40 @@ export function BookingSummary() {
     setDetailBooking(null);
   };
 
+  const handleSaveBookingItems = async (items: Array<{ id: string; qty_ordered: number }>) => {
+    if (!detailBooking) return null;
+    const save = async (override?: { reason: string }): Promise<Booking | null> => {
+      const res = await fetch(`/api/bookings/${detailBooking.id}/items`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          items,
+          ...(override && { ar_override: true, ar_override_reason: override.reason }),
+        }),
+      });
+      const result = await res.json();
+      if (res.status === 409 && isCreditBlock(result)) {
+        const reason = override ? null : promptCreditOverride(result);
+        if (reason) return save({ reason });
+        toast.error(describeCreditBlock(result));
+        return null;
+      }
+      if (!res.ok) throw new Error(result.error || "Failed to update order quantities");
+      setBookings((prev) => prev.map((booking) => booking.id === result.id ? result : booking));
+      setDetailBooking(result);
+      void fetchAll();
+      toast.success("Order quantities updated.");
+      return result as Booking;
+    };
+
+    try {
+      return await save();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update order quantities");
+      return null;
+    }
+  };
+
   // ── Approve Booking ───────────────────────────────────────────
   const openApproveModal = (booking: Booking) => {
     setSelectedBooking(booking);
@@ -307,6 +354,7 @@ export function BookingSummary() {
       }
       const { booking: updated } = await res.json();
       setBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
+      void fetchAll();
       setApproveSuccess("Order approved. The invoice will be created after stock picking is complete.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to approve booking");
@@ -327,12 +375,40 @@ export function BookingSummary() {
         const errorData = await res.json();
         throw new Error(errorData.error || "Failed to unapprove booking");
       }
-      const updated = await res.json();
+      const { booking: updated } = await res.json();
       setBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
+      void fetchAll();
       toast.success("Order moved back to pending status.");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to unapprove booking");
     }
+  };
+
+  const handleApproveSelected = async () => {
+    const pending = bookings.filter((b) => selectedBookingIds.includes(b.id) && b.status === "pending");
+    if (pending.length === 0) return void toast.error("Select pending orders to approve");
+    if (!(await confirmAction(`Approve ${pending.length} selected ${pending.length === 1 ? "order" : "orders"}?`))) return;
+
+    const results = await Promise.all(pending.map(async (booking) => {
+      try {
+        const res = await fetch(`/api/bookings/${booking.id}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ status: "approved" }),
+        });
+        if (!res.ok) return null;
+        const { booking: updated } = await res.json();
+        return updated as Booking;
+      } catch {
+        return null;
+      }
+    }));
+    const approved = results.filter((b): b is Booking => b !== null);
+    setBookings((prev) => prev.map((b) => approved.find((a) => a.id === b.id) ?? b));
+    if (approved.length > 0) void fetchAll();
+    setSelectedBookingIds((current) => current.filter((id) => !approved.some((b) => b.id === id)));
+    if (approved.length > 0) toast.success(`${approved.length} order${approved.length === 1 ? "" : "s"} approved.`);
+    if (approved.length < pending.length) toast.error(`${pending.length - approved.length} order(s) could not be approved.`);
   };
 
   const openRejectModal = (booking: Booking) => {
@@ -360,8 +436,9 @@ export function BookingSummary() {
         const errorData = await res.json();
         throw new Error(errorData.error || "Failed to reject booking");
       }
-      const updated = await res.json();
+      const { booking: updated } = await res.json();
       setBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
+      void fetchAll();
       closeRejectModal();
       toast.success("Order rejected successfully.");
     } catch (err) {
@@ -376,7 +453,7 @@ export function BookingSummary() {
   if (isAgent) {
     return (
       <AgentOrderScreen
-        customers={customers}
+        customers={customers.filter((customer) => customer.district && agentDistricts.includes(customer.district))}
         products={products}
         productStock={productStock}
         orderItems={orderItems}
@@ -405,7 +482,7 @@ export function BookingSummary() {
     setOrderItems([{ product_id: "", qty_ordered: 1 }]);
   };
 
-  const filtered = bookings.filter((b) => {
+  const filtered = newestFirst(bookings.filter((b) => {
     const matchesSearch =
       b.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       b.customer_id.toLowerCase().includes(searchTerm.toLowerCase());
@@ -423,7 +500,19 @@ export function BookingSummary() {
     if (!isDateInRange(b.created_at)) return false;
 
     return true;
-  });
+  }));
+
+  const { currentPage, totalPages, pageItems: paginated } = paginate(filtered, page);
+  const pageIds = paginated.map((booking) => booking.id);
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedBookingIds.includes(id));
+  const selectedBookings = bookings.filter((booking) => selectedBookingIds.includes(booking.id));
+  const toggleBookingSelection = (id: string, checked: boolean) =>
+    setSelectedBookingIds((current) => (checked ? [...current, id] : current.filter((selectedId) => selectedId !== id)));
+  const togglePageSelection = (checked: boolean) =>
+    setSelectedBookingIds((current) => (checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id))));
+  const bulkActions: TableBulkAction[] | undefined = canApprove
+    ? [{ label: "Approve selected orders", onSelect: () => void handleApproveSelected() }]
+    : undefined;
 
   return (
     <>
@@ -447,48 +536,33 @@ export function BookingSummary() {
         </Card>
       )}
 
-      <SearchFilterBar
-        searchTerm={searchTerm}
+      <TableToolbar
+        selectedCount={selectedBookings.length}
+        bulkActions={bulkActions}
+        searchValue={searchTerm}
         onSearchChange={setSearchTerm}
-        placeholder="Search by order ID or customer ID…"
-        className="!justify-start"
-        filters={[
-          {
-            name: "statusFilter",
-            value: statusFilter,
-            onChange: (value) => setStatusFilter(value as any),
-            options: [
-              { label: "All Status", value: "all" },
-              { label: "Pending", value: "pending" },
-              { label: "Approved", value: "approved" },
-              { label: "Prep", value: "prep" },
-              { label: "Ready", value: "ready" },
-            ],
-          },
-          {
-            name: "approvalFilter",
-            value: approvalFilter,
-            onChange: (value) => setApprovalFilter(value as any),
-            options: [
-              { label: "All Orders", value: "all" },
-              { label: "Approved", value: "approved" },
-              { label: "Unapproved", value: "unapproved" },
-            ],
-          },
-          {
-            name: "dateRangeFilter",
-            value: dateRangeFilter,
-            onChange: (value) => setDateRangeFilter(value as any),
-            options: [
-              { label: "All Dates", value: "all" },
-              { label: "This Day", value: "today" },
-              { label: "This Week", value: "week" },
-              { label: "This Month", value: "month" },
-              { label: "Custom", value: "custom" },
-            ],
-          },
-        ]}
-      />
+        searchPlaceholder="Search by order ID or customer ID…"
+      >
+        <TableFilterSelect label="Status" value={statusFilter} onChange={(value) => setStatusFilter(value as typeof statusFilter)}>
+          <option value="all">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="prep">Prep</option>
+          <option value="ready">Ready</option>
+        </TableFilterSelect>
+        <TableFilterSelect label="Approval" value={approvalFilter} onChange={(value) => setApprovalFilter(value as typeof approvalFilter)}>
+          <option value="all">All Orders</option>
+          <option value="approved">Approved</option>
+          <option value="unapproved">Unapproved</option>
+        </TableFilterSelect>
+        <TableFilterSelect label="Date range" value={dateRangeFilter} onChange={(value) => setDateRangeFilter(value as typeof dateRangeFilter)}>
+          <option value="all">All Dates</option>
+          <option value="today">This Day</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="custom">Custom</option>
+        </TableFilterSelect>
+      </TableToolbar>
 
       {/* Custom Date Picker */}
       {dateRangeFilter === "custom" && (
@@ -529,10 +603,14 @@ export function BookingSummary() {
         <Table>
           <TableHeader>
             <TableRow className="whitespace-nowrap">
+              {canApprove && (
+                <TableHead className="w-10 px-3">
+                  <input aria-label="Select all orders on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
+                </TableHead>
+              )}
               <TableHead>Order ID</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Agent</TableHead>
-              <TableHead>Approval</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Prepared Delivery Date</TableHead>
               <TableHead>Created</TableHead>
@@ -540,19 +618,23 @@ export function BookingSummary() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+            {paginated.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={canApprove ? 8 : 7} className="text-center py-8 text-muted-foreground">
                   {bookings.length === 0 ? "No orders found" : "No orders match your search"}
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((booking) => {
+              paginated.map((booking) => {
                 const customer = booking.customer;
                 const creator = (booking as any).creator;
-                const isApproved = booking.status === "approved";
                 return (
                   <TableRow key={booking.id} className={isNewRow(booking.created_at) ? "row-new" : undefined}>
+                    {canApprove && (
+                      <TableCell className="w-10 px-3">
+                        <input aria-label={`Select order ${booking.id.slice(0, 8)}`} type="checkbox" checked={selectedBookingIds.includes(booking.id)} onChange={(event) => toggleBookingSelection(booking.id, event.target.checked)} />
+                      </TableCell>
+                    )}
                     <TableCell className="font-mono text-sm">
                       <Button
                         onClick={() => openDetailModal(booking)}
@@ -575,24 +657,13 @@ export function BookingSummary() {
                     </TableCell>
                     <TableCell className="text-sm">
                       {creator ? (
-                        <span className="font-semibold text-foreground">{creator.username}</span>
+                        <span className="font-semibold text-foreground">{creator.agent?.full_name ?? creator.username}</span>
                       ) : (
                         <span className="text-muted-foreground italic">Unknown</span>
                       )}
                     </TableCell>
                     <TableCell>
-                      <span className={`px-2 py-1 rounded text-sm ${
-                        isApproved
-                          ? "bg-success-soft text-success"
-                          : "bg-warning-soft text-warning"
-                      }`}>
-                        {isApproved ? "Approved" : "Pending"}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded text-sm ${getStatusColor(booking.status)}`}>
-                        {booking.status}
-                      </span>
+                      <StatusBadge label={booking.status} tone={getStatusTone(booking.status)} />
                     </TableCell>
                     <TableCell className="text-sm whitespace-nowrap">
                       {booking.prepared_delivery_date
@@ -631,7 +702,7 @@ export function BookingSummary() {
                           </Button>
                         </div>
                       ) : (
-                        <span className="px-3 py-1.5 text-xs font-semibold text-muted-foreground bg-muted rounded-lg capitalize border border-border">{booking.status}</span>
+                        <StatusBadge label={booking.status} tone={getStatusTone(booking.status)} />
                       )}
                     </TableCell>
                   </TableRow>
@@ -640,6 +711,7 @@ export function BookingSummary() {
             )}
           </TableBody>
         </Table>
+        <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </Card>
 
     </div>
@@ -790,8 +862,9 @@ export function BookingSummary() {
       <BookingDetailPage
         booking={detailBooking}
         products={products}
-        getStatusColor={getStatusColor}
+        getStatusTone={getStatusTone}
         onBack={closeDetailModal}
+        onSaveItems={handleSaveBookingItems}
       />
         </PageDialog>
       )}

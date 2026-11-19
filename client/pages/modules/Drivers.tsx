@@ -85,15 +85,23 @@ function DriverModal({
   formData,
   setFormData,
   hasLogin,
+  mfaEnabled,
+  isResettingMfa,
+  mfaMessage,
   onClose,
   onSave,
+  onResetMfa,
 }: {
   title: string;
   formData: DriverForm;
   setFormData: (data: DriverForm) => void;
   hasLogin: boolean;
+  mfaEnabled: boolean;
+  isResettingMfa: boolean;
+  mfaMessage: string | null;
   onClose: () => void;
   onSave: () => void;
+  onResetMfa: () => void;
 }) {
   const field = (
     label: string,
@@ -173,6 +181,23 @@ function DriverModal({
             />
             <label htmlFor="is_active" className="text-sm font-semibold text-foreground">Active Driver</label>
           </div>
+
+          {hasLogin && (
+            <div className="bg-muted rounded-xl p-4 space-y-3 border border-border">
+              <p className="text-xs font-bold text-muted-foreground">Authenticator (MFA)</p>
+              <div className="flex items-center justify-between gap-3">
+                <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${mfaEnabled ? "badge-green" : "badge-red"}`}>
+                  {mfaEnabled ? "Enabled" : "Not set up"}
+                </span>
+                {mfaEnabled && (
+                  <Button type="button" variant="danger" size="sm" onClick={onResetMfa} disabled={isResettingMfa}>
+                    {isResettingMfa ? "Resetting…" : "Reset MFA"}
+                  </Button>
+                )}
+              </div>
+              {mfaMessage && <p className="text-xs text-muted-foreground">{mfaMessage}</p>}
+            </div>
+          )}
         </div>
 
         <div className="sticky bottom-0 flex justify-end gap-2 rounded-b-2xl border-t border-border bg-muted px-6 py-4">
@@ -193,6 +218,9 @@ function DriverCard({
   onEdit,
   onSchedule,
   onDelete,
+  canManageMfa,
+  isSavingMfa,
+  onMfaRequirementChange,
 }: {
   driver: Driver;
   showDelete: boolean;
@@ -200,6 +228,9 @@ function DriverCard({
   onEdit?: () => void;
   onSchedule: () => void;
   onDelete: () => void;
+  canManageMfa: boolean;
+  isSavingMfa: boolean;
+  onMfaRequirementChange: (required: boolean) => void;
 }) {
   const initials = (driver.full_name || "?")
     .split(" ")
@@ -226,23 +257,30 @@ function DriverCard({
       </div>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-        <div>
+        <div className="min-w-0">
           <span className="text-muted-foreground block">Contact</span>
-          <span className="text-foreground font-medium">{driver.contact_info || "—"}</span>
+          <span className="block truncate text-foreground font-medium">{driver.contact_info || "—"}</span>
         </div>
-        <div>
+        <div className="min-w-0">
           <span className="text-muted-foreground block">Employment</span>
-          <span className="text-foreground font-medium capitalize">{driver.employment_type?.replace("_", " ") || "—"}</span>
+          <span className="block truncate text-foreground font-medium capitalize">{driver.employment_type?.replace("_", " ") || "—"}</span>
         </div>
-        <div>
+        <div className="min-w-0">
           <span className="text-muted-foreground block">Hired</span>
-          <span className="text-foreground font-medium">{driver.hire_date || "—"}</span>
+          <span className="block truncate text-foreground font-medium">{driver.hire_date || "—"}</span>
         </div>
-        <div>
+        <div className="min-w-0">
           <span className="text-muted-foreground block">Login</span>
-          <span className="text-foreground font-medium">{driver.user?.username || "No login"}</span>
+          <span className="block truncate text-foreground font-medium">{driver.user?.username || "No login"}</span>
         </div>
       </div>
+
+      {canManageMfa && driver.user && (
+        <label className="flex items-center justify-between gap-3 border-t border-border pt-2 text-xs font-semibold text-foreground">
+          <span>Require MFA at sign-in</span>
+          <input type="checkbox" checked={driver.user.mfa_required} disabled={isSavingMfa} onChange={(event) => onMfaRequirementChange(event.target.checked)} className="h-4 w-4 accent-navy" />
+        </label>
+      )}
 
       <div className="flex gap-2 pt-1 border-t border-border">
         <Button onClick={onView} variant="outline" size="sm" className="flex-1">View</Button>
@@ -269,6 +307,9 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
   const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
   const [viewingDriver, setViewingDriver] = useState<Driver | null>(null);
   const [schedulingDriver, setSchedulingDriver] = useState<Driver | null>(null);
+  const [isResettingMfa, setIsResettingMfa] = useState(false);
+  const [mfaMessage, setMfaMessage] = useState<string | null>(null);
+  const [mfaSavingDriverId, setMfaSavingDriverId] = useState<string | null>(null);
   const { token } = useAuth();
   const canManageDrivers = useCan("driver:manage");
 
@@ -327,6 +368,7 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
 
   const openEditModal = (driver: Driver) => {
     setEditingDriver(driver);
+    setMfaMessage(null);
     setFormData({
       full_name: driver.full_name ?? "",
       contact_info: driver.contact_info ?? "",
@@ -389,6 +431,53 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
       setIsModalOpen(false);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save driver");
+    }
+  };
+
+  const updateDriverMfaRequirement = async (driver: Driver, required: boolean) => {
+    if (!driver.user) return;
+    setMfaSavingDriverId(driver.id);
+    try {
+      const response = await fetch(`/api/users/${driver.user.id}/mfa-required`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ mfa_required: required }),
+      });
+      if (!response.ok) throw new Error("Failed to update MFA requirement");
+      setDrivers((current) => current.map((item) => item.id === driver.id && item.user ? { ...item, user: { ...item.user, mfa_required: required } } : item));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to update MFA requirement");
+    } finally {
+      setMfaSavingDriverId(null);
+    }
+  };
+
+  const handleResetMfa = async () => {
+    const userId = editingDriver?.user?.id;
+    if (!userId) return;
+    const username = editingDriver?.user?.username;
+    if (!(await confirmAction(`Reset MFA for ${username}? They will need to set up their authenticator app again at next sign-in.`))) return;
+
+    setIsResettingMfa(true);
+    setMfaMessage(null);
+    try {
+      const res = await fetch(`/api/users/${userId}/mfa/reset`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.error || "Failed to reset MFA");
+      }
+      const clearMfa = (d: Driver): Driver =>
+        d.user && d.user.id === userId ? { ...d, user: { ...d.user, mfa_enabled: false } } : d;
+      setDrivers((prev) => prev.map(clearMfa));
+      setEditingDriver((prev) => (prev ? clearMfa(prev) : prev));
+      setMfaMessage("MFA reset. The next sign-in will ask them to set up a new authenticator.");
+    } catch (err) {
+      setMfaMessage(err instanceof Error ? err.message : "Failed to reset MFA");
+    } finally {
+      setIsResettingMfa(false);
     }
   };
 
@@ -466,6 +555,9 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
               onEdit={canManageDrivers ? () => openEditModal(driver) : undefined}
               onSchedule={() => setSchedulingDriver(driver)}
               onDelete={() => handleDelete(driver.id)}
+              canManageMfa={canManageDrivers}
+              isSavingMfa={mfaSavingDriverId === driver.id}
+              onMfaRequirementChange={(required) => void updateDriverMfaRequirement(driver, required)}
             />
           ))}
         </div>
@@ -515,8 +607,12 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
         formData={formData}
         setFormData={setFormData}
         hasLogin={Boolean(editingDriver?.user)}
+        mfaEnabled={editingDriver?.user?.mfa_enabled ?? false}
+        isResettingMfa={isResettingMfa}
+        mfaMessage={mfaMessage}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
+        onResetMfa={handleResetMfa}
       />
         </PageDialog>
       )}

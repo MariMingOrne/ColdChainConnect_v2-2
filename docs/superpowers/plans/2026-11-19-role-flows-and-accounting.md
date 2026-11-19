@@ -118,7 +118,7 @@
 
 **Files:**
 - Modify: `server/db/schema.ts` (`bookings.approved_by`, `bookings.approved_at`, `receipts.payment_verified_by`, `receipts.payment_verified_at`; new `expenses` table with `id, category, description, amount decimal(12,2), status varchar(20), submitted_by, approved_by, paid_by, reject_reason, created_at, updated_at, approved_at, paid_at`)
-- Create: `drizzle/0009_accounting.sql` (additive SQL only)
+- Create: `drizzle/0019_accounting.sql` (additive SQL only)
 - Modify: `shared/api.ts` (`Expense`, `ExpenseStatus`, request/response types)
 - Test: extend `server/test/test-db.spec.ts` to insert and read an expense.
 

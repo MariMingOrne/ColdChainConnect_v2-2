@@ -6,7 +6,7 @@ import { AuditLog } from "@shared/api";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { useToast } from "@/hooks/use-toast";
 import { Table } from "@/components/ui/table";
-import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
+import { SortableHeader, SortState, compareValues, newestFirst } from "@/components/SortableHeader";
 import { describeLog, getActionBadgeClass, getActionLabel } from "./auditDescribe";
 
 interface AuditLogTableProps {
@@ -59,7 +59,7 @@ export function AuditLogTable({ logs, onView }: AuditLogTableProps) {
   }, [logs, query, actionFilter, resourceFilter]);
 
   const sortedLogs = useMemo(() => {
-    if (!sort) return filteredLogs;
+    if (!sort) return newestFirst(filteredLogs);
     const value = (log: AuditLog) => ({ timestamp: log.created_at, user: log.user_name, action: getActionLabel(log.action), description: describeLog(log), resource: log.resource_type, resourceId: log.resource_id })[sort.key];
     return [...filteredLogs].sort((a, b) => compareValues(value(a), value(b)) * (sort.direction === "asc" ? 1 : -1));
   }, [filteredLogs, sort]);

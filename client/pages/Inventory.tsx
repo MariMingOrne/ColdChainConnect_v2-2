@@ -8,9 +8,8 @@ import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { useInventoryContext } from "../context/InventoryContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Archive, ArchiveRestore, ArrowLeft, Search, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
-import { ActionButtons } from "@/components/ActionButtons";
 import { useCan } from "@/hooks/useCan";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
@@ -19,6 +18,8 @@ import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
+import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
+import { RecordTitleButton } from "@/components/RecordTitleButton";
 
 interface InventoryProduct {
   id: string;
@@ -79,6 +80,7 @@ export function Inventory() {
   const [batchCreatedSince, setBatchCreatedSince] = useState("");
   const [inventorySort, setInventorySort] = useState<SortState<"name" | "cost" | "stock" | "reorder" | "expiry">>(null);
   const [showExcelImport, setShowExcelImport] = useState(false);
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
 
   const emptyForm = (): InventoryProduct => ({
     id: "", sku: "", description: "", unitPrice: 0, supplierId: "",
@@ -154,8 +156,8 @@ export function Inventory() {
   const visiblePallets = currentBatch && currentBatch.id !== "batch-all"
     ? currentBatch.pallets.filter((p) => !batchSearchTerm || currentBatch.name.toLowerCase().includes(batchSearchTerm) || p.palletId.toLowerCase().includes(batchSearchTerm))
     : [];
-  const selectBatch = (id: string) => { setSelectedBatchId(id); setSelectedPalletId(null); setCurrentPage(1); };
-  const selectPallet = (id: string | null) => { setSelectedPalletId(id); setCurrentPage(1); };
+  const selectBatch = (id: string) => { setSelectedBatchId(id); setSelectedPalletId(null); setCurrentPage(1); setSelectedProductIds([]); };
+  const selectPallet = (id: string | null) => { setSelectedPalletId(id); setCurrentPage(1); setSelectedProductIds([]); };
 
   const getBatchProducts = (): (InventoryProduct & { batchQuantity: number; batchExpiryDate: string; itemId?: string })[] => {
     if (!currentBatch || currentBatch.id === "batch-all") {
@@ -191,6 +193,7 @@ export function Inventory() {
   };
 
   const batchProducts = getBatchProducts();
+  const selectedProducts = batchProducts.filter((p) => selectedProductIds.includes(p.id));
 
   const filteredBatchProducts = batchProducts.filter((p) =>
     (p.sku.toLowerCase().includes(searchQuery.toLowerCase()) || p.description.toLowerCase().includes(searchQuery.toLowerCase())) &&
@@ -208,6 +211,13 @@ export function Inventory() {
   const totalPages = Math.ceil(sortedBatchProducts.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const paginatedBatchProducts = sortedBatchProducts.slice(startIndex, startIndex + itemsPerPage);
+
+  const toggleProductSelection = (id: string, checked: boolean) =>
+    setSelectedProductIds((current) => checked ? [...current, id] : current.filter((selectedId) => selectedId !== id));
+  const togglePageSelection = (checked: boolean) => {
+    const pageIds = paginatedBatchProducts.map((product) => product.id);
+    setSelectedProductIds((current) => checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id)));
+  };
 
   const suppliers = Array.from(new Set(products.map((p) => p.supplierId))).sort();
 
@@ -314,25 +324,40 @@ export function Inventory() {
     await refreshBatchesFromDB();
   };
 
-  const handleDelete = async (id: string) => {
-    if (!(await confirmAction("Are you sure you want to delete this product?"))) return;
+  const handleDeleteSelected = async () => {
+    if (selectedProducts.length === 0) return;
+    const noun = selectedProducts.length === 1 ? "product" : "products";
+    if (!(await confirmAction(`Delete ${selectedProducts.length} selected ${noun}?`))) return;
+    const selectedIds = selectedProducts.map((product) => product.id);
     try {
       const token = localStorage.getItem("auth_token") || "";
-      const response = await fetch(`/api/products/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-      if (!response.ok) throw new Error("Failed to delete");
-      setProducts(products.filter((p) => p.id !== id));
+      await Promise.all(selectedIds.map(async (id) => {
+        const response = await fetch(`/api/products/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+        if (!response.ok) throw new Error("Failed to delete");
+      }));
+      setProducts(products.filter((p) => !selectedIds.includes(p.id)));
       setBatches(batches.map((b) => ({
         ...b,
         pallets: b.pallets.map((p: any) => ({
           ...p,
-          items: p.items.filter((i: any) => i.productId !== id),
+          items: p.items.filter((i: any) => !selectedIds.includes(i.productId)),
         })),
       })));
+      setSelectedProductIds([]);
       await fetchProductsFromApi();
     } catch (err) {
-      toast.error("Failed to delete product. Please try again.");
+      toast.error("Failed to delete selected products. Please try again.");
     }
   };
+
+  const inventoryBulkActions: TableBulkAction[] = [
+    ...(selectedProducts.length === 1
+      ? [{ label: "View item", onSelect: () => setExtraInfoProduct(selectedProducts[0]) }]
+      : []),
+    ...(canManageProducts
+      ? [{ label: `Delete selected ${selectedProducts.length === 1 ? "product" : "products"}`, onSelect: () => void handleDeleteSelected(), destructive: true }]
+      : []),
+  ];
 
 
 
@@ -402,24 +427,24 @@ export function Inventory() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-start gap-3">
-        <div className="relative w-full sm:w-72">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input type="text" placeholder="Search by SKU or name…" value={searchQuery} onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }} className="w-full pl-9" />
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <NativeSelect aria-label="Filter inventory by stock level" value={stockFilter} onChange={(e) => { setStockFilter(e.target.value); setCurrentPage(1); }} >
-            <option value="all">All stock</option>
-            <option value="low">Reorder needed</option>
-            <option value="available">Above reorder level</option>
-          </NativeSelect>
-          <NativeSelect aria-label="Filter inventory by expiry date" value={expiryFilter} onChange={(e) => { setExpiryFilter(e.target.value); setCurrentPage(1); }} >
-            <option value="all">All expiry dates</option>
-            <option value="has-expiry">Has expiry date</option>
-            <option value="no-expiry">No expiry date</option>
-          </NativeSelect>
-        </div>
-      </div>
+      <TableToolbar
+        selectedCount={selectedProducts.length}
+        bulkActions={inventoryBulkActions}
+        searchValue={searchQuery}
+        onSearchChange={(value) => { setSearchQuery(value); setCurrentPage(1); }}
+        searchPlaceholder="Search by SKU or name…"
+      >
+        <TableFilterSelect label="Filter inventory by stock level" value={stockFilter} onChange={(value) => { setStockFilter(value); setCurrentPage(1); }}>
+          <option value="all">All stock</option>
+          <option value="low">Reorder needed</option>
+          <option value="available">Above reorder level</option>
+        </TableFilterSelect>
+        <TableFilterSelect label="Filter inventory by expiry date" value={expiryFilter} onChange={(value) => { setExpiryFilter(value); setCurrentPage(1); }}>
+          <option value="all">All expiry dates</option>
+          <option value="has-expiry">Has expiry date</option>
+          <option value="no-expiry">No expiry date</option>
+        </TableFilterSelect>
+      </TableToolbar>
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -435,6 +460,7 @@ export function Inventory() {
           <Table>
             <thead>
               <tr>
+                <th className="px-3 py-3"><input aria-label="Select all products on this page" type="checkbox" checked={paginatedBatchProducts.length > 0 && paginatedBatchProducts.every((product) => selectedProductIds.includes(product.id))} onChange={(event) => togglePageSelection(event.target.checked)} /></th>
                 <SortableHeader label="Name" sortKey="name" sort={inventorySort} onSort={setInventorySort} />
                 <SortableHeader label="Cost Per Item" sortKey="cost" sort={inventorySort} onSort={setInventorySort} align="right" />
                 <SortableHeader label="Stock Qty" sortKey="stock" sort={inventorySort} onSort={setInventorySort} align="center" />
@@ -444,9 +470,6 @@ export function Inventory() {
                 {selectedBatchId !== "batch-all" && (
                   <SortableHeader label="Expiry Date" sortKey="expiry" sort={inventorySort} onSort={setInventorySort} />
                 )}
-                <th style={{ width: '120px' }} className="sticky right-0 z-10 bg-navy-mid text-muted-foreground font-barlow-cond text-xs font-bold px-3 py-3 text-center border-b border-border whitespace-nowrap shadow-left">
-                  Actions
-                </th>
               </tr>
             </thead>
             <tbody>
@@ -459,11 +482,12 @@ export function Inventory() {
                   const expiryStatus = selectedBatchId !== "batch-all" && product.batchExpiryDate ? getExpiryStatus(product.batchExpiryDate) : null;
                   return (
                     <tr key={uniqueKey} className={`border-b border-border transition-colors ${highlightColor.bg} ${highlightColor.hover}`}>
+                      <td className="px-3 py-3"><input aria-label={`Select ${product.description}`} type="checkbox" checked={selectedProductIds.includes(product.id)} onChange={(event) => toggleProductSelection(product.id, event.target.checked)} /></td>
                       {/* Name */}
                       <td className="px-3 py-3 text-foreground font-semibold max-w-[200px] truncate">
                         <div className="flex items-center gap-2 truncate">
                           {expiryStatus?.icon && <span className={`ml-1.5 rounded-full px-1.5 py-0.5 text-2xs font-semibold ${expiryStatus.status === "expired" ? "bg-destructive-soft text-destructive" : "bg-warning-soft text-warning"}`}>{expiryStatus.icon}</span>}
-                          <span className="truncate">{product.description}</span>
+                          <RecordTitleButton onClick={() => setExtraInfoProduct(product)} className="min-w-0 truncate">{product.description}</RecordTitleButton>
                         </div>
                       </td>
                       {/* Cost Per Item */}
@@ -490,17 +514,6 @@ export function Inventory() {
                           {product.batchExpiryDate ? parseIsoDate(product.batchExpiryDate).toLocaleDateString("en-PH") : "N/A"}
                         </td>
                       )}
-                      {/* Actions */}
-                      <td style={{ width: '120px' }} className="sticky right-0 z-10 px-3 py-3 whitespace-nowrap bg-card border-l border-border shadow-left">
-                        <div className="flex items-center justify-center gap-1">
-                          <ActionButtons
-                            onView={() => setExtraInfoProduct(product)}
-                            onEdit={undefined}
-                            onDelete={() => handleDelete(product.id)}
-                            showDelete={canManageProducts}
-                          />
-                        </div>
-                      </td>
                     </tr>
                   );
                 })
@@ -803,8 +816,8 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                     )}
                   </div>
                   <div className="flex gap-2 justify-between">
-                    <Button onClick={() => setShowArchived(true)} variant="secondary">View Archived ({archivedBatches.length})</Button>
-                    {canManageBatches && <Button onClick={() => { setIsCreatingBatch(true); setPallets([]); setNewBatchName(""); }} variant="success">Create New Batch</Button>}
+                    <Button onClick={() => setShowArchived(true)} variant="secondary"><Archive size={16} aria-hidden="true" />View Archived ({archivedBatches.length})</Button>
+                    {canManageBatches && <Button onClick={() => { setIsCreatingBatch(true); setPallets([]); setNewBatchName(""); }} variant="success"><Plus size={16} aria-hidden="true" />Create New Batch</Button>}
                   </div>
                 </>
               ) : (
@@ -832,7 +845,7 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                     )}
                   </div>
                   <div className="flex justify-start">
-                    <Button onClick={() => setShowArchived(false)} variant="default">← Back to Active</Button>
+                    <Button onClick={() => setShowArchived(false)} variant="default"><ArrowLeft size={16} aria-hidden="true" />Back to Active</Button>
                   </div>
                 </>
               )}
@@ -875,8 +888,7 @@ function CreateBatchForm({ newBatchName, setNewBatchName, pallets, setPallets, o
 
   const addItem = (productId: string) => {
     if (!productId) return;
-    const p = products.find((x) => x.id === productId);
-    setItems([...items, { productId, quantity: p?.quantity ?? 1, expirationDate: "" }]);
+    setItems([...items, { productId, quantity: 0, expirationDate: "" }]);
   };
 
   const removeItem = (itemIdx: number) => {
@@ -966,7 +978,7 @@ function CreateBatchForm({ newBatchName, setNewBatchName, pallets, setPallets, o
                     <div className="text-xs font-semibold text-foreground">{getName(item.productId)}</div>
                     <div className="text-xs text-muted-foreground">{getSku(item.productId)}</div>
                   </div>
-                  <Input type="number" min="1" value={item.quantity} onChange={(e) => updateItem(itemIdx, "quantity", parseInt(e.target.value) || 1)} className="w-20 px-2 py-1 border border-border rounded text-sm focus:outline-none focus:border-accent-2" />
+                  <Input type="number" min="0" value={item.quantity} onChange={(e) => updateItem(itemIdx, "quantity", parseInt(e.target.value) || 0)} className="w-20 px-2 py-1 border border-border rounded text-sm focus:outline-none focus:border-accent-2" />
                   <Button type="button" variant="destructive" size="sm" onClick={() => removeItem(itemIdx)} aria-label="Remove product">✕</Button>
                 </div>
                 <div>

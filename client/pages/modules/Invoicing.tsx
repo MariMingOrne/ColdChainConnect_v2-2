@@ -14,7 +14,10 @@ import {
 } from "@/components/ui/table";
 import { Printer, Calendar, ArrowLeft } from "lucide-react";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
-import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { RecordTitleButton } from "@/components/RecordTitleButton";
+import { TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
+import { newestFirst } from "@/components/SortableHeader";
+import { TablePagination, paginate } from "@/components/TablePagination";
 import { Invoice, InvoiceItem, BookingItem } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 
@@ -250,6 +253,11 @@ export function Invoicing() {
   const [customDateStart, setCustomDateStart] = useState("");
   const [customDateEnd, setCustomDateEnd] = useState("");
   const [receiptInvoice, setReceiptInvoice] = useState<Invoice | null>(null);
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter, paymentFilter, dateRangeFilter, customDateStart, customDateEnd]);
 
   const fetchInvoices = async () => {
     try {
@@ -300,7 +308,7 @@ export function Invoicing() {
 
   if (receiptInvoice) return <ReceiptModal invoice={receiptInvoice} onClose={() => setReceiptInvoice(null)} />;
 
-  const filtered = invoices.filter((inv) => {
+  const filtered = newestFirst(invoices.filter((inv) => {
     const matchSearch =
       inv.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       inv.booking_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -310,7 +318,9 @@ export function Invoicing() {
     if (paymentFilter !== "all" && inv.payment_status !== paymentFilter) return false;
     if (!isDateInRange(inv.created_at)) return false;
     return true;
-  });
+  }));
+
+  const { currentPage, totalPages, pageItems: paginated } = paginate(filtered, page);
 
   return (
     <div className="flex-1 flex flex-col p-6 gap-6">
@@ -327,45 +337,31 @@ export function Invoicing() {
         </Card>
       )}
 
-      <SearchFilterBar
-        searchTerm={searchTerm}
+      <TableToolbar
+        searchValue={searchTerm}
         onSearchChange={setSearchTerm}
-        placeholder="Search by invoice ID, booking ID, or customer…"
-        className="!justify-start"
-        filters={[
-          {
-            name: "statusFilter", value: statusFilter,
-            onChange: (v) => setStatusFilter(v as any),
-            options: [
-              { label: "All Status", value: "all" },
-              { label: "Draft",      value: "draft" },
-              { label: "Issued",     value: "issued" },
-              { label: "Paid",       value: "paid" },
-            ],
-          },
-          {
-            name: "paymentFilter", value: paymentFilter,
-            onChange: (v) => setPaymentFilter(v as any),
-            options: [
-              { label: "All Payments", value: "all" },
-              { label: "Paid",         value: "paid" },
-              { label: "Partially paid", value: "partial" },
-              { label: "Unpaid",       value: "unpaid" },
-            ],
-          },
-          {
-            name: "dateRangeFilter", value: dateRangeFilter,
-            onChange: (v) => setDateRangeFilter(v as any),
-            options: [
-              { label: "All Dates",   value: "all" },
-              { label: "This Day",    value: "today" },
-              { label: "This Week",   value: "week" },
-              { label: "This Month",  value: "month" },
-              { label: "Custom",      value: "custom" },
-            ],
-          },
-        ]}
-      />
+        searchPlaceholder="Search by invoice ID, booking ID, or customer…"
+      >
+        <TableFilterSelect label="Status" value={statusFilter} onChange={(value) => setStatusFilter(value as typeof statusFilter)}>
+          <option value="all">All Status</option>
+          <option value="draft">Draft</option>
+          <option value="issued">Issued</option>
+          <option value="paid">Paid</option>
+        </TableFilterSelect>
+        <TableFilterSelect label="Payment" value={paymentFilter} onChange={(value) => setPaymentFilter(value as typeof paymentFilter)}>
+          <option value="all">All Payments</option>
+          <option value="paid">Paid</option>
+          <option value="partial">Partially paid</option>
+          <option value="unpaid">Unpaid</option>
+        </TableFilterSelect>
+        <TableFilterSelect label="Date range" value={dateRangeFilter} onChange={(value) => setDateRangeFilter(value as typeof dateRangeFilter)}>
+          <option value="all">All Dates</option>
+          <option value="today">This Day</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="custom">Custom</option>
+        </TableFilterSelect>
+      </TableToolbar>
 
       {dateRangeFilter === "custom" && (
         <div className="flex flex-col sm:flex-row gap-3 items-end">
@@ -405,14 +401,14 @@ export function Invoicing() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+            {paginated.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                   {invoices.length === 0 ? "No invoices found" : "No invoices match your search"}
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((inv) => {
+              paginated.map((inv) => {
                 const itemCount = inv.invoice_items?.length ?? 0;
                 const legacyItems = inv.booking?.booking_items ?? [];
                 const snapshotGross = parseFloat(inv.gross_amount || "0");
@@ -427,8 +423,10 @@ export function Invoicing() {
                   n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 return (
                   <TableRow key={inv.id} className={isNewRow(inv.created_at) ? "row-new" : undefined}>
-                    <TableCell className="font-mono text-sm font-semibold text-accent-2">
-                      {inv.receipt_number || inv.id.slice(0, 8).toUpperCase()}
+                    <TableCell className="font-mono text-sm font-semibold">
+                      <RecordTitleButton onClick={() => setReceiptInvoice(inv)}>
+                        {inv.receipt_number || inv.id.slice(0, 8).toUpperCase()}
+                      </RecordTitleButton>
                     </TableCell>
                     <TableCell>
                       <div className="flex flex-col gap-0.5">
@@ -493,6 +491,7 @@ export function Invoicing() {
             )}
           </TableBody>
         </Table>
+        <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </Card>
 
     </div>

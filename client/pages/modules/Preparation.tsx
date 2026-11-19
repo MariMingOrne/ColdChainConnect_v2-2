@@ -14,10 +14,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Calendar } from "lucide-react";
-import { SearchFilterBar } from "@/components/SearchFilterBar";
-import { Booking, Customer, Pallet } from "@shared/api";
+import { toast } from "sonner";
+import { confirmAction } from "@/lib/confirm";
+import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
+import { newestFirst } from "@/components/SortableHeader";
+import { TablePagination, paginate } from "@/components/TablePagination";
+import { Booking, Customer, InventoryBatch, Pallet } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
+import { buildAutomaticPallets, isCompletePick } from "@/lib/automaticPicking";
 
 export function Preparation() {
   const [orders, setOrders] = useState<Booking[]>([]);
@@ -34,6 +39,12 @@ export function Preparation() {
   const [dateRangeFilter, setDateRangeFilter] = useState<"all" | "today" | "week" | "month" | "custom">(filters?.dateRangeFilter ?? "today");
   const [customDateStart, setCustomDateStart] = useState<string>(filters?.customDateStart ?? "");
   const [customDateEnd, setCustomDateEnd] = useState<string>(filters?.customDateEnd ?? "");
+  const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter, dateRangeFilter, customDateStart, customDateEnd]);
 
   const fetchAll = async () => {
     try {
@@ -113,7 +124,7 @@ export function Preparation() {
 
   if (isLoading) return <LoadingSpinner className="min-h-[60vh] bg-transparent" slow />;
 
-  const filtered = orders.filter((order) => {
+  const filtered = newestFirst(orders.filter((order) => {
     const matchesSearch =
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.customer_id.toLowerCase().includes(searchTerm.toLowerCase());
@@ -123,7 +134,16 @@ export function Preparation() {
     if (!isDateInRange(order.created_at)) return false;
 
     return true;
-  });
+  }));
+
+  const { currentPage, totalPages, pageItems: paginated } = paginate(filtered, page);
+  const pageIds = paginated.map((order) => order.id);
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedOrderIds.includes(id));
+  const selectedOrders = orders.filter((order) => selectedOrderIds.includes(order.id));
+  const toggleOrderSelection = (id: string, checked: boolean) =>
+    setSelectedOrderIds((current) => (checked ? [...current, id] : current.filter((selectedId) => selectedId !== id)));
+  const togglePageSelection = (checked: boolean) =>
+    setSelectedOrderIds((current) => (checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id))));
 
   const ordersReadyForPrep = filtered.length;
   const pendingPalletItems = orders.reduce((sum, order) => {
@@ -205,6 +225,67 @@ export function Preparation() {
     }
   };
 
+  const canAutoPick = (orderId: string) =>
+    !isOrderPrepared(orderId) && !pallets.some((p) => p.order_id === orderId && p.status === "draft");
+
+  const fetchBatches = async (orderId?: string) => {
+    const query = orderId ? `?order_id=${encodeURIComponent(orderId)}` : "";
+    const response = await fetch(`/api/inventory-batches${query}`, { headers: { Authorization: `Bearer ${token}` } });
+    if (!response.ok) throw new Error(`Could not load inventory (HTTP ${response.status}).`);
+    return (await response.json()) as InventoryBatch[];
+  };
+
+  const handleAutomatedPicking = async () => {
+    const eligible = selectedOrders.filter((order) => canAutoPick(order.id));
+    if (eligible.length === 0) return void toast.error("Select orders without pallets to pick automatically");
+    if (!(await confirmAction(`Create automatic pallets for ${eligible.length} selected ${eligible.length === 1 ? "order" : "orders"}?`))) return;
+
+    let created = 0;
+    const skipped: string[] = [];
+    try {
+      for (const order of eligible) {
+        const batches = await fetchBatches(order.id);
+        const { pallets: suggested, shortages } = buildAutomaticPallets(order, batches);
+        const validPallets = suggested.filter((pallet) => pallet.items.length > 0);
+        if (shortages.length > 0 || validPallets.length === 0 || !isCompletePick(order, validPallets)) {
+          skipped.push(order.id.slice(0, 8));
+          continue;
+        }
+        const response = await fetch("/api/pallets", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            order_id: order.id,
+            pallets: validPallets.map((pallet) => ({
+              items: pallet.items.map((item) => ({
+                product_id: item.product_id,
+                qty_units: item.qty_units,
+                batch_item_id: item.batch_item_id,
+              })),
+            })),
+          }),
+        });
+        if (response.ok) {
+          created += 1;
+        } else {
+          skipped.push(order.id.slice(0, 8));
+        }
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Automated picking failed");
+    } finally {
+      setSelectedOrderIds([]);
+      void fetchAll();
+    }
+
+    if (created > 0) toast.success(`Created pallets for ${created} order${created === 1 ? "" : "s"}.`);
+    if (skipped.length > 0) toast.error(`Skipped ${skipped.length} order${skipped.length === 1 ? "" : "s"} with insufficient stock or incomplete picks.`);
+  };
+
+  const bulkActions: TableBulkAction[] = [
+    { label: "Automated picking", onSelect: () => void handleAutomatedPicking() },
+  ];
+
   return (
     <div className="flex-1 flex flex-col gap-6 p-4 md:p-6">
       <div className="page-header">
@@ -237,38 +318,28 @@ export function Preparation() {
       </div>
 
       {/* Filters */}
-      <SearchFilterBar
-        searchTerm={searchTerm}
+      <TableToolbar
+        selectedCount={selectedOrders.length}
+        bulkActions={bulkActions}
+        searchValue={searchTerm}
         onSearchChange={setSearchTerm}
-        placeholder="Search by order ID or customer ID…"
-        className="!justify-start"
-        filters={[
-          {
-            name: "statusFilter",
-            value: statusFilter,
-            onChange: (value) => setStatusFilter(value as any),
-            options: [
-              { label: "All Status", value: "all" },
-              { label: "Pending", value: "pending" },
-              { label: "Approved", value: "approved" },
-              { label: "Prep", value: "prep" },
-              { label: "Ready", value: "ready" },
-            ],
-          },
-          {
-            name: "dateRangeFilter",
-            value: dateRangeFilter,
-            onChange: (value) => setDateRangeFilter(value as any),
-            options: [
-              { label: "All Dates", value: "all" },
-              { label: "This Day", value: "today" },
-              { label: "This Week", value: "week" },
-              { label: "This Month", value: "month" },
-              { label: "Custom", value: "custom" },
-            ],
-          },
-        ]}
-      />
+        searchPlaceholder="Search by order ID or customer ID…"
+      >
+        <TableFilterSelect label="Status" value={statusFilter} onChange={(value) => setStatusFilter(value as typeof statusFilter)}>
+          <option value="all">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="approved">Approved</option>
+          <option value="prep">Prep</option>
+          <option value="ready">Ready</option>
+        </TableFilterSelect>
+        <TableFilterSelect label="Date range" value={dateRangeFilter} onChange={(value) => setDateRangeFilter(value as typeof dateRangeFilter)}>
+          <option value="all">All Dates</option>
+          <option value="today">This Day</option>
+          <option value="week">This Week</option>
+          <option value="month">This Month</option>
+          <option value="custom">Custom</option>
+        </TableFilterSelect>
+      </TableToolbar>
 
       {/* Custom Date Picker */}
       {dateRangeFilter === "custom" && (
@@ -309,6 +380,9 @@ export function Preparation() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-10 px-3">
+                <input aria-label="Select all orders on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
+              </TableHead>
               <TableHead>Order ID</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Items</TableHead>
@@ -317,14 +391,14 @@ export function Preparation() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+            {paginated.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   {orders.length === 0 ? "No orders found" : "No orders match your search"}
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((order) => {
+              paginated.map((order) => {
                 const customer = customers.find((c) => c.id === order.customer_id);
                 const itemCount = order.booking_items?.length ?? 0;
                 const orderPallets = pallets.filter((p) => p.order_id === order.id);
@@ -334,6 +408,9 @@ export function Preparation() {
 
                 return (
                   <TableRow key={order.id}>
+                    <TableCell className="w-10 px-3">
+                      <input aria-label={`Select order ${order.id.slice(0, 8)}`} type="checkbox" checked={selectedOrderIds.includes(order.id)} onChange={(event) => toggleOrderSelection(order.id, event.target.checked)} />
+                    </TableCell>
                     <TableCell className="font-mono text-sm font-semibold text-accent-2">
                       {order.id.slice(0, 8)}
                     </TableCell>
@@ -422,6 +499,7 @@ export function Preparation() {
             )}
           </TableBody>
         </Table>
+        <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </Card>
 
     </div>

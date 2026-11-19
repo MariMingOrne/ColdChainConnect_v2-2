@@ -2,20 +2,36 @@ import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "../db";
-import { inventory_batches, batch_pallets, pallet_items, order_pallet_items, order_pallets } from "../db/schema";
+import { inventory_batches, batch_pallets, pallet_items, order_pallet_items, order_pallets, order_item_reservations } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
 import { isValidIsoDate } from "../../shared/api";
 
 async function hasActiveReservations(executor: any, sourceItemIds: string[]) {
   if (sourceItemIds.length === 0) return false;
-  const [reservation] = await executor
+  const [palletReservation] = await executor
     .select({ id: order_pallet_items.id })
     .from(order_pallet_items)
     .innerJoin(order_pallets, eq(order_pallet_items.pallet_id, order_pallets.id))
     .where(and(inArray(order_pallet_items.batch_item_id, sourceItemIds), ne(order_pallets.status, "shipped")))
     .limit(1);
-  return Boolean(reservation);
+  if (palletReservation) return true;
+
+  const sources: Array<{ product_id: string }> = await executor
+    .select({ product_id: pallet_items.product_id })
+    .from(pallet_items)
+    .where(inArray(pallet_items.id, sourceItemIds));
+  const productIds = [...new Set(sources.map((source: { product_id: string }) => source.product_id))];
+  if (productIds.length === 0) return false;
+  const [orderReservation] = await executor
+    .select({ id: order_item_reservations.id })
+    .from(order_item_reservations)
+    .where(and(
+      eq(order_item_reservations.status, "reserved"),
+      inArray(order_item_reservations.product_id, productIds),
+    ))
+    .limit(1);
+  return Boolean(orderReservation);
 }
 
 export const listBatches: RequestHandler = async (_req, res) => {
@@ -77,7 +93,7 @@ export const createBatch: RequestHandler = async (req: AuthRequest, res) => {
 
       for (const item of items) {
         const { product_id, qty_units, expiration_date } = item;
-        if (!product_id || !qty_units) {
+        if (!product_id || qty_units == null || qty_units < 0) {
           throw new Error("Each item must have product_id and qty_units");
         }
         if (expiration_date && !isValidIsoDate(expiration_date)) {

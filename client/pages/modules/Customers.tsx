@@ -1,26 +1,26 @@
-import { NativeSelect } from "@/components/ui/native-select";
 import { PageDialog } from "@/components/shared/PageDialog";
 import { useNewRows } from "@/lib/unseen";
 import { StatCard } from "@/components/shared/StatCard";
-import { Store, Receipt, BarChart3 } from "lucide-react";
+import { Store, Receipt, BarChart3, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useCan } from "@/hooks/useCan";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Customer, Truck, formatCustomerAddress, totalDiscountRate } from "@shared/api";
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
-import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
+import { SortableHeader, SortState, compareNewestFirst, compareValues } from "@/components/SortableHeader";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ActionButtons } from "@/components/ActionButtons";
+import { RecordTitleButton } from "@/components/RecordTitleButton";
+import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
 import {
   CustomerDiscountEditor,
   DiscountRow,
@@ -68,6 +68,23 @@ const customerExcelColumns: ExcelColumn[] = [
 ];
 
 
+const paymentTypeLabels: Record<NonNullable<Customer["payment_type"]>, string> = {
+  cash: "Cash",
+  check: "Check",
+  bank_transfer: "Bank Transfer",
+  cod: "Cash on Delivery",
+  credit: "Credit",
+};
+
+function DetailField({ label, className, children }: { label: string; className?: string; children: ReactNode }) {
+  return (
+    <div className={className}>
+      <div className="mb-1 text-xs font-semibold text-muted-foreground">{label}</div>
+      <div className="text-sm text-foreground">{children}</div>
+    </div>
+  );
+}
+
 function ViewCustomerPage({ customer, onClose }: { customer: Customer; onClose: () => void }) {
   return (
     <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
@@ -80,33 +97,29 @@ function ViewCustomerPage({ customer, onClose }: { customer: Customer; onClose: 
           Back
         </Button>
       </div>
-      <div className="max-w-lg w-full rounded-2xl border border-border bg-card">
-
-        <div className="p-6 space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">Store Name</label>
-            <div className="text-sm text-foreground font-semibold">{customer.store_name}</div>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">Delivery Address</label>
-            <div className="text-sm text-foreground">{formatCustomerAddress(customer) || "—"}</div>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">Truck District</label>
-            <div className="text-sm text-foreground">{customer.district || "—"}</div>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">Contact Person</label>
-            <div className="text-sm text-foreground">{customer.contact_person || "—"}</div>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">Contact Info</label>
-            <div className="text-sm text-foreground">{customer.contact_info || "—"}</div>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">Discounts</label>
+      <div className="w-full max-w-2xl rounded-2xl border border-border bg-card">
+        <div className="grid grid-cols-1 gap-x-6 gap-y-5 p-6 sm:grid-cols-2">
+          <DetailField label="Store Name"><span className="font-semibold">{customer.store_name}</span></DetailField>
+          <DetailField label="Delivery Address">{formatCustomerAddress(customer) || "—"}</DetailField>
+          <DetailField label="Street No.">{customer.street_number || "—"}</DetailField>
+          <DetailField label="Street Address">{customer.street_address || "—"}</DetailField>
+          <DetailField label="City">{customer.location || "—"}</DetailField>
+          <DetailField label="State / Province">{customer.state || "—"}</DetailField>
+          <DetailField label="Postal Code">{customer.postal_code || "—"}</DetailField>
+          <DetailField label="Coordinates">
+            {customer.latitude != null && customer.longitude != null ? `${customer.latitude}, ${customer.longitude}` : "—"}
+          </DetailField>
+          <DetailField label="Truck District">{customer.district || "—"}</DetailField>
+          <DetailField label="Contact Person">{customer.contact_person || "—"}</DetailField>
+          <DetailField label="Contact Info">{customer.contact_info || "—"}</DetailField>
+          <DetailField label="Payment Type">{customer.payment_type ? paymentTypeLabels[customer.payment_type] : "—"}</DetailField>
+          <DetailField label="Credit Limit">{customer.credit_limit ? `₱${Number(customer.credit_limit).toLocaleString()}` : "No limit"}</DetailField>
+          <DetailField label="Credit Terms">{customer.credit_terms_days ? `${customer.credit_terms_days} days` : "—"}</DetailField>
+          <DetailField label="Created">{new Date(customer.created_at).toLocaleDateString()}</DetailField>
+          <DetailField label="Last Updated">{new Date(customer.updated_at).toLocaleDateString()}</DetailField>
+          <DetailField label="Discounts" className="sm:col-span-2">
             {customer.discounts && customer.discounts.length > 0 ? (
-              <ul className="space-y-1 text-sm text-foreground">
+              <ul className="space-y-1">
                 {customer.discounts.map((discount) => (
                   <li key={discount.id ?? discount.label}>
                     {discount.label}: {formatPercent(Number(discount.rate))}%
@@ -117,9 +130,9 @@ function ViewCustomerPage({ customer, onClose }: { customer: Customer; onClose: 
                 </li>
               </ul>
             ) : (
-              <div className="text-sm text-foreground">—</div>
+              "—"
             )}
-          </div>
+          </DetailField>
         </div>
 
         <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
@@ -453,7 +466,7 @@ export function Customers({ onBack }: CustomersProps) {
             (!districtFilter || customer.district === districtFilter)
         )
         .sort((a, b) => {
-          if (!customerSort) return 0;
+          if (!customerSort) return compareNewestFirst(a, b);
           const direction = customerSort.direction === "asc" ? 1 : -1;
           const value = (c: Customer) => ({ store: c.store_name, address: formatCustomerAddress(c), contact: c.contact_person, contactInfo: c.contact_info, district: c.district })[customerSort.key];
           return compareValues(value(a), value(b)) * direction;
@@ -575,19 +588,45 @@ export function Customers({ onBack }: CustomersProps) {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!(await confirmAction("Delete this customer?"))) return;
+  const [selectedCustomerIds, setSelectedCustomerIds] = useState<string[]>([]);
+  const selectedCustomers = customers.filter((customer) => selectedCustomerIds.includes(customer.id));
+  const pageIds = paginatedCustomers.map((customer) => customer.id);
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedCustomerIds.includes(id));
+  const toggleCustomerSelection = (id: string, checked: boolean) =>
+    setSelectedCustomerIds((current) => (checked ? [...current, id] : current.filter((selectedId) => selectedId !== id)));
+  const togglePageSelection = (checked: boolean) =>
+    setSelectedCustomerIds((current) => (checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id))));
 
+  const handleDeleteSelected = async () => {
+    const noun = selectedCustomers.length === 1 ? "customer" : "customers";
+    if (!(await confirmAction(`Delete ${selectedCustomers.length} selected ${noun}?`))) return;
+    const ids = selectedCustomers.map((customer) => customer.id);
     try {
-      await fetch(`/api/customers/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setCustomers(customers.filter((customer) => customer.id !== id));
+      await Promise.all(ids.map(async (id) => {
+        const response = await fetch(`/api/customers/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+        if (!response.ok) throw new Error("Failed to delete customer");
+      }));
     } catch {
-      toast.error("Failed to delete customer");
+      toast.error("Some customers could not be deleted.");
+    } finally {
+      setSelectedCustomerIds([]);
+      await fetchCustomers();
     }
   };
+
+  const bulkActions: TableBulkAction[] = [
+    ...(selectedCustomers.length === 1
+      ? [
+          { label: "View customer", onSelect: () => setViewingCustomer(selectedCustomers[0]) },
+          ...(canManageCustomers
+            ? [{ label: "Edit customer", onSelect: () => openEditModal(selectedCustomers[0]) }]
+            : []),
+        ]
+      : []),
+    ...(canManageCustomers
+      ? [{ label: `Delete selected ${selectedCustomers.length === 1 ? "customer" : "customers"}`, onSelect: () => void handleDeleteSelected(), destructive: true }]
+      : []),
+  ];
 
   if (isLoading) {
     return (
@@ -641,51 +680,37 @@ export function Customers({ onBack }: CustomersProps) {
           label="With Discounts"
           value={customers.filter((customer) => (customer.discounts?.length ?? 0) > 0).length.toString()} icon={BarChart3}
         />
+        <StatCard label="Districts" value={customerDistricts.length.toString()} icon={MapPin} />
       </div>
 
-      <div className="flex flex-wrap items-center justify-start gap-3">
-        <div className="relative w-full sm:w-72">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="text"
-            placeholder="Search by store, location, or contact person…"
-            value={searchQuery}
-            onChange={(event) => {
-              setSearchQuery(event.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full pl-9"
-          />
-        </div>
-        <NativeSelect
-          aria-label="District"
-          value={districtFilter}
-          onChange={(event) => {
-            setDistrictFilter(event.target.value);
-            setCurrentPage(1);
-          }}
-          className="font-semibold"
-        >
+      <TableToolbar
+        selectedCount={selectedCustomers.length}
+        bulkActions={bulkActions}
+        searchValue={searchQuery}
+        onSearchChange={(value) => { setSearchQuery(value); setCurrentPage(1); }}
+        searchPlaceholder="Search by store, location, or contact person…"
+      >
+        <TableFilterSelect label="District" value={districtFilter} onChange={(value) => { setDistrictFilter(value); setCurrentPage(1); }}>
           <option value="">All districts</option>
           {customerDistricts.map((district) => (
             <option key={district} value={district}>{district}</option>
           ))}
-        </NativeSelect>
-      </div>
+        </TableFilterSelect>
+      </TableToolbar>
 
       <div className="data-table-frame overflow-hidden">
         <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10 px-3 py-3">
+                  <input aria-label="Select all customers on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
+                </TableHead>
                 <SortableHeader label="Store Name" sortKey="store" sort={customerSort} onSort={setCustomerSort} />
                 <SortableHeader label="Delivery Address" sortKey="address" sort={customerSort} onSort={setCustomerSort} />
                 <SortableHeader label="Contact Person" sortKey="contact" sort={customerSort} onSort={setCustomerSort} className="hidden md:table-cell" />
                 <SortableHeader label="Contact Info" sortKey="contactInfo" sort={customerSort} onSort={setCustomerSort} className="hidden md:table-cell" />
                 <SortableHeader label="District" sortKey="district" sort={customerSort} onSort={setCustomerSort} />
-                <TableHead style={{ width: '120px' }} className="sticky right-0 z-10 text-center shadow-left">
-                  Actions
-                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -703,8 +728,11 @@ export function Customers({ onBack }: CustomersProps) {
                     key={customer.id}
                     className={isNewRow(customer.created_at) ? "row-new" : undefined}
                   >
-                    <TableCell className="px-3 py-3 font-semibold text-foreground">
-                      {customer.store_name}
+                    <TableCell className="px-3 py-3">
+                      <input aria-label={`Select ${customer.store_name}`} type="checkbox" checked={selectedCustomerIds.includes(customer.id)} onChange={(event) => toggleCustomerSelection(customer.id, event.target.checked)} />
+                    </TableCell>
+                    <TableCell className="px-3 py-3">
+                      <RecordTitleButton onClick={() => setViewingCustomer(customer)}>{customer.store_name}</RecordTitleButton>
                     </TableCell>
                     <TableCell className="px-3 py-3 text-foreground">{formatCustomerAddress(customer)}</TableCell>
                     <TableCell className="hidden px-3 py-3 text-foreground md:table-cell">
@@ -715,14 +743,6 @@ export function Customers({ onBack }: CustomersProps) {
                     </TableCell>
                     <TableCell className="px-3 py-3 whitespace-nowrap text-foreground">
                       {customer.district || <span className="text-muted-foreground">—</span>}
-                    </TableCell>
-                    <TableCell style={{ width: '120px' }} className="sticky right-0 z-10 px-3 py-3 bg-card border-l border-border shadow-left">
-                      <ActionButtons
-                        onView={() => setViewingCustomer(customer)}
-                        onEdit={canManageCustomers ? () => openEditModal(customer) : undefined}
-                        onDelete={() => handleDelete(customer.id)}
-                        showDelete={canManageCustomers}
-                      />
                     </TableCell>
                   </TableRow>
                 ))

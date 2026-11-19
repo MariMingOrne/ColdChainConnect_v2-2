@@ -7,20 +7,25 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useCan } from "@/hooks/useCan";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { StatusBadge, StatusTone } from "@/components/StatusBadge";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
-import { ArrowLeft, RotateCcw, CheckCircle, XCircle, Search } from "lucide-react";
+import { ArrowLeft, RotateCcw, CheckCircle, XCircle } from "lucide-react";
 import { AgentReturn, Invoice, Customer, Product } from "@shared/api";
 import { LogReturnForm } from "./LogReturnForm";
 import { Table } from "@/components/ui/table";
+import { newestFirst } from "@/components/SortableHeader";
+import { TableBulkAction, TableToolbar } from "@/components/TableToolbar";
+import { TablePagination, paginate } from "@/components/TablePagination";
+import { confirmAction } from "@/lib/confirm";
 
 function authHeaders(token: string) {
   return { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
 }
 
-function statusBadge(status: string) {
-  if (status === "accepted") return "bg-success-soft text-success";
-  if (status === "rejected") return "bg-destructive-soft text-destructive";
-  return "bg-warning-soft text-warning";
+function returnStatusTone(status: string): StatusTone {
+  if (status === "accepted") return "success";
+  if (status === "rejected") return "danger";
+  return "warning";
 }
 
 function returnTypeBadge(type: string) {
@@ -113,6 +118,9 @@ export function AgentReports() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "accepted" | "rejected">("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [page, setPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const fetchAll = useCallback(async () => {
     if (!token) return;
@@ -179,6 +187,38 @@ export function AgentReports() {
     }
   };
 
+  const processSelected = async (action: "accept" | "reject") => {
+    if (!token) return;
+    const pending = returns.filter((ret) => selectedIds.includes(ret.id) && ret.status === "pending");
+    if (pending.length === 0) return void toast.error("Select pending returns to review");
+
+    let reason = "";
+    if (action === "reject") {
+      const input = prompt("Reason for rejection (optional):");
+      if (input === null) return;
+      reason = input;
+    } else if (!(await confirmAction(`Accept ${pending.length} selected ${pending.length === 1 ? "return" : "returns"}?`))) {
+      return;
+    }
+
+    const results = await Promise.all(pending.map(async (ret) => {
+      try {
+        const res = await fetch(`/api/agent-returns/${ret.id}/${action}`, {
+          method: "POST",
+          headers: authHeaders(token),
+          ...(action === "reject" && { body: JSON.stringify({ reason }) }),
+        });
+        return res.ok;
+      } catch {
+        return false;
+      }
+    }));
+    const failed = results.filter((ok) => !ok).length;
+    setSelectedIds([]);
+    await fetchAll();
+    if (failed > 0) toast.error(`${failed} return(s) could not be ${action === "accept" ? "accepted" : "rejected"}.`);
+  };
+
   if (isAgent) {
     return (
       <AgentLogReturnScreen
@@ -190,18 +230,34 @@ export function AgentReports() {
     );
   }
 
-  const filtered = returns.filter((ret) => {
+  const filtered = newestFirst(returns.filter((ret) => {
     const invoice = invoices.find((entry) => entry.id === ret.invoice_id);
     const customer = customers.find((entry) => entry.id === ret.customer_id);
     const query = searchTerm.trim().toLowerCase();
     const matchesSearch = !query || [ret.id, invoice?.receipt_number, ret.customer_id, customer?.store_name, ret.product_name, ret.reason]
       .some((value) => value?.toLowerCase().includes(query));
-    return matchesSearch && (statusFilter === "all" || ret.status === statusFilter);
-  });
+    const matchesDate = !dateFilter || new Date(ret.created_at).toLocaleDateString("en-CA") === dateFilter;
+    return matchesSearch && matchesDate && (statusFilter === "all" || ret.status === statusFilter);
+  }));
 
   const pendingCount  = returns.filter((r) => r.status === "pending").length;
   const acceptedCount = returns.filter((r) => r.status === "accepted").length;
   const rejectedCount = returns.filter((r) => r.status === "rejected").length;
+
+  const { currentPage, totalPages, pageItems: paginated } = paginate(filtered, page);
+  const pageIds = paginated.map((ret) => ret.id);
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
+  const selectedReturns = returns.filter((ret) => selectedIds.includes(ret.id));
+  const toggleReturnSelection = (id: string, checked: boolean) =>
+    setSelectedIds((current) => (checked ? [...current, id] : current.filter((selectedId) => selectedId !== id)));
+  const togglePageSelection = (checked: boolean) =>
+    setSelectedIds((current) => (checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id))));
+  const bulkActions: TableBulkAction[] | undefined = canDecideReturns
+    ? [
+        { label: "Accept selected returns", onSelect: () => void processSelected("accept") },
+        { label: "Reject selected returns", onSelect: () => void processSelected("reject"), destructive: true },
+      ]
+    : undefined;
 
   return (
     <>
@@ -239,22 +295,11 @@ export function AgentReports() {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-start gap-3">
-        <div className="relative w-full sm:w-72">
-          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            type="search"
-            aria-label="Search returns"
-            placeholder="Search order, customer, product…"
-            value={searchTerm}
-            onChange={(event) => setSearchTerm(event.target.value)}
-            className="w-full pl-9"
-          />
-        </div>
+      <div className="flex flex-col gap-3">
         <ToggleGroup
           type="single"
           value={statusFilter}
-          onValueChange={(value) => value && setStatusFilter(value as typeof statusFilter)}
+          onValueChange={(value) => { if (value) { setStatusFilter(value as typeof statusFilter); setPage(1); } }}
           aria-label="Filter returns by status"
           className="hide-scrollbar w-fit max-w-full justify-start overflow-x-auto rounded-full border border-border bg-card p-1"
         >
@@ -264,6 +309,15 @@ export function AgentReports() {
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
+        <TableToolbar
+          selectedCount={selectedReturns.length}
+          bulkActions={bulkActions}
+          searchValue={searchTerm}
+          onSearchChange={(value) => { setSearchTerm(value); setPage(1); }}
+          searchPlaceholder="Search order, customer, product…"
+        >
+          <input type="date" aria-label="Logged on date" title="Show returns logged on this date" value={dateFilter} onChange={(event) => { setDateFilter(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
+        </TableToolbar>
       </div>
 
       <div className="data-table-frame overflow-hidden">
@@ -274,6 +328,11 @@ export function AgentReports() {
             <Table>
               <thead>
                 <tr>
+                  {canDecideReturns && (
+                    <th className="w-10 bg-navy-mid px-3 py-3 text-left border-b border-border">
+                      <input aria-label="Select all returns on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
+                    </th>
+                  )}
                   {["Date", "Order", "Customer", "Product", "Qty", "Type", "Reason", "Status", "Actions"].map((h) => (
                     <th key={h} className="bg-navy-mid text-muted-foreground font-barlow-cond text-xs font-bold px-3 py-3 text-left border-b border-border whitespace-nowrap">
                       {h}
@@ -282,18 +341,23 @@ export function AgentReports() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 ? (
+                {paginated.length === 0 ? (
                   <tr>
-                    <td colSpan={9} className="px-6 py-8 text-center text-muted-foreground">
+                    <td colSpan={canDecideReturns ? 10 : 9} className="px-6 py-8 text-center text-muted-foreground">
                       {returns.length === 0 ? "No returns logged yet." : "No records match this filter."}
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((ret) => {
+                  paginated.map((ret) => {
                     const inv = invoices.find((i) => i.id === ret.invoice_id);
                     const cust = customers.find((c) => c.id === ret.customer_id);
                     return (
                       <tr key={ret.id} className="border-b border-border hover:bg-accent/40 transition-colors">
+                        {canDecideReturns && (
+                          <td className="w-10 px-3 py-3">
+                            <input aria-label={`Select return ${ret.id.slice(0, 8)}`} type="checkbox" checked={selectedIds.includes(ret.id)} onChange={(event) => toggleReturnSelection(ret.id, event.target.checked)} />
+                          </td>
+                        )}
                         <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">
                           {new Date(ret.created_at).toLocaleDateString("en-PH")}
                         </td>
@@ -317,9 +381,7 @@ export function AgentReports() {
                           {ret.reason || "—"}
                         </td>
                         <td className="px-3 py-3">
-                          <span className={`px-2 py-0.5 rounded text-xs font-semibold capitalize ${statusBadge(ret.status)}`}>
-                            {ret.status}
-                          </span>
+                          <StatusBadge label={ret.status} tone={returnStatusTone(ret.status)} />
                           {ret.status === "accepted" && ret.return_type === "good" && (
                             <p className="text-xs text-muted-foreground mt-0.5">
                               {ret.restored_to_pallet_id ? "Restocked ✓" : "Written off"}
@@ -356,6 +418,7 @@ export function AgentReports() {
             </Table>
           </div>
         )}
+        <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </div>
 
     </div>

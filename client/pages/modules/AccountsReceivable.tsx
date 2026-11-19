@@ -7,6 +7,7 @@ import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { StatusBadge, StatusTone } from "@/components/StatusBadge";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import {
   Table,
@@ -17,7 +18,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { CheckCircle } from "lucide-react";
-import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { TableBulkAction, TableToolbar } from "@/components/TableToolbar";
+import { newestFirst } from "@/components/SortableHeader";
+import { TablePagination, paginate } from "@/components/TablePagination";
 import { AccountsReceivable as ARType, Customer } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { useCan } from "@/hooks/useCan";
@@ -42,6 +45,10 @@ export function AccountsReceivable() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("outstanding");
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [fromDateTime, setFromDateTime] = useState("");
+  const [toDateTime, setToDateTime] = useState("");
+  const [page, setPage] = useState(1);
 
   const fetchData = async () => {
     if (!token) return;
@@ -92,6 +99,29 @@ export function AccountsReceivable() {
     }
   };
 
+  const handleMarkSelectedPaid = async () => {
+    const eligible = arRecords.filter((ar) => selectedIds.includes(ar.id) && ar.status !== "paid" && parseFloat(ar.amount_due) >= 0);
+    if (eligible.length === 0) return void toast.error("Select unpaid records to mark as paid");
+    if (!(await confirmAction(`Mark ${eligible.length} selected AR ${eligible.length === 1 ? "record" : "records"} as paid?`))) return;
+
+    const results = await Promise.all(eligible.map(async (ar) => {
+      try {
+        const res = await fetch(`/api/accounts-receivable/${ar.id}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ status: "paid" }),
+        });
+        return res.ok;
+      } catch {
+        return false;
+      }
+    }));
+    const failed = results.filter((ok) => !ok).length;
+    setSelectedIds([]);
+    await fetchData();
+    if (failed > 0) toast.error(`${failed} record(s) could not be marked as paid.`);
+  };
+
   useEffect(() => {
     if (token) fetchData();
   }, [token]);
@@ -114,10 +144,10 @@ export function AccountsReceivable() {
     return "bg-destructive-soft text-destructive";
   };
 
-  const getStatusColor = (status: string) => {
-    if (status === "paid")    return "badge-green";
-    if (status === "partial") return "badge-gold";
-    return "badge-blue";
+  const getStatusTone = (status: string): StatusTone => {
+    if (status === "paid")    return "success";
+    if (status === "partial") return "info";
+    return "warning";
   };
 
   // ── Derived counts ──────────────────────────────────────────────────────────
@@ -147,13 +177,28 @@ export function AccountsReceivable() {
     return true; // "all"
   });
 
-  const filtered = tabFiltered.filter((ar) => {
+  const filtered = newestFirst(tabFiltered.filter((ar) => {
     const q = searchTerm.toLowerCase();
+    const createdAt = new Date(ar.created_at).getTime();
+    if (fromDateTime && createdAt < new Date(fromDateTime).getTime()) return false;
+    if (toDateTime && createdAt > new Date(toDateTime).getTime()) return false;
     return (
       ar.id.toLowerCase().includes(q) ||
       getCustomerName(ar.customer_id).toLowerCase().includes(q)
     );
-  });
+  }));
+
+  const { currentPage, totalPages, pageItems: paginated } = paginate(filtered, page);
+  const pageIds = paginated.map((ar) => ar.id);
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
+  const selectedRecords = arRecords.filter((ar) => selectedIds.includes(ar.id));
+  const toggleRecordSelection = (id: string, checked: boolean) =>
+    setSelectedIds((current) => (checked ? [...current, id] : current.filter((selectedId) => selectedId !== id)));
+  const togglePageSelection = (checked: boolean) =>
+    setSelectedIds((current) => (checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id))));
+  const bulkActions: TableBulkAction[] | undefined = canUpdateReceivable
+    ? [{ label: "Mark selected as paid", onSelect: () => void handleMarkSelectedPaid() }]
+    : undefined;
 
   if (isLoading) return <LoadingSpinner />;
 
@@ -194,17 +239,11 @@ export function AccountsReceivable() {
         </Card>
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <SearchFilterBar
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          placeholder="Search by customer or AR ID…"
-          className="w-full !flex-none sm:w-auto"
-        />
+      <div className="flex flex-col gap-3">
         <ToggleGroup
           type="single"
           value={activeTab}
-          onValueChange={(value) => { if (value) { setActiveTab(value as typeof activeTab); setSearchTerm(""); } }}
+          onValueChange={(value) => { if (value) { setActiveTab(value as typeof activeTab); setSearchTerm(""); setSelectedIds([]); setPage(1); } }}
           aria-label="Filter receivables"
           className="hide-scrollbar w-fit max-w-full justify-start overflow-x-auto rounded-full border border-border bg-card p-1"
         >
@@ -219,6 +258,16 @@ export function AccountsReceivable() {
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
+        <TableToolbar
+          selectedCount={selectedRecords.length}
+          bulkActions={bulkActions}
+          searchValue={searchTerm}
+          onSearchChange={(value) => { setSearchTerm(value); setPage(1); }}
+          searchPlaceholder="Search by customer or AR ID…"
+        >
+          <input type="datetime-local" aria-label="Created from date and time" title="Show records created from this date and time" value={fromDateTime} max={toDateTime || undefined} onChange={(event) => { setFromDateTime(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
+          <input type="datetime-local" aria-label="Created to date and time" title="Show records created up to this date and time" value={toDateTime} min={fromDateTime || undefined} onChange={(event) => { setToDateTime(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
+        </TableToolbar>
       </div>
 
       {/* Table */}
@@ -226,6 +275,11 @@ export function AccountsReceivable() {
         <Table>
           <TableHeader>
             <TableRow>
+              {canUpdateReceivable && (
+                <TableHead className="w-10 px-3">
+                  <input aria-label="Select all AR records on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
+                </TableHead>
+              )}
               <TableHead>AR ID</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Amount</TableHead>
@@ -237,9 +291,9 @@ export function AccountsReceivable() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+            {paginated.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-10 text-muted-foreground text-sm">
+                <TableCell colSpan={canUpdateReceivable ? 9 : 8} className="text-center py-10 text-muted-foreground text-sm">
                   {activeTab === "outstanding" && "No outstanding balances — great job! 🎉"}
                   {activeTab === "paid"        && "No paid records yet."}
                   {activeTab === "credits"     && "No return credits yet."}
@@ -247,12 +301,17 @@ export function AccountsReceivable() {
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((ar) => {
+              paginated.map((ar) => {
                 const days = daysCreated(ar.created_at);
                 const amountNum = parseFloat(ar.amount_due);
                 const isCredit = amountNum < 0;
                 return (
                   <TableRow key={ar.id} className={isNewRow(ar.created_at) ? "row-new" : undefined}>
+                    {canUpdateReceivable && (
+                      <TableCell className="w-10 px-3">
+                        <input aria-label={`Select AR ${ar.id.slice(0, 8)}`} type="checkbox" checked={selectedIds.includes(ar.id)} onChange={(event) => toggleRecordSelection(ar.id, event.target.checked)} />
+                      </TableCell>
+                    )}
                     <TableCell className="font-mono text-xs text-muted-foreground">{ar.id.slice(0, 8)}…</TableCell>
                     <TableCell className="text-sm font-semibold text-foreground">
                       {getCustomerName(ar.customer_id)}
@@ -264,9 +323,7 @@ export function AccountsReceivable() {
                       }
                     </TableCell>
                     <TableCell>
-                      <span className={`px-2 py-1 rounded text-xs font-semibold ${getStatusColor(ar.status)}`}>
-                        {ar.status}
-                      </span>
+                      <StatusBadge label={ar.status} tone={getStatusTone(ar.status)} />
                     </TableCell>
                     <TableCell className="max-w-[180px] text-xs text-muted-foreground">
                       <TruncatedText>{ar.notes || "—"}</TruncatedText>
@@ -303,6 +360,7 @@ export function AccountsReceivable() {
             )}
           </TableBody>
         </Table>
+        <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </Card>
     </div>
   );

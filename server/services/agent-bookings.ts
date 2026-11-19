@@ -4,6 +4,22 @@ import { db } from "../db";
 import { agents, bookings, deliveries, delivery_items, drivers, invoices, trucks } from "../db/schema";
 import type { AuthRequest } from "../middleware/auth";
 
+/** Districts of the trucks on deliveries an agent is assigned to. */
+export async function getAgentDistricts(userId: string): Promise<string[]> {
+  const agent = await db.query.agents.findFirst({
+    where: eq(agents.user_id, userId),
+    columns: { id: true },
+  });
+  if (!agent) return [];
+
+  const rows = await db
+    .selectDistinct({ district: trucks.district })
+    .from(deliveries)
+    .innerJoin(trucks, eq(deliveries.truck_id, trucks.id))
+    .where(eq(deliveries.agent_id, agent.id));
+  return rows.map((row) => row.district);
+}
+
 /** Invoices for the orders an agent created or is delivering. */
 export async function getAgentInvoiceIds(userId: string): Promise<string[]> {
   const orderIds = await getAgentOrderIds(userId);

@@ -53,11 +53,12 @@ export async function authMiddleware(
   if (process.env.DATABASE_URL) {
     try {
       const [account] = await db
-        .select({ role: users.role, module_permissions: users.module_permissions })
+        .select({ role: users.role, module_permissions: users.module_permissions, is_archived: users.is_archived })
         .from(users)
         .where(eq(users.id, payload.userId))
         .limit(1);
       if (!account) return res.status(401).json({ error: "This account no longer exists. Please sign in again." });
+      if (account.is_archived) return res.status(401).json({ error: "This account has been archived. Contact an administrator." });
       if (account.role !== payload.role) {
         return res.status(401).json({ error: "Your access has changed. Please sign in again." });
       }

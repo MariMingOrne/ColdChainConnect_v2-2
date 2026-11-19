@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, Plus, X, ChevronDown, ChevronUp } from "lucide-react";
 import { InventoryBatch, InventoryBatchItem } from "@shared/api";
+import { newestFirst } from "@/components/SortableHeader";
 import { useAuth } from "../hooks/useAuth";
 
 export function InventoryBatchesTab() {
@@ -163,7 +164,7 @@ export function InventoryBatchesTab() {
                 </TableCell>
               </TableRow>
             ) : (
-              batches.flatMap((batch) => {
+              newestFirst(batches).flatMap((batch) => {
                 const itemCount = batch.items?.length ?? 0;
                 const totalQty = batch.items?.reduce((sum, item) => sum + item.qty_units, 0) ?? 0;
                 const isExpanded = expandedBatchId === batch.id;

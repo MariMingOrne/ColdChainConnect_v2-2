@@ -10,7 +10,7 @@ import { logAction } from "../middleware/audit-logger";
 import { hashPassword } from "../auth";
 
 const driverWithUser = {
-  user: { columns: { id: true, username: true, mfa_enabled: true } },
+  user: { columns: { id: true, username: true, mfa_enabled: true, mfa_required: true } },
 } as const;
 
 type LoginInput = { username?: string; password?: string };

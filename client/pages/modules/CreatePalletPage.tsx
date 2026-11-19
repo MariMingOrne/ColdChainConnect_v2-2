@@ -30,7 +30,7 @@ export function CreatePalletPage({ embedded = false }: { embedded?: boolean }) {
         const responses = await Promise.all([
           fetch("/api/bookings", { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal }),
           fetch("/api/pallets", { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal }),
-          fetch("/api/inventory-batches", { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal }),
+          fetch(`/api/inventory-batches?order_id=${encodeURIComponent(orderId ?? "")}`, { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal }),
         ]);
         const failedIndex = responses.findIndex((response) => !response.ok);
         if (failedIndex !== -1) {

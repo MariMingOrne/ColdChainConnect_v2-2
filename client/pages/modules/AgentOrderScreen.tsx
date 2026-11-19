@@ -4,8 +4,7 @@ import { useState } from "react";
 import { Booking, Customer, Product } from "@shared/api";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AgentProductPicker } from "./AgentProductPicker";
-import { AgentOrderItems } from "./AgentOrderItems";
+import { OrderProductList } from "./OrderProductList";
 import { AgentPendingOrders } from "./AgentPendingOrders";
 
 interface OrderItem {
@@ -57,7 +56,6 @@ export function AgentOrderScreen({
   const today = new Date();
   const minDeliveryDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
   const [view, setView] = useState<"new" | "pending">("new");
-  const [tab, setTab] = useState<"products" | "items">("products");
   const totalQty = orderItems.reduce((sum, item) => sum + item.qty_ordered, 0);
   const canCreate = !isCreating && !!newCustomerId && orderItems.length > 0;
 
@@ -93,16 +91,23 @@ export function AgentOrderScreen({
                 <label className="block text-xs font-semibold text-foreground mb-2">Customer *</label>
                 <Select value={newCustomerId || undefined} onValueChange={onCustomerChange}>
                   <SelectTrigger aria-label="Select a customer store">
-                    <SelectValue placeholder="Select a customer store" />
+                    <SelectValue placeholder="Select a customer store" className="min-w-0 truncate" />
                   </SelectTrigger>
                   <SelectContent>
                     {customers.map((customer) => (
-                      <SelectItem key={customer.id} value={customer.id}>
-                        {customer.store_name} — {customer.location}
+                      <SelectItem
+                        key={customer.id}
+                        value={customer.id}
+                        className="[&>span:last-child]:min-w-0 [&>span:last-child]:truncate"
+                      >
+                        {customer.store_name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+                {customers.length === 0 && (
+                  <p className="mt-2 text-xs text-muted-foreground">No customers are available in your assigned districts.</p>
+                )}
               </div>
               <div>
                 <label htmlFor="agentorderscreen-prepared-delivery-date" className="block text-xs font-semibold text-foreground mb-2">Prepared Delivery Date</label>
@@ -117,36 +122,16 @@ export function AgentOrderScreen({
             </section>
 
             <section className="bg-card rounded-xl border border-border overflow-hidden">
-              <Tabs value={tab} onValueChange={(value) => setTab(value as typeof tab)}>
-              <TabsList variant="underline" aria-label="Order items">
-                {(["products", "items"] as const).map((key) => (
-                  <TabsTrigger key={key} variant="underline" value={key} className="flex-1">
-                    {key === "products" ? "Products" : `Order Items (${totalQty})`}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-
-              <TabsContent value={tab} className="mt-0 p-4 focus-visible:ring-inset focus-visible:ring-offset-0">
-                {tab === "products" ? (
-                  <AgentProductPicker
-                    products={products}
-                    productStock={productStock}
-                    orderItems={orderItems}
-                    onAddItem={onAddItem}
-                    onRemoveItem={onRemoveItem}
-                  />
-                ) : (
-                  <AgentOrderItems
-                    products={products}
-                    productStock={productStock}
-                    orderItems={orderItems}
-                    onItemChange={onItemChange}
-                    onRemoveItem={onRemoveItem}
-                    onBrowseProducts={() => setTab("products")}
-                  />
-                )}
-              </TabsContent>
-              </Tabs>
+              <div className="p-4">
+                <OrderProductList
+                  products={products}
+                  productStock={productStock}
+                  orderItems={orderItems}
+                  onAddItem={onAddItem}
+                  onRemoveItem={onRemoveItem}
+                  onItemChange={onItemChange}
+                />
+              </div>
             </section>
           </div>
 

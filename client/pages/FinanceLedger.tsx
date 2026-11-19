@@ -729,7 +729,7 @@ export function FinanceLedger() {
                     </tr>
                   </thead>
                   <tbody>
-                    {expenseRecords.map((record) => (
+                    {[...expenseRecords].sort((a, b) => b.date.localeCompare(a.date)).map((record) => (
                       <tr
                         key={record.id}
                         className="border-b border-border hover:bg-accent transition-colors"
@@ -809,7 +809,7 @@ export function FinanceLedger() {
                     </tr>
                   </thead>
                   <tbody>
-                    {accountsReceivable.map((ar) => (
+                    {[...accountsReceivable].sort((a, b) => b.date.localeCompare(a.date)).map((ar) => (
                       <tr
                         key={ar.id}
                         className="border-b border-border hover:bg-accent transition-colors"
@@ -897,7 +897,7 @@ export function FinanceLedger() {
                     </tr>
                   </thead>
                   <tbody>
-                    {accountsPayable.map((ap) => (
+                    {[...accountsPayable].sort((a, b) => b.date.localeCompare(a.date)).map((ap) => (
                       <tr
                         key={ap.id}
                         className="border-b border-border hover:bg-accent transition-colors"
