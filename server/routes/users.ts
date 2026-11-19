@@ -2,7 +2,7 @@
 import { MIN_PASSWORD_LENGTH } from "../../shared/api";
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { users } from "../db/schema";
 import { hashPassword } from "../auth";
@@ -14,11 +14,11 @@ const ROLES: CreateAccountRequest["role"][] = ["admin", "agent", "staff"];
 
 export const handleListManagedAccounts: RequestHandler = async (req: AuthRequest, res) => {
   if (req.user?.role === "staff") {
-    const accounts = await db.select({ id: users.id, username: users.username, role: users.role, created_at: users.created_at, mfa_enabled: users.mfa_enabled, mfa_required: users.mfa_required, module_permissions: users.module_permissions }).from(users).where(eq(users.id, req.user.userId));
+    const accounts = await db.select({ id: users.id, username: users.username, role: users.role, created_at: users.created_at, mfa_enabled: users.mfa_enabled, mfa_required: users.mfa_required, module_permissions: users.module_permissions, is_archived: users.is_archived }).from(users).where(eq(users.id, req.user.userId));
     return res.json(accounts);
   }
   const accounts = await db
-    .select({ id: users.id, username: users.username, role: users.role, created_at: users.created_at, mfa_enabled: users.mfa_enabled, mfa_required: users.mfa_required, module_permissions: users.module_permissions })
+    .select({ id: users.id, username: users.username, role: users.role, created_at: users.created_at, mfa_enabled: users.mfa_enabled, mfa_required: users.mfa_required, module_permissions: users.module_permissions, is_archived: users.is_archived })
     .from(users)
     .where(inArray(users.role, ["admin", "staff"]))
     .orderBy(desc(users.created_at));
@@ -31,6 +31,21 @@ export const handleUpdateMfaRequirement: RequestHandler = async (req, res) => {
   if (typeof required !== "boolean") return res.status(400).json({ error: "mfa_required must be a boolean" });
 
   const [updated] = await db.update(users).set({ mfa_required: required }).where(eq(users.id, userId)).returning({ id: users.id, mfa_required: users.mfa_required });
+  if (!updated) return res.status(404).json({ error: "Account not found" });
+  res.json(updated);
+};
+
+export const handleUpdateArchiveStatus: RequestHandler = async (req: AuthRequest, res) => {
+  const { userId } = req.params;
+  const archived = (req.body as { is_archived?: unknown }).is_archived;
+  if (typeof archived !== "boolean") return res.status(400).json({ error: "is_archived must be a boolean" });
+  if (archived && userId === req.user?.userId) return res.status(400).json({ error: "You cannot archive your own account" });
+
+  const [updated] = await db
+    .update(users)
+    .set({ is_archived: archived, updated_at: new Date() })
+    .where(and(eq(users.id, userId), inArray(users.role, ["admin", "staff"])))
+    .returning({ id: users.id, is_archived: users.is_archived });
   if (!updated) return res.status(404).json({ error: "Account not found" });
   res.json(updated);
 };

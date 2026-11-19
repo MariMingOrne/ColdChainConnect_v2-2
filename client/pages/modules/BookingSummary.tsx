@@ -25,6 +25,7 @@ export function BookingSummary() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
+  const [agentDistricts, setAgentDistricts] = useState<string[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [productStock, setProductStock] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -80,18 +81,20 @@ export function BookingSummary() {
 
   const fetchAll = async () => {
     try {
-      const [bRes, tRes, cRes, pRes, invRes] = await Promise.all([
+      const [bRes, tRes, cRes, pRes, invRes, dRes] = await Promise.all([
         fetch("/api/bookings", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/trucks", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/customers", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/products", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/products/inventory", { headers: { Authorization: `Bearer ${token}` } }),
+        isAgent ? fetch("/api/agent-districts", { headers: { Authorization: `Bearer ${token}` } }) : Promise.resolve(null),
       ]);
       if (bRes.ok) setBookings(await bRes.json());
       if (tRes.ok) setTrucks(await tRes.json());
       if (cRes.ok) setCustomers(await cRes.json());
       if (pRes.ok) setProducts(await pRes.json());
       if (invRes.ok) setProductStock(await invRes.json());
+      if (dRes?.ok) setAgentDistricts(await dRes.json());
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error loading data");
@@ -438,7 +441,7 @@ export function BookingSummary() {
   if (isAgent) {
     return (
       <AgentOrderScreen
-        customers={customers}
+        customers={customers.filter((customer) => customer.district && agentDistricts.includes(customer.district))}
         products={products}
         productStock={productStock}
         orderItems={orderItems}
@@ -742,7 +745,6 @@ export function BookingSummary() {
               <TableHead>Order ID</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Agent</TableHead>
-              <TableHead>Approval</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Prepared Delivery Date</TableHead>
               <TableHead>Created</TableHead>
@@ -752,7 +754,7 @@ export function BookingSummary() {
           <TableBody>
             {filtered.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   {bookings.length === 0 ? "No orders found" : "No orders match your search"}
                 </TableCell>
               </TableRow>
@@ -760,7 +762,6 @@ export function BookingSummary() {
               filtered.map((booking) => {
                 const customer = booking.customer;
                 const creator = (booking as any).creator;
-                const isApproved = booking.status === "approved";
                 return (
                   <TableRow key={booking.id}>
                     <TableCell className="w-10 px-3">
@@ -788,19 +789,10 @@ export function BookingSummary() {
                     </TableCell>
                     <TableCell className="text-sm">
                       {creator ? (
-                        <span className="font-semibold text-foreground">{creator.username}</span>
+                        <span className="font-semibold text-foreground">{creator.agent?.full_name ?? creator.username}</span>
                       ) : (
                         <span className="text-muted-foreground italic">Unknown</span>
                       )}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded text-sm ${
-                        isApproved
-                          ? "bg-success-soft text-success"
-                          : "bg-warning-soft text-warning"
-                      }`}>
-                        {isApproved ? "Approved" : "Pending"}
-                      </span>
                     </TableCell>
                     <TableCell>
                       <StatusBadge label={booking.status} tone={getStatusTone(booking.status)} />
