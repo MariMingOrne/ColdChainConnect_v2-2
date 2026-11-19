@@ -80,6 +80,7 @@ const staffModulePaths: Record<ModulePermission, string> = {
   "manage-accounts": "/manage-accounts/staff",
   reports: "/reports",
   administration: "/audit",
+  accounting: "/accounting",
 };
 
 function StaffDispatchModule() {

@@ -1,0 +1,24 @@
+import type { RequestHandler } from "express";
+import { can, STAFF_API_MODULES, type Action } from "../../shared/permissions";
+import type { AuthRequest } from "./auth";
+
+export function requirePermission(action: Action): RequestHandler {
+  return (req, res, next) => {
+    const { user, modulePermissions } = req as AuthRequest;
+    if (!user) return res.status(401).json({ error: "Not authenticated" });
+    if (!can({ role: user.role, module_permissions: modulePermissions }, action)) {
+      return res.status(403).json({ error: "Insufficient permissions" });
+    }
+    next();
+  };
+}
+
+/** Mounted on /api after authMiddleware: staff only reach the API prefixes their modules unlock. */
+export const staffModuleGuard: RequestHandler = (req, res, next) => {
+  const authReq = req as AuthRequest;
+  if (authReq.user?.role !== "staff") return next();
+  const prefix = Object.keys(STAFF_API_MODULES).find((path) => req.path === path || req.path.startsWith(`${path}/`));
+  const granted = prefix && STAFF_API_MODULES[prefix].some((module) => authReq.modulePermissions?.includes(module));
+  if (!granted) return res.status(403).json({ error: "Module access denied" });
+  next();
+};

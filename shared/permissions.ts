@@ -1,0 +1,68 @@
+import type { ModulePermission } from "./api";
+
+export type Role = "admin" | "agent" | "driver" | "staff";
+
+export type Action =
+  | "booking:approve"
+  | "invoice:markPaid"
+  | "payment:verify"
+  | "expense:submit"
+  | "expense:approve"
+  | "expense:pay"
+  | "return:decide"
+  | "delivery:confirm";
+
+export interface PermissionSubject {
+  role: Role;
+  module_permissions?: readonly string[];
+}
+
+interface Rule {
+  roles: readonly Role[];
+  /** Staff only: any one of these modules is enough. Omitted means staff can never do it. */
+  staffModules?: readonly ModulePermission[];
+}
+
+/** Single table of who may do what. Admin is always allowed. */
+const ACTION_RULES: Record<Action, Rule> = {
+  "booking:approve": { roles: ["admin"] },
+  "invoice:markPaid": { roles: ["admin", "staff"], staffModules: ["accounting"] },
+  "payment:verify": { roles: ["admin", "staff"], staffModules: ["accounting"] },
+  "expense:submit": { roles: ["admin", "staff"], staffModules: ["accounting"] },
+  "expense:approve": { roles: ["admin"] },
+  "expense:pay": { roles: ["admin", "staff"], staffModules: ["accounting"] },
+  "return:decide": { roles: ["admin", "staff"], staffModules: ["accounting"] },
+  "delivery:confirm": { roles: ["admin", "agent", "driver"] },
+};
+
+export function can(user: PermissionSubject, action: Action): boolean {
+  if (user.role === "admin") return true;
+  const rule = ACTION_RULES[action];
+  if (!rule.roles.includes(user.role)) return false;
+  if (user.role !== "staff") return true;
+  return Boolean(rule.staffModules?.some((module) => user.module_permissions?.includes(module)));
+}
+
+/** API path prefixes (relative to /api) a staff account may reach, with the modules that unlock each. */
+export const STAFF_API_MODULES: Record<string, ModulePermission[]> = {
+  "/customers": ["product-customer"],
+  "/products": ["product-customer"],
+  "/batches": ["product-customer"],
+  "/pallets": ["order-fulfillment"],
+  "/orders": ["order-fulfillment"],
+  "/bookings": ["order-fulfillment"],
+  "/invoices": ["order-fulfillment"],
+  "/inventory-batches": ["order-fulfillment"],
+  "/drivers": ["manage-accounts", "delivery-operations"],
+  "/trucks": ["delivery-operations"],
+  "/deliveries": ["delivery-operations"],
+  "/receipts": ["delivery-operations"],
+  "/accounts-receivable": ["delivery-operations"],
+  "/agent-returns": ["delivery-operations"],
+  "/agents": ["manage-accounts"],
+  "/dashboard": ["dashboard"],
+  "/reports": ["reports"],
+  "/sales/forecast": ["reports"],
+  "/audit-logs": ["administration"],
+  "/backup": ["administration"],
+};

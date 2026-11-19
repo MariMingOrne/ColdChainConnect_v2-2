@@ -115,8 +115,8 @@ import { getDashboardSummary } from "./routes/dashboard";
 import { getUnseenCounts } from "./routes/unseen";
 import { postSalesForecastChat } from "./routes/sales-forecast-chat";
 import { getCustomerReport, getSalesReport, getStockReport } from "./routes/reports";
-import { authMiddleware, requireRole, type AuthRequest } from "./middleware/auth";
-import { ModulePermission } from "@shared/api";
+import { authMiddleware, requireRole } from "./middleware/auth";
+import { staffModuleGuard } from "./middleware/permissions";
 
 export function createServer() {
   const app = express();
@@ -166,25 +166,7 @@ export function createServer() {
   // Sidebar "new" badges: registered ahead of the staff module guard because it filters per module itself.
   app.get("/api/unseen", authMiddleware, requireRole("admin", "staff"), getUnseenCounts);
 
-  app.use("/api", authMiddleware, (req, res, next) => {
-    const authReq = req as AuthRequest;
-    if (authReq.user?.role !== "staff") return next();
-    const groups: [ModulePermission[], string[]][] = [
-      [["product-customer"], ["/customers", "/products", "/batches"]],
-      [["order-fulfillment"], ["/pallets", "/orders", "/invoices", "/inventory-batches"]],
-      [["manage-accounts", "delivery-operations"], ["/drivers"]],
-      [["delivery-operations"], ["/trucks", "/deliveries", "/receipts", "/accounts-receivable", "/agent-returns"]],
-      [["manage-accounts"], ["/agents"]],
-      [["dashboard"], ["/dashboard"]],
-      [["reports"], ["/reports", "/sales/forecast"]],
-      [["administration"], ["/audit-logs", "/backup"]],
-    ];
-    const required = groups.find(([, paths]) => paths.some((path) => req.path === path || req.path.startsWith(`${path}/`)))?.[0];
-    if (!required || !required.some((permission) => authReq.modulePermissions?.includes(permission))) {
-      return res.status(403).json({ error: "Module access denied" });
-    }
-    next();
-  });
+  app.use("/api", authMiddleware, staffModuleGuard);
 
   // Customers routes
   app.get("/api/customers", authMiddleware, listCustomers);

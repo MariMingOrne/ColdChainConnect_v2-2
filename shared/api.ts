@@ -15,6 +15,7 @@ export const modulePermissionKeys = [
   "manage-accounts",
   "reports",
   "administration",
+  "accounting",
 ] as const;
 export type ModulePermission = (typeof modulePermissionKeys)[number];
 export const modulePermissionLabels: Record<ModulePermission, string> = {
@@ -25,6 +26,7 @@ export const modulePermissionLabels: Record<ModulePermission, string> = {
   "manage-accounts": "Manage Accounts",
   reports: "Reports",
   administration: "Administration",
+  accounting: "Accounting",
 };
 
 // Auth types
