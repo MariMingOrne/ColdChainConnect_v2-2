@@ -433,6 +433,9 @@ export interface Booking {
   created_by: string;
   status: "pending" | "approved" | "rejected" | "prep" | "ready";
   prepared_delivery_date?: string | null;
+  /** User id of whoever approved the booking, with the ISO timestamp. */
+  approved_by?: string | null;
+  approved_at?: string | null;
   created_at: string;
   customer?: Customer;
   creator?: User;
@@ -510,6 +513,50 @@ export const UpdateInvoiceStatusSchema = z.object({
 export const UpdateInvoicePaymentStatusSchema = z.object({
   payment_status: z.enum(["unpaid", "partial", "paid"]),
 });
+
+// Expense types — staff submit, admin approves or rejects, accounting marks paid
+export const expenseStatuses = ["submitted", "approved", "rejected", "paid"] as const;
+export type ExpenseStatus = (typeof expenseStatuses)[number];
+
+export interface Expense {
+  id: string;
+  category: string;
+  description?: string | null;
+  /** Decimal string, e.g. "1250.50" */
+  amount: string;
+  status: ExpenseStatus;
+  submitted_by: string;
+  approved_by?: string | null;
+  paid_by?: string | null;
+  reject_reason?: string | null;
+  created_at: string;
+  updated_at: string;
+  approved_at?: string | null;
+  paid_at?: string | null;
+}
+
+export const CreateExpenseSchema = z.object({
+  category: z.string().min(1, "Category is required"),
+  description: z.string().optional(),
+  amount: z
+    .string()
+    .regex(/^\d{1,10}(\.\d{1,2})?$/, "Amount must be a positive decimal with up to 2 places")
+    .refine((value) => Number(value) > 0, "Amount must be greater than zero"),
+});
+export type CreateExpenseRequest = z.infer<typeof CreateExpenseSchema>;
+
+export const RejectExpenseSchema = z.object({
+  reject_reason: z.string().min(1, "A reason is required to reject an expense"),
+});
+export type RejectExpenseRequest = z.infer<typeof RejectExpenseSchema>;
+
+export interface ExpensesResponse {
+  expenses: Expense[];
+}
+
+export interface ExpenseResponse {
+  expense: Expense;
+}
 
 // Delivery types
 export interface Delivery {
