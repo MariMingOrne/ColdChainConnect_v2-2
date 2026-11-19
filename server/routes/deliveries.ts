@@ -333,14 +333,27 @@ export const assignDelivery: RequestHandler = async (
   res
 ) => {
   const { id } = req.params;
-  const { driver_id } = req.body;
-  if (req.body.agent_id !== undefined) {
-    return res.status(400).json({ error: "Agent assignment is derived from the sale owner" });
+  const { agent_id, force } = req.body;
+  if (req.body.driver_id !== undefined) {
+    return res.status(400).json({ error: "Driver assignments cannot be changed after a run is created" });
+  }
+  if (agent_id !== undefined && agent_id !== null && typeof agent_id !== "string") {
+    return res.status(400).json({ error: "Agent ID must be a string or null" });
+  }
+  if (force !== undefined && typeof force !== "boolean") {
+    return res.status(400).json({ error: "Force must be a boolean" });
+  }
+  if (agent_id !== undefined && req.user?.role !== "admin") {
+    return res.status(403).json({ error: "Only admins can change the assigned agent" });
+  }
+  if (force && req.user?.role !== "admin") {
+    return res.status(403).json({ error: "Only admins can force an agent change" });
   }
 
   try {
     const existing = await db.query.deliveries.findFirst({
       where: eq(deliveries.id, id),
+      with: { delivery_items: { columns: { status: true } } },
     });
 
     if (!existing) {
@@ -357,10 +370,24 @@ export const assignDelivery: RequestHandler = async (
       }
     }
 
+    if (agent_id !== undefined) {
+      const allStopsComplete = existing.delivery_items.length > 0 &&
+        existing.delivery_items.every((item) => item.status === "completed");
+      if (!allStopsComplete && !force) {
+        return res.status(409).json({ error: "Complete all delivery stops before changing the agent, or use the admin force-change option." });
+      }
+      if (agent_id) {
+        const selectedAgent = await db.query.agents.findFirst({ where: eq(agents.id, agent_id) });
+        if (!selectedAgent || !selectedAgent.is_active) {
+          return res.status(400).json({ error: "Select an active agent" });
+        }
+      }
+    }
+
     await db
       .update(deliveries)
       .set({
-        ...(driver_id !== undefined ? { driver_id: driver_id || null } : {}),
+        ...(agent_id !== undefined ? { agent_id } : {}),
         updated_at: new Date(),
       })
       .where(eq(deliveries.id, id));
