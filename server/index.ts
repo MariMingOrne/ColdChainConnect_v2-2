@@ -114,10 +114,13 @@ import {
 } from "./routes/pallets";
 import { getSalesForecast } from "./routes/forecast";
 import { getDashboardSummary } from "./routes/dashboard";
+import { getUnseenCounts } from "./routes/unseen";
 import { postSalesForecastChat } from "./routes/sales-forecast-chat";
 import { getCustomerReport, getSalesReport, getStockReport } from "./routes/reports";
-import { authMiddleware, requireRole, type AuthRequest } from "./middleware/auth";
-import { ModulePermission } from "@shared/api";
+import { authMiddleware, requireRole } from "./middleware/auth";
+import { requireAnyPermission, requirePermission, staffModuleGuard } from "./middleware/permissions";
+import { listUnverifiedPayments, verifyReceiptPayment } from "./routes/payment-verification";
+import { approveExpense, createExpense, listExpenses, payExpense, rejectExpense } from "./routes/expenses";
 
 export function createServer() {
   const app = express();
@@ -165,25 +168,10 @@ export function createServer() {
   app.patch("/api/users/:userId/password", authMiddleware, requireRole("admin"), updateUserPassword);
   app.post("/api/users/:userId/mfa/reset", authMiddleware, requireRole("admin"), resetUserMfa);
 
-  app.use("/api", authMiddleware, (req, res, next) => {
-    const authReq = req as AuthRequest;
-    if (authReq.user?.role !== "staff") return next();
-    const groups: [ModulePermission[], string[]][] = [
-      [["product-customer"], ["/customers", "/products", "/batches"]],
-      [["order-fulfillment"], ["/pallets", "/orders", "/invoices", "/inventory-batches"]],
-      [["manage-accounts", "delivery-operations"], ["/drivers"]],
-      [["delivery-operations"], ["/trucks", "/deliveries", "/receipts", "/accounts-receivable", "/agent-returns"]],
-      [["manage-accounts"], ["/agents"]],
-      [["dashboard"], ["/dashboard"]],
-      [["reports"], ["/reports", "/sales/forecast"]],
-      [["administration"], ["/audit-logs", "/backup"]],
-    ];
-    const required = groups.find(([, paths]) => paths.some((path) => req.path === path || req.path.startsWith(`${path}/`)))?.[0];
-    if (!required || !required.some((permission) => authReq.modulePermissions?.includes(permission))) {
-      return res.status(403).json({ error: "Module access denied" });
-    }
-    next();
-  });
+  // Sidebar "new" badges: registered ahead of the staff module guard because it filters per module itself.
+  app.get("/api/unseen", authMiddleware, requireRole("admin", "staff"), getUnseenCounts);
+
+  app.use("/api", authMiddleware, staffModuleGuard);
 
   // Customers routes
   app.get("/api/customers", authMiddleware, listCustomers);
@@ -266,8 +254,19 @@ export function createServer() {
 
   // Receipts routes
   app.get("/api/receipts", authMiddleware, listReceipts);
-  app.post("/api/deliveries/:id/items/:itemId/confirm", authMiddleware, confirmDeliveryItem);
-  app.post("/api/deliveries/:id/items/:itemId/payment", authMiddleware, recordDeliveryItemPayment);
+  app.post("/api/deliveries/:id/items/:itemId/confirm", authMiddleware, requirePermission("delivery:confirm"), confirmDeliveryItem);
+  app.post("/api/deliveries/:id/items/:itemId/payment", authMiddleware, requirePermission("delivery:confirm"), recordDeliveryItemPayment);
+
+  // Payment verification (accounting)
+  app.get("/api/payments/unverified", authMiddleware, requirePermission("payment:verify"), listUnverifiedPayments);
+  app.post("/api/receipts/:id/verify", authMiddleware, requirePermission("payment:verify"), verifyReceiptPayment);
+
+  // Expenses: submit, approve or reject, pay
+  app.get("/api/expenses", authMiddleware, requireAnyPermission("expense:submit", "expense:approve", "expense:pay"), listExpenses);
+  app.post("/api/expenses", authMiddleware, requirePermission("expense:submit"), createExpense);
+  app.post("/api/expenses/:id/approve", authMiddleware, requirePermission("expense:approve"), approveExpense);
+  app.post("/api/expenses/:id/reject", authMiddleware, requirePermission("expense:approve"), rejectExpense);
+  app.post("/api/expenses/:id/pay", authMiddleware, requirePermission("expense:pay"), payExpense);
 
   // Audit logs routes
   app.get("/api/audit-logs", authMiddleware, requireRole("admin", "staff"), listAuditLogs);

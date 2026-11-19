@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
 import { ArrowLeft, Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useCan } from "@/hooks/useCan";
 import { Booking, Product } from "@shared/api";
 import { OrderTotalsBreakdown } from "@/components/OrderTotalsBreakdown";
 import { StatusBadge, StatusTone } from "@/components/StatusBadge";
@@ -16,7 +18,8 @@ interface BookingDetailPageProps {
 export function BookingDetailPage({ booking, products, getStatusTone, onBack, onSaveItems }: BookingDetailPageProps) {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [isSaving, setIsSaving] = useState(false);
-  const canEditItems = booking.status === "pending" || booking.status === "approved";
+  const mayEditItems = useCan("booking:editItems");
+  const canEditItems = mayEditItems && (booking.status === "pending" || booking.status === "approved");
 
   useEffect(() => {
     setQuantities(Object.fromEntries((booking.booking_items ?? []).map((item) => [item.id, item.qty_ordered])));
@@ -39,10 +42,10 @@ export function BookingDetailPage({ booking, products, getStatusTone, onBack, on
           <h1 className="page-title">Order Details</h1>
           <p className="page-subtitle">Review the details of this order</p>
         </div>
-        <button onClick={onBack} className="btn-ghost">
+        <Button onClick={onBack} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
 
       <div className="bg-card rounded-2xl border border-border p-6 space-y-6">
@@ -60,6 +63,17 @@ export function BookingDetailPage({ booking, products, getStatusTone, onBack, on
               <StatusBadge label={booking.status} tone={getStatusTone(booking.status)} />
             </div>
           </div>
+          {booking.approved_by && (
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1">Approved By</label>
+              <div className="px-3 py-2 bg-muted rounded-lg text-sm text-foreground">
+                {booking.approved_by_name ?? "Unknown user"}
+                {booking.approved_at && (
+                  <span className="block text-xs text-muted-foreground">{new Date(booking.approved_at).toLocaleString("en-PH")}</span>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Customer Info */}
@@ -139,15 +153,14 @@ export function BookingDetailPage({ booking, products, getStatusTone, onBack, on
               })}
               {canEditItems && (
                 <div className="flex justify-end pt-2">
-                  <button
+                  <Button
                     type="button"
                     onClick={() => void saveItems()}
                     disabled={isSaving || booking.booking_items.every((item) => (quantities[item.id] ?? item.qty_ordered) === item.qty_ordered)}
-                    className="btn-primary disabled:opacity-50"
                   >
                     <Save size={15} />
                     {isSaving ? "Saving…" : "Save quantities"}
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>

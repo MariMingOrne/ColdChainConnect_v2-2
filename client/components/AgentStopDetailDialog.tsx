@@ -44,10 +44,10 @@ export function AgentStopDetailDialog({ stop, onBack, onShowOnMap }: AgentStopDe
             <span>{formatCustomerAddress(customer)}</span>
           </p>
         </div>
-        <button type="button" onClick={onBack} className="btn-ghost">
+        <Button type="button" onClick={onBack} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
 
       <DetailSection title="Contact">

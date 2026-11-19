@@ -29,7 +29,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn, formatPeso } from "@/lib/utils";
 import { toast } from "sonner";
 
-const REFRESH_MS = 60_000;
+const REFRESH_MS = 120_000;
 /** Receivables older than this are flagged. */
 const OVERDUE_DAYS = 30;
 
@@ -38,6 +38,11 @@ async function getJson<T>(url: string, token: string | null): Promise<T> {
   if (!res.ok) throw new Error(`${url} responded ${res.status}`);
   return res.json() as Promise<T>;
 }
+
+const TONES = {
+  default: { tile: "bg-primary/10 text-primary", value: "text-foreground", ring: "hover:border-primary/40" },
+  warning: { tile: "bg-warning/15 text-warning", value: "text-warning", ring: "border-warning/40 hover:border-warning/70" },
+} as const;
 
 function Figure({ to, label, value, detail, icon: Icon, attention = false, loading }: {
   to: string;
@@ -48,24 +53,27 @@ function Figure({ to, label, value, detail, icon: Icon, attention = false, loadi
   attention?: boolean;
   loading: boolean;
 }) {
+  const tone = TONES[attention ? "warning" : "default"];
   return (
     <Link
       to={to}
       className={cn(
-        "group rounded-xl border bg-card p-4 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring md:p-5",
-        attention ? "border-warning/40" : "border-border",
+        "group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+        tone.ring,
       )}
     >
-      <div className="flex items-center justify-between gap-3">
+      <span className={cn("flex h-11 w-11 shrink-0 items-center justify-center rounded-xl", tone.tile)}>
+        <Icon className="h-5 w-5" aria-hidden />
+      </span>
+      <div className="min-w-0 flex-1">
         <span className="text-sm font-medium text-muted-foreground">{label}</span>
-        <Icon className="h-4 w-4 text-muted-foreground" aria-hidden />
+        {loading ? (
+          <Skeleton className="mt-2 h-8 w-24" />
+        ) : (
+          <p className={cn("mt-1 truncate font-rajdhani text-3xl font-bold tabular-nums", tone.value)}>{value}</p>
+        )}
+        <p className="mt-1 truncate text-xs text-muted-foreground">{loading ? " " : detail}</p>
       </div>
-      {loading ? (
-        <Skeleton className="mt-3 h-8 w-24" />
-      ) : (
-        <p className={cn("mt-2 font-rajdhani text-3xl font-bold tabular-nums", attention ? "text-warning" : "text-foreground")}>{value}</p>
-      )}
-      <p className="mt-1 text-xs text-muted-foreground">{loading ? " " : detail}</p>
     </Link>
   );
 }
@@ -107,12 +115,12 @@ function attentionItems(data: DashboardSummary): AttentionItem[] {
 function NeedsAttention({ data, loading, failed }: { data?: DashboardSummary; loading: boolean; failed: boolean }) {
   const items = data ? attentionItems(data) : [];
   return (
-    <section aria-labelledby="attention-heading" className="rounded-xl border border-border bg-card">
+    <section aria-labelledby="attention-heading" className="rounded-2xl border border-border bg-card shadow-sm">
       <h2 id="attention-heading" className="border-b border-border px-5 py-4 text-lg font-bold text-foreground">Needs attention</h2>
       {loading ? (
         <div className="space-y-3 p-5">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-12" />)}</div>
       ) : failed ? (
-        <p role="status" className="px-5 py-8 text-sm text-muted-foreground">These figures could not be loaded. They retry every minute.</p>
+        <p role="status" className="px-5 py-8 text-sm text-muted-foreground">These figures could not be loaded. They retry every two minutes.</p>
       ) : items.length === 0 ? (
         <div className="flex items-center gap-3 px-5 py-8 text-sm text-muted-foreground">
           <CircleCheck className="h-5 w-5 text-success" aria-hidden="true" />
@@ -153,7 +161,7 @@ function RecentActivity({ logs, loading, failed }: { logs: AuditLog[]; loading: 
   };
 
   return (
-    <section aria-labelledby="activity-heading" className="rounded-xl border border-border bg-card">
+    <section aria-labelledby="activity-heading" className="rounded-2xl border border-border bg-card shadow-sm">
       <div className="flex items-center justify-between gap-4 border-b border-border px-5 py-4">
         <h2 id="activity-heading" className="flex items-center gap-2 text-lg font-bold text-foreground">
           <Activity className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
@@ -233,11 +241,11 @@ export function Dashboard() {
   const today = new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" });
 
   return (
-    <main className="flex-1 overflow-y-auto px-4 py-5 md:px-6 md:py-7">
-      <div className="mx-auto max-w-7xl space-y-6">
+    <main className="flex-1 overflow-y-auto bg-muted/40 px-4 py-5 md:px-6 md:py-6 xl:px-8">
+      <div className="w-full space-y-6">
         <header className="flex flex-wrap items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Operations today</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-foreground md:text-3xl">Operations today</h1>
             <p className="mt-1 text-sm text-muted-foreground">{today}</p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -254,7 +262,7 @@ export function Dashboard() {
           </div>
         </header>
 
-        <section aria-label="Operations at a glance" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <section aria-label="Operations at a glance" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <Figure
             to="/booking-dispatch/order-summary?status=pending"
             label="Pending orders"
@@ -296,7 +304,7 @@ export function Dashboard() {
           />
         </section>
 
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <div className="grid gap-5 xl:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
           <NeedsAttention data={data} loading={loading} failed={summary.isError && !data} />
           <RecentActivity logs={activity.data ?? []} loading={activity.isPending} failed={activity.isError && !activity.data} />
         </div>

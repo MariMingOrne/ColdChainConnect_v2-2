@@ -1,3 +1,5 @@
+import { NativeSelect } from "@/components/ui/native-select";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
@@ -195,19 +197,19 @@ export function InventoryBatchesTab() {
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">
                         {batch.status === "open" && (
-                          <button
+                          <Button
                             onClick={(e) => {
                               e.stopPropagation();
                               handleCloseBatch(batch.id);
                             }}
-                            className="px-3 py-1 text-sm whitespace-nowrap bg-success text-white rounded hover:bg-success transition"
+                            variant="success" size="sm"
                           >
                             Close Batch
-                          </button>
+                          </Button>
                         )}
-                        <button className="text-muted-foreground hover:text-foreground transition">
+                        <span className="inline-flex h-9 w-9 items-center justify-center text-muted-foreground" aria-hidden="true">
                           {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-                        </button>
+                        </span>
                       </div>
                     </TableCell>
                   </TableRow>,
@@ -261,43 +263,43 @@ export function InventoryBatchesTab() {
             <div>
               <h1 className="page-title">Create New Batch</h1>
             </div>
-            <button onClick={() => setShowCreateModal(false)} className="btn-ghost">
+            <Button onClick={() => setShowCreateModal(false)} variant="outline">
               <ArrowLeft size={15} />
               Back
-            </button>
+            </Button>
           </div>
           <div className="bg-card rounded-2xl border border-border flex flex-col">
             <div className="p-6 space-y-4 flex-1">
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-1">
+                <label htmlFor="inventorybatchestab-batch-name" className="block text-xs font-semibold text-foreground mb-1">
                   Batch Name *
                 </label>
-                <input
+                <Input id="inventorybatchestab-batch-name"
                   type="text"
                   value={newBatchName}
                   onChange={(e) => setNewBatchName(e.target.value)}
                   placeholder="e.g., Morning Delivery, Weekly Restock"
-                  className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
+                  className="w-full"
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <label className="text-xs font-semibold text-foreground">Batch Items *</label>
-                  <button
+                  <Button
                     onClick={handleAddItem}
-                    className="text-xs text-accent-2 font-semibold hover:underline flex items-center gap-1"
+                    variant="link" className="h-auto p-0"
                   >
                     <Plus size={12} /> Add Item
-                  </button>
+                  </Button>
                 </div>
                 <div className="space-y-2">
                   {batchItems.map((item, idx) => (
                     <div key={idx} className="flex gap-2 items-center">
-                      <select
+                      <NativeSelect
                         value={item.product_id}
                         onChange={(e) => handleItemChange(idx, "product_id", e.target.value)}
-                        className="flex-1 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
+                        className="flex-1"
                       >
                         <option value="">Select product…</option>
                         {products.map((p) => (
@@ -305,22 +307,18 @@ export function InventoryBatchesTab() {
                             {p.name} (₱{p.price})
                           </option>
                         ))}
-                      </select>
-                      <input
+                      </NativeSelect>
+                      <Input
                         type="number"
                         min={1}
                         value={item.qty_units}
                         onChange={(e) => handleItemChange(idx, "qty_units", e.target.value)}
-                        className="w-20 px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
+                        className="w-20"
                         placeholder="Qty"
                       />
                       {batchItems.length > 1 && (
-                        <button
-                          onClick={() => handleRemoveItem(idx)}
-                          className="text-destructive hover:text-destructive text-lg font-bold px-1"
-                        >
-                          ×
-                        </button>
+                        <Button
+                          onClick={() => handleRemoveItem(idx)} type="button" variant="ghost" size="icon" aria-label="Remove product" className="h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"><X size={16} aria-hidden="true" /></Button>
                       )}
                     </div>
                   ))}
@@ -329,19 +327,19 @@ export function InventoryBatchesTab() {
             </div>
 
             <div className="bg-muted px-6 py-4 flex justify-end gap-2 border-t border-border rounded-b-2xl">
-              <button
+              <Button
                 onClick={() => setShowCreateModal(false)}
-                className="px-4 py-2 border border-border rounded-lg font-semibold text-sm hover:bg-card"
+                variant="outline"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 onClick={handleCreateBatch}
                 disabled={isCreating}
-                className="px-4 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90 disabled:opacity-50"
+                variant="default"
               >
                 {isCreating ? "Creating…" : "Create Batch"}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

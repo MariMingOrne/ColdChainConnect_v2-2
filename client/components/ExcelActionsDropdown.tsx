@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { ChevronDown, FileSpreadsheet, Download, Upload } from "lucide-react";
 import {
   DropdownMenu,
@@ -25,18 +26,11 @@ export function ExcelActionsDropdown({
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <button
-          type="button"
-          aria-label="Excel actions"
-          className={cn(
-            "inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent",
-            className,
-          )}
-        >
+        <Button type="button" variant="outline" aria-label="Excel actions" className={cn("gap-2", className)}>
           <FileSpreadsheet size={16} aria-hidden="true" />
           Excel
           <ChevronDown size={14} aria-hidden="true" />
-        </button>
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {onImport && (

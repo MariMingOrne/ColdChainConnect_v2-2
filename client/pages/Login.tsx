@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { MfaChallengeResponse, MfaSetupResponse } from "@shared/api";
 import { MfaStep } from "../components/auth/MfaStep";
@@ -92,39 +92,40 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col md:flex-row">
-      {/* Left Side - Branding */}
-      <div className="w-full md:w-5/12 bg-navy flex flex-col items-center justify-center gap-6 px-8 py-12 relative overflow-hidden">
-
-        {/* Logo Ring */}
-        <div className="w-18 h-18 rounded-full flex items-center justify-center relative z-10 box-shadow-lg overflow-hidden">
-          <img src="https://cdn.builder.io/api/v1/image/assets%2F95235f61d85340cc8929dd5e2ec9cafe%2F04690f469f254fd393684ed5411b7cab?format=webp&width=800&height=1200" alt="ACDP Logo" className="w-full h-full object-cover" />
+    <div className="grid min-h-dvh bg-background lg:grid-cols-[1.05fr_1fr]">
+      {/* Brand side: solid brand blue so the split is unmistakable */}
+      <aside className="login-brand relative hidden flex-col justify-between overflow-hidden p-12 text-white lg:flex xl:p-16">
+        <div className="flex items-center gap-3">
+          <span className="h-11 w-11 overflow-hidden rounded-full ring-2 ring-white/30">
+            <img src="https://cdn.builder.io/api/v1/image/assets%2F95235f61d85340cc8929dd5e2ec9cafe%2F04690f469f254fd393684ed5411b7cab?format=webp&width=800&height=1200" alt="ACDP logo" className="h-full w-full object-cover" />
+          </span>
+          <span className="font-rajdhani text-lg font-bold tracking-wide">ACDP</span>
         </div>
 
-        {/* Brand Box */}
-        <div className="bg-card text-foreground px-7 py-2.5 rounded-lg text-center relative z-10">
-          <h1 className="font-rajdhani text-5xl font-bold letter-spacing-widest text-foreground">
-            ACDP
+        <div className="max-w-xl">
+          <h1 className="font-rajdhani text-6xl font-bold leading-[0.95] tracking-tight text-white xl:text-7xl">
+            Cold Chain
+            <br />
+            Connect
           </h1>
-          <p className="font-barlow-cond text-xs letter-spacing-wider text-muted-foreground mt-0.5">
-            CONSUMER GOODS TRADING
-          </p>
+          <p className="mt-5 text-lg text-chrome-foreground/75">From cold storage to the customer's door.</p>
         </div>
 
-        {/* Tagline */}
-        <div className="text-center text-chrome-foreground relative z-10">
-          <div className="font-rajdhani text-lg tracking-wider whitespace-nowrap">Cold Chain Connect</div>
-          
-        </div>
-      </div>
+        <ColdRoute />
+      </aside>
 
-      {/* Right Side - Login Form */}
-      <div className="w-full md:flex-1 flex items-center justify-center px-6 py-8 md:py-12">
-        <div className="bg-card rounded-2xl px-8 md:px-10 py-6 md:py-7 w-full max-w-sm md:max-w-md flex flex-col items-center gap-5 shadow-lg md:shadow-xl border border-border">
-          <div className="text-center">
-            <h2 className="font-rajdhani text-2xl font-semibold text-foreground">Welcome back</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Sign in to continue</p>
-          </div>
+      {/* Form side */}
+      <main className="flex flex-col px-6 py-8 sm:px-12">
+        <div className="flex items-center gap-3 lg:hidden">
+          <span className="h-10 w-10 overflow-hidden rounded-full ring-1 ring-border">
+            <img src="https://cdn.builder.io/api/v1/image/assets%2F95235f61d85340cc8929dd5e2ec9cafe%2F04690f469f254fd393684ed5411b7cab?format=webp&width=800&height=1200" alt="ACDP logo" className="h-full w-full object-cover" />
+          </span>
+          <span className="font-rajdhani text-lg font-bold text-foreground">Cold Chain Connect</span>
+        </div>
+
+        <div className="mx-auto flex w-full max-w-[24rem] flex-1 flex-col justify-center py-10 login-rise">
+          <h2 className="font-rajdhani text-4xl font-bold tracking-tight text-foreground">Sign in</h2>
+          <p className="mb-9 mt-2 text-base text-muted-foreground">Welcome back. Enter your details to continue.</p>
 
           {challenge ? (
             <MfaStep
@@ -136,15 +137,15 @@ export function Login() {
               onBack={resetToCredentials}
             />
           ) : (
-            <form className="flex w-full flex-col gap-4" onSubmit={handleSubmit} noValidate={false}>
+            <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
               {error && (
-                <div role="alert" className="w-full rounded-lg border border-destructive/30 bg-destructive-soft px-3.5 py-2.5 text-sm text-destructive">
+                <div role="alert" className="rounded-lg border border-destructive/30 bg-destructive-soft px-4 py-3 text-sm text-destructive">
                   {error}
                 </div>
               )}
 
-              <div className="space-y-1.5">
-                <Label htmlFor="login-username">Username</Label>
+              <div className="space-y-2">
+                <Label htmlFor="login-username" className="text-sm">Username</Label>
                 <Input
                   id="login-username"
                   name="username"
@@ -157,11 +158,12 @@ export function Login() {
                   onChange={(e) => setUsername(e.target.value)}
                   disabled={isLoading}
                   aria-invalid={Boolean(error) || undefined}
+                  className="h-12 text-base"
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="login-password">Password</Label>
+              <div className="space-y-2">
+                <Label htmlFor="login-password" className="text-sm">Password</Label>
                 <div className="relative">
                   <Input
                     id="login-password"
@@ -173,7 +175,7 @@ export function Login() {
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isLoading}
                     aria-invalid={Boolean(error) || undefined}
-                    className="pr-11"
+                    className="h-12 pr-12 text-base"
                   />
                   <button
                     type="button"
@@ -181,22 +183,39 @@ export function Login() {
                     aria-pressed={showPassword}
                     onClick={() => setShowPassword((visible) => !visible)}
                     disabled={isLoading}
-                    className="absolute right-1 top-1/2 flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
+                    className="absolute right-1.5 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-md text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-50"
                   >
                     {showPassword ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
                   </button>
                 </div>
               </div>
 
-              <Button type="submit" size="lg" disabled={isLoading} className="mt-1 w-full">
-                {isLoading ? "Signing in…" : "Sign in"}
+              <Button type="submit" size="lg" disabled={isLoading} className="mt-2 h-12 w-full text-base">
+                {isLoading ? (<><Loader2 className="animate-spin" aria-hidden="true" /> Signing in…</>) : "Sign in"}
               </Button>
 
-              <p className="text-center text-xs text-muted-foreground">Forgot your password? Ask an administrator to reset it.</p>
+              <p className="text-center text-sm text-muted-foreground">Forgot your password? Ask an administrator.</p>
             </form>
           )}
         </div>
-      </div>
+      </main>
     </div>
+  );
+}
+
+/** A cold chain drawn as a route: a pulse travels storage → customer. Decorative; stills under reduced motion. */
+function ColdRoute() {
+  return (
+    <svg viewBox="0 0 480 90" className="w-full" fill="none" aria-hidden="true">
+      <path id="login-route" d="M12 60 C 90 60, 100 22, 170 22 S 270 68, 330 52 S 420 24, 468 24" stroke="currentColor" strokeOpacity="0.35" strokeWidth="2" strokeLinecap="round" strokeDasharray="2 8" />
+      {[[12, 60], [170, 22], [330, 52], [468, 24]].map(([cx, cy]) => (
+        <circle key={`${cx}-${cy}`} cx={cx} cy={cy} r="6" fill="#1e2f9e" stroke="currentColor" strokeWidth="2" />
+      ))}
+      <circle r="5" fill="white" className="login-pulse">
+        <animateMotion dur="6s" repeatCount="indefinite" rotate="auto">
+          <mpath href="#login-route" />
+        </animateMotion>
+      </circle>
+    </svg>
   );
 }

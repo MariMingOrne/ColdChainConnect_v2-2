@@ -1,3 +1,4 @@
+import { NativeSelect } from "@/components/ui/native-select";
 import { ArrowLeft, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -56,21 +57,21 @@ export function AddOrderModal({
           <h1 className="page-title">Add New Order</h1>
           <p className="page-subtitle">Select a customer and add products to the order</p>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
 
       <div className="bg-card rounded-2xl border border-border flex-1 flex flex-col overflow-hidden">
 
         {/* Customer Selection */}
         <div className="bg-muted px-6 py-3 border-b border-border">
-          <label className="block text-xs font-semibold text-foreground mb-2">Select Customer *</label>
-          <select
+          <label htmlFor="addordermodal-select-customer" className="block text-xs font-semibold text-foreground mb-2">Select Customer *</label>
+          <NativeSelect id="addordermodal-select-customer"
             value={newCustomerId}
             onChange={(e) => onCustomerChange(e.target.value)}
-            className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
+            className="w-full"
           >
             <option value="">Choose a customer…</option>
             {customers.map((c) => (
@@ -78,9 +79,9 @@ export function AddOrderModal({
                 {c.store_name} — {c.location}
               </option>
             ))}
-          </select>
-          <label className="mt-3 block text-xs font-semibold text-foreground mb-2">Prepared Delivery Date</label>
-          <Input
+          </NativeSelect>
+          <label htmlFor="addordermodal-prepared-delivery-date" className="mt-3 block text-xs font-semibold text-foreground mb-2">Prepared Delivery Date</label>
+          <Input id="addordermodal-prepared-delivery-date"
             type="date"
             min={minDeliveryDate}
             value={preparedDeliveryDate}

@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+import { PageDialog } from "@/components/shared/PageDialog";
 import { StatCard } from "@/components/shared/StatCard";
 import { Package, CalendarDays, Store, CircleCheck } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
@@ -110,7 +112,7 @@ export function DeliveryHistory() {
   });
   const { currentPage, totalPages, pageItems: paginated } = paginate(sorted, page);
 
-  if (viewReceipt) return <OriginalReceiptModal receipt={viewReceipt} onClose={() => setViewReceipt(null)} />;
+
 
   const totalReceipts = receipts.length;
   const todayReceipts = receipts.filter((r) => {
@@ -119,6 +121,8 @@ export function DeliveryHistory() {
   }).length;
 
   return (
+    <>
+
     <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto space-y-6">
 
       {/* Header */}
@@ -166,7 +170,7 @@ export function DeliveryHistory() {
           <p className="px-6 py-8 text-sm text-muted-foreground">Loading…</p>
         ) : (
           <div className="overflow-x-auto">
-            <Table className="w-full text-xs md:text-sm">
+            <Table>
               <thead>
                 <tr>
                   <SortableHeader label="Receipt #" sortKey="receipt" sort={sort} onSort={setSort} />
@@ -202,12 +206,12 @@ export function DeliveryHistory() {
                       </td>
                       <td className="px-3 py-3 text-muted-foreground">{r.notes ?? "—"}</td>
                       <td className="px-3 py-3">
-                        <button
+                        <Button
                           onClick={() => setViewReceipt(r)}
-                          className="px-3 py-1 border border-border rounded text-xs font-semibold whitespace-nowrap hover:bg-accent transition-colors"
+                          variant="outline" size="sm"
                         >
                           View OR
-                        </button>
+                        </Button>
                       </td>
                     </tr>
                   ))
@@ -221,6 +225,13 @@ export function DeliveryHistory() {
       </div>
 
     </div>
+  
+      {(viewReceipt) && (
+        <PageDialog onClose={() => setViewReceipt(null)}>
+<OriginalReceiptModal receipt={viewReceipt} onClose={() => setViewReceipt(null)} />
+        </PageDialog>
+      )}
+    </>
   );
 }
 
@@ -239,13 +250,13 @@ function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt; onClo
           <h1 className="page-title">Original Receipt</h1>
         </div>
         <div className="flex gap-2">
-          <button onClick={handlePrint} className="btn-ghost">
+          <Button onClick={handlePrint} variant="outline">
             Print
-          </button>
-          <button onClick={onClose} className="btn-ghost">
+          </Button>
+          <Button onClick={onClose} variant="outline">
             <ArrowLeft size={15} />
             Back
-          </button>
+          </Button>
         </div>
       </div>
 

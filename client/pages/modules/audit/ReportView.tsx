@@ -53,13 +53,13 @@ export function ReportView<T>({ title, subtitle, chart, rows, columns }: ReportV
           {subtitle && <p className="mt-1 text-sm text-muted-foreground">{subtitle}</p>}
         </div>
         <div className="flex gap-2">
-          <button
+          <Button
             onClick={() => setShowTable((value) => !value)}
-            className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-semibold text-foreground hover:bg-accent"
+            variant="outline" size="sm"
           >
             <TableIcon className="h-4 w-4" />
             {showTable ? "Hide table" : "Show table"}
-          </button>
+          </Button>
           <Button onClick={handleExport} className="bg-primary text-sm text-primary-foreground hover:bg-accent-dark">
             Export CSV
           </Button>
@@ -70,7 +70,7 @@ export function ReportView<T>({ title, subtitle, chart, rows, columns }: ReportV
 
       {showTable && (
         <div className="data-table-frame overflow-x-auto">
-          <Table className="w-full text-sm">
+          <Table>
             <thead>
               <tr className="border-b border-border bg-muted">
                 {columns.map((column) => (

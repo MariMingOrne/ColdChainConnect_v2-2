@@ -15,6 +15,7 @@ export const modulePermissionKeys = [
   "manage-accounts",
   "reports",
   "administration",
+  "accounting",
 ] as const;
 export type ModulePermission = (typeof modulePermissionKeys)[number];
 export const modulePermissionLabels: Record<ModulePermission, string> = {
@@ -25,6 +26,7 @@ export const modulePermissionLabels: Record<ModulePermission, string> = {
   "manage-accounts": "Manage Accounts",
   reports: "Reports",
   administration: "Administration",
+  accounting: "Accounting",
 };
 
 // Auth types
@@ -367,7 +369,11 @@ export interface DriverScheduleRun {
 
 export interface DriverScheduleStop {
   id: string;
+  delivery_id: string;
   status: "pending" | "in_transit" | "completed";
+  is_paid: boolean | null;
+  /** Balance still owed on this stop after any payment taken at confirmation. */
+  outstanding_amount: number;
   destination_customer: {
     id: string;
     store_name: string;
@@ -427,6 +433,11 @@ export interface Booking {
   created_by: string;
   status: "pending" | "approved" | "rejected" | "prep" | "ready";
   prepared_delivery_date?: string | null;
+  /** User id of whoever approved the booking, with the ISO timestamp. */
+  approved_by?: string | null;
+  /** Username of the approver, resolved by GET /api/bookings. */
+  approved_by_name?: string | null;
+  approved_at?: string | null;
   created_at: string;
   customer?: Customer;
   creator?: User;
@@ -504,6 +515,71 @@ export const UpdateInvoiceStatusSchema = z.object({
 export const UpdateInvoicePaymentStatusSchema = z.object({
   payment_status: z.enum(["unpaid", "partial", "paid"]),
 });
+
+// Expense types — staff submit, admin approves or rejects, accounting marks paid
+export const expenseStatuses = ["submitted", "approved", "rejected", "paid"] as const;
+export type ExpenseStatus = (typeof expenseStatuses)[number];
+
+export interface Expense {
+  id: string;
+  category: string;
+  description?: string | null;
+  /** Decimal string, e.g. "1250.50" */
+  amount: string;
+  status: ExpenseStatus;
+  submitted_by: string;
+  approved_by?: string | null;
+  paid_by?: string | null;
+  reject_reason?: string | null;
+  created_at: string;
+  updated_at: string;
+  approved_at?: string | null;
+  paid_at?: string | null;
+  /** Usernames, present on list responses. */
+  submitted_by_name?: string | null;
+  approved_by_name?: string | null;
+  paid_by_name?: string | null;
+}
+
+export const CreateExpenseSchema = z.object({
+  category: z.string().min(1, "Category is required"),
+  description: z.string().min(1, "Description is required"),
+  amount: z
+    .string()
+    .regex(/^\d{1,10}(\.\d{1,2})?$/, "Amount must be a positive decimal with up to 2 places")
+    .refine((value) => Number(value) > 0, "Amount must be greater than zero"),
+});
+export type CreateExpenseRequest = z.infer<typeof CreateExpenseSchema>;
+
+export const RejectExpenseSchema = z.object({
+  reject_reason: z.string().min(1, "A reason is required to reject an expense"),
+});
+export type RejectExpenseRequest = z.infer<typeof RejectExpenseSchema>;
+
+export interface ExpensesResponse {
+  expenses: Expense[];
+}
+
+export interface ExpenseResponse {
+  expense: Expense;
+}
+
+/** One row of GET /api/payments/unverified: a delivery receipt whose recorded payment awaits Accounting. */
+export interface UnverifiedPayment {
+  id: string;
+  receipt_number: string;
+  delivery_item_id: string;
+  customer_id: string;
+  invoice_id: string;
+  confirmed_at: string;
+  customer_name: string;
+  invoice_receipt_number: string;
+  payment_method: string | null;
+  /** Decimal string: what was collected so far on the stop. */
+  amount: string;
+  recorded_by: string | null;
+  recorded_by_username: string | null;
+}
 
 // Delivery types
 export interface Delivery {

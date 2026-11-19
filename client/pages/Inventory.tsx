@@ -1,3 +1,5 @@
+import { NativeSelect } from "@/components/ui/native-select";
+import { PageDialog } from "@/components/shared/PageDialog";
 import { formatPeso } from "@/lib/utils";
 import { StatCard } from "@/components/shared/StatCard";
 import { Package, TriangleAlert, Hash, Wallet } from "lucide-react";
@@ -8,6 +10,7 @@ import { useInventoryContext } from "../context/InventoryContext";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Archive, ArchiveRestore, ArrowLeft, Plus, Trash2 } from "lucide-react";
 import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
+import { useCan } from "@/hooks/useCan";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
@@ -60,6 +63,8 @@ interface PalletDisplay {
 }
 
 export function Inventory() {
+  const canManageBatches = useCan("batch:manage");
+  const canManageProducts = useCan("product:manage");
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState<InventoryProduct[]>([]);
@@ -349,47 +354,20 @@ export function Inventory() {
     ...(selectedProducts.length === 1
       ? [{ label: "View item", onSelect: () => setExtraInfoProduct(selectedProducts[0]) }]
       : []),
-    { label: `Delete selected ${selectedProducts.length === 1 ? "product" : "products"}`, onSelect: () => void handleDeleteSelected(), destructive: true },
+    ...(canManageProducts
+      ? [{ label: `Delete selected ${selectedProducts.length === 1 ? "product" : "products"}`, onSelect: () => void handleDeleteSelected(), destructive: true }]
+      : []),
   ];
 
-  if (extraInfoProduct) return (
-    <ExtraInfoModal
-      product={extraInfoProduct}
-      batches={batches}
-      onClose={() => setExtraInfoProduct(null)}
-      onSelectPallet={(batchId, palletId) => {
-        setSelectedBatchId(batchId);
-        setSelectedPalletId(palletId);
-        setExtraInfoProduct(null);
-      }}
-    />
-  );
 
-  if (isBatchModalOpen) return (
-    <BatchModal
-      batches={batches} selectedBatchId={selectedBatchId}
-      onSelectBatch={(id) => { selectBatch(id); setIsBatchModalOpen(false); }}
-      onDeleteBatch={deleteBatch}
-      onCreateBatch={createNewBatch}
-      onEditBatch={() => {}}
-      onClose={() => { setIsBatchModalOpen(false); setStartBatchCreation(false); }}
-      newBatchName={newBatchName} setNewBatchName={setNewBatchName}
-      products={products} startCreating={startBatchCreation}
-      onRefresh={async () => { await fetchProductsFromApi(); await refreshBatchesFromDB(); }}
-    />
-  );
 
-  if (showExcelImport) return (
-    <ExcelImportDialog
-      title="Inventory Stock"
-      columns={inventoryExcelColumns}
-      validateRow={validateInventoryImportRow}
-      onImport={importInventoryRows}
-      onClose={() => setShowExcelImport(false)}
-    />
-  );
+
+
+
 
   return (
+    <>
+
     <div className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto scrollbar-visible">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -397,9 +375,11 @@ export function Inventory() {
           <p className="page-subtitle">Track, manage, and monitor all frozen goods SKUs</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => { setNewBatchName(""); setStartBatchCreation(true); setIsBatchModalOpen(true); }} className="btn-primary">Add Items</button>
+          {canManageBatches && (
+            <Button onClick={() => { setNewBatchName(""); setStartBatchCreation(true); setIsBatchModalOpen(true); }} variant="default">Add Items</Button>
+          )}
           <ExcelActionsDropdown
-            onImport={() => setShowExcelImport(true)}
+            onImport={canManageBatches ? () => setShowExcelImport(true) : undefined}
             onExport={handleInventoryExport}
           />
         </div>
@@ -441,9 +421,9 @@ export function Inventory() {
             <div className="w-full sm:w-72">
               <SearchFilterBar searchTerm={batchSearch} onSearchChange={setBatchSearch} placeholder="Find a batch or pallet…" />
             </div>
-            <input type="datetime-local" value={batchCreatedSince} onChange={(e) => setBatchCreatedSince(e.target.value)} title="Show batches created on or after this date and time" className="rounded-lg border border-border px-3 py-2 text-sm text-foreground" />
+            <Input type="datetime-local" value={batchCreatedSince} onChange={(e) => setBatchCreatedSince(e.target.value)} title="Show batches created on or after this date and time"  />
           </div>
-          <button onClick={() => setIsBatchModalOpen(true)} className="px-4 py-2 bg-card border border-border text-foreground rounded-lg font-semibold text-sm hover:bg-accent w-fit">Manage Batches</button>
+          <Button onClick={() => setIsBatchModalOpen(true)} variant="outline" className="w-fit">Manage Batches</Button>
         </div>
       </div>
 
@@ -476,8 +456,8 @@ export function Inventory() {
 
       {/* Inventory Table */}
       <div className="data-table-frame overflow-hidden">
-        <div className="overflow-x-auto scrollbar-visible text-xs">
-          <Table className="w-full">
+        <div className="overflow-x-auto scrollbar-visible">
+          <Table>
             <thead>
               <tr>
                 <th className="px-3 py-3"><input aria-label="Select all products on this page" type="checkbox" checked={paginatedBatchProducts.length > 0 && paginatedBatchProducts.every((product) => selectedProductIds.includes(product.id))} onChange={(event) => togglePageSelection(event.target.checked)} /></th>
@@ -548,29 +528,71 @@ export function Inventory() {
             Page {currentPage} of {Math.max(1, totalPages)} · {filteredBatchProducts.length} items
           </div>
           <div className="flex gap-2 items-center">
-            <button
+            <Button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="outline" size="sm"
             >
               Previous
-            </button>
+            </Button>
             <span className="px-3 py-1 text-xs font-semibold text-foreground bg-card rounded border border-border">
               {currentPage}
             </span>
-            <button
+            <Button
               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="outline" size="sm"
             >
               Next
-            </button>
+            </Button>
           </div>
         </div>
       </div>
 
       </div>
     </div>
+  
+      {(extraInfoProduct) && (
+        <PageDialog onClose={() => setExtraInfoProduct(null)}>
+<ExtraInfoModal
+      product={extraInfoProduct}
+      batches={batches}
+      onClose={() => setExtraInfoProduct(null)}
+      onSelectPallet={(batchId, palletId) => {
+        setSelectedBatchId(batchId);
+        setSelectedPalletId(palletId);
+        setExtraInfoProduct(null);
+      }}
+    />
+        </PageDialog>
+      )}
+      {(isBatchModalOpen) && (
+        <PageDialog onClose={() => { setIsBatchModalOpen(false); setStartBatchCreation(false); }}>
+<BatchModal
+      batches={batches} selectedBatchId={selectedBatchId}
+      onSelectBatch={(id) => { selectBatch(id); setIsBatchModalOpen(false); }}
+      onDeleteBatch={deleteBatch}
+      onCreateBatch={createNewBatch}
+      onEditBatch={() => {}}
+      onClose={() => { setIsBatchModalOpen(false); setStartBatchCreation(false); }}
+      newBatchName={newBatchName} setNewBatchName={setNewBatchName}
+      products={products} startCreating={startBatchCreation}
+      onRefresh={async () => { await fetchProductsFromApi(); await refreshBatchesFromDB(); }}
+    />
+        </PageDialog>
+      )}
+      {(showExcelImport) && (
+        <PageDialog onClose={() => setShowExcelImport(false)}>
+<ExcelImportDialog
+      title="Inventory Stock"
+      columns={inventoryExcelColumns}
+      validateRow={validateInventoryImportRow}
+      onImport={importInventoryRows}
+      onClose={() => setShowExcelImport(false)}
+    />
+        </PageDialog>
+      )}
+    </>
   );
 }
 
@@ -602,16 +624,16 @@ function ExtraInfoModal({ product, batches, onClose, onSelectPallet }: { product
           <h1 className="page-title">{product.description}</h1>
           <p className="page-subtitle">SKU: {product.sku}</p>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
 
         <div className="p-6 space-y-6">
           <div>
-            <h3 className="text-xs font-bold text-muted-foreground letter-spacing-wider mb-3">Summary</h3>
+            <h3 className="text-xs font-bold text-muted-foreground mb-3">Summary</h3>
             <div className="grid grid-cols-3 gap-3">
               {[
                 ["Inventory Value", `₱${(product.unitPrice * product.batchQuantity).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`],
@@ -627,7 +649,7 @@ function ExtraInfoModal({ product, batches, onClose, onSelectPallet }: { product
           </div>
 
           <div>
-            <h3 className="text-xs font-bold text-muted-foreground letter-spacing-wider mb-3">Batches Containing This Product</h3>
+            <h3 className="text-xs font-bold text-muted-foreground mb-3">Batches Containing This Product</h3>
             {batchesWithProduct.length === 0 ? (
               <div className="bg-muted rounded-lg p-4 text-center">
                 <p className="text-xs text-muted-foreground">No batches currently contain this product</p>
@@ -657,7 +679,7 @@ function ExtraInfoModal({ product, batches, onClose, onSelectPallet }: { product
         </div>
 
         <div className="sticky bottom-0 bg-muted px-6 py-4 border-t border-border flex justify-end">
-          <button onClick={onClose} className="px-4 py-2 border border-border rounded-lg font-semibold text-sm hover:bg-card">Close</button>
+          <Button onClick={onClose} variant="outline">Close</Button>
         </div>
       </div>
     </div>
@@ -666,7 +688,8 @@ function ExtraInfoModal({ product, batches, onClose, onSelectPallet }: { product
 
 // ─── BatchModal ────────────────────────────────────────────────────────────────
 function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, onCreateBatch, onEditBatch, onClose, newBatchName, setNewBatchName, products, startCreating = false, onRefresh }: { batches: any[]; selectedBatchId: string; onSelectBatch: (id: string) => void; onDeleteBatch: (id: string) => void; onCreateBatch: (items: any[], batchName: string) => void; onEditBatch: (id: string, items: any[]) => void; onClose: () => void; newBatchName: string; setNewBatchName: (n: string) => void; products: InventoryProduct[]; startCreating?: boolean; onRefresh: () => void }) {
-  const [isCreatingBatch, setIsCreatingBatch] = useState(startCreating);
+  const canManageBatches = useCan("batch:manage");
+  const [isCreatingBatch, setIsCreatingBatch] = useState(startCreating && canManageBatches);
   const [pallets, setPallets] = useState<any[]>([]);
   const [showArchived, setShowArchived] = useState(false);
   const [batchQuery, setBatchQuery] = useState("");
@@ -722,10 +745,10 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
             {isCreatingBatch ? "Create New Batch" : "Manage Batches"}
           </h1>
         </div>
-        <button onClick={() => { setIsCreatingBatch(false); setPallets([]); onClose(); }} className="btn-ghost">
+        <Button onClick={() => { setIsCreatingBatch(false); setPallets([]); onClose(); }} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <div className="p-6">
@@ -734,34 +757,34 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
               {!showArchived ? (
                 <>
                   <div className="flex flex-col sm:flex-row gap-3 mb-4">
-                    <input
+                    <Input
                       type="search"
                       value={batchQuery}
                       onChange={(e) => setBatchQuery(e.target.value)}
                       placeholder="Search batches by name…"
-                      className="flex-1 rounded-lg border border-border px-3 py-2 text-sm text-foreground"
+                      className="flex-1"
                     />
-                    <input
+                    <Input
                       type="datetime-local"
                       value={createdSince}
                       onChange={(e) => setCreatedSince(e.target.value)}
                       title="Show batches created on or after this date and time"
-                      className="rounded-lg border border-border px-3 py-2 text-sm text-foreground"
+                      
                     />
-                    <select
+                    <NativeSelect
                       value={productFilter}
                       onChange={(e) => setProductFilter(e.target.value)}
-                      className="rounded-lg border border-border px-3 py-2 text-sm text-foreground bg-card"
+                      
                     >
                       <option value="">All products</option>
                       {products.map((product) => (
                         <option key={product.id} value={product.id}>{product.description}</option>
                       ))}
-                    </select>
+                    </NativeSelect>
                     {(batchQuery || createdSince || productFilter) && (
-                      <button onClick={() => { setBatchQuery(""); setCreatedSince(""); setProductFilter(""); }} className="px-3 py-2 text-sm font-semibold text-foreground border border-border rounded-lg hover:bg-accent">
+                      <Button onClick={() => { setBatchQuery(""); setCreatedSince(""); setProductFilter(""); }} variant="outline">
                         Clear
-                      </button>
+                      </Button>
                     )}
                   </div>
                   <div className="space-y-2 mb-6">
@@ -783,18 +806,18 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                               <div className="text-sm font-semibold text-foreground">{batch.name}</div>
                               <div className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
                             </div>
-                            <div className="flex gap-2">
-                              <button type="button" onClick={(e) => { e.stopPropagation(); handleArchiveBatch(batch.id); }} className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-warning text-white transition-opacity hover:opacity-90" title="Archive batch" aria-label="Archive batch"><Archive size={18} /></button>
-                              <button type="button" onClick={(e) => { e.stopPropagation(); onDeleteBatch(batch.id); }} className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-red text-white transition-opacity hover:opacity-90" title="Delete batch" aria-label="Delete batch"><Trash2 size={18} /></button>
-                            </div>
+                            {canManageBatches && <div className="flex gap-1">
+                              <Button onClick={(e) => { e.stopPropagation(); handleArchiveBatch(batch.id); }} variant="ghost" size="icon" className="h-8 w-8" aria-label={`Archive batch ${batch.name}`} title="Archive batch"><Archive size={15} aria-hidden="true" /></Button>
+                              <Button onClick={(e) => { e.stopPropagation(); onDeleteBatch(batch.id); }} variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label={`Delete batch ${batch.name}`} title="Delete batch"><Trash2 size={15} aria-hidden="true" /></Button>
+                            </div>}
                           </div>
                         );
                       })
                     )}
                   </div>
                   <div className="flex gap-2 justify-between">
-                    <button onClick={() => setShowArchived(true)} className="inline-flex items-center gap-2 px-4 py-2.5 bg-muted-foreground text-white rounded-lg font-semibold text-sm hover:opacity-90"><Archive size={16} />View Archived ({archivedBatches.length})</button>
-                    <button onClick={() => { setIsCreatingBatch(true); setPallets([]); setNewBatchName(""); }} className="inline-flex items-center gap-2 px-4 py-2.5 bg-green text-white rounded-lg font-semibold text-sm hover:opacity-90"><Plus size={16} />Create New Batch</button>
+                    <Button onClick={() => setShowArchived(true)} variant="secondary"><Archive size={16} aria-hidden="true" />View Archived ({archivedBatches.length})</Button>
+                    {canManageBatches && <Button onClick={() => { setIsCreatingBatch(true); setPallets([]); setNewBatchName(""); }} variant="success"><Plus size={16} aria-hidden="true" />Create New Batch</Button>}
                   </div>
                 </>
               ) : (
@@ -812,17 +835,17 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                               <div className="text-sm font-semibold text-foreground">{batch.name}</div>
                               <div className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
                             </div>
-                            <div className="flex gap-2">
-                              <button type="button" onClick={() => handleUnarchiveBatch(batch.id)} className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-green text-white transition-opacity hover:opacity-90" title="Restore batch" aria-label="Restore batch"><ArchiveRestore size={18} /></button>
-                              <button type="button" onClick={() => onDeleteBatch(batch.id)} className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-red text-white transition-opacity hover:opacity-90" title="Delete batch" aria-label="Delete batch"><Trash2 size={18} /></button>
-                            </div>
+                            {canManageBatches && <div className="flex gap-1">
+                              <Button onClick={() => handleUnarchiveBatch(batch.id)} variant="ghost" size="icon" className="h-8 w-8" aria-label={`Restore batch ${batch.name}`} title="Restore batch"><ArchiveRestore size={15} aria-hidden="true" /></Button>
+                              <Button onClick={() => onDeleteBatch(batch.id)} variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label={`Delete batch ${batch.name}`} title="Delete batch"><Trash2 size={15} aria-hidden="true" /></Button>
+                            </div>}
                           </div>
                         );
                       })
                     )}
                   </div>
                   <div className="flex justify-start">
-                    <button onClick={() => setShowArchived(false)} className="inline-flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90"><ArrowLeft size={16} />Back to Active</button>
+                    <Button onClick={() => setShowArchived(false)} variant="default"><ArrowLeft size={16} aria-hidden="true" />Back to Active</Button>
                   </div>
                 </>
               )}
@@ -923,12 +946,12 @@ function CreateBatchForm({ newBatchName, setNewBatchName, pallets, setPallets, o
     <div className="space-y-6">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-semibold text-foreground mb-2">Batch Name *</label>
-          <Input type="text" value={newBatchName} onChange={(e) => setNewBatchName(e.target.value)} placeholder="e.g., Morning Delivery, Q1 Restock" className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2" />
+          <label htmlFor="inventory-batch-name" className="block text-xs font-semibold text-foreground mb-2">Batch Name *</label>
+          <Input id="inventory-batch-name" type="text" value={newBatchName} onChange={(e) => setNewBatchName(e.target.value)} placeholder="e.g., Morning Delivery, Q1 Restock" className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2" />
         </div>
         <div>
-          <label className="block text-xs font-semibold text-foreground mb-2">Acquisition Date *</label>
-          <Input type="date" value={acquisitionDate} onChange={(e) => setAcquisitionDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2" />
+          <label htmlFor="inventory-acquisition-date" className="block text-xs font-semibold text-foreground mb-2">Acquisition Date *</label>
+          <Input id="inventory-acquisition-date" type="date" value={acquisitionDate} onChange={(e) => setAcquisitionDate(e.target.value)} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2" />
         </div>
       </div>
 
@@ -936,13 +959,13 @@ function CreateBatchForm({ newBatchName, setNewBatchName, pallets, setPallets, o
         <h3 className="text-xs font-semibold text-foreground">Items *</h3>
 
         <div>
-          <label className="block text-xs font-semibold text-foreground mb-2">Add Products *</label>
-          <select onChange={(e) => { if (e.target.value) { addItem(e.target.value); e.target.value = ""; } }} className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2">
+          <label htmlFor="inventory-add-products" className="block text-xs font-semibold text-foreground mb-2">Add Products *</label>
+          <NativeSelect id="inventory-add-products" onChange={(e) => { if (e.target.value) { addItem(e.target.value); e.target.value = ""; } }} className="w-full">
             <option value="">Choose a product...</option>
             {availableProducts.map((p) => (
               <option key={p.id} value={p.id}>{p.sku ? `${p.sku} - ` : ""}{p.name}</option>
             ))}
-          </select>
+          </NativeSelect>
         </div>
 
         {items.length > 0 && (

@@ -1,3 +1,5 @@
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 import { confirmAction } from "@/lib/confirm";
 import { Fragment, useState } from "react";
 import { ArrowLeft, ChevronDown, ChevronRight, MoreVertical } from "lucide-react";
@@ -14,6 +16,8 @@ interface PalletDetailProps {
   customer: Customer | null;
   batches: InventoryBatch[];
   getProductName: (productId: string) => string;
+  /** The server only lets admin and agent change a pallet's status; others see the pallet read-only. */
+  canChangeStatus: boolean;
   onStatusChange: (status: Pallet["status"]) => void;
   onPrintSheet: () => void;
   isUpdatingStatus: boolean;
@@ -26,6 +30,7 @@ export function PalletDetail({
   customer,
   batches,
   getProductName,
+  canChangeStatus,
   onStatusChange,
   onPrintSheet,
   isUpdatingStatus,
@@ -36,7 +41,6 @@ export function PalletDetail({
   const units = items.reduce((sum, item) => sum + item.qty_units, 0);
   const discountRate = totalDiscountRate(order?.customer?.discounts);
   const totalValue = palletTotal(pallet);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [expandedProductIds, setExpandedProductIds] = useState<Set<string>>(() => new Set());
 
   const toggleProduct = (productId: string) =>
@@ -51,7 +55,6 @@ export function PalletDetail({
   const previousStatus = statusIndex > 0 ? palletStatusOptions[statusIndex - 1] : undefined;
 
   const handleRevert = async () => {
-    setMenuOpen(false);
     if (!previousStatus) return;
     if (await confirmAction(`Revert this pallet from ${palletStatusOptions[statusIndex].label} to ${previousStatus.label}?`)) {
       onStatusChange(previousStatus.value);
@@ -60,13 +63,13 @@ export function PalletDetail({
 
   return (
     <div className="space-y-4">
-      <button
+      <Button
         onClick={onBack}
-        className="flex items-center gap-1 text-sm font-semibold text-accent-2 hover:text-accent-1"
+        variant="link" className="h-auto p-0"
       >
         <ArrowLeft size={16} />
         Back to deliveries
-      </button>
+      </Button>
 
       <Card className="bg-card p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
@@ -76,46 +79,44 @@ export function PalletDetail({
           </div>
           <div className="flex items-center gap-3">
             <PalletStatusBadge status={pallet.status} />
-            <button
+            <Button
               type="button"
               onClick={onPrintSheet}
               disabled={!order}
-              className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground hover:bg-accent disabled:opacity-50"
+              variant="outline"
             >
               Print delivery sheet
-            </button>
-            <div className="flex items-center gap-2">
-              <button
+            </Button>
+            {canChangeStatus && <div className="flex items-center gap-2">
+              <Button
                 type="button"
                 disabled={isUpdatingStatus || !nextStatus}
                 onClick={() => nextStatus && onStatusChange(nextStatus.value)}
-                className="rounded-lg bg-accent-2 px-4 py-2 text-sm font-semibold text-white hover:opacity-80 disabled:opacity-50"
+                variant="default"
               >
                 {nextStatus ? `Mark as ${nextStatus.label}` : "Completed"}
-              </button>
-              <div className="relative">
-                <button
-                  type="button"
-                  aria-label="More status actions"
-                  disabled={isUpdatingStatus || !previousStatus}
-                  onClick={() => setMenuOpen((open) => !open)}
-                  className="rounded-lg border border-border bg-card p-2 text-foreground hover:bg-accent disabled:opacity-50"
-                >
-                  <MoreVertical size={16} />
-                </button>
-                {menuOpen && previousStatus && (
-                  <div className="absolute right-0 z-10 mt-1 w-56 rounded-lg border border-border bg-card py-1 shadow-lg">
-                    <button
-                      type="button"
-                      onClick={handleRevert}
-                      className="block w-full px-4 py-2 text-left text-sm text-foreground hover:bg-accent"
-                    >
+              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    aria-label="More status actions"
+                    disabled={isUpdatingStatus || !previousStatus}
+                  >
+                    <MoreVertical size={16} aria-hidden="true" />
+                  </Button>
+                </DropdownMenuTrigger>
+                {previousStatus && (
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem onSelect={() => void handleRevert()}>
                       Revert to {previousStatus.label}
-                    </button>
-                  </div>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
                 )}
-              </div>
-            </div>
+              </DropdownMenu>
+            </div>}
           </div>
         </div>
 
@@ -138,7 +139,7 @@ export function PalletDetail({
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <Card className="overflow-hidden rounded-xl bg-card shadow-sm lg:col-span-2">
-          <Table className="w-full text-sm">
+          <Table>
             <thead>
               <tr className="border-b border-border bg-muted text-xs text-muted-foreground">
                 <th className="px-4 py-3 text-left font-semibold">Product</th>

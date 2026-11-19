@@ -1,9 +1,11 @@
+import { PageDialog } from "@/components/shared/PageDialog";
 import { StatCard } from "@/components/shared/StatCard";
 import { Tag, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useInventoryContext } from "../../context/InventoryContext";
 import { SortableHeader, SortState, compareNewestFirst, compareValues } from "@/components/SortableHeader";
@@ -91,17 +93,17 @@ function ProductPage({
         <div>
           <h1 className="page-title">{title}</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border max-w-lg w-full">
 
         <div className="p-6 space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">Product Name *</label>
-            <Input
+            <label htmlFor="pricing-product-name" className="block text-xs font-semibold text-foreground mb-1">Product Name *</label>
+            <Input id="pricing-product-name"
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
@@ -111,8 +113,8 @@ function ProductPage({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">SKU Code</label>
-            <Input
+            <label htmlFor="pricing-sku-code" className="block text-xs font-semibold text-foreground mb-1">SKU Code</label>
+            <Input id="pricing-sku-code"
               type="text"
               value={formData.sku || ""}
               onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
@@ -122,8 +124,8 @@ function ProductPage({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">Unit Price (₱) *</label>
-            <Input
+            <label htmlFor="pricing-unit-price" className="block text-xs font-semibold text-foreground mb-1">Unit Price (₱) *</label>
+            <Input id="pricing-unit-price"
               type="number"
               step="0.01"
               min="0"
@@ -152,8 +154,8 @@ function ProductPage({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">Manufacturer</label>
-            <Input
+            <label htmlFor="pricing-manufacturer" className="block text-xs font-semibold text-foreground mb-1">Manufacturer</label>
+            <Input id="pricing-manufacturer"
               type="text"
               value={formData.manufacturer || ""}
               onChange={(e) => setFormData({ ...formData, manufacturer: e.target.value })}
@@ -163,8 +165,8 @@ function ProductPage({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">Reorder Level</label>
-            <Input
+            <label htmlFor="pricing-reorder-level" className="block text-xs font-semibold text-foreground mb-1">Reorder Level</label>
+            <Input id="pricing-reorder-level"
               type="number"
               min="0"
               value={formData.reorder_point || ""}
@@ -176,8 +178,8 @@ function ProductPage({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">Weight (kg)</label>
-            <Input
+            <label htmlFor="pricing-weight-kg" className="block text-xs font-semibold text-foreground mb-1">Weight (kg)</label>
+            <Input id="pricing-weight-kg"
               type="number"
               min="0"
               step="0.01"
@@ -218,10 +220,10 @@ function ViewProductPage({ product, onClose }: { product: Product; onClose: () =
         <div>
           <h1 className="page-title">Product Details</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border max-w-lg w-full">
 
@@ -260,9 +262,9 @@ function ViewProductPage({ product, onClose }: { product: Product; onClose: () =
         </div>
 
         <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
-          <button onClick={onClose} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90">
+          <Button onClick={onClose} variant="default">
             Close
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -276,10 +278,10 @@ function ImagePreviewPage({ filename, onClose }: { filename: string; onClose: ()
         <div>
           <h1 className="page-title">Image Preview</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <div className="flex items-center justify-center rounded-2xl border border-border bg-card p-6">
         <img src={`/uploads/${filename}`} alt="Preview" className="max-w-full max-h-[60vh] object-contain" />
@@ -316,6 +318,7 @@ export function Pricing({ onBack }: PricingProps) {
     weight: undefined,
   });
   const { token } = useAuth();
+  const canManageProducts = useCan("product:manage");
 
   const itemsPerPage = 10;
 
@@ -477,10 +480,12 @@ export function Pricing({ onBack }: PricingProps) {
     ...(selectedProducts.length === 1
       ? [
           { label: "View product", onSelect: () => setViewingProduct(selectedProducts[0]) },
-          { label: "Edit product", onSelect: () => openEditModal(selectedProducts[0]) },
+          ...(canManageProducts ? [{ label: "Edit product", onSelect: () => openEditModal(selectedProducts[0]) }] : []),
         ]
       : []),
-    { label: `Delete selected ${selectedProducts.length === 1 ? "product" : "products"}`, onSelect: () => void handleDeleteSelected(), destructive: true },
+    ...(canManageProducts
+      ? [{ label: `Delete selected ${selectedProducts.length === 1 ? "product" : "products"}`, onSelect: () => void handleDeleteSelected(), destructive: true }]
+      : []),
   ];
 
   if (isLoading) {
@@ -491,41 +496,17 @@ export function Pricing({ onBack }: PricingProps) {
     );
   }
 
-  if (isModalOpen) {
-    return (
-      <ProductPage
-        title={editingProduct ? "Edit Product" : "Add New Product"}
-        formData={formData}
-        setFormData={setFormData}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSave}
-      />
-    );
-  }
 
-  if (viewingProduct) {
-    return <ViewProductPage product={viewingProduct} onClose={() => setViewingProduct(null)} />;
-  }
-  if (productDetails) {
-    return <RecordDetailsDialog details={productDetails} onClose={() => setProductDetails(null)} />;
-  }
-  if (showExcelImport) {
-    return (
-      <ExcelImportDialog
-        title="Products"
-        columns={productExcelColumns}
-        validateRow={validateProductImportRow}
-        onImport={importProductRows}
-        onClose={() => setShowExcelImport(false)}
-      />
-    );
-  }
 
-  if (previewImageFilename) {
-    return <ImagePreviewPage filename={previewImageFilename} onClose={() => setPreviewImageFilename(null)} />;
-  }
+
+
+
+
+
 
   return (
+    <>
+
     <div className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto scrollbar-visible">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -533,14 +514,16 @@ export function Pricing({ onBack }: PricingProps) {
           <p className="page-subtitle">Manage your products</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={openAddModal}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90 transition-opacity flex items-center gap-2"
-          >
-            Add Product
-          </button>
+          {canManageProducts && (
+            <Button
+              onClick={openAddModal}
+              variant="default"
+            >
+              Add Product
+            </Button>
+          )}
           <ExcelActionsDropdown
-            onImport={() => setShowExcelImport(true)}
+            onImport={canManageProducts ? () => setShowExcelImport(true) : undefined}
             onExport={handleProductExport}
           />
         </div>
@@ -581,11 +564,11 @@ export function Pricing({ onBack }: PricingProps) {
 
       {/* Table */}
       <div className="data-table-frame overflow-hidden">
-        <div className="overflow-x-auto scrollbar-visible text-xs md:text-sm">
-          <Table className="w-full">
+        <div className="overflow-x-auto scrollbar-visible">
+          <Table>
             <thead>
               <tr>
-                <th className="px-3 py-3"><input aria-label="Select all products on this page" type="checkbox" checked={paginatedProducts.length > 0 && paginatedProducts.every((product) => selectedProductIds.includes(product.id))} onChange={(event) => setSelectedProductIds(event.target.checked ? Array.from(new Set([...selectedProductIds, ...paginatedProducts.map((product) => product.id)])) : selectedProductIds.filter((id) => !paginatedProducts.some((product) => product.id === id)))} /></th>
+                <th className="px-3 py-3"><Input aria-label="Select all products on this page" type="checkbox" checked={paginatedProducts.length > 0 && paginatedProducts.every((product) => selectedProductIds.includes(product.id))} onChange={(event) => setSelectedProductIds(event.target.checked ? Array.from(new Set([...selectedProductIds, ...paginatedProducts.map((product) => product.id)])) : selectedProductIds.filter((id) => !paginatedProducts.some((product) => product.id === id)))} /></th>
                 <SortableHeader label="Image" sortKey="image" sort={productSort} onSort={setProductSort} />
                 <SortableHeader label="Product Name" sortKey="name" sort={productSort} onSort={setProductSort} />
                 <SortableHeader label="Unit Price" sortKey="price" sort={productSort} onSort={setProductSort} />
@@ -604,7 +587,7 @@ export function Pricing({ onBack }: PricingProps) {
               ) : (
                 paginatedProducts.map((product) => (
                   <tr key={product.id} className="border-b border-border hover:bg-accent/50 transition-colors">
-                    <td className="px-3 py-3"><input aria-label={`Select ${product.name}`} type="checkbox" checked={selectedProductIds.includes(product.id)} onChange={(event) => setSelectedProductIds(event.target.checked ? [...selectedProductIds, product.id] : selectedProductIds.filter((id) => id !== product.id))} /></td>
+                    <td className="px-3 py-3"><Input aria-label={`Select ${product.name}`} type="checkbox" checked={selectedProductIds.includes(product.id)} onChange={(event) => setSelectedProductIds(event.target.checked ? [...selectedProductIds, product.id] : selectedProductIds.filter((id) => id !== product.id))} /></td>
                     <td className="px-3 py-3 whitespace-nowrap">
                       {product.image_filename ? (
                         <div className="w-10 h-10 bg-muted rounded-lg overflow-hidden border border-border flex items-center justify-center cursor-pointer hover:border-accent-2 hover:shadow-md transition duration-200 hover:scale-110" onClick={() => setPreviewImageFilename(product.image_filename)}>
@@ -651,7 +634,7 @@ export function Pricing({ onBack }: PricingProps) {
                       {product.weight != null ? `${Number(product.weight).toLocaleString()} kg` : "—"}
                     </td>
                     <td className="px-3 py-3 hidden md:table-cell">
-                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${product.is_discontinued ? "bg-red text-white" : "bg-green text-white"}`}>
+                      <span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${product.is_discontinued ? "bg-destructive-soft text-destructive" : "bg-success-soft text-success"}`}>
                         {product.is_discontinued ? "Discontinued" : "Active"}
                       </span>
                     </td>
@@ -668,27 +651,66 @@ export function Pricing({ onBack }: PricingProps) {
             Page {currentPage} of {Math.max(1, totalPages)} · {filteredProducts.length} products
           </div>
           <div className="flex gap-2 items-center">
-            <button
+            <Button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="outline" size="sm"
             >
               Previous
-            </button>
+            </Button>
             <span className="px-3 py-1 text-xs font-semibold text-foreground bg-card rounded border border-border">
               {currentPage}
             </span>
-            <button
+            <Button
               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="outline" size="sm"
             >
               Next
-            </button>
+            </Button>
           </div>
         </div>
       </div>
 
     </div>
+  
+      {(isModalOpen) && (
+        <PageDialog onClose={() => setIsModalOpen(false)}>
+<ProductPage
+        title={editingProduct ? "Edit Product" : "Add New Product"}
+        formData={formData}
+        setFormData={setFormData}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+      />
+        </PageDialog>
+      )}
+      {(viewingProduct) && (
+        <PageDialog onClose={() => setViewingProduct(null)}>
+<ViewProductPage product={viewingProduct} onClose={() => setViewingProduct(null)} />
+        </PageDialog>
+      )}
+      {(productDetails) && (
+        <PageDialog onClose={() => setProductDetails(null)}>
+<RecordDetailsDialog details={productDetails} onClose={() => setProductDetails(null)} />
+        </PageDialog>
+      )}
+      {(showExcelImport) && (
+        <PageDialog onClose={() => setShowExcelImport(false)}>
+<ExcelImportDialog
+        title="Products"
+        columns={productExcelColumns}
+        validateRow={validateProductImportRow}
+        onImport={importProductRows}
+        onClose={() => setShowExcelImport(false)}
+      />
+        </PageDialog>
+      )}
+      {(previewImageFilename) && (
+        <PageDialog onClose={() => setPreviewImageFilename(null)}>
+<ImagePreviewPage filename={previewImageFilename} onClose={() => setPreviewImageFilename(null)} />
+        </PageDialog>
+      )}
+    </>
   );
 }

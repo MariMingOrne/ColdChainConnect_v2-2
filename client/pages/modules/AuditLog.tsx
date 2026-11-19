@@ -1,3 +1,6 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PageDialog } from "@/components/shared/PageDialog";
+import { Button } from "@/components/ui/button";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -63,9 +66,11 @@ export function AuditLogPage() {
   useEffect(() => { if (token) fetchLogs(); }, [token]);
   useAutoRefresh(fetchLogs, { enabled: Boolean(token) });
 
-  if (selectedLog) return <AuditLogDetailDialog log={selectedLog} onClose={() => setSelectedLog(null)} />;
+
 
   return (
+    <>
+
     <div className="flex-1 flex flex-col p-6 gap-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -75,38 +80,24 @@ export function AuditLogPage() {
           </p>
         </div>
         <div className="flex gap-2 w-fit">
-          <button
+          <Button
             onClick={handleBackup}
             disabled={isBackingUp}
-            className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-colors hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+            variant="outline"
           >
             <Download size={16} className={isBackingUp ? "animate-pulse" : ""} />
             {isBackingUp ? "Preparing backup…" : "Backup all data"}
-          </button>
+          </Button>
         </div>
       </div>
 
-      <div className="flex gap-2 border-b border-border pb-0">
-        {[
-          { id: "activity", label: "Activity Log" },
-          { id: "activity-report", label: "Activity Report" },
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setPageTab(tab.id as PageTab)}
-            className={`px-5 py-2.5 text-sm font-semibold rounded-t-lg border border-b-0 transition ${
-              pageTab === tab.id
-                ? "bg-card border-border text-foreground -mb-px"
-                : "bg-muted border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <Tabs value={pageTab} onValueChange={(value) => setPageTab(value as PageTab)} className="space-y-4">
+      <TabsList aria-label="Audit views" className="justify-start">
+        <TabsTrigger value="activity">Activity log</TabsTrigger>
+        <TabsTrigger value="activity-report">Activity report</TabsTrigger>
+      </TabsList>
 
-      {pageTab === "activity" && (
-        <>
+      <TabsContent value="activity" className="space-y-4">
           {error && (
             <Card className="p-4 bg-destructive-soft border-destructive/30">
               <p className="text-destructive">{error}</p>
@@ -117,10 +108,17 @@ export function AuditLogPage() {
           ) : (
             <AuditLogTable logs={logs} onView={setSelectedLog} />
           )}
-        </>
-      )}
+      </TabsContent>
 
-      {pageTab === "activity-report" && <ActivityReport logs={logs} />}
+      <TabsContent value="activity-report"><ActivityReport logs={logs} /></TabsContent>
+      </Tabs>
     </div>
+  
+      {(selectedLog) && (
+        <PageDialog onClose={() => setSelectedLog(null)}>
+<AuditLogDetailDialog log={selectedLog} onClose={() => setSelectedLog(null)} />
+        </PageDialog>
+      )}
+    </>
   );
 }

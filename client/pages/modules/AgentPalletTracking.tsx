@@ -1,3 +1,5 @@
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { Button } from "@/components/ui/button";
 import { confirmAction } from "@/lib/confirm";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useSearchParams } from "react-router-dom";
@@ -187,7 +189,7 @@ export function AgentPalletTracking() {
     void handleAdvancePallet(pallet);
   };
 
-  if (isLoading) return <LoadingSpinner className="fixed inset-0 z-0 min-h-0 bg-muted" slow />;
+  if (isLoading) return <LoadingSpinner className="min-h-[60vh] bg-transparent" slow />;
 
   if (scanPallet) {
     return (
@@ -200,15 +202,15 @@ export function AgentPalletTracking() {
             </h1>
             <p className="mt-0.5 text-xs text-muted-foreground">Pallet {scanPallet.id.slice(0, 8)} · Order {scanPallet.order_id.slice(0, 8)}</p>
           </div>
-          <button
+          <Button
             type="button"
             onClick={() => setScanPalletId(null)}
             disabled={updatingPalletId !== null}
-            className="btn-ghost"
+            variant="outline"
           >
             <ArrowLeft size={15} />
             Back
-          </button>
+          </Button>
         </header>
 
         <div className="mx-4 rounded-2xl border border-border bg-card p-5 shadow-sm sm:mx-0">
@@ -222,23 +224,23 @@ export function AgentPalletTracking() {
           {error && <p role="alert" className="mt-3 rounded-xl border border-red/20 bg-red/5 p-3 text-sm text-red">{error}</p>}
 
           <div className="mt-4 grid grid-cols-2 gap-2">
-            <button
+            <Button
               type="button"
               onClick={() => setScanPalletId(null)}
               disabled={updatingPalletId !== null}
-              className="min-h-11 rounded-xl border border-border bg-card px-4 text-sm font-semibold text-foreground disabled:opacity-60"
+              variant="outline" className="min-h-11"
             >
               {nextActionLabels[scanPallet.status] ? "Cancel" : "Close"}
-            </button>
+            </Button>
             {nextActionLabels[scanPallet.status] && (
-              <button
+              <Button
                 type="button"
                 onClick={() => void confirmScannedPallet()}
                 disabled={updatingPalletId !== null}
-                className="min-h-11 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground disabled:cursor-wait disabled:opacity-60"
+                variant="default" className="min-h-11"
               >
                 {updatingPalletId === scanPallet.id ? "Updating…" : nextActionLabels[scanPallet.status]}
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -279,7 +281,13 @@ export function AgentPalletTracking() {
         />
       </label>
 
-      <div className="flex gap-2 overflow-x-auto px-4 pb-1 sm:-mx-4">
+      <ToggleGroup
+        type="single"
+        value={filter}
+        onValueChange={(value) => value && setFilter(value as typeof filter)}
+        aria-label="Filter pallets by status"
+        className="justify-start gap-2 overflow-x-auto px-4 pb-1 sm:-mx-4"
+      >
         {([
           ["all", "All"],
           ["draft", "Preparing"],
@@ -287,16 +295,11 @@ export function AgentPalletTracking() {
           ["approved", "Ready"],
           ["shipped", "Shipped"],
         ] as const).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            onClick={() => setFilter(value)}
-            className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-semibold transition ${filter === value ? "bg-primary text-primary-foreground" : "border border-border bg-card text-muted-foreground"}`}
-          >
+          <ToggleGroupItem key={value} value={value} variant="pill" className="min-h-10 shrink-0 border border-border bg-card data-[state=on]:border-primary">
             {label}
-          </button>
+          </ToggleGroupItem>
         ))}
-      </div>
+      </ToggleGroup>
 
       {error && <p role="alert" className="rounded-xl border border-red/20 bg-red/5 p-3 text-sm text-red">{error}</p>}
 
@@ -392,14 +395,14 @@ export function AgentPalletTracking() {
 
                 {pallet.status !== "shipped" && (
                   <div className="border-t border-border p-3">
-                    <button
+                    <Button
                       type="button"
                       onClick={() => handleListAdvance(pallet)}
                       disabled={updatingPalletId !== null}
-                      className="min-h-11 w-full rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition hover:bg-navy-mid active:scale-[0.99] disabled:cursor-wait disabled:opacity-60"
+                      variant="default" className="min-h-11 w-full"
                     >
                       {updatingPalletId === pallet.id ? "Updating…" : nextActionLabels[pallet.status]}
-                    </button>
+                    </Button>
                   </div>
                 )}
               </article>

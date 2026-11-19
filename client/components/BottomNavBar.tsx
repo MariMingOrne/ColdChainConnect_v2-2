@@ -13,6 +13,8 @@ import {
   ClipboardList,
   History,
   RotateCcw,
+  BadgeCheck,
+  Receipt,
 } from "lucide-react";
 
 interface BottomNavBarProps {
@@ -24,6 +26,7 @@ const globalNavItems = [
   { path: "/information-management/products", label: "Products", icon: Package },
   { path: "/booking-dispatch/order-summary", label: "Orders", icon: ClipboardList },
   { path: "/booking-dispatch/delivery", label: "Operations", icon: Truck },
+  { path: "/accounting/payments", label: "Accounting", icon: Wallet },
 ];
 
 // Map of hub paths to their sub-modules
@@ -43,6 +46,10 @@ const hubModulesByPath: Record<string, Array<{ path: string; label: string; icon
     { path: "/delivery-history", label: "Delivery History", icon: History },
     { path: "/agent-returns", label: "Returns", icon: RotateCcw },
   ],
+  "/accounting": [
+    { path: "/payments", label: "Payments to verify", icon: BadgeCheck },
+    { path: "/expenses", label: "Expenses", icon: Receipt },
+  ],
   "/manage-accounts": [
     { path: "/agents", label: "Agents", icon: Users },
     { path: "/drivers", label: "Drivers", icon: Truck },
@@ -57,7 +64,7 @@ export function BottomNavBar({ onLogout }: BottomNavBarProps) {
   const { user, token } = useAuth();
   const isAdmin = user?.role === "admin";
   const isStaff = user?.role === "staff";
-  const staffCan = (permission: "dashboard" | "product-customer" | "order-fulfillment" | "delivery-operations" | "manage-accounts") => !isStaff || Boolean(user.module_permissions?.includes(permission));
+  const staffCan = (permission: "dashboard" | "product-customer" | "order-fulfillment" | "delivery-operations" | "manage-accounts" | "accounting") => !isStaff || Boolean(user.module_permissions?.includes(permission));
   // Badge counts share the dashboard's 1 KB summary (same query key, one request).
   const { data: summary } = useQuery({
     queryKey: ["dashboard-summary"],
@@ -90,6 +97,9 @@ export function BottomNavBar({ onLogout }: BottomNavBarProps) {
       const delivery = ["/delivery", "/accounts", "/delivery-history", "/agent-returns"].includes(path);
       return staffCan(delivery ? "delivery-operations" : "order-fulfillment");
     });
+  } else if ((isAdmin || isStaff) && currentPath.startsWith("/accounting") && staffCan("accounting")) {
+    currentHub = "/accounting";
+    modulesToShow = hubModulesByPath["/accounting"] || [];
   } else if ((isAdmin || isStaff) && currentPath.startsWith("/manage-accounts") && staffCan("manage-accounts")) {
     currentHub = "/manage-accounts";
     modulesToShow = hubModulesByPath["/manage-accounts"] || [];
@@ -129,6 +139,7 @@ export function BottomNavBar({ onLogout }: BottomNavBarProps) {
         {globalNavItems.filter(({ path }) => {
           if (path === "/") return staffCan("dashboard");
           if (path.startsWith("/information-management")) return staffCan("product-customer");
+          if (path.startsWith("/accounting")) return staffCan("accounting");
           if (path.includes("delivery")) return staffCan("delivery-operations");
           return staffCan("order-fulfillment");
         }).map(({ path, label, icon: Icon }) => {

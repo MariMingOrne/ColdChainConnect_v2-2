@@ -1,3 +1,5 @@
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { MfaSetupResponse } from "@shared/api";
 
@@ -48,7 +50,7 @@ export function MfaStep({ mode, setupInfo, error, isLoading, onSubmit, onBack }:
         <label htmlFor="mfa-code" className="mb-1.5 block text-sm font-semibold text-foreground">
           Authentication code
         </label>
-        <input
+        <Input
           id="mfa-code"
           type="text"
           inputMode="numeric"
@@ -60,26 +62,24 @@ export function MfaStep({ mode, setupInfo, error, isLoading, onSubmit, onBack }:
           value={code}
           onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
           disabled={isLoading}
-          className="w-full px-3.5 py-2.5 border-2 border-link/30 rounded-lg text-sm text-foreground bg-info-soft tracking-widest text-center transition-colors focus:outline-none focus:border-primary disabled:opacity-50"
+          className="w-full bg-info-soft tracking-widest text-center"
         />
       </div>
 
-      <button
+      <Button
         type="submit"
         disabled={isLoading || code.length !== 6}
-        className="w-full py-3.5 bg-primary text-primary-foreground rounded-xl font-rajdhani text-xl letter-spacing-widest font-semibold cursor-pointer transition-colors hover:bg-navy-mid mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+        variant="default" size="lg" className="mt-1 w-full"
       >
         {isLoading ? "Verifying..." : mode === "setup" ? "Finish setup" : "Verify"}
-      </button>
+      </Button>
 
-      <button
+      <Button
         type="button"
         onClick={onBack}
-        disabled={isLoading}
-        className="text-center text-xs text-muted-foreground hover:text-foreground"
-      >
+        disabled={isLoading} variant="link" size="sm" className="h-auto text-xs text-muted-foreground hover:text-foreground">
         Back to login
-      </button>
+      </Button>
     </form>
   );
 }

@@ -1,9 +1,12 @@
+import { PageDialog } from "@/components/shared/PageDialog";
+import { useNewRows } from "@/lib/unseen";
 import { StatCard } from "@/components/shared/StatCard";
 import { Store, Receipt, BarChart3, MapPin } from "lucide-react";
 import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Customer, Truck, formatCustomerAddress, totalDiscountRate } from "@shared/api";
 import { ArrowLeft } from "lucide-react";
@@ -89,10 +92,10 @@ function ViewCustomerPage({ customer, onClose }: { customer: Customer; onClose: 
         <div>
           <h1 className="page-title">Customer Details</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <div className="w-full max-w-2xl rounded-2xl border border-border bg-card">
         <div className="grid grid-cols-1 gap-x-6 gap-y-5 p-6 sm:grid-cols-2">
@@ -133,9 +136,9 @@ function ViewCustomerPage({ customer, onClose }: { customer: Customer; onClose: 
         </div>
 
         <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
-          <button onClick={onClose} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90">
+          <Button onClick={onClose} variant="default">
             Close
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -169,19 +172,19 @@ function CustomerModal({
         <div>
           <h1 className="page-title">{title}</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <div className="flex w-full max-w-xl flex-col rounded-2xl border border-border bg-card">
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-6">
           <div>
-            <label className="mb-1 block text-xs font-semibold text-foreground">
+            <label htmlFor="customers-store-name" className="mb-1 block text-xs font-semibold text-foreground">
               Store Name *
             </label>
-            <Input
+            <Input id="customers-store-name"
               type="text"
               value={formData.store_name}
               onChange={(e) =>
@@ -199,8 +202,8 @@ function CustomerModal({
 
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-semibold text-foreground">Street No.</label>
-              <Input
+              <label htmlFor="customers-street-no" className="mb-1 block text-xs font-semibold text-foreground">Street No.</label>
+              <Input id="customers-street-no"
                 type="text"
                 value={formData.street_number}
                 onChange={(e) => updateAddressField("street_number", e.target.value)}
@@ -209,8 +212,8 @@ function CustomerModal({
               />
             </div>
             <div className="col-span-2">
-              <label className="mb-1 block text-xs font-semibold text-foreground">Street Address</label>
-              <Input
+              <label htmlFor="customers-street-address" className="mb-1 block text-xs font-semibold text-foreground">Street Address</label>
+              <Input id="customers-street-address"
                 type="text"
                 value={formData.street_address}
                 onChange={(e) => updateAddressField("street_address", e.target.value)}
@@ -222,8 +225,8 @@ function CustomerModal({
 
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-1">
-              <label className="mb-1 block text-xs font-semibold text-foreground">City *</label>
-              <Input
+              <label htmlFor="customers-city" className="mb-1 block text-xs font-semibold text-foreground">City *</label>
+              <Input id="customers-city"
                 type="text"
                 value={formData.location}
                 onChange={(e) => updateAddressField("location", e.target.value)}
@@ -232,8 +235,8 @@ function CustomerModal({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-foreground">State / Province</label>
-              <Input
+              <label htmlFor="customers-state-province" className="mb-1 block text-xs font-semibold text-foreground">State / Province</label>
+              <Input id="customers-state-province"
                 type="text"
                 value={formData.state}
                 onChange={(e) => updateAddressField("state", e.target.value)}
@@ -242,8 +245,8 @@ function CustomerModal({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-foreground">Postal Code</label>
-              <Input
+              <label htmlFor="customers-postal-code" className="mb-1 block text-xs font-semibold text-foreground">Postal Code</label>
+              <Input id="customers-postal-code"
                 type="text"
                 value={formData.postal_code}
                 onChange={(e) => updateAddressField("postal_code", e.target.value)}
@@ -272,10 +275,10 @@ function CustomerModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-foreground">
+            <label htmlFor="customers-contact-person" className="mb-1 block text-xs font-semibold text-foreground">
               Contact Person
             </label>
-            <Input
+            <Input id="customers-contact-person"
               type="text"
               value={formData.contact_person}
               onChange={(e) =>
@@ -287,10 +290,10 @@ function CustomerModal({
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-semibold text-foreground">
+            <label htmlFor="customers-contact-info" className="mb-1 block text-xs font-semibold text-foreground">
               Contact Info
             </label>
-            <Input
+            <Input id="customers-contact-info"
               type="text"
               value={formData.contact_info}
               onChange={(e) =>
@@ -303,8 +306,8 @@ function CustomerModal({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs font-semibold text-foreground">Credit Limit (₱)</label>
-              <Input
+              <label htmlFor="customers-credit-limit" className="mb-1 block text-xs font-semibold text-foreground">Credit Limit (₱)</label>
+              <Input id="customers-credit-limit"
                 type="number"
                 min="0"
                 value={formData.credit_limit}
@@ -314,8 +317,8 @@ function CustomerModal({
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs font-semibold text-foreground">Credit Terms (days)</label>
-              <Input
+              <label htmlFor="customers-credit-terms-days" className="mb-1 block text-xs font-semibold text-foreground">Credit Terms (days)</label>
+              <Input id="customers-credit-terms-days"
                 type="number"
                 min="1"
                 max="365"
@@ -345,6 +348,7 @@ function CustomerModal({
 }
 
 export function Customers({ onBack }: CustomersProps) {
+  const isNewRow = useNewRows("customers");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -374,6 +378,7 @@ export function Customers({ onBack }: CustomersProps) {
     discounts: [],
   });
   const { token } = useAuth();
+  const canManageCustomers = useCan("customer:manage");
 
   const itemsPerPage = 10;
 
@@ -613,10 +618,14 @@ export function Customers({ onBack }: CustomersProps) {
     ...(selectedCustomers.length === 1
       ? [
           { label: "View customer", onSelect: () => setViewingCustomer(selectedCustomers[0]) },
-          { label: "Edit customer", onSelect: () => openEditModal(selectedCustomers[0]) },
+          ...(canManageCustomers
+            ? [{ label: "Edit customer", onSelect: () => openEditModal(selectedCustomers[0]) }]
+            : []),
         ]
       : []),
-    { label: `Delete selected ${selectedCustomers.length === 1 ? "customer" : "customers"}`, onSelect: () => void handleDeleteSelected(), destructive: true },
+    ...(canManageCustomers
+      ? [{ label: `Delete selected ${selectedCustomers.length === 1 ? "customer" : "customers"}`, onSelect: () => void handleDeleteSelected(), destructive: true }]
+      : []),
   ];
 
   if (isLoading) {
@@ -627,35 +636,14 @@ export function Customers({ onBack }: CustomersProps) {
     );
   }
 
-  if (isModalOpen) {
-    return (
-      <CustomerModal
-        title={editingCustomer ? "Edit Customer" : "Add New Customer"}
-        formData={formData}
-        setFormData={setFormData}
-        districts={truckDistricts}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSave}
-      />
-    );
-  }
 
-  if (viewingCustomer) {
-    return <ViewCustomerPage customer={viewingCustomer} onClose={() => setViewingCustomer(null)} />;
-  }
-  if (showExcelImport) {
-    return (
-      <ExcelImportDialog
-        title="Customers"
-        columns={customerExcelColumns}
-        validateRow={validateCustomerImportRow}
-        onImport={importCustomerRows}
-        onClose={() => setShowExcelImport(false)}
-      />
-    );
-  }
+
+
+
 
   return (
+    <>
+
     <div className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -664,11 +652,13 @@ export function Customers({ onBack }: CustomersProps) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={openAddModal} className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-opacity hover:opacity-90">
-            Add Customer
-          </button>
+          {canManageCustomers && (
+            <Button onClick={openAddModal} variant="default">
+              Add Customer
+            </Button>
+          )}
           <ExcelActionsDropdown
-            onImport={() => setShowExcelImport(true)}
+            onImport={canManageCustomers ? () => setShowExcelImport(true) : undefined}
             onExport={handleCustomerExport}
           />
         </div>
@@ -709,8 +699,8 @@ export function Customers({ onBack }: CustomersProps) {
       </TableToolbar>
 
       <div className="data-table-frame overflow-hidden">
-        <div className="overflow-x-auto text-xs md:text-sm">
-          <Table className="w-full">
+        <div className="overflow-x-auto">
+          <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10 px-3 py-3">
@@ -736,7 +726,7 @@ export function Customers({ onBack }: CustomersProps) {
                 paginatedCustomers.map((customer) => (
                   <TableRow
                     key={customer.id}
-                    className="border-b border-border transition-colors hover:bg-accent/50"
+                    className={isNewRow(customer.created_at) ? "row-new" : undefined}
                   >
                     <TableCell className="px-3 py-3">
                       <input aria-label={`Select ${customer.store_name}`} type="checkbox" checked={selectedCustomerIds.includes(customer.id)} onChange={(event) => toggleCustomerSelection(customer.id, event.target.checked)} />
@@ -767,23 +757,23 @@ export function Customers({ onBack }: CustomersProps) {
             Page {currentPage} of {Math.max(1, totalPages)} · {filteredCustomers.length} customers
           </div>
           <div className="flex gap-2 items-center">
-            <button
+            <Button
               onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="outline" size="sm"
             >
               Previous
-            </button>
+            </Button>
             <span className="px-3 py-1 text-xs font-semibold text-foreground bg-card rounded border border-border">
               {currentPage}
             </span>
-            <button
+            <Button
               onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+              variant="outline" size="sm"
             >
               Next
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -793,5 +783,35 @@ export function Customers({ onBack }: CustomersProps) {
       </div>
 
     </div>
+  
+      {(isModalOpen) && (
+        <PageDialog onClose={() => setIsModalOpen(false)}>
+<CustomerModal
+        title={editingCustomer ? "Edit Customer" : "Add New Customer"}
+        formData={formData}
+        setFormData={setFormData}
+        districts={truckDistricts}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+      />
+        </PageDialog>
+      )}
+      {(viewingCustomer) && (
+        <PageDialog onClose={() => setViewingCustomer(null)}>
+<ViewCustomerPage customer={viewingCustomer} onClose={() => setViewingCustomer(null)} />
+        </PageDialog>
+      )}
+      {(showExcelImport) && (
+        <PageDialog onClose={() => setShowExcelImport(false)}>
+<ExcelImportDialog
+        title="Customers"
+        columns={customerExcelColumns}
+        validateRow={validateCustomerImportRow}
+        onImport={importCustomerRows}
+        onClose={() => setShowExcelImport(false)}
+      />
+        </PageDialog>
+      )}
+    </>
   );
 }

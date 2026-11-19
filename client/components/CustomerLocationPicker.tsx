@@ -1,3 +1,5 @@
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { useEffect, useState, type FormEvent } from "react";
 import { createPortal } from "react-dom";
 import { Circle, MapPin, Maximize2, Minimize2, Search } from "lucide-react";
@@ -185,16 +187,16 @@ export function CustomerLocationPicker({ position, onSelect }: CustomerLocationP
     >
       <div className="flex h-11 shrink-0 items-center justify-between gap-3 px-1">
         <span className="font-semibold text-foreground">{expanded ? "Choose the customer’s exact location" : ""}</span>
-        <button
+        <Button
           type="button"
           onClick={() => setExpanded((value) => !value)}
           aria-label={expanded ? "Exit fullscreen map" : "Expand map"}
           title={expanded ? "Exit fullscreen map" : "Expand map"}
-          className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-border bg-card px-3 text-sm font-semibold text-foreground shadow-md hover:bg-accent"
+          variant="outline" className="h-10 shrink-0"
         >
           {expanded ? <Minimize2 size={17} /> : <Maximize2 size={17} />}
           <span>{expanded ? "Close map" : "Expand map"}</span>
-        </button>
+        </Button>
       </div>
       <MapContainer
         center={center}
@@ -227,19 +229,19 @@ export function CustomerLocationPicker({ position, onSelect }: CustomerLocationP
       <form onSubmit={searchPlaces} className="flex gap-2">
         <div className="relative min-w-0 flex-1">
           <MapPin size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
+          <Input
             id="customer-location-search"
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search an address or place"
-            className="w-full rounded-lg border border-border py-2 pl-9 pr-3 text-sm focus:border-accent-2 focus:outline-none"
+            className="w-full pl-9"
           />
         </div>
-        <button type="submit" disabled={isSearching || !query.trim()} className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground disabled:opacity-50">
+        <Button type="submit" disabled={isSearching || !query.trim()} variant="default" className="shrink-0">
           <Search size={15} />
           {isSearching ? "Searching" : "Search"}
-        </button>
+        </Button>
       </form>
       {results.length > 0 && (
         <ul className="max-h-40 overflow-y-auto rounded-lg border border-border bg-card">

@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { Minus, Plus } from "lucide-react";
 
@@ -31,15 +32,13 @@ export function QuantityStepper({ value, min, max, onChange }: QuantityStepperPr
 
   return (
     <div className="flex items-center gap-2">
-      <button
+      <Button
         type="button"
         onClick={() => step(-1)}
         disabled={value <= min}
-        className="w-7 h-7 flex items-center justify-center border border-border rounded text-foreground hover:bg-card disabled:opacity-40 disabled:cursor-not-allowed"
-        aria-label="Decrease quantity"
-      >
+        aria-label="Decrease quantity" variant="outline" size="icon" className="h-7 w-7">
         <Minus size={14} />
-      </button>
+      </Button>
       <input
         type="text"
         inputMode="numeric"
@@ -62,15 +61,13 @@ export function QuantityStepper({ value, min, max, onChange }: QuantityStepperPr
         aria-label="Quantity"
         className="w-12 px-1 py-1 border border-border rounded text-sm font-semibold text-foreground text-center focus:outline-none focus:border-accent-2"
       />
-      <button
+      <Button
         type="button"
         onClick={() => step(1)}
         disabled={value >= max}
-        className="w-7 h-7 flex items-center justify-center border border-border rounded text-foreground hover:bg-card disabled:opacity-40 disabled:cursor-not-allowed"
-        aria-label="Increase quantity"
-      >
+        aria-label="Increase quantity" variant="outline" size="icon" className="h-7 w-7">
         <Plus size={14} />
-      </button>
+      </Button>
     </div>
   );
 }

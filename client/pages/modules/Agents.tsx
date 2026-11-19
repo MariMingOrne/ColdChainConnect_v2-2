@@ -1,7 +1,9 @@
 import { toast } from "sonner";
+import { PageDialog } from "@/components/shared/PageDialog";
 import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
@@ -30,10 +32,10 @@ function ViewAgentModal({ agent, onClose }: { agent: Agent; onClose: () => void 
         <div>
           <h1 className="page-title">Agent Details</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
 
       <div className="bg-card rounded-2xl border border-border">
@@ -62,9 +64,9 @@ function ViewAgentModal({ agent, onClose }: { agent: Agent; onClose: () => void 
         </div>
 
         <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
-          <button onClick={onClose} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90">
+          <Button onClick={onClose} variant="default">
             Close
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -122,10 +124,10 @@ function AgentModal({
         <div>
           <h1 className="page-title">{title}</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
 
       <div className="bg-card rounded-2xl border border-border">
@@ -149,13 +151,17 @@ function AgentModal({
                   className="w-full px-3 py-2 pr-10 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
                   placeholder={isEdit ? "Enter new password to change…" : "Enter password…"}
                 />
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="icon"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 text-muted-foreground"
                 >
-                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                </button>
+                  {showPassword ? <EyeOff size={15} aria-hidden="true" /> : <Eye size={15} aria-hidden="true" />}
+                </Button>
               </div>
             </div>
           </div>
@@ -221,7 +227,7 @@ function AgentCard({
   agent: Agent;
   showDelete: boolean;
   onView: () => void;
-  onEdit: () => void;
+  onEdit?: () => void;
   onDelete: () => void;
   canManageMfa: boolean;
   isSavingMfa: boolean;
@@ -273,15 +279,15 @@ function AgentCard({
       {canManageMfa && agent.user && (
         <label className="flex items-center justify-between gap-3 border-t border-border pt-2 text-xs font-semibold text-foreground">
           <span>Require MFA at sign-in</span>
-          <input type="checkbox" checked={agent.user.mfa_required} disabled={isSavingMfa} onChange={(event) => onMfaRequirementChange(event.target.checked)} className="h-4 w-4 accent-navy" />
+          <Input type="checkbox" checked={agent.user.mfa_required} disabled={isSavingMfa} onChange={(event) => onMfaRequirementChange(event.target.checked)} className="h-4 w-4 accent-navy" />
         </label>
       )}
 
       <div className="flex gap-2 pt-1 border-t border-border">
-        <button onClick={onView} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-accent text-foreground transition-colors">View</button>
-        <button onClick={onEdit} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-accent text-foreground transition-colors">Edit</button>
+        <Button onClick={onView} variant="outline" size="sm" className="flex-1">View</Button>
+        {onEdit && <Button onClick={onEdit} variant="outline" size="sm" className="flex-1">Edit</Button>}
         {showDelete && (
-          <button onClick={onDelete} className="flex-1 py-1.5 text-xs font-semibold bg-red/10 border border-red/30 rounded-lg hover:bg-red/20 text-red transition-colors">Delete</button>
+          <Button onClick={onDelete} variant="danger" size="sm" className="flex-1">Delete</Button>
         )}
       </div>
     </div>
@@ -304,6 +310,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
   const [mfaMessage, setMfaMessage] = useState<string | null>(null);
   const [mfaSavingAgentId, setMfaSavingAgentId] = useState<string | null>(null);
   const { token, user: currentUser } = useAuth();
+  const canManageAgents = useCan("agent:manage");
 
   const emptyForm = (): AgentForm => ({
     full_name: "",
@@ -518,39 +525,26 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
     );
   }
 
-  if (viewingAgent) {
-    return <ViewAgentModal agent={viewingAgent} onClose={() => setViewingAgent(null)} />;
-  }
 
-  if (isModalOpen) {
-    return (
-      <AgentModal
-        title={editingAgent ? "Edit Agent" : "Add New Agent"}
-        isEdit={!!editingAgent}
-        formData={formData}
-        setFormData={setFormData}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSave}
-        mfaEnabled={editingAgent?.user?.mfa_enabled ?? false}
-        isResettingMfa={isResettingMfa}
-        mfaMessage={mfaMessage}
-        onResetMfa={handleResetMfa}
-      />
-    );
-  }
+
+
 
   return (
+    <>
+
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden px-4 py-4 md:px-6 md:py-5">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="font-rajdhani text-3xl font-bold text-foreground letter-spacing-tight">
+          <h1 className="font-rajdhani text-3xl font-bold text-foreground">
             Agent Management
           </h1>
           <p className="text-xs text-muted-foreground mt-1">Manage agents — account-linked field staff</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">Create Accounts</button>
+          {canManageAgents && (
+            <Button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} variant="default">Create Accounts</Button>
+          )}
         </div>
       </div>
 
@@ -580,12 +574,12 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
             <AgentCard
               key={agent.id}
               agent={agent}
-              showDelete
+              showDelete={canManageAgents}
               canManageMfa={currentUser?.role === "admin"}
               isSavingMfa={mfaSavingAgentId === agent.id}
               onMfaRequirementChange={(required) => void updateAgentMfaRequirement(agent, required)}
               onView={() => setViewingAgent(agent)}
-              onEdit={() => openEditModal(agent)}
+              onEdit={canManageAgents ? () => openEditModal(agent) : undefined}
               onDelete={() => handleDelete(agent.id)}
             />
           ))}
@@ -598,26 +592,49 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
           Page {currentPage} of {Math.max(1, totalPages)} · {filteredAgents.length} agents
         </div>
         <div className="flex gap-2 items-center">
-          <button
+          <Button
             onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
-            className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="outline" size="sm"
           >
             Previous
-          </button>
+          </Button>
           <span className="px-3 py-1 text-xs font-semibold text-foreground bg-card rounded border border-border">
             {currentPage}
           </span>
-          <button
+          <Button
             onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages || totalPages === 0}
-            className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="outline" size="sm"
           >
             Next
-          </button>
+          </Button>
         </div>
       </div>
 
     </div>
+  
+      {(viewingAgent) && (
+        <PageDialog onClose={() => setViewingAgent(null)}>
+<ViewAgentModal agent={viewingAgent} onClose={() => setViewingAgent(null)} />
+        </PageDialog>
+      )}
+      {(isModalOpen) && (
+        <PageDialog onClose={() => setIsModalOpen(false)}>
+<AgentModal
+        title={editingAgent ? "Edit Agent" : "Add New Agent"}
+        isEdit={!!editingAgent}
+        formData={formData}
+        setFormData={setFormData}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+        mfaEnabled={editingAgent?.user?.mfa_enabled ?? false}
+        isResettingMfa={isResettingMfa}
+        mfaMessage={mfaMessage}
+        onResetMfa={handleResetMfa}
+      />
+        </PageDialog>
+      )}
+    </>
   );
 }

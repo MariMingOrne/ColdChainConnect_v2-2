@@ -1,4 +1,7 @@
 import { toast } from "sonner";
+import { TruncatedText } from "@/components/ui/truncated-text";
+import { PageDialog } from "@/components/shared/PageDialog";
+import { useNewRows } from "@/lib/unseen";
 import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
@@ -16,6 +19,7 @@ import { newestFirst } from "@/components/SortableHeader";
 import { TablePagination, paginate } from "@/components/TablePagination";
 import { Booking, Truck, Customer, Product } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 import { useSearchParams } from "react-router-dom";
 import { AddOrderModal } from "./AddOrderModal";
 import { BookingDetailPage } from "./BookingDetailPage";
@@ -23,6 +27,7 @@ import { AgentOrderScreen } from "./AgentOrderScreen";
 import { describeCreditBlock, isCreditBlock, promptCreditOverride } from "@/lib/creditOverride";
 
 export function BookingSummary() {
+  const isNewRow = useNewRows("orders");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -33,6 +38,7 @@ export function BookingSummary() {
   const [error, setError] = useState<string | null>(null);
   const { token, logout, user, finishPostLoginLoading } = useAuth();
   const isAgent = user?.role === "agent";
+  const canApprove = useCan("booking:approve");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "approved" | "prep" | "ready">("all");
   const [approvalFilter, setApprovalFilter] = useState<"all" | "approved" | "unapproved">("all");
@@ -469,162 +475,12 @@ export function BookingSummary() {
     );
   }
 
-  if (showAddModal) {
-    return (
-      <AddOrderModal
-        onClose={() => {
-          setShowAddModal(false);
-          setNewCustomerId("");
-          setPreparedDeliveryDate("");
-          setOrderItems([{ product_id: "", qty_ordered: 1 }]);
-        }}
-        customers={customers}
-        products={products}
-        productStock={productStock}
-        orderItems={orderItems}
-        newCustomerId={newCustomerId}
-        preparedDeliveryDate={preparedDeliveryDate}
-        onCustomerChange={setNewCustomerId}
-        onPreparedDeliveryDateChange={setPreparedDeliveryDate}
-        onAddItem={handleAddItem}
-        onRemoveItem={handleRemoveItem}
-        onItemChange={handleItemChange}
-        onCreateOrder={handleCreateOrder}
-        isCreating={isCreating}
-      />
-    );
-  }
-
-  if (showApproveModal && selectedBooking) {
-    return (
-      <div className="flex-1 flex flex-col p-6 gap-6">
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">Approve Order</h1>
-            <p className="page-subtitle">Confirm approval for this customer order</p>
-          </div>
-          <button onClick={closeApproveModal} className="btn-ghost">
-            <ArrowLeft size={15} />
-            Back
-          </button>
-        </div>
-
-        <div className="bg-card rounded-2xl border border-border p-6 space-y-4 max-w-2xl">
-          <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">Order ID</label>
-            <div className="px-3 py-2 bg-muted rounded-lg text-sm font-mono text-foreground">
-              {selectedBooking.id.slice(0, 8)}
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">Customer</label>
-            <div className="px-3 py-2 bg-muted rounded-lg text-sm text-foreground">
-              <span className="font-semibold">{selectedBooking.customer?.store_name || "Unknown"}</span>
-              {selectedBooking.customer?.contact_info && (
-                <span className="text-xs text-muted-foreground block">{selectedBooking.customer.contact_info}</span>
-              )}
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">Location</label>
-            <div className="px-3 py-2 bg-muted rounded-lg text-sm text-foreground">
-              {selectedBooking.customer?.location || "Unknown"}
-            </div>
-          </div>
-
-          {approveSuccess ? (
-            <div className="px-4 py-3 bg-success-soft border border-success/30 rounded-lg text-sm text-success font-semibold">
-              ✓ {approveSuccess}
-            </div>
-          ) : (
-            <div className="px-4 py-3 bg-info-soft border border-link/30 rounded-lg text-sm text-link">
-              The truck will be automatically assigned based on the customer's truck district.
-            </div>
-          )}
-        </div>
-
-        <div className="flex justify-end gap-2 max-w-2xl">
-          <button onClick={closeApproveModal} className="btn-ghost">
-            {approveSuccess ? "Close" : "Cancel"}
-          </button>
-          {!approveSuccess && (
-            <button
-              onClick={handleApproveBooking}
-              disabled={isApproving}
-              className="btn-primary disabled:opacity-50"
-            >
-              {isApproving ? "Approving…" : "Approve Order"}
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (showRejectModal && selectedBooking) {
-    return (
-      <div className="flex-1 flex flex-col p-6 gap-6">
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">Reject Order</h1>
-            <p className="page-subtitle">Confirm rejection of this customer order</p>
-          </div>
-          <button onClick={closeRejectModal} className="btn-ghost">
-            <ArrowLeft size={15} />
-            Back
-          </button>
-        </div>
-
-        <div className="bg-card rounded-2xl border border-border p-6 space-y-4 max-w-2xl">
-          <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">Order ID</label>
-            <div className="px-3 py-2 bg-muted rounded-lg text-sm font-mono text-foreground">
-              {selectedBooking.id.slice(0, 8)}
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">Customer</label>
-            <div className="px-3 py-2 bg-muted rounded-lg text-sm text-foreground">
-              <span className="font-semibold">{selectedBooking.customer?.store_name || "Unknown"}</span>
-              {selectedBooking.customer?.contact_info && (
-                <span className="text-xs text-muted-foreground block">{selectedBooking.customer.contact_info}</span>
-              )}
-            </div>
-          </div>
-          <div className="bg-destructive-soft p-3 rounded-lg border border-destructive/30">
-            <p className="text-xs text-destructive">
-              This order will be marked as rejected and cannot be processed further. This action cannot be undone easily.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2 max-w-2xl">
-          <button onClick={closeRejectModal} className="btn-ghost">
-            Cancel
-          </button>
-          <button
-            onClick={handleRejectBooking}
-            disabled={isRejecting}
-            className="btn-danger bg-red text-white border-red hover:bg-red/80 disabled:opacity-50"
-          >
-            {isRejecting ? "Rejecting…" : "Reject Order"}
-          </button>
-        </div>
-      </div>
-    );
-  }
-
-  if (showDetailModal && detailBooking) {
-    return (
-      <BookingDetailPage
-        booking={detailBooking}
-        products={products}
-        getStatusTone={getStatusTone}
-        onBack={closeDetailModal}
-        onSaveItems={handleSaveBookingItems}
-      />
-    );
-  }
+  const closeAddModal = () => {
+    setShowAddModal(false);
+    setNewCustomerId("");
+    setPreparedDeliveryDate("");
+    setOrderItems([{ product_id: "", qty_ordered: 1 }]);
+  };
 
   const filtered = newestFirst(bookings.filter((b) => {
     const matchesSearch =
@@ -654,11 +510,12 @@ export function BookingSummary() {
     setSelectedBookingIds((current) => (checked ? [...current, id] : current.filter((selectedId) => selectedId !== id)));
   const togglePageSelection = (checked: boolean) =>
     setSelectedBookingIds((current) => (checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id))));
-  const bulkActions: TableBulkAction[] = [
-    { label: "Approve selected orders", onSelect: () => void handleApproveSelected() },
-  ];
+  const bulkActions: TableBulkAction[] | undefined = canApprove
+    ? [{ label: "Approve selected orders", onSelect: () => void handleApproveSelected() }]
+    : undefined;
 
   return (
+    <>
     <div className="flex-1 flex flex-col p-6 gap-6">
       {/* Header */}
       <div className="page-header">
@@ -746,9 +603,11 @@ export function BookingSummary() {
         <Table>
           <TableHeader>
             <TableRow className="whitespace-nowrap">
-              <TableHead className="w-10 px-3">
-                <input aria-label="Select all orders on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
-              </TableHead>
+              {canApprove && (
+                <TableHead className="w-10 px-3">
+                  <input aria-label="Select all orders on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
+                </TableHead>
+              )}
               <TableHead>Order ID</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Agent</TableHead>
@@ -761,7 +620,7 @@ export function BookingSummary() {
           <TableBody>
             {paginated.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={canApprove ? 8 : 7} className="text-center py-8 text-muted-foreground">
                   {bookings.length === 0 ? "No orders found" : "No orders match your search"}
                 </TableCell>
               </TableRow>
@@ -770,22 +629,24 @@ export function BookingSummary() {
                 const customer = booking.customer;
                 const creator = (booking as any).creator;
                 return (
-                  <TableRow key={booking.id}>
-                    <TableCell className="w-10 px-3">
-                      <input aria-label={`Select order ${booking.id.slice(0, 8)}`} type="checkbox" checked={selectedBookingIds.includes(booking.id)} onChange={(event) => toggleBookingSelection(booking.id, event.target.checked)} />
-                    </TableCell>
+                  <TableRow key={booking.id} className={isNewRow(booking.created_at) ? "row-new" : undefined}>
+                    {canApprove && (
+                      <TableCell className="w-10 px-3">
+                        <input aria-label={`Select order ${booking.id.slice(0, 8)}`} type="checkbox" checked={selectedBookingIds.includes(booking.id)} onChange={(event) => toggleBookingSelection(booking.id, event.target.checked)} />
+                      </TableCell>
+                    )}
                     <TableCell className="font-mono text-sm">
-                      <button
+                      <Button
                         onClick={() => openDetailModal(booking)}
-                        className="text-accent-2 hover:underline font-semibold transition"
+                        variant="link" className="h-auto p-0"
                       >
                         {booking.id.slice(0, 8)}
-                      </button>
+                      </Button>
                     </TableCell>
                     <TableCell className="text-sm">
                       {customer ? (
                         <div className="flex flex-col">
-                          <span className="font-semibold text-foreground">{customer.store_name}</span>
+                          <TruncatedText className="font-semibold text-foreground">{customer.store_name}</TruncatedText>
                           {customer.contact_info && (
                             <span className="text-xs text-muted-foreground">{customer.contact_info}</span>
                           )}
@@ -813,32 +674,32 @@ export function BookingSummary() {
                       {new Date(booking.created_at).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="text-right">
-                      {booking.status === "pending" ? (
+                      {booking.status === "pending" && canApprove ? (
                         <div className="flex gap-2 justify-end">
-                          <button
+                          <Button
                             onClick={() => openApproveModal(booking)}
-                            className="btn-accent whitespace-nowrap"
+                            variant="default"
                           >
                             <CheckCircle size={14} />
                             Approve
-                          </button>
-                          <button
+                          </Button>
+                          <Button
                             onClick={() => openRejectModal(booking)}
-                            className="btn-danger whitespace-nowrap"
+                            variant="destructive"
                           >
                             <XCircle size={14} />
                             Reject
-                          </button>
+                          </Button>
                         </div>
-                      ) : booking.status === "approved" ? (
+                      ) : booking.status === "approved" && canApprove ? (
                         <div className="flex justify-end">
-                          <button
+                          <Button
                             onClick={() => handleUnapproveBooking(booking)}
-                            className="btn-secondary whitespace-nowrap"
+                            variant="outline"
                           >
                             <XCircle size={14} />
                             Unapprove
-                          </button>
+                          </Button>
                         </div>
                       ) : (
                         <StatusBadge label={booking.status} tone={getStatusTone(booking.status)} />
@@ -854,5 +715,159 @@ export function BookingSummary() {
       </Card>
 
     </div>
+      {(showAddModal) && (
+        <PageDialog onClose={closeAddModal}>
+      <AddOrderModal
+        onClose={() => {
+          setShowAddModal(false);
+          setNewCustomerId("");
+          setPreparedDeliveryDate("");
+          setOrderItems([{ product_id: "", qty_ordered: 1 }]);
+        }}
+        customers={customers}
+        products={products}
+        productStock={productStock}
+        orderItems={orderItems}
+        newCustomerId={newCustomerId}
+        preparedDeliveryDate={preparedDeliveryDate}
+        onCustomerChange={setNewCustomerId}
+        onPreparedDeliveryDateChange={setPreparedDeliveryDate}
+        onAddItem={handleAddItem}
+        onRemoveItem={handleRemoveItem}
+        onItemChange={handleItemChange}
+        onCreateOrder={handleCreateOrder}
+        isCreating={isCreating}
+      />
+        </PageDialog>
+      )}
+      {(showApproveModal && selectedBooking) && (
+        <PageDialog onClose={closeApproveModal}>
+      <div className="flex-1 flex flex-col p-6 gap-6">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Approve Order</h1>
+            <p className="page-subtitle">Confirm approval for this customer order</p>
+          </div>
+          <Button onClick={closeApproveModal} variant="outline">
+            <ArrowLeft size={15} />
+            Back
+          </Button>
+        </div>
+
+        <div className="bg-card rounded-2xl border border-border p-6 space-y-4 max-w-2xl">
+          <div>
+            <label className="block text-xs font-semibold text-foreground mb-1">Order ID</label>
+            <div className="px-3 py-2 bg-muted rounded-lg text-sm font-mono text-foreground">
+              {selectedBooking.id.slice(0, 8)}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-foreground mb-1">Customer</label>
+            <div className="px-3 py-2 bg-muted rounded-lg text-sm text-foreground">
+              <span className="font-semibold">{selectedBooking.customer?.store_name || "Unknown"}</span>
+              {selectedBooking.customer?.contact_info && (
+                <span className="text-xs text-muted-foreground block">{selectedBooking.customer.contact_info}</span>
+              )}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-foreground mb-1">Location</label>
+            <div className="px-3 py-2 bg-muted rounded-lg text-sm text-foreground">
+              {selectedBooking.customer?.location || "Unknown"}
+            </div>
+          </div>
+
+          {approveSuccess ? (
+            <div className="px-4 py-3 bg-success-soft border border-success/30 rounded-lg text-sm text-success font-semibold">
+              ✓ {approveSuccess}
+            </div>
+          ) : (
+            <div className="px-4 py-3 bg-info-soft border border-link/30 rounded-lg text-sm text-link">
+              The truck will be automatically assigned based on the customer's truck district.
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 max-w-2xl">
+          <Button onClick={closeApproveModal} variant="outline">
+            {approveSuccess ? "Close" : "Cancel"}
+          </Button>
+          {!approveSuccess && (
+            <Button
+              onClick={handleApproveBooking}
+              disabled={isApproving}
+              variant="default"
+            >
+              {isApproving ? "Approving…" : "Approve Order"}
+            </Button>
+          )}
+        </div>
+      </div>
+        </PageDialog>
+      )}
+      {(showRejectModal && selectedBooking) && (
+        <PageDialog onClose={closeRejectModal}>
+      <div className="flex-1 flex flex-col p-6 gap-6">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Reject Order</h1>
+            <p className="page-subtitle">Confirm rejection of this customer order</p>
+          </div>
+          <Button onClick={closeRejectModal} variant="outline">
+            <ArrowLeft size={15} />
+            Back
+          </Button>
+        </div>
+
+        <div className="bg-card rounded-2xl border border-border p-6 space-y-4 max-w-2xl">
+          <div>
+            <label className="block text-xs font-semibold text-foreground mb-1">Order ID</label>
+            <div className="px-3 py-2 bg-muted rounded-lg text-sm font-mono text-foreground">
+              {selectedBooking.id.slice(0, 8)}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-foreground mb-1">Customer</label>
+            <div className="px-3 py-2 bg-muted rounded-lg text-sm text-foreground">
+              <span className="font-semibold">{selectedBooking.customer?.store_name || "Unknown"}</span>
+              {selectedBooking.customer?.contact_info && (
+                <span className="text-xs text-muted-foreground block">{selectedBooking.customer.contact_info}</span>
+              )}
+            </div>
+          </div>
+          <div className="bg-destructive-soft p-3 rounded-lg border border-destructive/30">
+            <p className="text-xs text-destructive">
+              This order will be marked as rejected and cannot be processed further. This action cannot be undone easily.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 max-w-2xl">
+          <Button onClick={closeRejectModal} variant="outline">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleRejectBooking}
+            disabled={isRejecting}
+            variant="destructive"
+          >
+            {isRejecting ? "Rejecting…" : "Reject Order"}
+          </Button>
+        </div>
+      </div>
+        </PageDialog>
+      )}
+      {(showDetailModal && detailBooking) && (
+        <PageDialog onClose={closeDetailModal}>
+      <BookingDetailPage
+        booking={detailBooking}
+        products={products}
+        getStatusTone={getStatusTone}
+        onBack={closeDetailModal}
+        onSaveItems={handleSaveBookingItems}
+      />
+        </PageDialog>
+      )}
+    </>
   );
 }

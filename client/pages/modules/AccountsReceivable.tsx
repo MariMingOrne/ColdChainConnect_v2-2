@@ -1,3 +1,7 @@
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { TruncatedText } from "@/components/ui/truncated-text";
+import { useNewRows } from "@/lib/unseen";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
@@ -19,6 +23,7 @@ import { newestFirst } from "@/components/SortableHeader";
 import { TablePagination, paginate } from "@/components/TablePagination";
 import { AccountsReceivable as ARType, Customer } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 
 type Tab = "outstanding" | "paid" | "credits" | "all";
 
@@ -30,11 +35,13 @@ const TABS: { key: Tab; label: string }[] = [
 ];
 
 export function AccountsReceivable() {
+  const isNewRow = useNewRows("accounts");
   const [arRecords, setARRecords] = useState<ARType[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { token } = useAuth();
+  const canUpdateReceivable = useCan("receivable:update");
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<Tab>("outstanding");
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
@@ -189,9 +196,9 @@ export function AccountsReceivable() {
     setSelectedIds((current) => (checked ? [...current, id] : current.filter((selectedId) => selectedId !== id)));
   const togglePageSelection = (checked: boolean) =>
     setSelectedIds((current) => (checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id))));
-  const bulkActions: TableBulkAction[] = [
-    { label: "Mark selected as paid", onSelect: () => void handleMarkSelectedPaid() },
-  ];
+  const bulkActions: TableBulkAction[] | undefined = canUpdateReceivable
+    ? [{ label: "Mark selected as paid", onSelect: () => void handleMarkSelectedPaid() }]
+    : undefined;
 
   if (isLoading) return <LoadingSpinner />;
 
@@ -233,26 +240,24 @@ export function AccountsReceivable() {
       </div>
 
       <div className="flex flex-col gap-3">
-        <div className="inline-flex w-fit rounded-full border border-border bg-card p-1">
+        <ToggleGroup
+          type="single"
+          value={activeTab}
+          onValueChange={(value) => { if (value) { setActiveTab(value as typeof activeTab); setSearchTerm(""); setSelectedIds([]); setPage(1); } }}
+          aria-label="Filter receivables"
+          className="hide-scrollbar w-fit max-w-full justify-start overflow-x-auto rounded-full border border-border bg-card p-1"
+        >
           {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => { setActiveTab(tab.key); setSearchTerm(""); setSelectedIds([]); setPage(1); }}
-              className={`flex items-center gap-1.5 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold transition ${
-                activeTab === tab.key
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
+            <ToggleGroupItem key={tab.key} value={tab.key} variant="pill" size="sm" className="gap-1.5">
               {tab.label}
               <span className={`px-1.5 py-0.5 rounded-full text-xs font-bold ${
-                activeTab === tab.key ? "bg-card/20 text-white" : "bg-muted text-muted-foreground"
+                activeTab === tab.key ? "bg-primary-foreground/20 text-primary-foreground" : "bg-muted text-muted-foreground"
               }`}>
                 {tabCounts[tab.key]}
               </span>
-            </button>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
         <TableToolbar
           selectedCount={selectedRecords.length}
           bulkActions={bulkActions}
@@ -270,9 +275,11 @@ export function AccountsReceivable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-10 px-3">
-                <input aria-label="Select all AR records on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
-              </TableHead>
+              {canUpdateReceivable && (
+                <TableHead className="w-10 px-3">
+                  <input aria-label="Select all AR records on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
+                </TableHead>
+              )}
               <TableHead>AR ID</TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Amount</TableHead>
@@ -286,7 +293,7 @@ export function AccountsReceivable() {
           <TableBody>
             {paginated.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-10 text-muted-foreground text-sm">
+                <TableCell colSpan={canUpdateReceivable ? 9 : 8} className="text-center py-10 text-muted-foreground text-sm">
                   {activeTab === "outstanding" && "No outstanding balances — great job! 🎉"}
                   {activeTab === "paid"        && "No paid records yet."}
                   {activeTab === "credits"     && "No return credits yet."}
@@ -299,10 +306,12 @@ export function AccountsReceivable() {
                 const amountNum = parseFloat(ar.amount_due);
                 const isCredit = amountNum < 0;
                 return (
-                  <TableRow key={ar.id} className="hover:bg-accent/40 transition-colors">
-                    <TableCell className="w-10 px-3">
-                      <input aria-label={`Select AR ${ar.id.slice(0, 8)}`} type="checkbox" checked={selectedIds.includes(ar.id)} onChange={(event) => toggleRecordSelection(ar.id, event.target.checked)} />
-                    </TableCell>
+                  <TableRow key={ar.id} className={isNewRow(ar.created_at) ? "row-new" : undefined}>
+                    {canUpdateReceivable && (
+                      <TableCell className="w-10 px-3">
+                        <input aria-label={`Select AR ${ar.id.slice(0, 8)}`} type="checkbox" checked={selectedIds.includes(ar.id)} onChange={(event) => toggleRecordSelection(ar.id, event.target.checked)} />
+                      </TableCell>
+                    )}
                     <TableCell className="font-mono text-xs text-muted-foreground">{ar.id.slice(0, 8)}…</TableCell>
                     <TableCell className="text-sm font-semibold text-foreground">
                       {getCustomerName(ar.customer_id)}
@@ -316,8 +325,8 @@ export function AccountsReceivable() {
                     <TableCell>
                       <StatusBadge label={ar.status} tone={getStatusTone(ar.status)} />
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate" title={ar.notes ?? ""}>
-                      {ar.notes || "—"}
+                    <TableCell className="max-w-[180px] text-xs text-muted-foreground">
+                      <TruncatedText>{ar.notes || "—"}</TruncatedText>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                       {new Date(ar.created_at).toLocaleDateString("en-PH")}
@@ -330,15 +339,15 @@ export function AccountsReceivable() {
                       </TableCell>
                     )}
                     <TableCell className="text-right">
-                      {ar.status !== "paid" && !isCredit ? (
-                        <button
+                      {ar.status !== "paid" && !isCredit && canUpdateReceivable ? (
+                        <Button
                           onClick={() => handleMarkPaid(ar.id)}
                           disabled={markingPaid === ar.id}
-                          className="flex items-center gap-1.5 ml-auto whitespace-nowrap px-3 py-1.5 bg-green text-white text-xs font-semibold rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
+                          variant="success" size="sm" className="ml-auto"
                         >
                           <CheckCircle size={13} />
                           {markingPaid === ar.id ? "Saving…" : "Mark Paid"}
-                        </button>
+                        </Button>
                       ) : ar.status === "paid" ? (
                         <span className="text-xs text-green font-semibold">Paid</span>
                       ) : (

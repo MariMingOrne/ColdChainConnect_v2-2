@@ -1,6 +1,7 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Booking, Customer, Product } from "@shared/api";
-import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { OrderProductList } from "./OrderProductList";
@@ -72,22 +73,16 @@ export function AgentOrderScreen({
         </div>
       </header>
 
-      <div className="flex bg-card border-b border-border">
+      <Tabs value={view} onValueChange={(value) => setView(value as typeof view)} className="flex flex-1 flex-col">
+      <TabsList variant="underline" aria-label="Orders">
         {(["new", "pending"] as const).map((key) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setView(key)}
-            className={cn(
-              "flex-1 py-3 text-sm font-semibold transition",
-              view === key ? "border-b-2 border-accent-2 text-accent-2" : "text-muted-foreground"
-            )}
-          >
+          <TabsTrigger key={key} variant="underline" value={key} className="flex-1">
             {key === "new" ? "New Order" : `Pending (${pendingOrders.length})`}
-          </button>
+          </TabsTrigger>
         ))}
-      </div>
+      </TabsList>
 
+      <TabsContent value={view} className="mt-0 flex flex-1 flex-col focus-visible:ring-inset focus-visible:ring-offset-0">
       {view === "new" ? (
         <>
           <div className="flex-1 p-4 space-y-4">
@@ -115,8 +110,8 @@ export function AgentOrderScreen({
                 )}
               </div>
               <div>
-                <label className="block text-xs font-semibold text-foreground mb-2">Prepared Delivery Date</label>
-                <Input
+                <label htmlFor="agentorderscreen-prepared-delivery-date" className="block text-xs font-semibold text-foreground mb-2">Prepared Delivery Date</label>
+                <Input id="agentorderscreen-prepared-delivery-date"
                   type="date"
                   min={minDeliveryDate}
                   value={preparedDeliveryDate}
@@ -141,21 +136,21 @@ export function AgentOrderScreen({
           </div>
 
           <footer className="mt-auto flex shrink-0 items-center gap-3 border-t border-border bg-card px-4 py-3 shadow-md">
-            <button
+            <Button
               type="button"
               onClick={onCancel}
-              className="min-h-[52px] flex-[0.8] rounded-xl border border-border bg-muted px-4 font-semibold text-sm text-muted-foreground transition hover:bg-border/40 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2"
+              variant="outline" className="min-h-[52px] flex-[0.8]"
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={onCreateOrder}
               disabled={!canCreate}
-              className="min-h-[52px] flex-[1.2] rounded-xl bg-primary px-4 font-semibold text-sm text-primary-foreground transition hover:bg-navy-mid active:scale-[0.98] disabled:opacity-40 disabled:hover:bg-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-navy focus-visible:ring-offset-2"
+              variant="default" className="min-h-[52px] flex-[1.2]"
             >
               {isCreating ? "Creating…" : "Create Order"}
-            </button>
+            </Button>
           </footer>
         </>
       ) : (
@@ -168,6 +163,8 @@ export function AgentOrderScreen({
           />
         </div>
       )}
+      </TabsContent>
+      </Tabs>
     </div>
   );
 }

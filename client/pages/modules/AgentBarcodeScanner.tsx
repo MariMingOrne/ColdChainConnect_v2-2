@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
-import { Folder, SwitchCamera } from "lucide-react";
+import { Folder, SwitchCamera, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -82,22 +82,18 @@ export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScanner
       <header className="flex items-center justify-between px-5 pb-4 pt-5">
         <p className="font-rajdhani text-xl font-bold">Barcode Scanner</p>
         <div className="flex items-center gap-3">
-          <button
+          <Button
             type="button"
             onClick={() => {
               setScanError("");
               setFacingMode((current) => current === "environment" ? "user" : "environment");
             }}
             disabled={isDecodingImage}
-            aria-label={`Switch to ${facingMode === "environment" ? "front" : "rear"} camera`}
-            className="flex items-center gap-2 rounded-lg bg-card/10 px-3 py-2 text-sm font-semibold text-white"
-          >
+            aria-label={`Switch to ${facingMode === "environment" ? "front" : "rear"} camera`} variant="ghost" className="gap-2 bg-white/10 text-white hover:bg-white/20 hover:text-white">
             <SwitchCamera size={18} />
             {facingMode === "environment" ? "Rear" : "Front"}
-          </button>
-          <button type="button" onClick={onClose} aria-label="Close scanner" className="text-3xl leading-none">
-            ×
-          </button>
+          </Button>
+          <Button type="button" onClick={onClose} aria-label="Close scanner" variant="ghost" size="icon" className="text-white hover:bg-white/10 hover:text-white"><X size={24} aria-hidden="true" /></Button>
         </div>
       </header>
       <div className="flex flex-1 flex-col items-center justify-center gap-5 overflow-y-auto px-6 py-4">

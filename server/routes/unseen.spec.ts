@@ -1,0 +1,92 @@
+// New-item badge counts for the sidebar, including the Accounting tabs. Runs against the in-memory
+// Postgres harness; the shared database is never touched.
+import { beforeAll, describe, expect, it, vi } from "vitest";
+import type { Request, Response } from "express";
+import { db } from "../db";
+import { bookings, customers, deliveries, delivery_items, expenses, invoices, receipts, trucks } from "../db/schema";
+import type { AuthRequest } from "../middleware/auth";
+import { seedUsers } from "../test/test-db";
+import { getUnseenCounts } from "./unseen";
+
+vi.mock("../db", async () => {
+  const { createTestDb: create } = await import("../test/test-db");
+  return { db: (await create()).db };
+});
+
+let seeded: Awaited<ReturnType<typeof seedUsers>>;
+const SINCE = "2026-01-01T00:00:00.000Z";
+const AFTER = new Date("2026-02-01T00:00:00Z");
+const BEFORE = new Date("2025-12-01T00:00:00Z");
+
+beforeAll(async () => {
+  seeded = await seedUsers(db as never);
+  await db.insert(trucks).values({ id: "truck-1", license_plate: "AAA-111", district: "d" });
+  await db.insert(customers).values({ id: "cust-1", store_name: "Store One", location: "Somewhere" });
+  await db.insert(deliveries).values({ id: "del-1", truck_id: "truck-1" });
+  const stops = ["recorded", "nothing-paid", "verified", "old"];
+  await db.insert(bookings).values(stops.map((id) => ({ id: `book-${id}`, customer_id: "cust-1", created_by: seeded.admin.id })));
+  await db.insert(invoices).values(
+    stops.map((id) => ({ id: `inv-${id}`, booking_id: `book-${id}`, agent_id: seeded.admin.id, receipt_number: `INV-${id}`, customer_name: "Store One", total_amount: "100.00" })),
+  );
+  await db.insert(delivery_items).values(
+    stops.map((id) => ({
+      id: `di-${id}`,
+      delivery_id: "del-1",
+      invoice_id: `inv-${id}`,
+      destination_customer_id: "cust-1",
+      status: "completed" as const,
+      payment_method: id === "nothing-paid" ? null : "cash",
+    })),
+  );
+  await db.insert(receipts).values(
+    stops.map((id) => ({
+      id: `rec-${id}`,
+      receipt_number: `OR-${id}`,
+      delivery_item_id: `di-${id}`,
+      customer_id: "cust-1",
+      truck_id: "truck-1",
+      invoice_id: `inv-${id}`,
+      confirmed_at: id === "old" ? BEFORE : AFTER,
+      payment_verified_at: id === "verified" ? AFTER : null,
+    })),
+  );
+  await db.insert(expenses).values([
+    { id: "exp-new", category: "Fuel", description: "d", amount: "10.00", submitted_by: seeded.admin.id, created_at: AFTER },
+    { id: "exp-old", category: "Fuel", description: "d", amount: "10.00", submitted_by: seeded.admin.id, created_at: BEFORE },
+  ]);
+});
+
+async function counts(role: "admin" | "staff", modulePermissions: string[] | undefined, keys: string[], userId = "u") {
+  let body: Record<string, number> = {};
+  const query = Object.fromEntries(keys.map((key) => [key, SINCE]));
+  const req = { user: { userId, username: userId, role }, modulePermissions, query } as unknown as AuthRequest;
+  const res = { json: (payload: Record<string, number>) => (body = payload), status: () => res } as unknown as Response;
+  await getUnseenCounts(req as Request, res, () => {});
+  return body;
+}
+
+describe("GET /api/unseen accounting tabs", () => {
+  it("counts only receipts with a recorded, still unverified payment created since last seen", async () => {
+    const result = await counts("admin", undefined, ["payments", "expenses"]);
+    expect(result.payments).toBe(1);
+  });
+
+  it("counts expenses created since last seen", async () => {
+    const result = await counts("admin", undefined, ["payments", "expenses"]);
+    expect(result.expenses).toBe(1);
+  });
+
+  it("does not count expenses the viewer submitted themselves", async () => {
+    // exp-new was submitted by the admin: it is news to everyone else, not to them.
+    expect((await counts("admin", undefined, ["expenses"], seeded.admin.id)).expenses).toBe(0);
+    expect((await counts("staff", ["accounting"], ["expenses"], seeded.staff.id)).expenses).toBe(1);
+  });
+
+  it("gives staff with the accounting module the same counts", async () => {
+    expect(await counts("staff", ["accounting"], ["payments", "expenses"])).toMatchObject({ payments: 1, expenses: 1 });
+  });
+
+  it("reports zero for staff without the accounting module", async () => {
+    expect(await counts("staff", ["order-fulfillment"], ["payments", "expenses"])).toMatchObject({ payments: 0, expenses: 0 });
+  });
+});

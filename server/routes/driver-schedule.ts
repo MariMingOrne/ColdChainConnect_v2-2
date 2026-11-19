@@ -1,7 +1,7 @@
 import { RequestHandler } from "express";
 import { eq } from "drizzle-orm";
 import { db } from "../db";
-import { deliveries, drivers } from "../db/schema";
+import { accounts_receivable, deliveries, drivers } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
 import { isIsoDate, todayIsoDate } from "../services/schedule-date";
 
@@ -45,11 +45,20 @@ export const getDriverSchedule: RequestHandler = async (req: AuthRequest, res) =
           with: {
             destination_customer: true,
             invoice: { with: { invoice_items: true } },
+            accounts_receivable: { where: eq(accounts_receivable.status, "outstanding") },
           },
         },
       },
     });
-    const runs = scheduledRuns.filter((run) => (run.driver_id ?? run.truck.driver_id) === driverId);
+    const runs = scheduledRuns
+      .filter((run) => (run.driver_id ?? run.truck.driver_id) === driverId)
+      .map(({ delivery_items: stops, ...run }) => ({
+        ...run,
+        delivery_items: stops.map(({ accounts_receivable: receivables, ...stop }) => ({
+          ...stop,
+          outstanding_amount: receivables.reduce((sum, record) => sum + Number(record.amount_due), 0),
+        })),
+      }));
 
     res.json({ date, driver, deliveries: runs });
   } catch (error) {

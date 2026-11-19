@@ -1,3 +1,5 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Booking, InventoryBatch } from "@shared/api";
@@ -272,28 +274,12 @@ export function CreatePalletForm({
         </div>
 
         {/* Mode Toggle */}
-        <div className="flex gap-2 border-b border-border">
-          <button
-            onClick={() => setMode("automatic")}
-            className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
-              mode === "automatic"
-                ? "border-accent-2 text-accent-2"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Automatic (by Expiry)
-          </button>
-          <button
-            onClick={() => setMode("manual")}
-            className={`px-4 py-2 text-sm font-semibold border-b-2 transition-colors ${
-              mode === "manual"
-                ? "border-accent-2 text-accent-2"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            Manual Selection
-          </button>
-        </div>
+        <Tabs value={mode} onValueChange={(value) => setMode(value as typeof mode)}>
+          <TabsList variant="underline" aria-label="Pallet assignment mode" className="gap-2 bg-transparent">
+            <TabsTrigger variant="underline" value="automatic" className="py-2">Automatic (by Expiry)</TabsTrigger>
+            <TabsTrigger variant="underline" value="manual" className="py-2">Manual Selection</TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         {error && (
           <div className="bg-warning-soft p-3 rounded-lg border border-warning/30">
@@ -336,20 +322,18 @@ export function CreatePalletForm({
                 <div className="flex items-center justify-between mb-3">
                   <p className="text-xs font-semibold text-foreground">Pallet {palletIdx + 1}</p>
                   <div className="flex gap-2">
-                    <button
+                    <Button
                       onClick={() => duplicatePallet(palletIdx)}
-                      className="text-xs text-link hover:text-link font-semibold"
+                      variant="link" className="h-auto p-0"
                       title="Duplicate this pallet"
                     >
                       Duplicate
-                    </button>
+                    </Button>
                     {manualPallets.length > 1 && (
-                      <button
-                        onClick={() => removePallet(palletIdx)}
-                        className="text-xs text-destructive hover:text-destructive font-semibold"
-                      >
+                      <Button
+                        onClick={() => removePallet(palletIdx)} type="button" variant="ghost" size="sm" className="h-8 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive">
                         Remove
-                      </button>
+                      </Button>
                     )}
                   </div>
                 </div>
@@ -444,12 +428,12 @@ export function CreatePalletForm({
               </div>
             ))}
 
-            <button
+            <Button
               onClick={addNewPallet}
-              className="w-full px-3 py-2 border border-dashed border-border rounded-lg text-xs font-semibold text-foreground hover:bg-card transition-colors"
+              variant="outline" size="sm" className="w-full"
             >
               + Add Another Pallet
-            </button>
+            </Button>
 
             {/* Total Quantities Summary */}
             <div className="bg-info-soft p-3 rounded-lg border border-link/30 space-y-2">
@@ -506,21 +490,21 @@ export function CreatePalletForm({
       </div>
 
       <div className="bg-muted px-6 py-4 flex justify-end gap-2 border-t border-border rounded-b-2xl">
-        <button
+        <Button
           onClick={handleCreatePallet}
           disabled={
             isCreating ||
             !hasCompletePick() ||
             (mode === "automatic" ? suggestedPallets.every((p) => p.items.length === 0) : manualPallets.every((p) => p.items.length === 0))
           }
-          className="px-4 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90 disabled:opacity-50"
+          variant="default"
         >
           {isCreating
             ? "Creating…"
             : mode === "automatic"
             ? `Create ${suggestedPallets.filter((p) => p.items.length > 0).length} Pallet(s)`
             : `Create ${manualPallets.filter((p) => p.items.length > 0).length} Pallet(s)`}
-        </button>
+        </Button>
       </div>
     </div>
   );

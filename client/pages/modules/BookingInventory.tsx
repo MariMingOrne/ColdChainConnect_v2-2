@@ -1,3 +1,5 @@
+import { Input } from "@/components/ui/input";
+import { PageDialog } from "@/components/shared/PageDialog";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -7,6 +9,7 @@ import { Package, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Pallet, Booking, Customer, Product, Truck, Invoice, Delivery, DeliveryItem, InventoryBatch, formatCustomerAddress } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 import { PalletStats } from "@/components/pallets/PalletStats";
 import { PalletToolbar, PalletStatusFilter } from "@/components/pallets/PalletToolbar";
 import { PalletTable, PalletEntry } from "@/components/pallets/PalletTable";
@@ -40,6 +43,7 @@ export function BookingInventory() {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const { token, user } = useAuth();
+  const canUpdatePalletStatus = useCan("pallet:updateStatus");
   const isAdmin = user?.role === "admin";
 
   const fetchAll = async () => {
@@ -170,27 +174,12 @@ export function BookingInventory() {
 
   if (isLoading) return <LoadingSpinner />;
 
-  if (sheetOrder) {
-    return (
-      <DeliverySheet
-        order={sheetOrder}
-        pallets={pallets.filter((pallet) => pallet.order_id === sheetOrder.id)}
-        batches={batches}
-        onClose={() => setSheetOrder(null)}
-      />
-    );
-  }
-  if (isAdmin && showPrintAll) {
-    return (
-      <PalletPrintAllDialog
-        entries={printEntries}
-        date={printDate}
-        onClose={() => setShowPrintAll(false)}
-      />
-    );
-  }
+
+
 
   return (
+    <>
+
     <div className="flex-1 flex flex-col gap-6 p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -202,7 +191,7 @@ export function BookingInventory() {
             <>
               <label className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
                 <span>Date</span>
-                <input type="date" value={printDate} onChange={(event) => setPrintDate(event.target.value)} className="bg-transparent text-foreground outline-none" />
+                <Input type="date" value={printDate} onChange={(event) => setPrintDate(event.target.value)} className="h-auto w-auto border-0 bg-transparent p-0 text-foreground focus-visible:ring-0 focus-visible:ring-offset-0" />
               </label>
               <Button onClick={() => setShowPrintAll(true)} variant="outline" className="flex items-center gap-2">
                 <Printer size={16} />
@@ -226,6 +215,7 @@ export function BookingInventory() {
           customer={selected.customer}
           batches={batches}
           getProductName={getProductName}
+          canChangeStatus={canUpdatePalletStatus}
           onStatusChange={(status) => handleStatusChange(selected.pallet.id, status)}
           onPrintSheet={() => setSheetOrder(bookings.find((b) => b.id === selected.pallet.order_id) ?? null)}
           isUpdatingStatus={isUpdatingStatus}
@@ -281,5 +271,26 @@ export function BookingInventory() {
       )}
 
     </div>
+  
+      {(sheetOrder) && (
+        <PageDialog onClose={() => setSheetOrder(null)}>
+<DeliverySheet
+        order={sheetOrder}
+        pallets={pallets.filter((pallet) => pallet.order_id === sheetOrder.id)}
+        batches={batches}
+        onClose={() => setSheetOrder(null)}
+      />
+        </PageDialog>
+      )}
+      {(isAdmin && showPrintAll) && (
+        <PageDialog onClose={() => setShowPrintAll(false)}>
+<PalletPrintAllDialog
+        entries={printEntries}
+        date={printDate}
+        onClose={() => setShowPrintAll(false)}
+      />
+        </PageDialog>
+      )}
+    </>
   );
 }

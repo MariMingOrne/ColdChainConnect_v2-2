@@ -1,8 +1,10 @@
 import { MIN_PASSWORD_LENGTH } from "@shared/api";
+import { PageDialog } from "@/components/shared/PageDialog";
 import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { ArrowLeft } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
@@ -36,10 +38,10 @@ function ViewDriverModal({ driver, onClose }: { driver: Driver; onClose: () => v
         <div>
           <h1 className="page-title">Driver Details</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
 
       <div className="bg-card rounded-2xl border border-border">
@@ -67,9 +69,9 @@ function ViewDriverModal({ driver, onClose }: { driver: Driver; onClose: () => v
         </div>
 
         <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
-          <button onClick={onClose} className="px-4 py-2 bg-primary text-primary-foreground rounded-lg font-semibold text-sm hover:opacity-90">
+          <Button onClick={onClose} variant="default">
             Close
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -125,10 +127,10 @@ function DriverModal({
         <div>
           <h1 className="page-title">{title}</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
 
       <div className="bg-card rounded-2xl border border-border">
@@ -223,7 +225,7 @@ function DriverCard({
   driver: Driver;
   showDelete: boolean;
   onView: () => void;
-  onEdit: () => void;
+  onEdit?: () => void;
   onSchedule: () => void;
   onDelete: () => void;
   canManageMfa: boolean;
@@ -281,11 +283,11 @@ function DriverCard({
       )}
 
       <div className="flex gap-2 pt-1 border-t border-border">
-        <button onClick={onView} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-accent text-foreground transition-colors">View</button>
-        <button onClick={onSchedule} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-accent text-foreground transition-colors">Schedule</button>
-        <button onClick={onEdit} className="flex-1 py-1.5 text-xs font-semibold border border-border rounded-lg hover:bg-accent text-foreground transition-colors">Edit</button>
+        <Button onClick={onView} variant="outline" size="sm" className="flex-1">View</Button>
+        <Button onClick={onSchedule} variant="outline" size="sm" className="flex-1">Schedule</Button>
+        {onEdit && <Button onClick={onEdit} variant="outline" size="sm" className="flex-1">Edit</Button>}
         {showDelete && (
-          <button onClick={onDelete} className="flex-1 py-1.5 text-xs font-semibold bg-red/10 border border-red/30 rounded-lg hover:bg-red/20 text-red transition-colors">Delete</button>
+          <Button onClick={onDelete} variant="danger" size="sm" className="flex-1">Delete</Button>
         )}
       </div>
     </div>
@@ -308,7 +310,8 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
   const [isResettingMfa, setIsResettingMfa] = useState(false);
   const [mfaMessage, setMfaMessage] = useState<string | null>(null);
   const [mfaSavingDriverId, setMfaSavingDriverId] = useState<string | null>(null);
-  const { token, user: currentUser } = useAuth();
+  const { token } = useAuth();
+  const canManageDrivers = useCan("driver:manage");
 
   const emptyForm = (): DriverForm => ({
     full_name: "",
@@ -499,42 +502,27 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
     );
   }
 
-  if (schedulingDriver) {
-    return <DriverScheduleModal driver={schedulingDriver} onClose={() => setSchedulingDriver(null)} />;
-  }
 
-  if (viewingDriver) {
-    return <ViewDriverModal driver={viewingDriver} onClose={() => setViewingDriver(null)} />;
-  }
 
-  if (isModalOpen) {
-    return (
-      <DriverModal
-        title={editingDriver ? "Edit Driver" : "Add New Driver"}
-        formData={formData}
-        setFormData={setFormData}
-        hasLogin={Boolean(editingDriver?.user)}
-        mfaEnabled={editingDriver?.user?.mfa_enabled ?? false}
-        isResettingMfa={isResettingMfa}
-        mfaMessage={mfaMessage}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSave}
-        onResetMfa={handleResetMfa}
-      />
-    );
-  }
+
+
+
 
   return (
+    <>
+
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden px-4 py-4 md:px-6 md:py-5">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="font-rajdhani text-3xl font-bold text-foreground letter-spacing-tight">
+          <h1 className="font-rajdhani text-3xl font-bold text-foreground">
             Driver Management
           </h1>
           <p className="text-xs text-muted-foreground mt-1">Manage field drivers</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">Create Accounts</button>
+          {canManageDrivers && (
+            <Button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} variant="default">Create Accounts</Button>
+          )}
         </div>
       </div>
 
@@ -562,12 +550,12 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
             <DriverCard
               key={driver.id}
               driver={driver}
-              showDelete
+              showDelete={canManageDrivers}
               onView={() => setViewingDriver(driver)}
-              onEdit={() => openEditModal(driver)}
+              onEdit={canManageDrivers ? () => openEditModal(driver) : undefined}
               onSchedule={() => setSchedulingDriver(driver)}
               onDelete={() => handleDelete(driver.id)}
-              canManageMfa={currentUser?.role === "admin"}
+              canManageMfa={canManageDrivers}
               isSavingMfa={mfaSavingDriverId === driver.id}
               onMfaRequirementChange={(required) => void updateDriverMfaRequirement(driver, required)}
             />
@@ -580,26 +568,54 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
           Page {currentPage} of {Math.max(1, totalPages)} · {filteredDrivers.length} drivers
         </div>
         <div className="flex gap-2 items-center">
-          <button
+          <Button
             onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
-            className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="outline" size="sm"
           >
             Previous
-          </button>
+          </Button>
           <span className="px-3 py-1 text-xs font-semibold text-foreground bg-card rounded border border-border">
             {currentPage}
           </span>
-          <button
+          <Button
             onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages || totalPages === 0}
-            className="px-3 py-1 border border-border rounded text-xs font-semibold hover:bg-card disabled:opacity-50 disabled:cursor-not-allowed"
+            variant="outline" size="sm"
           >
             Next
-          </button>
+          </Button>
         </div>
       </div>
 
     </div>
+  
+      {(schedulingDriver) && (
+        <PageDialog onClose={() => setSchedulingDriver(null)}>
+<DriverScheduleModal driver={schedulingDriver} onClose={() => setSchedulingDriver(null)} />
+        </PageDialog>
+      )}
+      {(viewingDriver) && (
+        <PageDialog onClose={() => setViewingDriver(null)}>
+<ViewDriverModal driver={viewingDriver} onClose={() => setViewingDriver(null)} />
+        </PageDialog>
+      )}
+      {(isModalOpen) && (
+        <PageDialog onClose={() => setIsModalOpen(false)}>
+<DriverModal
+        title={editingDriver ? "Edit Driver" : "Add New Driver"}
+        formData={formData}
+        setFormData={setFormData}
+        hasLogin={Boolean(editingDriver?.user)}
+        mfaEnabled={editingDriver?.user?.mfa_enabled ?? false}
+        isResettingMfa={isResettingMfa}
+        mfaMessage={mfaMessage}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+        onResetMfa={handleResetMfa}
+      />
+        </PageDialog>
+      )}
+    </>
   );
 }

@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useState } from "react";
 import JsBarcode from "jsbarcode";
 import { ArrowLeft, Printer } from "lucide-react";
@@ -68,24 +69,24 @@ export function DeliverySheet({ order, pallets, batches, onClose }: DeliveryShee
             <h1 className="page-title">Delivery Sheet</h1>
           </div>
           <div className="flex items-center gap-3">
-            <button
+            <Button
               type="button"
               onClick={() => setCardMode((mode) => !mode)}
-              className="btn-ghost"
+              variant="outline"
             >
               {cardMode ? "Switch to letter" : "Switch to 5×3 card"}
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
               onClick={() => window.print()}
-              className="flex items-center gap-2 rounded-lg bg-accent-2 px-4 py-2 text-sm font-semibold text-white hover:opacity-80"
+              variant="default"
             >
               <Printer size={16} /> Print
-            </button>
-            <button type="button" onClick={onClose} className="btn-ghost">
+            </Button>
+            <Button type="button" onClick={onClose} variant="outline">
               <ArrowLeft size={15} />
               Back
-            </button>
+            </Button>
           </div>
         </div>
 

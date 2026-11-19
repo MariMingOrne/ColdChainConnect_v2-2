@@ -1,3 +1,4 @@
+import { Input } from "@/components/ui/input";
 import { useEffect, useMemo, useState } from "react";
 import { ShieldCheck, Users } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -6,6 +7,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { modulePermissionKeys, modulePermissionLabels, type ModulePermission } from "@shared/api";
 import { Button } from "@/components/ui/button";
+import { useCan } from "@/hooks/useCan";
 
 type ManagedUser = {
   id: string;
@@ -21,6 +23,7 @@ type ManagedUser = {
 export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["role"]; onCreateAccount?: () => void }) {
   const token = useAuth((state) => state.token);
   const currentUser = useAuth((state) => state.user);
+  const canArchiveUsers = useCan("user:archive");
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -145,7 +148,7 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><h1 className="font-rajdhani text-3xl font-bold tracking-tight text-foreground">{title}</h1><p className="mt-1 text-xs text-muted-foreground">Manage {roleLabel.toLowerCase()} accounts</p></div>
         <div className="flex flex-wrap items-center gap-2">
-          {currentUser?.role === "admin" && <button type="button" onClick={onCreateAccount} className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90">Create Accounts</button>}
+          {currentUser?.role === "admin" && <Button type="button" onClick={onCreateAccount} variant="default">Create Accounts</Button>}
         </div>
       </div>
       {error && <p className="rounded-lg border border-red/30 bg-red/10 px-4 py-3 text-sm text-red">{error}</p>}
@@ -170,10 +173,10 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
               {currentUser?.role === "admin" && (
                 <label className="flex items-center justify-between gap-3 border-t border-border pt-2 text-xs font-semibold text-foreground">
                   <span>Require MFA at sign-in</span>
-                  <input type="checkbox" checked={account.mfa_required} disabled={mfaSavingId === account.id} onChange={(event) => void updateMfaRequirement(account, event.target.checked)} className="h-4 w-4 accent-navy" />
+                  <Input type="checkbox" checked={account.mfa_required} disabled={mfaSavingId === account.id} onChange={(event) => void updateMfaRequirement(account, event.target.checked)} className="h-4 w-4 accent-navy" />
                 </label>
               )}
-              {currentUser?.role === "admin" && account.id !== currentUser.id && (
+              {canArchiveUsers && account.id !== currentUser?.id && (
                 <Button type="button" variant={account.is_archived ? "outline" : "destructive"} size="sm" disabled={archiveSavingId === account.id} onClick={() => void updateArchiveStatus(account, !account.is_archived)}>
                   {archiveSavingId === account.id ? "Saving…" : account.is_archived ? "Restore Account" : "Archive Account"}
                 </Button>
@@ -184,7 +187,7 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
                   <div className="grid grid-cols-1 gap-1.5">
                     {modulePermissionKeys.map((permission) => (
                       <label key={permission} className="flex items-start gap-2 text-xs text-foreground">
-                        <input type="checkbox" checked={account.module_permissions?.includes(permission) ?? false} onChange={() => togglePermission(account.id, permission)} className="mt-0.5 accent-navy" />
+                        <Input type="checkbox" checked={account.module_permissions?.includes(permission) ?? false} onChange={() => togglePermission(account.id, permission)} className="mt-0.5 accent-navy" />
                         <span>{modulePermissionLabels[permission]}</span>
                       </label>
                     ))}
@@ -199,9 +202,9 @@ export function ManagedUsers({ role, onCreateAccount }: { role: ManagedUser["rol
       <div className="mt-auto flex items-center justify-between px-2 py-2">
         <span className="text-xs text-muted-foreground">Page {currentPage} of {Math.max(1, totalPages)} · {filteredUsers.length} {role} accounts</span>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={currentPage === 1} className="rounded border border-border px-3 py-1 text-xs font-semibold hover:bg-card disabled:opacity-50">Previous</button>
+          <Button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={currentPage === 1} variant="outline" size="sm">Previous</Button>
           <span className="rounded border border-border bg-card px-3 py-1 text-xs font-semibold text-foreground">{currentPage}</span>
-          <button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={currentPage >= totalPages} className="rounded border border-border px-3 py-1 text-xs font-semibold hover:bg-card disabled:opacity-50">Next</button>
+          <Button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={currentPage >= totalPages} variant="outline" size="sm">Next</Button>
         </div>
       </div>
     </div>

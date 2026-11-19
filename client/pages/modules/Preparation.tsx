@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+import { TruncatedText } from "@/components/ui/truncated-text";
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
@@ -19,6 +21,7 @@ import { newestFirst } from "@/components/SortableHeader";
 import { TablePagination, paginate } from "@/components/TablePagination";
 import { Booking, Customer, InventoryBatch, Pallet } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { buildAutomaticPallets, isCompletePick } from "@/lib/automaticPicking";
 
@@ -29,6 +32,10 @@ export function Preparation() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { token } = useAuth();
+  // Same rules as the server: staff may start pallets but only admin and agent move them along, and only admin deletes.
+  const canCreatePallets = useCan("pallet:create");
+  const canUpdatePalletStatus = useCan("pallet:updateStatus");
+  const canDeletePallets = useCan("pallet:delete");
   const navigate = useNavigate();
   const { state } = useLocation();
   const filters = state?.preparationFilters;
@@ -120,7 +127,7 @@ export function Preparation() {
     return true;
   };
 
-  if (isLoading) return <LoadingSpinner className="fixed inset-0 z-0 min-h-0 bg-muted" slow />;
+  if (isLoading) return <LoadingSpinner className="min-h-[60vh] bg-transparent" slow />;
 
   const filtered = newestFirst(orders.filter((order) => {
     const matchesSearch =
@@ -318,7 +325,7 @@ export function Preparation() {
       {/* Filters */}
       <TableToolbar
         selectedCount={selectedOrders.length}
-        bulkActions={bulkActions}
+        bulkActions={canCreatePallets ? bulkActions : undefined}
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
         searchPlaceholder="Search by order ID or customer ID…"
@@ -414,9 +421,9 @@ export function Preparation() {
                     </TableCell>
                     <TableCell className="text-sm">
                       <div className="flex flex-col">
-                        <span className="font-semibold text-foreground">{customer?.store_name || "Unknown"}</span>
+                        <TruncatedText className="font-semibold text-foreground">{customer?.store_name || "Unknown"}</TruncatedText>
                         {customer?.location && (
-                          <span className="text-xs text-muted-foreground">{customer.location}</span>
+                          <TruncatedText className="text-xs text-muted-foreground">{customer.location}</TruncatedText>
                         )}
                       </div>
                     </TableCell>
@@ -448,7 +455,7 @@ export function Preparation() {
                       <div className="flex gap-2 justify-end items-center whitespace-nowrap">
                         {/* Prepare: only show when no pallets created yet and not prepared */}
                         {draftPalletCount === 0 && !isPrepared && (
-                          <button
+                          <Button
                             onClick={() => {
                               const preparationFilters = { searchTerm, statusFilter, dateRangeFilter, customDateStart, customDateEnd };
                               navigate("/booking-dispatch/preparation", { replace: true, state: { preparationFilters } });
@@ -456,27 +463,29 @@ export function Preparation() {
                                 state: { fromPreparation: true },
                               });
                             }}
-                            className="px-3 py-2 text-sm font-semibold bg-accent-2 text-white rounded-lg hover:opacity-80 transition"
+                            variant="default"
                           >
                             Prepare
-                          </button>
+                          </Button>
                         )}
                         {/* Prepared: show when pallets are drafted but not yet marked prepared */}
                         {draftPalletCount > 0 && !isPrepared && (
                           <>
-                            <button
-                              onClick={() => navigate(`/booking-dispatch/inventory?order=${order.id}`)}
-                              className="px-3 py-2 text-sm font-semibold bg-green text-white rounded-lg hover:opacity-80 transition"
-                            >
-                              Prepared
-                            </button>
-                            <button
-                              onClick={() => handleDeleteOrderPallets(order.id)}
-                              className="px-3 py-2 text-sm font-semibold bg-gold text-foreground rounded-lg hover:opacity-80 transition"
-                              title={`Remove ${draftPalletCount} pallet(s) for this order`}
-                            >
-                              Undo
-                            </button>
+                            {canUpdatePalletStatus && (
+                              <Button
+                                onClick={() => navigate(`/booking-dispatch/inventory?order=${order.id}`)}
+                                variant="success"
+                              >
+                                Prepared
+                              </Button>
+                            )}
+                            {canDeletePallets && (
+                              <Button
+                                onClick={() => handleDeleteOrderPallets(order.id)}
+                                title={`Remove ${draftPalletCount} pallet(s) for this order`} type="button" variant="warning" size="sm">
+                                Undo
+                              </Button>
+                            )}
                           </>
                         )}
                         {/* After marked prepared: show badge + Undo */}
@@ -485,12 +494,12 @@ export function Preparation() {
                             <span className="px-3 py-2 text-xs font-semibold text-green bg-green/10 rounded-lg">
                               ✓ Prepared
                             </span>
-                            <button
-                              onClick={() => handleUndoPrepared(order.id)}
-                              className="px-3 py-2 text-sm font-semibold bg-gold text-foreground rounded-lg hover:opacity-80 transition"
-                            >
-                              Undo
-                            </button>
+                            {canUpdatePalletStatus && (
+                              <Button
+                                onClick={() => handleUndoPrepared(order.id)} type="button" variant="warning" size="sm">
+                                Undo
+                              </Button>
+                            )}
                           </>
                         )}
                       </div>

@@ -1,8 +1,12 @@
-import { Inbox, LoaderCircle } from "lucide-react";
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { RefreshCw } from "lucide-react";
+import { Boxes, ClipboardList, Inbox, LoaderCircle, RefreshCw, Truck, X, type LucideIcon } from "lucide-react";
 import type { AppNotification } from "@/hooks/useNotifications";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { cn } from "@/lib/utils";
 
 interface NotificationPanelProps {
   notifications: AppNotification[];
@@ -17,6 +21,28 @@ interface NotificationPanelProps {
 
 type NotificationFilter = "all" | AppNotification["type"];
 
+const TYPE: Record<AppNotification["type"], { label: string; icon: LucideIcon }> = {
+  orders: { label: "Orders", icon: ClipboardList },
+  stock: { label: "Low stock", icon: Boxes },
+  delivery: { label: "Delivery", icon: Truck },
+};
+
+const FILTERS: { value: NotificationFilter; label: string }[] = [
+  { value: "all", label: "All" },
+  { value: "orders", label: "Orders" },
+  { value: "stock", label: "Stock" },
+  { value: "delivery", label: "Delivery" },
+];
+
+function formatWhen(timestamp: string) {
+  const date = new Date(timestamp);
+  return Number.isNaN(date.getTime()) ? timestamp : date.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
+}
+
+/**
+ * Slide-over notification list (shadcn Sheet: focus is trapped while open,
+ * Esc and the overlay close it, focus returns to the bell afterwards).
+ */
 export function NotificationPanel({
   notifications,
   isLoading,
@@ -29,168 +55,122 @@ export function NotificationPanel({
 }: NotificationPanelProps) {
   const [filter, setFilter] = useState<NotificationFilter>("all");
   const unreadCount = notifications.filter((notification) => !notification.read).length;
-  const filteredNotifications = filter === "all"
-    ? notifications
-    : notifications.filter((notification) => notification.type === filter);
-
-  const getTypeColor = (type: AppNotification["type"]) => {
-    switch (type) {
-      case "stock": return "bg-warning-soft border-warning/30";
-      case "orders": return "bg-info-soft border-link/30";
-      case "delivery": return "bg-warning-soft border-warning/30";
-    }
-  };
-
-  const getTypeLabel = (type: AppNotification["type"]) => {
-    switch (type) {
-      case "stock": return "Low Stock";
-      case "orders": return "Orders";
-      case "delivery": return "Delivery";
-    }
-  };
-
-  const filters: { value: NotificationFilter; label: string }[] = [
-    { value: "all", label: "All" },
-    { value: "orders", label: "Orders" },
-    { value: "stock", label: "Stock" },
-    { value: "delivery", label: "Delivery" },
-  ];
+  const visible = filter === "all" ? notifications : notifications.filter((notification) => notification.type === filter);
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
-      <button
-        type="button"
-        aria-label="Close notifications"
-        className="absolute inset-0 bg-black/20"
-        onClick={onClose}
-      />
-      <div className="absolute right-0 top-0 bottom-0 flex w-full flex-col overflow-hidden bg-card shadow-2xl sm:w-96">
-        <div className="flex-shrink-0 border-b border-border bg-card px-4 py-4">
-          <div className="mb-4 flex items-center justify-between">
+    <Sheet open onOpenChange={(open) => !open && onClose()}>
+      <SheetContent side="right" className="flex w-full flex-col gap-0 p-0 sm:max-w-md">
+        <SheetHeader className="space-y-3 border-b border-border px-5 py-4 text-left">
+          <div className="flex items-start justify-between gap-3 pr-8">
             <div>
-              <h2 className="text-xl font-bold text-foreground">Notifications</h2>
-              <p className="text-sm text-muted-foreground">
+              <SheetTitle>Notifications</SheetTitle>
+              <SheetDescription>
                 {isLoading && notifications.length === 0
                   ? "Checking for updates…"
-                  : `${unreadCount} unread notification${unreadCount === 1 ? "" : "s"}`}
-              </p>
+                  : `${unreadCount} unread`}
+              </SheetDescription>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onRefresh}
-                aria-label="Refresh notifications"
-                className="rounded-lg p-2 text-muted-foreground transition hover:bg-accent hover:text-foreground"
-              >
-                <RefreshCw size={17} className={isLoading ? "animate-spin" : ""} />
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                aria-label="Close"
-                className="text-xl text-muted-foreground transition-colors hover:text-foreground"
-              >
-                ×
-              </button>
-            </div>
+            <Button variant="ghost" size="icon" onClick={onRefresh} aria-label="Refresh notifications" className="h-8 w-8">
+              <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} aria-hidden="true" />
+            </Button>
           </div>
-          <div className="flex flex-wrap gap-2">
-            {filters.map((tab) => (
-              <button
-                key={tab.value}
-                type="button"
-                onClick={() => setFilter(tab.value)}
-                className={`rounded border px-2.5 py-1.5 text-xs transition ${filter === tab.value ? "border-primary bg-primary text-primary-foreground" : "border-border bg-muted text-muted-foreground hover:border-primary"}`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {unreadCount > 0 && (
-          <div className="flex items-center gap-2 border-b border-border bg-muted px-4 py-2">
-            <button
-              type="button"
-              onClick={onMarkAllAsRead}
-              className="text-xs font-semibold text-primary transition-colors hover:text-accent-dark"
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <ToggleGroup
+              type="single"
+              value={filter}
+              onValueChange={(value) => value && setFilter(value as NotificationFilter)}
+              aria-label="Filter notifications"
+              className="justify-start"
             >
-              Mark all as read
-            </button>
+              {FILTERS.map((option) => (
+                <ToggleGroupItem key={option.value} value={option.value} size="sm" className="h-8 px-3 text-xs">
+                  {option.label}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+            {unreadCount > 0 && (
+              <Button variant="link" size="sm" onClick={onMarkAllAsRead} className="h-8 px-0 text-xs">
+                Mark all as read
+              </Button>
+            )}
           </div>
-        )}
+        </SheetHeader>
 
-        <div className="flex-1 overflow-y-auto scrollbar-visible">
+        <div className="flex-1 overflow-y-auto">
           {error && (
             <p role="alert" className="m-4 rounded-lg border border-destructive/30 bg-destructive-soft px-3 py-2 text-sm text-destructive">
               {error}
             </p>
           )}
-          {filteredNotifications.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center p-4 text-center">
-              <div className="mb-3 text-muted-foreground">{isLoading ? <LoaderCircle className="h-8 w-8 animate-spin" aria-hidden="true" /> : <Inbox className="h-8 w-8" aria-hidden="true" />}</div>
-              <p className="font-medium text-muted-foreground">{isLoading ? "Loading notifications" : "No notifications"}</p>
-              <p className="text-sm text-muted-foreground">{isLoading ? "Checking recent activity…" : "You're all caught up!"}</p>
+          {visible.length === 0 ? (
+            <div className="flex h-full flex-col items-center justify-center gap-1 p-6 text-center text-muted-foreground">
+              {isLoading ? <LoaderCircle className="mb-2 h-8 w-8 animate-spin" aria-hidden="true" /> : <Inbox className="mb-2 h-8 w-8" aria-hidden="true" />}
+              <p className="font-medium">{isLoading ? "Loading notifications" : "No notifications"}</p>
+              <p className="text-sm">{isLoading ? "Checking recent activity…" : "You're all caught up."}</p>
             </div>
           ) : (
-            <div className="divide-y divide-border">
-              {filteredNotifications.map((notification) => (
-                <article
-                  key={notification.id}
-                  className={`border-l-4 border-l-transparent p-4 transition ${notification.read ? "bg-card" : "border-l-accent bg-info-soft"}`}
-                >
-                  <div className="flex gap-3">
-                    <div className="flex-shrink-0 text-2xl">{notification.icon}</div>
+            <ul className="divide-y divide-border">
+              {visible.map((notification) => {
+                const { label, icon: Icon } = TYPE[notification.type];
+                return (
+                  <li
+                    key={notification.id}
+                    className={cn("flex gap-3 px-5 py-4", !notification.read && "bg-info-soft/60")}
+                  >
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground">
+                      <Icon className="h-4 w-4" aria-hidden="true" />
+                    </span>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
-                        <div>
-                          <h3 className="text-sm font-semibold text-foreground">{notification.title}</h3>
-                          <span className={`mt-1 inline-flex rounded border px-1.5 py-0.5 text-2xs font-medium ${getTypeColor(notification.type)}`}>
-                            {getTypeLabel(notification.type)}
-                          </span>
+                        <div className="min-w-0">
+                          <h3 className="text-sm font-semibold text-foreground">
+                            {!notification.read && <span className="sr-only">Unread: </span>}
+                            {notification.title}
+                          </h3>
+                          <Badge variant="secondary" className="mt-1 text-2xs font-medium">{label}</Badge>
                         </div>
-                        <button
-                          type="button"
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           aria-label={`Dismiss ${notification.title}`}
                           onClick={() => onDismiss(notification.id)}
-                          className="flex-shrink-0 text-muted-foreground transition-colors hover:text-red"
+                          className="-mr-2 -mt-1 h-8 w-8 shrink-0 text-muted-foreground hover:text-destructive"
                         >
-                          ×
-                        </button>
+                          <X className="h-4 w-4" aria-hidden="true" />
+                        </Button>
                       </div>
                       <p className="mt-2 text-sm text-foreground">{notification.message}</p>
-                      <div className="mt-3 flex items-center justify-between border-t border-border pt-2">
-                        <span className="text-xs text-muted-foreground">{notification.timestamp}</span>
-                        <div className="flex items-center gap-3">
+                      <div className="mt-2 flex items-center justify-between gap-3">
+                        <time dateTime={notification.timestamp} className="text-xs text-muted-foreground">
+                          {formatWhen(notification.timestamp)}
+                        </time>
+                        <div className="flex items-center gap-1">
                           {!notification.read && (
-                            <button
-                              type="button"
-                              onClick={() => onMarkAsRead(notification.id)}
-                              className="text-xs font-semibold text-primary transition-colors hover:text-accent-dark"
-                            >
+                            <Button variant="ghost" size="sm" onClick={() => onMarkAsRead(notification.id)} className="h-8 text-xs">
                               Mark read
-                            </button>
+                            </Button>
                           )}
-                          <Link
-                            to={notification.href}
-                            onClick={() => {
-                              onMarkAsRead(notification.id);
-                              onClose();
-                            }}
-                            className="text-xs font-semibold text-primary transition-colors hover:text-accent-dark"
-                          >
-                            View
-                          </Link>
+                          <Button asChild variant="outline" size="sm" className="h-8 text-xs">
+                            <Link
+                              to={notification.href}
+                              onClick={() => {
+                                onMarkAsRead(notification.id);
+                                onClose();
+                              }}
+                            >
+                              View
+                            </Link>
+                          </Button>
                         </div>
                       </div>
                     </div>
-                  </div>
-                </article>
-              ))}
-            </div>
+                  </li>
+                );
+              })}
+            </ul>
           )}
         </div>
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   );
 }

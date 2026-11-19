@@ -35,6 +35,7 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [hoveredSuggestionId, setHoveredSuggestionId] = useState<string | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const bellRef = useRef<HTMLButtonElement>(null);
   const headerRef = useRef<HTMLElement>(null);
   const { data: searchData = EMPTY_SEARCH_DATA, isFetching: isFetchingSearch } = useGlobalSearchData(
     isSearchFocused && Boolean(searchTerm.trim())
@@ -129,15 +130,17 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
   };
 
   return (
-    <header ref={headerRef} className="bg-navy px-4 md:px-8 py-3 sm:py-4 flex flex-wrap items-center flex-shrink-0 sticky top-0 z-10 shadow-sm gap-2 sm:gap-4 md:gap-6 animate-slide-down">
+    <header ref={headerRef} className="bg-navy px-4 md:px-8 py-3 sm:py-4 flex flex-wrap items-center flex-shrink-0 sticky top-0 z-10 shadow-sm gap-2 sm:gap-4 md:gap-6">
       <div className={`flex items-center gap-4 min-w-0 ${role === "agent" ? "flex-1" : "flex-1 sm:flex-none"}`}>
         {/* Left Section - Logo & Back Button */}
         <div className="flex items-center gap-3 flex-shrink-0">
           {!agentMode && (
             <button
+              type="button"
               onClick={() => navigate("/")}
-              className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-              title="Back to Dashboard"
+              className="flex h-10 w-10 items-center justify-center rounded-lg hover:bg-white/10 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-gold"
+              aria-label="Back to dashboard"
+              title="Back to dashboard"
             >
               <ChevronLeft className="w-5 h-5 text-white" />
             </button>
@@ -147,7 +150,7 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
 
           <div className="flex items-center gap-2">
             <img src="https://cdn.builder.io/api/v1/image/assets%2F95235f61d85340cc8929dd5e2ec9cafe%2F04690f469f254fd393684ed5411b7cab?format=webp&width=800&height=1200" alt="ACDP Logo" className="w-8 h-8 object-cover rounded-full" />
-            <div className="font-rajdhani text-xl font-bold letter-spacing-wider text-white hidden sm:block">
+            <div className="font-rajdhani text-xl font-bold text-white hidden sm:block">
               ACDP
             </div>
           </div>
@@ -190,7 +193,7 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
             <button
               type="submit"
               aria-label="Search"
-              className="absolute right-1 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-white/70 hover:text-white hover:bg-white/10 transition-colors"
+              className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-md text-white/70 hover:text-white hover:bg-white/10 transition-colors"
             >
               <Search className="w-4 h-4" />
             </button>
@@ -239,6 +242,7 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
         {role === "admin" && <AdminMobileNavigation />}
         {/* Notification button */}
         <button
+          ref={bellRef}
           onClick={() => setShowNotifications(!showNotifications)}
           aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
           aria-expanded={showNotifications}
@@ -287,7 +291,11 @@ export function Topbar({ userName, onLogout, agentMode = false }: TopbarProps) {
             onMarkAsRead={markAsRead}
             onMarkAllAsRead={markAllAsRead}
             onDismiss={dismiss}
-            onClose={() => setShowNotifications(false)}
+            onClose={() => {
+              setShowNotifications(false);
+              // The sheet unmounts on close, so hand focus back to the bell ourselves.
+              window.setTimeout(() => bellRef.current?.focus(), 0);
+            }}
           />
         )}
       </div>

@@ -16,7 +16,7 @@ export function InformationManagement() {
   return (
     <InventoryProvider>
       <div className="min-w-0 flex-1 overflow-auto">
-        <div key={location.pathname} className="h-full animate-fade-in-up">
+        <div className="h-full">
             <Routes>
               <Route path="/products" element={<Pricing />} />
               <Route path="/inventory" element={<Inventory />} />

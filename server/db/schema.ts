@@ -214,6 +214,8 @@ export const bookings = pgTable("bookings", {
     .references(() => users.id),
   status: bookingStatusEnum("status").default("pending").notNull(),
   prepared_delivery_date: text("prepared_delivery_date"),
+  approved_by: text("approved_by").references(() => users.id),
+  approved_at: timestamp("approved_at"),
   created_at: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("bookings_created_by_idx").on(table.created_by),
@@ -413,6 +415,8 @@ export const receipts = pgTable("receipts", {
   confirmed_by: text("confirmed_by"),
   notes: text("notes"),
   payment_reference: text("payment_reference"),
+  payment_verified_by: text("payment_verified_by").references(() => users.id),
+  payment_verified_at: timestamp("payment_verified_at"),
   confirmed_at: timestamp("confirmed_at").defaultNow().notNull(),
 }, (table) => [
   index("receipts_customer_id_idx").on(table.customer_id),
@@ -491,6 +495,31 @@ export const audit_logs = pgTable("audit_logs", {
 }, (table) => [
   index("audit_logs_user_id_idx").on(table.user_id),
   index("audit_logs_created_at_idx").on(table.created_at),
+]);
+
+// Expenses table — staff submit, admin approves or rejects, accounting marks paid
+export const expenses = pgTable("expenses", {
+  id: text("id").primaryKey(),
+  category: text("category").notNull(),
+  description: text("description"),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  // submitted | approved | rejected | paid
+  status: varchar("status", { length: 20 }).default("submitted").notNull(),
+  submitted_by: text("submitted_by")
+    .notNull()
+    .references(() => users.id),
+  approved_by: text("approved_by").references(() => users.id),
+  paid_by: text("paid_by").references(() => users.id),
+  reject_reason: text("reject_reason"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+  approved_at: timestamp("approved_at"),
+  paid_at: timestamp("paid_at"),
+}, (table) => [
+  index("expenses_status_idx").on(table.status),
+  index("expenses_submitted_by_idx").on(table.submitted_by),
+  check("expenses_amount_positive", sql`${table.amount} > 0`),
+  check("expenses_status_check", sql`${table.status} IN ('submitted', 'approved', 'rejected', 'paid')`),
 ]);
 
 // ─── Relations ────────────────────────────────────────────────────────────────

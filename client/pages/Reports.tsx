@@ -102,7 +102,7 @@ function ReportDataTable({ rows }: { rows: ReportRow[] }) {
 
   return (
     <div className="data-table-frame overflow-x-auto">
-      <Table className="w-full min-w-[640px] text-sm">
+      <Table className="min-w-[640px]">
         <caption className="sr-only">Raw report data</caption>
         <thead>
           <tr className="border-b border-border bg-muted">
@@ -164,7 +164,7 @@ export function Reports() {
   if (!data) {
     return (
       <main className="flex-1 overflow-y-auto px-4 py-5 md:px-6 md:py-7">
-        <div className="mx-auto max-w-7xl">
+        <div className="w-full">
           <h1 className="text-3xl font-bold text-foreground">Reports</h1>
           <p className="mt-4 text-sm text-muted-foreground" role="status">
             {loadError ?? "Loading reports…"}
@@ -238,7 +238,7 @@ export function Reports() {
 
   return (
     <main className="flex-1 overflow-y-auto px-4 py-5 md:px-6 md:py-7">
-      <div className="mx-auto max-w-7xl space-y-6">
+      <div className="w-full space-y-6">
         <header className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 className="mt-1 text-3xl font-bold text-foreground">Reports</h1>

@@ -1,6 +1,11 @@
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { PageDialog } from "@/components/shared/PageDialog";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { StatusBadge, StatusTone } from "@/components/StatusBadge";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
@@ -77,10 +82,10 @@ function CreateReturnModal({
         <div>
           <h1 className="page-title">Log Return</h1>
         </div>
-        <button onClick={onClose} className="btn-ghost">
+        <Button onClick={onClose} variant="outline">
           <ArrowLeft size={15} />
           Back
-        </button>
+        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border flex flex-col">
         <LogReturnForm
@@ -101,6 +106,7 @@ export function AgentReports() {
   const { token, user } = useAuth();
   const role = user?.role;
   const isAgent = role === "agent";
+  const canDecideReturns = useCan("agentReturn:decide");
 
   const [returns,   setReturns]   = useState<AgentReturn[]>([]);
   const [invoices,  setInvoices]  = useState<Invoice[]>([]);
@@ -224,19 +230,6 @@ export function AgentReports() {
     );
   }
 
-  if (showCreate) {
-    return (
-      <CreateReturnModal
-        invoices={invoices}
-        customers={customers}
-        products={products}
-        token={token!}
-        onClose={() => setShowCreate(false)}
-        onCreated={fetchAll}
-      />
-    );
-  }
-
   const filtered = newestFirst(returns.filter((ret) => {
     const invoice = invoices.find((entry) => entry.id === ret.invoice_id);
     const customer = customers.find((entry) => entry.id === ret.customer_id);
@@ -259,12 +252,15 @@ export function AgentReports() {
     setSelectedIds((current) => (checked ? [...current, id] : current.filter((selectedId) => selectedId !== id)));
   const togglePageSelection = (checked: boolean) =>
     setSelectedIds((current) => (checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id))));
-  const bulkActions: TableBulkAction[] = [
-    { label: "Accept selected returns", onSelect: () => void processSelected("accept") },
-    { label: "Reject selected returns", onSelect: () => void processSelected("reject"), destructive: true },
-  ];
+  const bulkActions: TableBulkAction[] | undefined = canDecideReturns
+    ? [
+        { label: "Accept selected returns", onSelect: () => void processSelected("accept") },
+        { label: "Reject selected returns", onSelect: () => void processSelected("reject"), destructive: true },
+      ]
+    : undefined;
 
   return (
+    <>
     <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto space-y-6">
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -273,10 +269,10 @@ export function AgentReports() {
           <p className="page-subtitle">Manage returned goods — restock or write off</p>
         </div>
         <div className="flex gap-2">
-          <button onClick={() => setShowCreate(true)}
-            className="px-3 py-2 bg-accent-2 text-white rounded-lg font-semibold text-sm hover:opacity-90 flex items-center gap-2">
+          <Button onClick={() => setShowCreate(true)}
+            variant="default">
             <RotateCcw size={15} /> Log Return
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -300,16 +296,19 @@ export function AgentReports() {
       </div>
 
       <div className="flex flex-col gap-3">
-        <div className="inline-flex w-fit rounded-full border border-border bg-card p-1">
+        <ToggleGroup
+          type="single"
+          value={statusFilter}
+          onValueChange={(value) => { if (value) { setStatusFilter(value as typeof statusFilter); setPage(1); } }}
+          aria-label="Filter returns by status"
+          className="hide-scrollbar w-fit max-w-full justify-start overflow-x-auto rounded-full border border-border bg-card p-1"
+        >
           {(["all", "pending", "accepted", "rejected"] as const).map((s) => (
-            <button key={s} onClick={() => { setStatusFilter(s); setPage(1); }}
-              className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold capitalize transition ${
-                statusFilter === s ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-              }`}>
+            <ToggleGroupItem key={s} value={s} variant="pill" size="sm" className="capitalize">
               {s}
-            </button>
+            </ToggleGroupItem>
           ))}
-        </div>
+        </ToggleGroup>
         <TableToolbar
           selectedCount={selectedReturns.length}
           bulkActions={bulkActions}
@@ -326,12 +325,14 @@ export function AgentReports() {
           <LoadingSpinner className="min-h-32" />
         ) : (
           <div className="overflow-x-auto">
-            <Table className="w-full text-xs md:text-sm">
+            <Table>
               <thead>
                 <tr>
-                  <th className="w-10 bg-navy-mid px-3 py-3 text-left border-b border-border">
-                    <input aria-label="Select all returns on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
-                  </th>
+                  {canDecideReturns && (
+                    <th className="w-10 bg-navy-mid px-3 py-3 text-left border-b border-border">
+                      <input aria-label="Select all returns on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
+                    </th>
+                  )}
                   {["Date", "Order", "Customer", "Product", "Qty", "Type", "Reason", "Status", "Actions"].map((h) => (
                     <th key={h} className="bg-navy-mid text-muted-foreground font-barlow-cond text-xs font-bold px-3 py-3 text-left border-b border-border whitespace-nowrap">
                       {h}
@@ -342,7 +343,7 @@ export function AgentReports() {
               <tbody>
                 {paginated.length === 0 ? (
                   <tr>
-                    <td colSpan={10} className="px-6 py-8 text-center text-muted-foreground">
+                    <td colSpan={canDecideReturns ? 10 : 9} className="px-6 py-8 text-center text-muted-foreground">
                       {returns.length === 0 ? "No returns logged yet." : "No records match this filter."}
                     </td>
                   </tr>
@@ -352,9 +353,11 @@ export function AgentReports() {
                     const cust = customers.find((c) => c.id === ret.customer_id);
                     return (
                       <tr key={ret.id} className="border-b border-border hover:bg-accent/40 transition-colors">
-                        <td className="w-10 px-3 py-3">
-                          <input aria-label={`Select return ${ret.id.slice(0, 8)}`} type="checkbox" checked={selectedIds.includes(ret.id)} onChange={(event) => toggleReturnSelection(ret.id, event.target.checked)} />
-                        </td>
+                        {canDecideReturns && (
+                          <td className="w-10 px-3 py-3">
+                            <input aria-label={`Select return ${ret.id.slice(0, 8)}`} type="checkbox" checked={selectedIds.includes(ret.id)} onChange={(event) => toggleReturnSelection(ret.id, event.target.checked)} />
+                          </td>
+                        )}
                         <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">
                           {new Date(ret.created_at).toLocaleDateString("en-PH")}
                         </td>
@@ -386,22 +389,20 @@ export function AgentReports() {
                           )}
                         </td>
                         <td className="px-3 py-3">
-                          {ret.status === "pending" ? (
+                          {ret.status === "pending" && canDecideReturns ? (
                             <div className="flex gap-1">
-                              <button
+                              <Button
                                 disabled={processing === ret.id}
                                 onClick={() => handleAccept(ret.id)}
-                                className="flex items-center gap-1 px-2 py-1 bg-green text-white text-xs font-semibold rounded hover:opacity-90 disabled:opacity-50"
+                                variant="success" size="sm"
                               >
                                 <CheckCircle size={12} /> Accept
-                              </button>
-                              <button
+                              </Button>
+                              <Button
                                 disabled={processing === ret.id}
-                                onClick={() => handleReject(ret.id)}
-                                className="flex items-center gap-1 px-2 py-1 border border-red text-red text-xs font-semibold rounded hover:bg-red/10 disabled:opacity-50"
-                              >
+                                onClick={() => handleReject(ret.id)} variant="danger" size="sm" className="h-8 gap-1 px-2 text-xs">
                                 <XCircle size={12} /> Reject
-                              </button>
+                              </Button>
                             </div>
                           ) : (
                             <span className="text-xs text-muted-foreground">
@@ -421,5 +422,18 @@ export function AgentReports() {
       </div>
 
     </div>
+      {showCreate && (
+        <PageDialog onClose={() => setShowCreate(false)} label="Log return">
+      <CreateReturnModal
+        invoices={invoices}
+        customers={customers}
+        products={products}
+        token={token!}
+        onClose={() => setShowCreate(false)}
+        onCreated={fetchAll}
+      />
+        </PageDialog>
+      )}
+    </>
   );
 }

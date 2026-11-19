@@ -1,3 +1,5 @@
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Plus, X } from "lucide-react";
 
 export interface DiscountRow {
@@ -27,15 +29,15 @@ export function CustomerDiscountEditor({
     <div className="space-y-2">
       {rows.map((row, index) => (
         <div key={index} className="flex items-center gap-2">
-          <input
+          <Input
             type="text"
             value={row.label}
             onChange={(e) => updateRow(index, { label: e.target.value })}
             placeholder="e.g., Prompt payment"
-            className="flex-1 rounded-lg border border-border px-3 py-2 text-sm focus:border-accent-2 focus:outline-none"
+            className="flex-1"
           />
           <div className="relative w-24">
-            <input
+            <Input
               type="number"
               min="0"
               max="100"
@@ -43,30 +45,28 @@ export function CustomerDiscountEditor({
               value={row.percent}
               onChange={(e) => updateRow(index, { percent: e.target.value })}
               placeholder="5"
-              className="w-full rounded-lg border border-border py-2 pl-3 pr-7 text-sm focus:border-accent-2 focus:outline-none"
+              className="w-full pr-7"
             />
             <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">
               %
             </span>
           </div>
-          <button
+          <Button
             type="button"
             onClick={() => removeRow(index)}
-            aria-label="Remove discount"
-            className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-red"
-          >
+            aria-label="Remove discount" variant="ghost" size="icon" className="h-9 w-9 text-muted-foreground hover:bg-destructive/10 hover:text-destructive">
             <X size={16} />
-          </button>
+          </Button>
         </div>
       ))}
 
-      <button
+      <Button
         type="button"
         onClick={() => onChange([...rows, { label: "", percent: "" }])}
-        className="flex items-center gap-1 text-xs font-semibold text-accent-2 hover:opacity-80"
+        variant="link" className="h-auto p-0"
       >
         <Plus size={14} /> Add discount
-      </button>
+      </Button>
 
       <p className="text-xs text-muted-foreground">
         Discounts stack. Total discount: {formatPercent(totalPercent / 100)}%

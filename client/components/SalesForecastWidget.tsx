@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { useEffect, useState } from "react";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useQuery } from "@tanstack/react-query";
@@ -120,15 +121,15 @@ export function SalesForecastWidget() {
 
   if (!isOpen) {
     return (
-      <button
+      <Button
         type="button"
         onClick={() => setIsOpen(true)}
-        className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground shadow-sm transition-colors hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-2"
+        variant="outline"
         aria-label="Open sales forecast"
       >
         <TrendingUp className="h-4 w-4" />
         <span>Sales Forecast</span>
-      </button>
+      </Button>
     );
   }
 
@@ -139,14 +140,12 @@ export function SalesForecastWidget() {
           <h2 className="text-base font-semibold">Sales Forecast</h2>
           <p className="text-xs text-muted-foreground">Estimate based on recent invoices</p>
         </div>
-        <button
+        <Button
           type="button"
           onClick={() => setIsOpen(false)}
-          className="rounded-md p-1 text-muted-foreground hover:bg-muted"
-          aria-label="Close sales forecast"
-        >
+          aria-label="Close sales forecast" variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground">
           <X className="h-4 w-4" />
-        </button>
+        </Button>
       </div>
       <ForecastBody isLoading={isLoading} isError={isError} data={data} />
       {data && <SalesForecastChat token={token} forecast={data} />}
