@@ -7,7 +7,7 @@ import { ArrowLeft, Eye, EyeOff } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Agent } from "@shared/api";
+import { Agent, MIN_PASSWORD_LENGTH } from "@shared/api";
 
 interface AgentForm {
   full_name: string;
@@ -143,6 +143,7 @@ function AgentModal({
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
+                  autoComplete="new-password"
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className="w-full px-3 py-2 pr-10 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
@@ -379,6 +380,10 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
   const handleSave = async () => {
     try {
       if (editingAgent) {
+        if (formData.password && formData.password.trim().length < MIN_PASSWORD_LENGTH) {
+          toast.error(`Password must be at least ${MIN_PASSWORD_LENGTH} characters`);
+          return;
+        }
         // PATCH agent profile
         const agentRes = await fetch(`/api/agents/${editingAgent.id}`, {
           method: "PATCH",
