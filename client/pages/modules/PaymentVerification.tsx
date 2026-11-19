@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { BadgeCheck, Printer } from "lucide-react";
 import { createPortal } from "react-dom";
+import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { paymentNeedsClearance, todayInManila, type UnverifiedPayment } from "@shared/api";
+import { paymentNeedsClearance, type UnverifiedPayment } from "@shared/api";
 import { PageDialog } from "@/components/shared/PageDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { TablePagination, paginate } from "@/components/TablePagination";
@@ -11,7 +12,6 @@ import { NativeSelect } from "@/components/ui/native-select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TruncatedText } from "@/components/ui/truncated-text";
@@ -152,7 +152,8 @@ export function PaymentVerification() {
   const [payments, setPayments] = useState<UnverifiedPayment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [date, setDate] = useState("");
+  const [searchParams] = useSearchParams();
+  const date = searchParams.get("date") ?? "";
   const [searchTerm, setSearchTerm] = useState("");
   const [agentFilter, setAgentFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -185,6 +186,10 @@ export function PaymentVerification() {
     window.print();
     return () => window.removeEventListener("afterprint", clearPrintTarget);
   }, [printTarget]);
+  useEffect(() => {
+    setPage(1);
+    setSelectedIds(new Set());
+  }, [date]);
 
   const agentOptions = Array.from(
     new Map(
@@ -221,15 +226,9 @@ export function PaymentVerification() {
           <h1 className="page-title">End-of-Day</h1>
           <p className="page-subtitle">Payments drivers and agents recorded on deliveries, waiting for Accounting</p>
         </div>
-        <div className="flex flex-wrap items-end gap-3">
-          <label className="grid gap-1 text-xs font-semibold text-muted-foreground">
-            Date
-            <Input type="date" aria-label="Filter by date" value={date} max={todayInManila()} onChange={(event) => { setDate(event.target.value); setPage(1); setSelectedIds(new Set()); }} />
-          </label>
-          <Button type="button" variant="outline" onClick={() => setPrintTarget(filtered)} disabled={filtered.length === 0}>
-            <Printer size={15} /> Print payments
-          </Button>
-        </div>
+        <Button type="button" variant="outline" onClick={() => setPrintTarget(filtered)} disabled={filtered.length === 0}>
+          <Printer size={15} /> Print payments
+        </Button>
       </div>
 
       {error && (
