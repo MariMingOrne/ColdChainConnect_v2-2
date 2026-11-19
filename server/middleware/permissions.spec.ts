@@ -122,6 +122,19 @@ describe("can", () => {
     }
   });
 
+  it("mirrors the pallet routes: staff with order-fulfillment may create, only admin and agent change status, only admin deletes", () => {
+    const orderStaff = { role: "staff" as const, module_permissions: ["order-fulfillment"] };
+    const noModules = { role: "staff" as const, module_permissions: [] };
+    expect(can(orderStaff, "pallet:create")).toBe(true);
+    expect(can(noModules, "pallet:create")).toBe(false);
+    expect(can({ role: "driver" }, "pallet:create")).toBe(false);
+    expect(can({ role: "agent" }, "pallet:updateStatus")).toBe(true);
+    expect(can(orderStaff, "pallet:updateStatus")).toBe(false);
+    expect(can({ role: "agent" }, "pallet:delete")).toBe(false);
+    expect(can(orderStaff, "pallet:delete")).toBe(false);
+    expect(can({ role: "admin" }, "pallet:delete")).toBe(true);
+  });
+
   it("lets admin, agent and driver confirm deliveries but not staff", () => {
     expect(can({ role: "agent" }, "delivery:confirm")).toBe(true);
     expect(can({ role: "driver" }, "delivery:confirm")).toBe(true);

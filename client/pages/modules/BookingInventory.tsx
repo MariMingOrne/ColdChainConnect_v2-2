@@ -9,6 +9,7 @@ import { Package, Printer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Pallet, Booking, Customer, Product, Truck, Invoice, Delivery, DeliveryItem, InventoryBatch, formatCustomerAddress } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 import { PalletStats } from "@/components/pallets/PalletStats";
 import { PalletToolbar, PalletStatusFilter } from "@/components/pallets/PalletToolbar";
 import { PalletTable, PalletEntry } from "@/components/pallets/PalletTable";
@@ -42,6 +43,7 @@ export function BookingInventory() {
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
   const { token, user } = useAuth();
+  const canUpdatePalletStatus = useCan("pallet:updateStatus");
   const isAdmin = user?.role === "admin";
 
   const fetchAll = async () => {
@@ -213,6 +215,7 @@ export function BookingInventory() {
           customer={selected.customer}
           batches={batches}
           getProductName={getProductName}
+          canChangeStatus={canUpdatePalletStatus}
           onStatusChange={(status) => handleStatusChange(selected.pallet.id, status)}
           onPrintSheet={() => setSheetOrder(bookings.find((b) => b.id === selected.pallet.order_id) ?? null)}
           isUpdatingStatus={isUpdatingStatus}

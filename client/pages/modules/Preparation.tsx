@@ -21,6 +21,7 @@ import { newestFirst } from "@/components/SortableHeader";
 import { TablePagination, paginate } from "@/components/TablePagination";
 import { Booking, Customer, InventoryBatch, Pallet } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
+import { useCan } from "@/hooks/useCan";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { buildAutomaticPallets, isCompletePick } from "@/lib/automaticPicking";
 
@@ -31,6 +32,10 @@ export function Preparation() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { token } = useAuth();
+  // Same rules as the server: staff may start pallets but only admin and agent move them along, and only admin deletes.
+  const canCreatePallets = useCan("pallet:create");
+  const canUpdatePalletStatus = useCan("pallet:updateStatus");
+  const canDeletePallets = useCan("pallet:delete");
   const navigate = useNavigate();
   const { state } = useLocation();
   const filters = state?.preparationFilters;
@@ -320,7 +325,7 @@ export function Preparation() {
       {/* Filters */}
       <TableToolbar
         selectedCount={selectedOrders.length}
-        bulkActions={bulkActions}
+        bulkActions={canCreatePallets ? bulkActions : undefined}
         searchValue={searchTerm}
         onSearchChange={setSearchTerm}
         searchPlaceholder="Search by order ID or customer ID…"
@@ -466,17 +471,21 @@ export function Preparation() {
                         {/* Prepared: show when pallets are drafted but not yet marked prepared */}
                         {draftPalletCount > 0 && !isPrepared && (
                           <>
-                            <Button
-                              onClick={() => navigate(`/booking-dispatch/inventory?order=${order.id}`)}
-                              variant="success"
-                            >
-                              Prepared
-                            </Button>
-                            <Button
-                              onClick={() => handleDeleteOrderPallets(order.id)}
-                              title={`Remove ${draftPalletCount} pallet(s) for this order`} type="button" variant="warning" size="sm">
-                              Undo
-                            </Button>
+                            {canUpdatePalletStatus && (
+                              <Button
+                                onClick={() => navigate(`/booking-dispatch/inventory?order=${order.id}`)}
+                                variant="success"
+                              >
+                                Prepared
+                              </Button>
+                            )}
+                            {canDeletePallets && (
+                              <Button
+                                onClick={() => handleDeleteOrderPallets(order.id)}
+                                title={`Remove ${draftPalletCount} pallet(s) for this order`} type="button" variant="warning" size="sm">
+                                Undo
+                              </Button>
+                            )}
                           </>
                         )}
                         {/* After marked prepared: show badge + Undo */}
@@ -485,10 +494,12 @@ export function Preparation() {
                             <span className="px-3 py-2 text-xs font-semibold text-green bg-green/10 rounded-lg">
                               ✓ Prepared
                             </span>
-                            <Button
-                              onClick={() => handleUndoPrepared(order.id)} type="button" variant="warning" size="sm">
-                              Undo
-                            </Button>
+                            {canUpdatePalletStatus && (
+                              <Button
+                                onClick={() => handleUndoPrepared(order.id)} type="button" variant="warning" size="sm">
+                                Undo
+                              </Button>
+                            )}
                           </>
                         )}
                       </div>

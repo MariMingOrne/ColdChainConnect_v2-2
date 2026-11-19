@@ -16,6 +16,8 @@ interface PalletDetailProps {
   customer: Customer | null;
   batches: InventoryBatch[];
   getProductName: (productId: string) => string;
+  /** The server only lets admin and agent change a pallet's status; others see the pallet read-only. */
+  canChangeStatus: boolean;
   onStatusChange: (status: Pallet["status"]) => void;
   onPrintSheet: () => void;
   isUpdatingStatus: boolean;
@@ -28,6 +30,7 @@ export function PalletDetail({
   customer,
   batches,
   getProductName,
+  canChangeStatus,
   onStatusChange,
   onPrintSheet,
   isUpdatingStatus,
@@ -84,7 +87,7 @@ export function PalletDetail({
             >
               Print delivery sheet
             </Button>
-            <div className="flex items-center gap-2">
+            {canChangeStatus && <div className="flex items-center gap-2">
               <Button
                 type="button"
                 disabled={isUpdatingStatus || !nextStatus}
@@ -113,7 +116,7 @@ export function PalletDetail({
                   </DropdownMenuContent>
                 )}
               </DropdownMenu>
-            </div>
+            </div>}
           </div>
         </div>
 
