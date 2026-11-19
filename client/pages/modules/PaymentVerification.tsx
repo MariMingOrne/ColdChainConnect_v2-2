@@ -6,8 +6,9 @@ import { paymentNeedsClearance, todayInManila, type UnverifiedPayment } from "@s
 import { PageDialog } from "@/components/shared/PageDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { TablePagination, paginate } from "@/components/TablePagination";
-import { TableToolbar } from "@/components/TableToolbar";
+import { TableToolbar, type TableBulkAction } from "@/components/TableToolbar";
 import { NativeSelect } from "@/components/ui/native-select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -36,7 +37,7 @@ function PaymentPrintSheet({ payments, date }: { payments: UnverifiedPayment[]; 
           #payment-print-area { position: absolute; top: 0; left: 0; width: 100%; }
         }
       `}</style>
-      <h1 className="text-xl font-black">Payments to verify</h1>
+      <h1 className="text-xl font-black">End-of-Day</h1>
       <p className="mb-4 text-sm">{date ? new Date(`${date}T00:00:00+08:00`).toLocaleDateString("en-PH", { dateStyle: "long", timeZone: "Asia/Manila" }) : "All dates"}</p>
       <table className="w-full border-collapse text-xs">
         <thead><tr className="border-b border-black text-left"><th className="py-1">Customer</th><th className="py-1">Receipt / invoice</th><th className="py-1">Recorded by</th><th className="py-1">Method</th><th className="py-1 text-right">Amount</th></tr></thead>
@@ -62,11 +63,13 @@ function VerifyDialog({
   token,
   onClose,
   onDone,
+  onVerified,
 }: {
   payment: UnverifiedPayment;
   token: string | null;
   onClose: () => void;
   onDone: () => Promise<void> | void;
+  onVerified: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [remarks, setRemarks] = useState("");
@@ -85,12 +88,12 @@ function VerifyDialog({
         // 409 means it was already verified (or has no payment): show the server's reason and refresh the table.
         toast.error(await responseError(res, "Could not verify this payment"));
         await onDone();
-        onClose();
+        onVerified();
         return;
       }
       toast.success("Payment verified");
       await onDone();
-      onClose();
+      onVerified();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not verify this payment");
     } finally {
@@ -153,7 +156,9 @@ export function PaymentVerification() {
   const [searchTerm, setSearchTerm] = useState("");
   const [agentFilter, setAgentFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const [verifying, setVerifying] = useState<UnverifiedPayment | null>(null);
+  const [verificationQueue, setVerificationQueue] = useState<UnverifiedPayment[]>([]);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [printTarget, setPrintTarget] = useState<UnverifiedPayment[] | null>(null);
 
   const fetchData = useCallback(async () => {
     if (!token) return;
@@ -173,6 +178,13 @@ export function PaymentVerification() {
     void fetchData();
   }, [fetchData]);
   useAutoRefresh(fetchData, { enabled: Boolean(token) });
+  useEffect(() => {
+    if (!printTarget) return;
+    const clearPrintTarget = () => setPrintTarget(null);
+    window.addEventListener("afterprint", clearPrintTarget, { once: true });
+    window.print();
+    return () => window.removeEventListener("afterprint", clearPrintTarget);
+  }, [printTarget]);
 
   const agentOptions = Array.from(
     new Map(
@@ -193,6 +205,12 @@ export function PaymentVerification() {
   const totalAmount = filtered.reduce((sum, payment) => sum + Number(payment.amount), 0);
   const cashAmount = filtered.filter((payment) => payment.payment_method === "cash").reduce((sum, payment) => sum + Number(payment.amount), 0);
   const agentCount = new Set(filtered.filter((payment) => payment.recorded_by_role === "agent").map((payment) => payment.recorded_by)).size;
+  const selectedPayments = filtered.filter((payment) => selectedIds.has(payment.id));
+  const bulkActions: TableBulkAction[] = [
+    ...(canVerify ? [{ label: "Verify selected", onSelect: () => setVerificationQueue(selectedPayments) }] : []),
+    { label: "Print selected", onSelect: () => setPrintTarget(selectedPayments) },
+  ];
+  const verifying = verificationQueue[0] ?? null;
 
   if (isLoading) return <LoadingSpinner />;
 
@@ -200,15 +218,15 @@ export function PaymentVerification() {
     <div className="flex flex-1 flex-col gap-6 p-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="page-title">Payments to verify</h1>
+          <h1 className="page-title">End-of-Day</h1>
           <p className="page-subtitle">Payments drivers and agents recorded on deliveries, waiting for Accounting</p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
           <label className="grid gap-1 text-xs font-semibold text-muted-foreground">
             Date
-            <Input type="date" aria-label="Filter by date" value={date} max={todayInManila()} onChange={(event) => { setDate(event.target.value); setPage(1); }} />
+            <Input type="date" aria-label="Filter by date" value={date} max={todayInManila()} onChange={(event) => { setDate(event.target.value); setPage(1); setSelectedIds(new Set()); }} />
           </label>
-          <Button type="button" variant="outline" onClick={() => window.print()} disabled={filtered.length === 0}>
+          <Button type="button" variant="outline" onClick={() => setPrintTarget(filtered)} disabled={filtered.length === 0}>
             <Printer size={15} /> Print payments
           </Button>
         </div>
@@ -230,10 +248,12 @@ export function PaymentVerification() {
       <div className="no-print">
         <TableToolbar
           searchValue={searchTerm}
-          onSearchChange={(value) => { setSearchTerm(value); setPage(1); }}
+          onSearchChange={(value) => { setSearchTerm(value); setPage(1); setSelectedIds(new Set()); }}
           searchPlaceholder="Search by customer, receipt or recorder…"
+          selectedCount={selectedPayments.length}
+          bulkActions={bulkActions}
         >
-          <NativeSelect aria-label="Filter by agent" value={agentFilter} onChange={(event) => { setAgentFilter(event.target.value); setPage(1); }}>
+          <NativeSelect aria-label="Filter by agent" value={agentFilter} onChange={(event) => { setAgentFilter(event.target.value); setPage(1); setSelectedIds(new Set()); }}>
             <option value="all">All agents</option>
             {agentOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
           </NativeSelect>
@@ -244,6 +264,20 @@ export function PaymentVerification() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>
+                <Checkbox
+                  aria-label="Select all payments on this page"
+                  checked={pageItems.length > 0 && pageItems.every((payment) => selectedIds.has(payment.id))}
+                  onCheckedChange={(checked) => setSelectedIds((current) => {
+                    const next = new Set(current);
+                    for (const payment of pageItems) {
+                      if (checked) next.add(payment.id);
+                      else next.delete(payment.id);
+                    }
+                    return next;
+                  })}
+                />
+              </TableHead>
               <TableHead>Customer</TableHead>
               <TableHead>Receipt / invoice</TableHead>
               <TableHead>Method</TableHead>
@@ -256,13 +290,25 @@ export function PaymentVerification() {
           <TableBody>
             {pageItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={canVerify ? 7 : 6} className="py-10 text-center text-sm text-muted-foreground">
+                <TableCell colSpan={canVerify ? 8 : 7} className="py-10 text-center text-sm text-muted-foreground">
                   {payments.length === 0 ? "No payments are waiting to be verified." : "No payments match the selected filters."}
                 </TableCell>
               </TableRow>
             ) : (
               pageItems.map((payment) => (
                 <TableRow key={payment.id} className={isNewRow(payment.confirmed_at) ? "row-new" : undefined}>
+                  <TableCell>
+                    <Checkbox
+                      aria-label={`Select payment ${payment.receipt_number}`}
+                      checked={selectedIds.has(payment.id)}
+                      onCheckedChange={(checked) => setSelectedIds((current) => {
+                        const next = new Set(current);
+                        if (checked) next.add(payment.id);
+                        else next.delete(payment.id);
+                        return next;
+                      })}
+                    />
+                  </TableCell>
                   <TableCell className="max-w-[220px] text-sm font-semibold text-foreground">
                     <TruncatedText>{payment.customer_name}</TruncatedText>
                   </TableCell>
@@ -275,7 +321,7 @@ export function PaymentVerification() {
                   <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{formatDate(payment.confirmed_at)}</TableCell>
                   {canVerify && (
                     <TableCell className="text-right">
-                      <Button variant="success" size="sm" onClick={() => setVerifying(payment)}>
+                      <Button variant="success" size="sm" onClick={() => setVerificationQueue([payment])}>
                         <BadgeCheck size={13} /> Verify
                       </Button>
                     </TableCell>
@@ -288,11 +334,18 @@ export function PaymentVerification() {
         <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </Card>
 
-      {createPortal(<PaymentPrintSheet payments={filtered} date={date} />, document.body)}
+      {printTarget && createPortal(<PaymentPrintSheet payments={printTarget} date={date} />, document.body)}
 
       {verifying && (
-        <PageDialog onClose={() => setVerifying(null)} label="Verify payment">
-          <VerifyDialog payment={verifying} token={token} onClose={() => setVerifying(null)} onDone={fetchData} />
+        <PageDialog onClose={() => setVerificationQueue([])} label="Verify payment">
+          <VerifyDialog
+            key={verifying.id}
+            payment={verifying}
+            token={token}
+            onClose={() => setVerificationQueue([])}
+            onDone={fetchData}
+            onVerified={() => setVerificationQueue((current) => current.slice(1))}
+          />
         </PageDialog>
       )}
     </div>

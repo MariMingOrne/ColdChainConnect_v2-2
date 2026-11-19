@@ -70,6 +70,16 @@ describe("PaymentVerification", () => {
     expect(fetchMock.mock.calls[0][1].headers.Authorization).toBe("Bearer tok");
   });
 
+  it("offers bulk actions after selecting a payment", async () => {
+    renderScreen();
+    fireEvent.click(await screen.findByRole("checkbox", { name: "Select payment OR-0001" }));
+    fireEvent.pointerDown(await screen.findByRole("button", { name: /Actions \(1\)/ }), { button: 0 });
+    const verifySelected = await screen.findByRole("menuitem", { name: "Verify selected" });
+    expect(screen.getByRole("menuitem", { name: "Print selected" })).toBeTruthy();
+    fireEvent.click(verifySelected);
+    expect(await screen.findByRole("dialog")).toBeTruthy();
+  });
+
   it("shows an empty state", async () => {
     fetchMock.mockImplementation(async () => json([]));
     renderScreen();
