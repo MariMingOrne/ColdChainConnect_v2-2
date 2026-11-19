@@ -135,6 +135,7 @@ export function AgentDeliverySchedule() {
       .filter((stop) => stop.status === "completed" && !stop.is_paid)
       .map((stop) => ({ delivery, stop })),
   );
+  const unconfirmedTotal = unconfirmedStops.reduce((total, { stop }) => total + Number(stop.invoice?.total_amount ?? 0), 0);
 
   const confirmDelivery = async (isPaid: boolean, paymentAmount?: number, paymentMethod?: string, paymentReference?: string, paymentId?: string) => {
     if (!token || !paymentStop) return;
@@ -207,7 +208,8 @@ export function AgentDeliverySchedule() {
         >
           <span className="text-sm font-bold text-foreground">Unconfirmed payments</span>
           <span className="flex items-center gap-2 text-xs text-muted-foreground">
-            {unconfirmedStops.length} stops
+            <span className="font-semibold text-foreground">{formatPeso(unconfirmedTotal)}</span>
+            · {unconfirmedStops.length} stops
             {showUnconfirmed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </span>
         </button>
