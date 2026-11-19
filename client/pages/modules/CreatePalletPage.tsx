@@ -8,7 +8,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Booking, InventoryBatch, Pallet } from "@shared/api";
 import { CreatePalletForm } from "./CreatePalletForm";
 
-export function CreatePalletPage() {
+export function CreatePalletPage({ embedded = false }: { embedded?: boolean }) {
   const { orderId } = useParams();
   const { token } = useAuth();
   const navigate = useNavigate();
@@ -71,8 +71,8 @@ export function CreatePalletPage() {
   const hasDraftPallets = pallets.some((pallet) => pallet.status === "draft");
 
   return (
-    <div className="flex-1 flex flex-col gap-6 p-4 md:p-6">
-      <div className="page-header">
+    <div className={embedded ? "flex flex-col gap-4" : "flex-1 flex flex-col gap-6 p-4 md:p-6"}>
+      {!embedded && <div className="page-header">
         <div>
           <h1 className="page-title">Create Pallet</h1>
           <p className="page-subtitle">Build pallets for your selected order</p>
@@ -81,7 +81,7 @@ export function CreatePalletPage() {
           <ArrowLeft size={15} />
           Back to Preparation
         </Button>
-      </div>
+      </div>}
 
       {isLoading ? (
         <LoadingSpinner slow />

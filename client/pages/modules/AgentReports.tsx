@@ -1,4 +1,5 @@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { PageDialog } from "@/components/shared/PageDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -187,19 +188,6 @@ export function AgentReports() {
     );
   }
 
-  if (showCreate) {
-    return (
-      <CreateReturnModal
-        invoices={invoices}
-        customers={customers}
-        products={products}
-        token={token!}
-        onClose={() => setShowCreate(false)}
-        onCreated={fetchAll}
-      />
-    );
-  }
-
   const filtered = returns.filter((ret) => {
     const invoice = invoices.find((entry) => entry.id === ret.invoice_id);
     const customer = customers.find((entry) => entry.id === ret.customer_id);
@@ -214,6 +202,7 @@ export function AgentReports() {
   const rejectedCount = returns.filter((r) => r.status === "rejected").length;
 
   return (
+    <>
     <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto space-y-6">
 
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -280,7 +269,7 @@ export function AgentReports() {
           <LoadingSpinner className="min-h-32" />
         ) : (
           <div className="overflow-x-auto">
-            <Table className="w-full text-xs md:text-sm">
+            <Table>
               <thead>
                 <tr>
                   {["Date", "Order", "Customer", "Product", "Qty", "Type", "Reason", "Status", "Actions"].map((h) => (
@@ -368,5 +357,18 @@ export function AgentReports() {
       </div>
 
     </div>
+      {showCreate && (
+        <PageDialog onClose={() => setShowCreate(false)} label="Log return">
+      <CreateReturnModal
+        invoices={invoices}
+        customers={customers}
+        products={products}
+        token={token!}
+        onClose={() => setShowCreate(false)}
+        onCreated={fetchAll}
+      />
+        </PageDialog>
+      )}
+    </>
   );
 }

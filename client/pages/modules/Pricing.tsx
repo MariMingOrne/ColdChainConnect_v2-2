@@ -1,4 +1,5 @@
 import { NativeSelect } from "@/components/ui/native-select";
+import { PageDialog } from "@/components/shared/PageDialog";
 import { StatCard } from "@/components/shared/StatCard";
 import { Tag, Wallet } from "lucide-react";
 import { toast } from "sonner";
@@ -482,41 +483,17 @@ export function Pricing({ onBack }: PricingProps) {
     );
   }
 
-  if (isModalOpen) {
-    return (
-      <ProductPage
-        title={editingProduct ? "Edit Product" : "Add New Product"}
-        formData={formData}
-        setFormData={setFormData}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSave}
-      />
-    );
-  }
 
-  if (viewingProduct) {
-    return <ViewProductPage product={viewingProduct} onClose={() => setViewingProduct(null)} />;
-  }
-  if (productDetails) {
-    return <RecordDetailsDialog details={productDetails} onClose={() => setProductDetails(null)} />;
-  }
-  if (showExcelImport) {
-    return (
-      <ExcelImportDialog
-        title="Products"
-        columns={productExcelColumns}
-        validateRow={validateProductImportRow}
-        onImport={importProductRows}
-        onClose={() => setShowExcelImport(false)}
-      />
-    );
-  }
 
-  if (previewImageFilename) {
-    return <ImagePreviewPage filename={previewImageFilename} onClose={() => setPreviewImageFilename(null)} />;
-  }
+
+
+
+
+
 
   return (
+    <>
+
     <div className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto scrollbar-visible">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -595,8 +572,8 @@ export function Pricing({ onBack }: PricingProps) {
 
       {/* Table */}
       <div className="data-table-frame overflow-hidden">
-        <div className="overflow-x-auto scrollbar-visible text-xs md:text-sm">
-          <Table className="w-full">
+        <div className="overflow-x-auto scrollbar-visible">
+          <Table>
             <thead>
               <tr>
                 <th className="px-3 py-3"><Input aria-label="Select all products on this page" type="checkbox" checked={paginatedProducts.length > 0 && paginatedProducts.every((product) => selectedProductIds.includes(product.id))} onChange={(event) => setSelectedProductIds(event.target.checked ? Array.from(new Set([...selectedProductIds, ...paginatedProducts.map((product) => product.id)])) : selectedProductIds.filter((id) => !paginatedProducts.some((product) => product.id === id)))} /></th>
@@ -704,5 +681,44 @@ export function Pricing({ onBack }: PricingProps) {
       </div>
 
     </div>
+  
+      {(isModalOpen) && (
+        <PageDialog onClose={() => setIsModalOpen(false)}>
+<ProductPage
+        title={editingProduct ? "Edit Product" : "Add New Product"}
+        formData={formData}
+        setFormData={setFormData}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+      />
+        </PageDialog>
+      )}
+      {(viewingProduct) && (
+        <PageDialog onClose={() => setViewingProduct(null)}>
+<ViewProductPage product={viewingProduct} onClose={() => setViewingProduct(null)} />
+        </PageDialog>
+      )}
+      {(productDetails) && (
+        <PageDialog onClose={() => setProductDetails(null)}>
+<RecordDetailsDialog details={productDetails} onClose={() => setProductDetails(null)} />
+        </PageDialog>
+      )}
+      {(showExcelImport) && (
+        <PageDialog onClose={() => setShowExcelImport(false)}>
+<ExcelImportDialog
+        title="Products"
+        columns={productExcelColumns}
+        validateRow={validateProductImportRow}
+        onImport={importProductRows}
+        onClose={() => setShowExcelImport(false)}
+      />
+        </PageDialog>
+      )}
+      {(previewImageFilename) && (
+        <PageDialog onClose={() => setPreviewImageFilename(null)}>
+<ImagePreviewPage filename={previewImageFilename} onClose={() => setPreviewImageFilename(null)} />
+        </PageDialog>
+      )}
+    </>
   );
 }

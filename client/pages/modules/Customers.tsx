@@ -1,4 +1,6 @@
 import { NativeSelect } from "@/components/ui/native-select";
+import { PageDialog } from "@/components/shared/PageDialog";
+import { useNewRows } from "@/lib/unseen";
 import { StatCard } from "@/components/shared/StatCard";
 import { Store, Receipt, BarChart3 } from "lucide-react";
 import { toast } from "sonner";
@@ -332,6 +334,7 @@ function CustomerModal({
 }
 
 export function Customers({ onBack }: CustomersProps) {
+  const isNewRow = useNewRows("customers");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -592,35 +595,14 @@ export function Customers({ onBack }: CustomersProps) {
     );
   }
 
-  if (isModalOpen) {
-    return (
-      <CustomerModal
-        title={editingCustomer ? "Edit Customer" : "Add New Customer"}
-        formData={formData}
-        setFormData={setFormData}
-        districts={truckDistricts}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSave}
-      />
-    );
-  }
 
-  if (viewingCustomer) {
-    return <ViewCustomerPage customer={viewingCustomer} onClose={() => setViewingCustomer(null)} />;
-  }
-  if (showExcelImport) {
-    return (
-      <ExcelImportDialog
-        title="Customers"
-        columns={customerExcelColumns}
-        validateRow={validateCustomerImportRow}
-        onImport={importCustomerRows}
-        onClose={() => setShowExcelImport(false)}
-      />
-    );
-  }
+
+
+
 
   return (
+    <>
+
     <div className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -688,8 +670,8 @@ export function Customers({ onBack }: CustomersProps) {
       </div>
 
       <div className="data-table-frame overflow-hidden">
-        <div className="overflow-x-auto text-xs md:text-sm">
-          <Table className="w-full">
+        <div className="overflow-x-auto">
+          <Table>
             <TableHeader>
               <TableRow>
                 <SortableHeader label="Store Name" sortKey="store" sort={customerSort} onSort={setCustomerSort} />
@@ -697,7 +679,7 @@ export function Customers({ onBack }: CustomersProps) {
                 <SortableHeader label="Contact Person" sortKey="contact" sort={customerSort} onSort={setCustomerSort} className="hidden md:table-cell" />
                 <SortableHeader label="Contact Info" sortKey="contactInfo" sort={customerSort} onSort={setCustomerSort} className="hidden md:table-cell" />
                 <SortableHeader label="District" sortKey="district" sort={customerSort} onSort={setCustomerSort} />
-                <TableHead style={{ width: '120px' }} className="sticky right-0 z-10 border-b border-border bg-navy-mid px-3 py-3 text-center font-barlow-cond text-xs font-bold text-muted-foreground whitespace-nowrap shadow-left">
+                <TableHead style={{ width: '120px' }} className="sticky right-0 z-10 text-center shadow-left">
                   Actions
                 </TableHead>
               </TableRow>
@@ -715,7 +697,7 @@ export function Customers({ onBack }: CustomersProps) {
                 paginatedCustomers.map((customer) => (
                   <TableRow
                     key={customer.id}
-                    className="border-b border-border transition-colors hover:bg-accent/50"
+                    className={isNewRow(customer.created_at) ? "row-new" : undefined}
                   >
                     <TableCell className="px-3 py-3 font-semibold text-foreground">
                       {customer.store_name}
@@ -777,5 +759,35 @@ export function Customers({ onBack }: CustomersProps) {
       </div>
 
     </div>
+  
+      {(isModalOpen) && (
+        <PageDialog onClose={() => setIsModalOpen(false)}>
+<CustomerModal
+        title={editingCustomer ? "Edit Customer" : "Add New Customer"}
+        formData={formData}
+        setFormData={setFormData}
+        districts={truckDistricts}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+      />
+        </PageDialog>
+      )}
+      {(viewingCustomer) && (
+        <PageDialog onClose={() => setViewingCustomer(null)}>
+<ViewCustomerPage customer={viewingCustomer} onClose={() => setViewingCustomer(null)} />
+        </PageDialog>
+      )}
+      {(showExcelImport) && (
+        <PageDialog onClose={() => setShowExcelImport(false)}>
+<ExcelImportDialog
+        title="Customers"
+        columns={customerExcelColumns}
+        validateRow={validateCustomerImportRow}
+        onImport={importCustomerRows}
+        onClose={() => setShowExcelImport(false)}
+      />
+        </PageDialog>
+      )}
+    </>
   );
 }

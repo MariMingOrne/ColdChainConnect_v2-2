@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { PageDialog } from "@/components/shared/PageDialog";
 import { StatCard } from "@/components/shared/StatCard";
 import { Package, CalendarDays, Store, CircleCheck } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
@@ -110,7 +111,7 @@ export function DeliveryHistory() {
   const totalPages = Math.max(1, Math.ceil(sorted.length / PER_PAGE));
   const paginated  = sorted.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
-  if (viewReceipt) return <OriginalReceiptModal receipt={viewReceipt} onClose={() => setViewReceipt(null)} />;
+
 
   const totalReceipts = receipts.length;
   const todayReceipts = receipts.filter((r) => {
@@ -119,6 +120,8 @@ export function DeliveryHistory() {
   }).length;
 
   return (
+    <>
+
     <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto space-y-6">
 
       {/* Header */}
@@ -173,7 +176,7 @@ export function DeliveryHistory() {
           <p className="px-6 py-8 text-sm text-muted-foreground">Loading…</p>
         ) : (
           <div className="overflow-x-auto">
-            <Table className="w-full text-xs md:text-sm">
+            <Table>
               <thead>
                 <tr>
                   <SortableHeader label="Receipt #" sortKey="receipt" sort={sort} onSort={setSort} />
@@ -250,6 +253,13 @@ export function DeliveryHistory() {
       </div>
 
     </div>
+  
+      {(viewReceipt) && (
+        <PageDialog onClose={() => setViewReceipt(null)}>
+<OriginalReceiptModal receipt={viewReceipt} onClose={() => setViewReceipt(null)} />
+        </PageDialog>
+      )}
+    </>
   );
 }
 

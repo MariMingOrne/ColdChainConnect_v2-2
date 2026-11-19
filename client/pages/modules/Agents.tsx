@@ -1,4 +1,5 @@
 import { toast } from "sonner";
+import { PageDialog } from "@/components/shared/PageDialog";
 import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
@@ -513,28 +514,13 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
     );
   }
 
-  if (viewingAgent) {
-    return <ViewAgentModal agent={viewingAgent} onClose={() => setViewingAgent(null)} />;
-  }
 
-  if (isModalOpen) {
-    return (
-      <AgentModal
-        title={editingAgent ? "Edit Agent" : "Add New Agent"}
-        isEdit={!!editingAgent}
-        formData={formData}
-        setFormData={setFormData}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSave}
-        mfaEnabled={editingAgent?.user?.mfa_enabled ?? false}
-        isResettingMfa={isResettingMfa}
-        mfaMessage={mfaMessage}
-        onResetMfa={handleResetMfa}
-      />
-    );
-  }
+
+
 
   return (
+    <>
+
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden px-4 py-4 md:px-6 md:py-5">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -614,5 +600,28 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
       </div>
 
     </div>
+  
+      {(viewingAgent) && (
+        <PageDialog onClose={() => setViewingAgent(null)}>
+<ViewAgentModal agent={viewingAgent} onClose={() => setViewingAgent(null)} />
+        </PageDialog>
+      )}
+      {(isModalOpen) && (
+        <PageDialog onClose={() => setIsModalOpen(false)}>
+<AgentModal
+        title={editingAgent ? "Edit Agent" : "Add New Agent"}
+        isEdit={!!editingAgent}
+        formData={formData}
+        setFormData={setFormData}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+        mfaEnabled={editingAgent?.user?.mfa_enabled ?? false}
+        isResettingMfa={isResettingMfa}
+        mfaMessage={mfaMessage}
+        onResetMfa={handleResetMfa}
+      />
+        </PageDialog>
+      )}
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import { NativeSelect } from "@/components/ui/native-select";
+import { PageDialog } from "@/components/shared/PageDialog";
 import { formatPeso } from "@/lib/utils";
 import { StatCard } from "@/components/shared/StatCard";
 import { Package, TriangleAlert, Hash, Wallet } from "lucide-react";
@@ -330,44 +331,15 @@ export function Inventory() {
     }
   };
 
-  if (extraInfoProduct) return (
-    <ExtraInfoModal
-      product={extraInfoProduct}
-      batches={batches}
-      onClose={() => setExtraInfoProduct(null)}
-      onSelectPallet={(batchId, palletId) => {
-        setSelectedBatchId(batchId);
-        setSelectedPalletId(palletId);
-        setExtraInfoProduct(null);
-      }}
-    />
-  );
 
-  if (isBatchModalOpen) return (
-    <BatchModal
-      batches={batches} selectedBatchId={selectedBatchId}
-      onSelectBatch={(id) => { selectBatch(id); setIsBatchModalOpen(false); }}
-      onDeleteBatch={deleteBatch}
-      onCreateBatch={createNewBatch}
-      onEditBatch={() => {}}
-      onClose={() => { setIsBatchModalOpen(false); setStartBatchCreation(false); }}
-      newBatchName={newBatchName} setNewBatchName={setNewBatchName}
-      products={products} startCreating={startBatchCreation}
-      onRefresh={async () => { await fetchProductsFromApi(); await refreshBatchesFromDB(); }}
-    />
-  );
 
-  if (showExcelImport) return (
-    <ExcelImportDialog
-      title="Inventory Stock"
-      columns={inventoryExcelColumns}
-      validateRow={validateInventoryImportRow}
-      onImport={importInventoryRows}
-      onClose={() => setShowExcelImport(false)}
-    />
-  );
+
+
+
 
   return (
+    <>
+
     <div className="flex-1 flex flex-col gap-6 p-6 overflow-y-auto scrollbar-visible">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -454,8 +426,8 @@ export function Inventory() {
 
       {/* Inventory Table */}
       <div className="data-table-frame overflow-hidden">
-        <div className="overflow-x-auto scrollbar-visible text-xs">
-          <Table className="w-full">
+        <div className="overflow-x-auto scrollbar-visible">
+          <Table>
             <thead>
               <tr>
                 <SortableHeader label="Name" sortKey="name" sort={inventorySort} onSort={setInventorySort} />
@@ -561,6 +533,48 @@ export function Inventory() {
 
       </div>
     </div>
+  
+      {(extraInfoProduct) && (
+        <PageDialog onClose={() => setExtraInfoProduct(null)}>
+<ExtraInfoModal
+      product={extraInfoProduct}
+      batches={batches}
+      onClose={() => setExtraInfoProduct(null)}
+      onSelectPallet={(batchId, palletId) => {
+        setSelectedBatchId(batchId);
+        setSelectedPalletId(palletId);
+        setExtraInfoProduct(null);
+      }}
+    />
+        </PageDialog>
+      )}
+      {(isBatchModalOpen) && (
+        <PageDialog onClose={() => { setIsBatchModalOpen(false); setStartBatchCreation(false); }}>
+<BatchModal
+      batches={batches} selectedBatchId={selectedBatchId}
+      onSelectBatch={(id) => { selectBatch(id); setIsBatchModalOpen(false); }}
+      onDeleteBatch={deleteBatch}
+      onCreateBatch={createNewBatch}
+      onEditBatch={() => {}}
+      onClose={() => { setIsBatchModalOpen(false); setStartBatchCreation(false); }}
+      newBatchName={newBatchName} setNewBatchName={setNewBatchName}
+      products={products} startCreating={startBatchCreation}
+      onRefresh={async () => { await fetchProductsFromApi(); await refreshBatchesFromDB(); }}
+    />
+        </PageDialog>
+      )}
+      {(showExcelImport) && (
+        <PageDialog onClose={() => setShowExcelImport(false)}>
+<ExcelImportDialog
+      title="Inventory Stock"
+      columns={inventoryExcelColumns}
+      validateRow={validateInventoryImportRow}
+      onImport={importInventoryRows}
+      onClose={() => setShowExcelImport(false)}
+    />
+        </PageDialog>
+      )}
+    </>
   );
 }
 

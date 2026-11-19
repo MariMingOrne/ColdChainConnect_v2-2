@@ -1,4 +1,5 @@
 import { Input } from "@/components/ui/input";
+import { PageDialog } from "@/components/shared/PageDialog";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -171,27 +172,12 @@ export function BookingInventory() {
 
   if (isLoading) return <LoadingSpinner />;
 
-  if (sheetOrder) {
-    return (
-      <DeliverySheet
-        order={sheetOrder}
-        pallets={pallets.filter((pallet) => pallet.order_id === sheetOrder.id)}
-        batches={batches}
-        onClose={() => setSheetOrder(null)}
-      />
-    );
-  }
-  if (isAdmin && showPrintAll) {
-    return (
-      <PalletPrintAllDialog
-        entries={printEntries}
-        date={printDate}
-        onClose={() => setShowPrintAll(false)}
-      />
-    );
-  }
+
+
 
   return (
+    <>
+
     <div className="flex-1 flex flex-col gap-6 p-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -281,5 +267,26 @@ export function BookingInventory() {
       )}
 
     </div>
+  
+      {(sheetOrder) && (
+        <PageDialog onClose={() => setSheetOrder(null)}>
+<DeliverySheet
+        order={sheetOrder}
+        pallets={pallets.filter((pallet) => pallet.order_id === sheetOrder.id)}
+        batches={batches}
+        onClose={() => setSheetOrder(null)}
+      />
+        </PageDialog>
+      )}
+      {(isAdmin && showPrintAll) && (
+        <PageDialog onClose={() => setShowPrintAll(false)}>
+<PalletPrintAllDialog
+        entries={printEntries}
+        date={printDate}
+        onClose={() => setShowPrintAll(false)}
+      />
+        </PageDialog>
+      )}
+    </>
   );
 }

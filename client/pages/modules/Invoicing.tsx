@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { useNewRows } from "@/lib/unseen";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -237,6 +238,7 @@ function ReceiptModal({ invoice, onClose }: ReceiptModalProps) {
 // ─── Main Invoicing Component ──────────────────────────────────────────────
 
 export function Invoicing() {
+  const isNewRow = useNewRows("receipts");
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -424,7 +426,7 @@ export function Invoicing() {
                 const fmt = (n: number) =>
                   n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                 return (
-                  <TableRow key={inv.id}>
+                  <TableRow key={inv.id} className={isNewRow(inv.created_at) ? "row-new" : undefined}>
                     <TableCell className="font-mono text-sm font-semibold text-accent-2">
                       {inv.receipt_number || inv.id.slice(0, 8).toUpperCase()}
                     </TableCell>

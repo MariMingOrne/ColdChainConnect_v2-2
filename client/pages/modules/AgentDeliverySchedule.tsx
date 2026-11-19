@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { PageDialog } from "@/components/shared/PageDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { AgentStopRow } from "@/components/AgentStopRow";
@@ -165,17 +166,7 @@ export function AgentDeliverySchedule() {
     document.getElementById(`run-map-${deliveryId}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
   };
 
-  if (paymentStop) {
-    return (
-      <DeliveryPaymentPrompt
-        stop={paymentStop.stop}
-        mode={paymentStop.mode}
-        isConfirming={confirmingStopId === paymentStop.stop.id}
-        onClose={() => setPaymentStop(null)}
-        onConfirm={confirmDelivery}
-      />
-    );
-  }
+
 
   if (detailTarget) {
     const { delivery, stop } = detailTarget;
@@ -195,6 +186,8 @@ export function AgentDeliverySchedule() {
   }
 
   return (
+    <>
+
     <div className="flex-1 flex flex-col gap-5 p-4 pb-24 md:p-6 md:pb-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
@@ -367,6 +360,19 @@ export function AgentDeliverySchedule() {
         </div>
       )}
     </div>
+  
+      {(paymentStop) && (
+        <PageDialog onClose={() => setPaymentStop(null)}>
+<DeliveryPaymentPrompt
+        stop={paymentStop.stop}
+        mode={paymentStop.mode}
+        isConfirming={confirmingStopId === paymentStop.stop.id}
+        onClose={() => setPaymentStop(null)}
+        onConfirm={confirmDelivery}
+      />
+        </PageDialog>
+      )}
+    </>
   );
 }
 

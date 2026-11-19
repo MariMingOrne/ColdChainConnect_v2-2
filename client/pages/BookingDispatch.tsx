@@ -10,7 +10,7 @@ import { AgentReports } from "./modules/AgentReports";
 import { BookingInventory } from "./modules/BookingInventory";
 import { AgentDeliverySchedule } from "./modules/AgentDeliverySchedule";
 import { Preparation } from "./modules/Preparation";
-import { CreatePalletPage } from "./modules/CreatePalletPage";
+import { PreparationWithPalletModal } from "./modules/PreparationWithPalletModal";
 import { AgentPalletTracking } from "./modules/AgentPalletTracking";
 import { InventoryProvider } from "../context/InventoryContext";
 import { useAuth } from "../hooks/useAuth";
@@ -41,8 +41,7 @@ export function BookingDispatch() {
         <div className={`hide-scrollbar min-h-0 flex-1 overflow-auto ${isAgent ? "pb-20" : ""}`}>
           <Routes>
             <Route path="/order-summary"    element={<BookingSummary />} />
-            <Route path="/preparation"      element={isAgent ? <AgentPalletTracking /> : <Preparation />} />
-            <Route path="/preparation/:orderId" element={isAgent ? <Navigate to="/booking-dispatch/preparation" replace /> : <CreatePalletPage />} />
+            <Route path="/preparation/*"    element={isAgent ? <AgentPalletTracking /> : <PreparationWithPalletModal />} />
             <Route path="/inventory"        element={isAgent ? <AgentDeliverySchedule /> : <BookingInventory />} />
             <Route path="/invoicing"        element={<Invoicing />} />
             <Route

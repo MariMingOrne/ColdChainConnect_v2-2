@@ -1,4 +1,5 @@
 import { NativeSelect } from "@/components/ui/native-select";
+import { PageDialog } from "@/components/shared/PageDialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -306,7 +307,7 @@ export function DeliveryDispatch() {
     setMobileView("detail");
   };
 
-  if (loading) return <LoadingSpinner />;
+
 
   // ── Truck detail panel (shared between mobile and desktop) ─────────────────
   const DetailPanel = () => (
@@ -350,7 +351,9 @@ export function DeliveryDispatch() {
           </div>
           {selectedTruck!.driver_id ? (() => {
             const d = drivers.find((dr) => dr.id === selectedTruck!.driver_id);
-            return (
+            if (loading) return <LoadingSpinner />;
+
+  return (
               <div className="bg-muted rounded-lg p-3">
                 <p className="font-semibold text-foreground text-sm">{d?.full_name || selectedTruck!.driver_id.slice(0, 8)}</p>
                 {d?.contact_info && <p className="text-xs text-muted-foreground mt-0.5">{d.contact_info}</p>}
@@ -531,7 +534,7 @@ export function DeliveryDispatch() {
 
                     {/* Desktop: table */}
                     <div className="data-table-frame hidden md:block overflow-x-auto">
-                      <Table className="w-full text-xs">
+                      <Table>
                         <thead>
                           <tr>
                             {["Invoice", "Customer", "Status", "Receipt #", "Confirmed At", "Action"].map((h) => (
@@ -614,71 +617,19 @@ export function DeliveryDispatch() {
     </div>
   );
 
-  if (showAddTruckModal) return (
-    <AddTruckModal
-      drivers={drivers}
-      token={token!}
-      onClose={() => setShowAddTruckModal(false)}
-      onCreated={async () => { await fetchAll(); setShowAddTruckModal(false); }}
-    />
-  );
 
-  if (showEditTruckModal && selectedTruck) return (
-    <EditTruckModal
-      truck={selectedTruck}
-      token={token!}
-      onClose={() => setShowEditTruckModal(false)}
-      onSaved={async () => { await fetchAll(); setShowEditTruckModal(false); }}
-    />
-  );
 
-  if (showChangeTruckDriverModal && selectedTruck) return (
-    <ChangeTruckDriverModal
-      truck={selectedTruck}
-      drivers={drivers}
-      token={token!}
-      onClose={() => setShowChangeTruckDriverModal(false)}
-      onSave={async (driverId) => {
-        try {
-          const res = await fetch(`/api/trucks/${selectedTruck.id}`, {
-            method: "PATCH",
-            headers: authHeaders(token!),
-            body: JSON.stringify({ driver_id: driverId || null }),
-          });
-          if (!res.ok) throw new Error(await res.text());
-          await fetchAll();
-          setShowChangeTruckDriverModal(false);
-        } catch (err) {
-          toast.error("Failed to update driver: " + (err instanceof Error ? err.message : String(err)));
-        }
-      }}
-    />
-  );
 
-  if (showAddDeliveryModal && selectedTruck) return (
-    <AddDeliveryModal
-      truck={selectedTruck}
-      eligibleInvoices={eligibleInvoices}
-      customers={customers}
-      agents={agents}
-      drivers={drivers}
-      onClose={() => setShowAddDeliveryModal(false)}
-      onSave={handleCreateDelivery}
-    />
-  );
 
-  if (showPaymentModal && paymentItem) return (
-    <PaymentConfirmationModal
-      item={paymentItem.item}
-      customer={paymentItem.item.customer}
-      invoice={paymentItem.item.invoice}
-      onClose={() => { setShowPaymentModal(false); setPaymentItem(null); }}
-      onConfirm={handleConfirmWithPayment}
-      isConfirming={confirmingItem === paymentItem.item.id}
-    />
-  );
+
+
+
+
+
 
   return (
+    <>
+
     <div className="flex-1 flex flex-col px-4 md:px-6 py-4 md:py-6 gap-4 min-h-0">
 
       {/* Header */}
@@ -796,6 +747,77 @@ export function DeliveryDispatch() {
       </div>
 
     </div>
+  
+      {(showAddTruckModal) && (
+        <PageDialog onClose={() => setShowAddTruckModal(false)}>
+<AddTruckModal
+      drivers={drivers}
+      token={token!}
+      onClose={() => setShowAddTruckModal(false)}
+      onCreated={async () => { await fetchAll(); setShowAddTruckModal(false); }}
+    />
+        </PageDialog>
+      )}
+      {(showEditTruckModal && selectedTruck) && (
+        <PageDialog onClose={() => setShowEditTruckModal(false)}>
+<EditTruckModal
+      truck={selectedTruck}
+      token={token!}
+      onClose={() => setShowEditTruckModal(false)}
+      onSaved={async () => { await fetchAll(); setShowEditTruckModal(false); }}
+    />
+        </PageDialog>
+      )}
+      {(showChangeTruckDriverModal && selectedTruck) && (
+        <PageDialog onClose={() => setShowChangeTruckDriverModal(false)}>
+<ChangeTruckDriverModal
+      truck={selectedTruck}
+      drivers={drivers}
+      token={token!}
+      onClose={() => setShowChangeTruckDriverModal(false)}
+      onSave={async (driverId) => {
+        try {
+          const res = await fetch(`/api/trucks/${selectedTruck.id}`, {
+            method: "PATCH",
+            headers: authHeaders(token!),
+            body: JSON.stringify({ driver_id: driverId || null }),
+          });
+          if (!res.ok) throw new Error(await res.text());
+          await fetchAll();
+          setShowChangeTruckDriverModal(false);
+        } catch (err) {
+          toast.error("Failed to update driver: " + (err instanceof Error ? err.message : String(err)));
+        }
+      }}
+    />
+        </PageDialog>
+      )}
+      {(showAddDeliveryModal && selectedTruck) && (
+        <PageDialog onClose={() => setShowAddDeliveryModal(false)}>
+<AddDeliveryModal
+      truck={selectedTruck}
+      eligibleInvoices={eligibleInvoices}
+      customers={customers}
+      agents={agents}
+      drivers={drivers}
+      onClose={() => setShowAddDeliveryModal(false)}
+      onSave={handleCreateDelivery}
+    />
+        </PageDialog>
+      )}
+      {(showPaymentModal && paymentItem) && (
+        <PageDialog onClose={() => { setShowPaymentModal(false); setPaymentItem(null); }}>
+<PaymentConfirmationModal
+      item={paymentItem.item}
+      customer={paymentItem.item.customer}
+      invoice={paymentItem.item.invoice}
+      onClose={() => { setShowPaymentModal(false); setPaymentItem(null); }}
+      onConfirm={handleConfirmWithPayment}
+      isConfirming={confirmingItem === paymentItem.item.id}
+    />
+        </PageDialog>
+      )}
+    </>
   );
 }
 

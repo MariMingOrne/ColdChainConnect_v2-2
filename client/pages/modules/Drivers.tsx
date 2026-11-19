@@ -1,4 +1,5 @@
 import { MIN_PASSWORD_LENGTH } from "@shared/api";
+import { PageDialog } from "@/components/shared/PageDialog";
 import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
@@ -410,28 +411,15 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
     );
   }
 
-  if (schedulingDriver) {
-    return <DriverScheduleModal driver={schedulingDriver} onClose={() => setSchedulingDriver(null)} />;
-  }
 
-  if (viewingDriver) {
-    return <ViewDriverModal driver={viewingDriver} onClose={() => setViewingDriver(null)} />;
-  }
 
-  if (isModalOpen) {
-    return (
-      <DriverModal
-        title={editingDriver ? "Edit Driver" : "Add New Driver"}
-        formData={formData}
-        setFormData={setFormData}
-        hasLogin={Boolean(editingDriver?.user)}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSave}
-      />
-    );
-  }
+
+
+
 
   return (
+    <>
+
     <div className="flex h-full min-h-0 flex-col gap-4 overflow-hidden px-4 py-4 md:px-6 md:py-5">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
@@ -505,5 +493,29 @@ export function Drivers({ onBack, onCreateAccount }: DriversProps & { onCreateAc
       </div>
 
     </div>
+  
+      {(schedulingDriver) && (
+        <PageDialog onClose={() => setSchedulingDriver(null)}>
+<DriverScheduleModal driver={schedulingDriver} onClose={() => setSchedulingDriver(null)} />
+        </PageDialog>
+      )}
+      {(viewingDriver) && (
+        <PageDialog onClose={() => setViewingDriver(null)}>
+<ViewDriverModal driver={viewingDriver} onClose={() => setViewingDriver(null)} />
+        </PageDialog>
+      )}
+      {(isModalOpen) && (
+        <PageDialog onClose={() => setIsModalOpen(false)}>
+<DriverModal
+        title={editingDriver ? "Edit Driver" : "Add New Driver"}
+        formData={formData}
+        setFormData={setFormData}
+        hasLogin={Boolean(editingDriver?.user)}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+      />
+        </PageDialog>
+      )}
+    </>
   );
 }

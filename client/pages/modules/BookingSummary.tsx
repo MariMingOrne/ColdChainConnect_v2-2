@@ -1,4 +1,7 @@
 import { toast } from "sonner";
+import { TruncatedText } from "@/components/ui/truncated-text";
+import { PageDialog } from "@/components/shared/PageDialog";
+import { useNewRows } from "@/lib/unseen";
 import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
@@ -20,6 +23,7 @@ import { AgentOrderScreen } from "./AgentOrderScreen";
 import { describeCreditBlock, isCreditBlock, promptCreditOverride } from "@/lib/creditOverride";
 
 export function BookingSummary() {
+  const isNewRow = useNewRows("orders");
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -392,161 +396,12 @@ export function BookingSummary() {
     );
   }
 
-  if (showAddModal) {
-    return (
-      <AddOrderModal
-        onClose={() => {
-          setShowAddModal(false);
-          setNewCustomerId("");
-          setPreparedDeliveryDate("");
-          setOrderItems([{ product_id: "", qty_ordered: 1 }]);
-        }}
-        customers={customers}
-        products={products}
-        productStock={productStock}
-        orderItems={orderItems}
-        newCustomerId={newCustomerId}
-        preparedDeliveryDate={preparedDeliveryDate}
-        onCustomerChange={setNewCustomerId}
-        onPreparedDeliveryDateChange={setPreparedDeliveryDate}
-        onAddItem={handleAddItem}
-        onRemoveItem={handleRemoveItem}
-        onItemChange={handleItemChange}
-        onCreateOrder={handleCreateOrder}
-        isCreating={isCreating}
-      />
-    );
-  }
-
-  if (showApproveModal && selectedBooking) {
-    return (
-      <div className="flex-1 flex flex-col p-6 gap-6">
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">Approve Order</h1>
-            <p className="page-subtitle">Confirm approval for this customer order</p>
-          </div>
-          <Button onClick={closeApproveModal} variant="outline">
-            <ArrowLeft size={15} />
-            Back
-          </Button>
-        </div>
-
-        <div className="bg-card rounded-2xl border border-border p-6 space-y-4 max-w-2xl">
-          <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">Order ID</label>
-            <div className="px-3 py-2 bg-muted rounded-lg text-sm font-mono text-foreground">
-              {selectedBooking.id.slice(0, 8)}
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">Customer</label>
-            <div className="px-3 py-2 bg-muted rounded-lg text-sm text-foreground">
-              <span className="font-semibold">{selectedBooking.customer?.store_name || "Unknown"}</span>
-              {selectedBooking.customer?.contact_info && (
-                <span className="text-xs text-muted-foreground block">{selectedBooking.customer.contact_info}</span>
-              )}
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">Location</label>
-            <div className="px-3 py-2 bg-muted rounded-lg text-sm text-foreground">
-              {selectedBooking.customer?.location || "Unknown"}
-            </div>
-          </div>
-
-          {approveSuccess ? (
-            <div className="px-4 py-3 bg-success-soft border border-success/30 rounded-lg text-sm text-success font-semibold">
-              ✓ {approveSuccess}
-            </div>
-          ) : (
-            <div className="px-4 py-3 bg-info-soft border border-link/30 rounded-lg text-sm text-link">
-              The truck will be automatically assigned based on the customer's truck district.
-            </div>
-          )}
-        </div>
-
-        <div className="flex justify-end gap-2 max-w-2xl">
-          <Button onClick={closeApproveModal} variant="outline">
-            {approveSuccess ? "Close" : "Cancel"}
-          </Button>
-          {!approveSuccess && (
-            <Button
-              onClick={handleApproveBooking}
-              disabled={isApproving}
-              variant="default"
-            >
-              {isApproving ? "Approving…" : "Approve Order"}
-            </Button>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (showRejectModal && selectedBooking) {
-    return (
-      <div className="flex-1 flex flex-col p-6 gap-6">
-        <div className="page-header">
-          <div>
-            <h1 className="page-title">Reject Order</h1>
-            <p className="page-subtitle">Confirm rejection of this customer order</p>
-          </div>
-          <Button onClick={closeRejectModal} variant="outline">
-            <ArrowLeft size={15} />
-            Back
-          </Button>
-        </div>
-
-        <div className="bg-card rounded-2xl border border-border p-6 space-y-4 max-w-2xl">
-          <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">Order ID</label>
-            <div className="px-3 py-2 bg-muted rounded-lg text-sm font-mono text-foreground">
-              {selectedBooking.id.slice(0, 8)}
-            </div>
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-foreground mb-1">Customer</label>
-            <div className="px-3 py-2 bg-muted rounded-lg text-sm text-foreground">
-              <span className="font-semibold">{selectedBooking.customer?.store_name || "Unknown"}</span>
-              {selectedBooking.customer?.contact_info && (
-                <span className="text-xs text-muted-foreground block">{selectedBooking.customer.contact_info}</span>
-              )}
-            </div>
-          </div>
-          <div className="bg-destructive-soft p-3 rounded-lg border border-destructive/30">
-            <p className="text-xs text-destructive">
-              This order will be marked as rejected and cannot be processed further. This action cannot be undone easily.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex justify-end gap-2 max-w-2xl">
-          <Button onClick={closeRejectModal} variant="outline">
-            Cancel
-          </Button>
-          <Button
-            onClick={handleRejectBooking}
-            disabled={isRejecting}
-            variant="destructive"
-          >
-            {isRejecting ? "Rejecting…" : "Reject Order"}
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (showDetailModal && detailBooking) {
-    return (
-      <BookingDetailPage
-        booking={detailBooking}
-        products={products}
-        getStatusColor={getStatusColor}
-        onBack={closeDetailModal}
-      />
-    );
-  }
+  const closeAddModal = () => {
+    setShowAddModal(false);
+    setNewCustomerId("");
+    setPreparedDeliveryDate("");
+    setOrderItems([{ product_id: "", qty_ordered: 1 }]);
+  };
 
   const filtered = bookings.filter((b) => {
     const matchesSearch =
@@ -569,6 +424,7 @@ export function BookingSummary() {
   });
 
   return (
+    <>
     <div className="flex-1 flex flex-col p-6 gap-6">
       {/* Header */}
       <div className="page-header">
@@ -694,7 +550,7 @@ export function BookingSummary() {
                 const creator = (booking as any).creator;
                 const isApproved = booking.status === "approved";
                 return (
-                  <TableRow key={booking.id}>
+                  <TableRow key={booking.id} className={isNewRow(booking.created_at) ? "row-new" : undefined}>
                     <TableCell className="font-mono text-sm">
                       <Button
                         onClick={() => openDetailModal(booking)}
@@ -706,7 +562,7 @@ export function BookingSummary() {
                     <TableCell className="text-sm">
                       {customer ? (
                         <div className="flex flex-col">
-                          <span className="font-semibold text-foreground">{customer.store_name}</span>
+                          <TruncatedText className="font-semibold text-foreground">{customer.store_name}</TruncatedText>
                           {customer.contact_info && (
                             <span className="text-xs text-muted-foreground">{customer.contact_info}</span>
                           )}
@@ -785,5 +641,158 @@ export function BookingSummary() {
       </Card>
 
     </div>
+      {(showAddModal) && (
+        <PageDialog onClose={closeAddModal}>
+      <AddOrderModal
+        onClose={() => {
+          setShowAddModal(false);
+          setNewCustomerId("");
+          setPreparedDeliveryDate("");
+          setOrderItems([{ product_id: "", qty_ordered: 1 }]);
+        }}
+        customers={customers}
+        products={products}
+        productStock={productStock}
+        orderItems={orderItems}
+        newCustomerId={newCustomerId}
+        preparedDeliveryDate={preparedDeliveryDate}
+        onCustomerChange={setNewCustomerId}
+        onPreparedDeliveryDateChange={setPreparedDeliveryDate}
+        onAddItem={handleAddItem}
+        onRemoveItem={handleRemoveItem}
+        onItemChange={handleItemChange}
+        onCreateOrder={handleCreateOrder}
+        isCreating={isCreating}
+      />
+        </PageDialog>
+      )}
+      {(showApproveModal && selectedBooking) && (
+        <PageDialog onClose={closeApproveModal}>
+      <div className="flex-1 flex flex-col p-6 gap-6">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Approve Order</h1>
+            <p className="page-subtitle">Confirm approval for this customer order</p>
+          </div>
+          <Button onClick={closeApproveModal} variant="outline">
+            <ArrowLeft size={15} />
+            Back
+          </Button>
+        </div>
+
+        <div className="bg-card rounded-2xl border border-border p-6 space-y-4 max-w-2xl">
+          <div>
+            <label className="block text-xs font-semibold text-foreground mb-1">Order ID</label>
+            <div className="px-3 py-2 bg-muted rounded-lg text-sm font-mono text-foreground">
+              {selectedBooking.id.slice(0, 8)}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-foreground mb-1">Customer</label>
+            <div className="px-3 py-2 bg-muted rounded-lg text-sm text-foreground">
+              <span className="font-semibold">{selectedBooking.customer?.store_name || "Unknown"}</span>
+              {selectedBooking.customer?.contact_info && (
+                <span className="text-xs text-muted-foreground block">{selectedBooking.customer.contact_info}</span>
+              )}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-foreground mb-1">Location</label>
+            <div className="px-3 py-2 bg-muted rounded-lg text-sm text-foreground">
+              {selectedBooking.customer?.location || "Unknown"}
+            </div>
+          </div>
+
+          {approveSuccess ? (
+            <div className="px-4 py-3 bg-success-soft border border-success/30 rounded-lg text-sm text-success font-semibold">
+              ✓ {approveSuccess}
+            </div>
+          ) : (
+            <div className="px-4 py-3 bg-info-soft border border-link/30 rounded-lg text-sm text-link">
+              The truck will be automatically assigned based on the customer's truck district.
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 max-w-2xl">
+          <Button onClick={closeApproveModal} variant="outline">
+            {approveSuccess ? "Close" : "Cancel"}
+          </Button>
+          {!approveSuccess && (
+            <Button
+              onClick={handleApproveBooking}
+              disabled={isApproving}
+              variant="default"
+            >
+              {isApproving ? "Approving…" : "Approve Order"}
+            </Button>
+          )}
+        </div>
+      </div>
+        </PageDialog>
+      )}
+      {(showRejectModal && selectedBooking) && (
+        <PageDialog onClose={closeRejectModal}>
+      <div className="flex-1 flex flex-col p-6 gap-6">
+        <div className="page-header">
+          <div>
+            <h1 className="page-title">Reject Order</h1>
+            <p className="page-subtitle">Confirm rejection of this customer order</p>
+          </div>
+          <Button onClick={closeRejectModal} variant="outline">
+            <ArrowLeft size={15} />
+            Back
+          </Button>
+        </div>
+
+        <div className="bg-card rounded-2xl border border-border p-6 space-y-4 max-w-2xl">
+          <div>
+            <label className="block text-xs font-semibold text-foreground mb-1">Order ID</label>
+            <div className="px-3 py-2 bg-muted rounded-lg text-sm font-mono text-foreground">
+              {selectedBooking.id.slice(0, 8)}
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-foreground mb-1">Customer</label>
+            <div className="px-3 py-2 bg-muted rounded-lg text-sm text-foreground">
+              <span className="font-semibold">{selectedBooking.customer?.store_name || "Unknown"}</span>
+              {selectedBooking.customer?.contact_info && (
+                <span className="text-xs text-muted-foreground block">{selectedBooking.customer.contact_info}</span>
+              )}
+            </div>
+          </div>
+          <div className="bg-destructive-soft p-3 rounded-lg border border-destructive/30">
+            <p className="text-xs text-destructive">
+              This order will be marked as rejected and cannot be processed further. This action cannot be undone easily.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 max-w-2xl">
+          <Button onClick={closeRejectModal} variant="outline">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleRejectBooking}
+            disabled={isRejecting}
+            variant="destructive"
+          >
+            {isRejecting ? "Rejecting…" : "Reject Order"}
+          </Button>
+        </div>
+      </div>
+        </PageDialog>
+      )}
+      {(showDetailModal && detailBooking) && (
+        <PageDialog onClose={closeDetailModal}>
+      <BookingDetailPage
+        booking={detailBooking}
+        products={products}
+        getStatusColor={getStatusColor}
+        onBack={closeDetailModal}
+      />
+        </PageDialog>
+      )}
+    </>
   );
 }

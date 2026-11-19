@@ -1,4 +1,6 @@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
+import { TruncatedText } from "@/components/ui/truncated-text";
+import { useNewRows } from "@/lib/unseen";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
@@ -29,6 +31,7 @@ const TABS: { key: Tab; label: string }[] = [
 ];
 
 export function AccountsReceivable() {
+  const isNewRow = useNewRows("accounts");
   const [arRecords, setARRecords] = useState<ARType[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -247,7 +250,7 @@ export function AccountsReceivable() {
                 const amountNum = parseFloat(ar.amount_due);
                 const isCredit = amountNum < 0;
                 return (
-                  <TableRow key={ar.id} className="hover:bg-accent/40 transition-colors">
+                  <TableRow key={ar.id} className={isNewRow(ar.created_at) ? "row-new" : undefined}>
                     <TableCell className="font-mono text-xs text-muted-foreground">{ar.id.slice(0, 8)}…</TableCell>
                     <TableCell className="text-sm font-semibold text-foreground">
                       {getCustomerName(ar.customer_id)}
@@ -263,8 +266,8 @@ export function AccountsReceivable() {
                         {ar.status}
                       </span>
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground max-w-[180px] truncate" title={ar.notes ?? ""}>
-                      {ar.notes || "—"}
+                    <TableCell className="max-w-[180px] text-xs text-muted-foreground">
+                      <TruncatedText>{ar.notes || "—"}</TruncatedText>
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
                       {new Date(ar.created_at).toLocaleDateString("en-PH")}
