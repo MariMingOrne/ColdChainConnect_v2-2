@@ -97,7 +97,7 @@ export function Login() {
       <aside className="login-brand relative hidden flex-col justify-between overflow-hidden p-12 text-white lg:flex xl:p-16">
         <div className="flex items-center gap-3">
           <span className="h-11 w-11 overflow-hidden rounded-full ring-2 ring-white/30">
-            <img src="https://cdn.builder.io/api/v1/image/assets%2F95235f61d85340cc8929dd5e2ec9cafe%2F04690f469f254fd393684ed5411b7cab?format=webp&width=800&height=1200" alt="ACDP logo" className="h-full w-full object-cover" />
+            <img src="https://cdn.builder.io/api/v1/image/assets%2F95235f61d85340cc8929dd5e2ec9cafe%2F04690f469f254fd393684ed5411b7cab?format=webp&width=800&height=1200" alt="ACDP logo" className="h-full w-full object-cover" style={{ borderStyle: "none", borderWidth: "1px" }} />
           </span>
           <span className="font-rajdhani text-lg font-bold tracking-wide">ACDP</span>
         </div>
