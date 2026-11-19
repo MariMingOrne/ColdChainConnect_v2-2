@@ -9,7 +9,7 @@ import { useCan } from "@/hooks/useCan";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { StatusBadge, StatusTone } from "@/components/StatusBadge";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
-import { ArrowLeft, RotateCcw, CheckCircle, XCircle } from "lucide-react";
+import { RotateCcw, CheckCircle, XCircle } from "lucide-react";
 import { AgentReturn, Invoice, Customer, Product } from "@shared/api";
 import { LogReturnForm } from "./LogReturnForm";
 import { Table } from "@/components/ui/table";
@@ -79,15 +79,11 @@ function CreateReturnModal({
   token: string; onClose: () => void; onCreated: () => void;
 }) {
   return (
-    <div className="px-4 md:px-6 lg:px-7 py-4 md:py-6 space-y-5 max-w-xl mx-auto">
+    <div className="p-6 space-y-5 max-w-xl mx-auto">
       <div className="page-header">
         <div>
           <h1 className="page-title">Log Return</h1>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border flex flex-col">
         <LogReturnForm

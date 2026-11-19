@@ -9,7 +9,6 @@ import { useAuth } from "../../hooks/useAuth";
 import { useCan } from "@/hooks/useCan";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Customer, Truck, formatCustomerAddress, totalDiscountRate } from "@shared/api";
-import { ArrowLeft } from "lucide-react";
 import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
@@ -92,10 +91,6 @@ function ViewCustomerPage({ customer, onClose }: { customer: Customer; onClose: 
         <div>
           <h1 className="page-title">Customer Details</h1>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
       <div className="w-full max-w-2xl rounded-2xl border border-border bg-card">
         <div className="grid grid-cols-1 gap-x-6 gap-y-5 p-6 sm:grid-cols-2">
@@ -172,10 +167,6 @@ function CustomerModal({
         <div>
           <h1 className="page-title">{title}</h1>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
       <div className="flex w-full max-w-xl flex-col rounded-2xl border border-border bg-card">
 

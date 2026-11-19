@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useEffect, useMemo, useState } from "react";
 import JsBarcode from "jsbarcode";
-import { ArrowLeft, Printer } from "lucide-react";
+import { Printer } from "lucide-react";
 import type { Booking, InventoryBatch, Pallet } from "@shared/api";
 
 interface DeliverySheetProps {
@@ -62,7 +62,7 @@ export function DeliverySheet({ order, pallets, batches, onClose }: DeliveryShee
   const storeName = order.customer?.store_name ?? "Customer";
 
   return (
-    <div className="delivery-sheet-overlay flex-1 flex flex-col gap-6 p-4 md:p-6">
+    <div className="delivery-sheet-overlay flex-1 flex flex-col gap-6 p-6">
       <div className="delivery-sheet-dialog flex w-full max-w-3xl flex-col gap-4">
         <div className="no-print page-header">
           <div>
@@ -82,10 +82,6 @@ export function DeliverySheet({ order, pallets, batches, onClose }: DeliveryShee
               variant="default"
             >
               <Printer size={16} /> Print
-            </Button>
-            <Button type="button" onClick={onClose} variant="outline">
-              <ArrowLeft size={15} />
-              Back
             </Button>
           </div>
         </div>

@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
 import JsBarcode from "jsbarcode";
-import { ArrowLeft, Printer } from "lucide-react";
+import { Printer } from "lucide-react";
 import { useMemo } from "react";
 import type { PalletEntry } from "./PalletTable";
 
@@ -19,7 +19,7 @@ export function PalletPrintAllDialog({ entries, date, onClose }: {
   const barcodes = useMemo(() => Object.fromEntries(entries.map(({ pallet }) => [pallet.id, barcodeDataUrl(pallet.id)])), [entries]);
 
   return (
-    <div className="bulk-pallet-print-overlay flex-1 flex flex-col gap-6 p-4 md:p-6">
+    <div className="bulk-pallet-print-overlay flex-1 flex flex-col gap-6 p-6">
       <section className="bulk-pallet-print-dialog flex w-full max-w-4xl flex-col gap-4">
         <div className="no-print page-header">
           <div>
@@ -29,10 +29,6 @@ export function PalletPrintAllDialog({ entries, date, onClose }: {
           <div className="flex items-center gap-2">
             <Button type="button" onClick={() => window.print()} disabled={entries.length === 0} variant="default">
               <Printer size={16} /> Print all
-            </Button>
-            <Button type="button" onClick={onClose} variant="outline">
-              <ArrowLeft size={15} />
-              Back
             </Button>
           </div>
         </div>

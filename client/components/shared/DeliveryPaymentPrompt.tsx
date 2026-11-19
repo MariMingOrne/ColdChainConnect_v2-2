@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -36,15 +35,11 @@ export function DeliveryPaymentPrompt({ stop, mode, isConfirming, error, onClose
   ];
 
   return (
-    <div className="flex-1 flex flex-col gap-5 p-4 pb-24 md:p-6 md:pb-6">
+    <div className="flex-1 flex flex-col gap-5 p-6 pb-24 md:pb-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">{isRecordingPayment ? "Record payment" : "Confirm delivery"}</h1>
         </div>
-        <Button type="button" onClick={onClose} disabled={isConfirming} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
       <section className="max-w-lg w-full rounded-2xl bg-card p-5 shadow-sm">
         <p className="mt-2 text-sm text-muted-foreground">

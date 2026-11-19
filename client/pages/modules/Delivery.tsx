@@ -14,7 +14,7 @@ import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { StatusBadge, StatusTone } from "@/components/StatusBadge";
 import { localScheduleDate } from "@/lib/agentSchedule";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
-import { CalendarDays, Clock3, ChevronLeft, Truck as TruckIcon, ChevronDown, ChevronUp, ArrowLeft, Search, X } from "lucide-react";
+import { CalendarDays, Clock3, ChevronLeft, Truck as TruckIcon, ChevronDown, ChevronUp, Search, X } from "lucide-react";
 import { Delivery, DeliveryItem, Truck, Invoice, Customer, Driver, Agent, Pallet, Product, formatCustomerAddress } from "@shared/api";
 import { TruckLoad, TruckLoadStop } from "@/components/delivery/TruckLoad";
 
@@ -1410,15 +1410,11 @@ function ModalShell({ title, onClose, children }: {
   title: string; onClose: () => void; children: React.ReactNode;
 }) {
   return (
-    <div className="flex-1 flex flex-col gap-6 p-4 md:p-6">
+    <div className="flex-1 flex flex-col gap-6 p-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">{title}</h1>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
       <div className="max-w-2xl w-full bg-card rounded-xl border border-border p-5 space-y-4">{children}</div>
     </div>
