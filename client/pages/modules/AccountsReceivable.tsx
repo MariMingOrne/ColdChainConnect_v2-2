@@ -46,8 +46,8 @@ export function AccountsReceivable() {
   const [activeTab, setActiveTab] = useState<Tab>("outstanding");
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [fromDateTime, setFromDateTime] = useState("");
-  const [toDateTime, setToDateTime] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const [page, setPage] = useState(1);
 
   const fetchData = async () => {
@@ -179,9 +179,9 @@ export function AccountsReceivable() {
 
   const filtered = newestFirst(tabFiltered.filter((ar) => {
     const q = searchTerm.toLowerCase();
-    const createdAt = new Date(ar.created_at).getTime();
-    if (fromDateTime && createdAt < new Date(fromDateTime).getTime()) return false;
-    if (toDateTime && createdAt > new Date(toDateTime).getTime()) return false;
+    const createdDate = ar.created_at.slice(0, 10);
+    if (fromDate && createdDate < fromDate) return false;
+    if (toDate && createdDate > toDate) return false;
     return (
       ar.id.toLowerCase().includes(q) ||
       getCustomerName(ar.customer_id).toLowerCase().includes(q)
@@ -265,8 +265,8 @@ export function AccountsReceivable() {
           onSearchChange={(value) => { setSearchTerm(value); setPage(1); }}
           searchPlaceholder="Search by customer or AR ID…"
         >
-          <input type="datetime-local" aria-label="Created from date and time" title="Show records created from this date and time" value={fromDateTime} max={toDateTime || undefined} onChange={(event) => { setFromDateTime(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
-          <input type="datetime-local" aria-label="Created to date and time" title="Show records created up to this date and time" value={toDateTime} min={fromDateTime || undefined} onChange={(event) => { setToDateTime(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
+          <input type="date" aria-label="Created from date" title="Show records created from this date" value={fromDate} max={toDate || undefined} onChange={(event) => { setFromDate(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
+          <input type="date" aria-label="Created to date" title="Show records created through this date" value={toDate} min={fromDate || undefined} onChange={(event) => { setToDate(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
         </TableToolbar>
       </div>
 
