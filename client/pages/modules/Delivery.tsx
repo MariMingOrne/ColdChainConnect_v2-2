@@ -226,7 +226,7 @@ export function DeliveryDispatch() {
     setShowPaymentModal(true);
   };
 
-  const handleConfirmWithPayment = async (isPaid: boolean, paymentAmount?: number, paymentMethod?: string, paymentReference?: string, paymentId?: string) => {
+  const handleConfirmWithPayment = async (isPaid: boolean, paymentAmount?: number, paymentMethod?: string, paymentReference?: string, paymentId?: string, notes?: string) => {
     if (!token || !paymentItem) return;
     const { delivery, item } = paymentItem;
     setConfirmingItem(item.id);
@@ -242,6 +242,7 @@ export function DeliveryDispatch() {
             payment_method: paymentMethod,
             payment_reference: paymentReference,
             payment_id: paymentId,
+            notes,
           })
         }
       );
