@@ -184,7 +184,7 @@ export interface Product {
   batch_tracking_enabled: boolean;
   reorder_point?: number;
   weight?: string | null;
-  /** Unit printed on receipts: PK (per pack) or PC (per piece). */
+  /** Unit type printed on receipts. */
   unit?: ProductUnit;
   /** Suggested retail price: what the customer is expected to sell it for. */
   srp?: string | null;
@@ -194,7 +194,7 @@ export interface Product {
   updated_at: string;
 }
 
-export const PRODUCT_UNITS = ["PK", "PC"] as const;
+export const PRODUCT_UNITS = ["PK", "EA"] as const;
 export type ProductUnit = (typeof PRODUCT_UNITS)[number];
 
 const toAmount = (value: string | number | null | undefined): number | null => {

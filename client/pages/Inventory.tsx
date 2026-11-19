@@ -637,7 +637,7 @@ function ExtraInfoModal({ product, batches, onClose, onSelectPallet }: { product
         <div className="p-6 space-y-6">
           <div>
             <h3 className="text-xs font-bold text-muted-foreground mb-3">Summary</h3>
-            <p className="mb-3 text-sm text-foreground"><span className="text-muted-foreground">Unit type:</span> {product.unit === "PC" ? "PC — per piece" : "PK — per pack"}</p>
+            <p className="mb-3 text-sm text-foreground"><span className="text-muted-foreground">Unit type:</span> {product.unit}</p>
             <div className="grid grid-cols-3 gap-3">
               {[
                 ["Inventory Value", `₱${(product.unitPrice * product.batchQuantity).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`],
