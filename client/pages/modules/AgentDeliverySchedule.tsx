@@ -137,7 +137,7 @@ export function AgentDeliverySchedule() {
   );
   const unconfirmedTotal = unconfirmedStops.reduce((total, { stop }) => total + Number(stop.invoice?.total_amount ?? 0), 0);
 
-  const confirmDelivery = async (isPaid: boolean, paymentAmount?: number, paymentMethod?: string, paymentReference?: string, paymentId?: string) => {
+  const confirmDelivery = async (isPaid: boolean, paymentAmount?: number, paymentMethod?: string, paymentReference?: string, paymentId?: string, notes?: string) => {
     if (!token || !paymentStop) return;
     const { delivery, stop, mode } = paymentStop;
     setConfirmingStopId(stop.id);
@@ -146,8 +146,8 @@ export function AgentDeliverySchedule() {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(mode === "payment"
-          ? { payment_amount: paymentAmount, payment_method: paymentMethod, payment_reference: paymentReference, payment_id: paymentId }
-          : { is_paid: isPaid, payment_amount: paymentAmount, payment_method: paymentMethod, payment_reference: paymentReference, payment_id: paymentId }),
+          ? { payment_amount: paymentAmount, payment_method: paymentMethod, payment_reference: paymentReference, payment_id: paymentId, notes }
+          : { is_paid: isPaid, payment_amount: paymentAmount, payment_method: paymentMethod, payment_reference: paymentReference, payment_id: paymentId, notes }),
       });
       if (!response.ok) {
         const result = await response.json().catch(() => ({}));
