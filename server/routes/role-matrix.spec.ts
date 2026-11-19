@@ -73,12 +73,13 @@ const POLICY: Record<string, Policy> = {
   "GET /api/unseen": { agent: false, driver: false, staff: "any" },
 
   // Customers, products, batches: read for agents and staff with the module, write for admin only
-  "GET /api/customers": agentAnd("product-customer"),
+  // GET only: order-fulfillment staff read these lookups for the order and pallet screens (STAFF_READ_API_MODULES).
+  "GET /api/customers": agentAnd("product-customer", "order-fulfillment"),
   "POST /api/customers": ADMIN_ONLY,
   "PATCH /api/customers/:id": ADMIN_ONLY,
   "DELETE /api/customers/:id": ADMIN_ONLY,
   "POST /api/customers/import": ADMIN_ONLY,
-  "GET /api/products": agentAnd("product-customer"),
+  "GET /api/products": agentAnd("product-customer", "order-fulfillment"),
   "POST /api/products": ADMIN_ONLY,
   "PATCH /api/products/:id": ADMIN_ONLY,
   "DELETE /api/products/:id": ADMIN_ONLY,
@@ -104,7 +105,7 @@ const POLICY: Record<string, Policy> = {
   "POST /api/agents": ADMIN_ONLY,
   "PATCH /api/agents/:id": ADMIN_ONLY,
   "DELETE /api/agents/:id": ADMIN_ONLY,
-  "GET /api/trucks": agentAnd("delivery-operations"),
+  "GET /api/trucks": agentAnd("delivery-operations", "order-fulfillment"),
   "POST /api/trucks": ADMIN_ONLY,
   "PATCH /api/trucks/:id": ADMIN_ONLY,
   "DELETE /api/trucks/:id": ADMIN_ONLY,
@@ -132,7 +133,7 @@ const POLICY: Record<string, Policy> = {
   "GET /api/reports/customers": staffOnly("reports"),
 
   // Deliveries
-  "GET /api/deliveries": agentAnd("delivery-operations"),
+  "GET /api/deliveries": agentAnd("delivery-operations", "order-fulfillment"),
   "POST /api/deliveries": agentAnd("delivery-operations"),
   "PATCH /api/deliveries/:id/status": ADMIN_ONLY,
   "PATCH /api/deliveries/:id/assign": agentAnd("delivery-operations"),
@@ -178,15 +179,16 @@ const POLICY: Record<string, Policy> = {
   "POST /api/inventory-batches/:id/items": ADMIN_ONLY,
   "DELETE /api/inventory-batches/:id/items/:itemId": ADMIN_ONLY,
 
-  // Pallets (order preparation): staff prepare, only admin and agents change status or approve
+  // Pallets (order preparation): order-fulfillment staff may start a pallet (POST) but only admin and
+  // agents change its status or approve it; deleting is admin only.
   "GET /api/pallets": agentAnd("order-fulfillment"),
   "GET /api/pallets/:id": agentAnd("order-fulfillment"),
   "POST /api/pallets": agentAnd("order-fulfillment"),
   "PATCH /api/pallets/:id/status": { agent: true, driver: false, staff: "none" },
   "PATCH /api/pallets/:id/approve": { agent: true, driver: false, staff: "none" },
   "DELETE /api/pallets/:id": ADMIN_ONLY,
-  "GET /api/products/inventory": agentAnd("product-customer"),
-  "GET /api/products/:productId/stock": agentAnd("product-customer"),
+  "GET /api/products/inventory": agentAnd("product-customer", "order-fulfillment"),
+  "GET /api/products/:productId/stock": agentAnd("product-customer", "order-fulfillment"),
   "GET /api/orders/:orderId/suggested-batches": agentAnd("order-fulfillment"),
 };
 

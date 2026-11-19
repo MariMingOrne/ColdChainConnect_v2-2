@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { can, STAFF_API_MODULES, type Action } from "../../shared/permissions";
+import { can, STAFF_API_MODULES, STAFF_READ_API_MODULES, type Action } from "../../shared/permissions";
 import type { AuthRequest } from "./auth";
 
 export function requirePermission(action: Action): RequestHandler {
@@ -26,12 +26,15 @@ export function requireAnyPermission(...actions: Action[]): RequestHandler {
   };
 }
 
-/** Mounted on /api after authMiddleware: staff only reach the API prefixes their modules unlock. */
+/** Mounted on /api after authMiddleware: staff only reach the API prefixes their modules unlock
+ * (read-only lookups can also be unlocked by STAFF_READ_API_MODULES). */
 export const staffModuleGuard: RequestHandler = (req, res, next) => {
   const authReq = req as AuthRequest;
   if (authReq.user?.role !== "staff") return next();
   const prefix = Object.keys(STAFF_API_MODULES).find((path) => req.path === path || req.path.startsWith(`${path}/`));
-  const granted = prefix && STAFF_API_MODULES[prefix].some((module) => authReq.modulePermissions?.includes(module));
+  const isRead = req.method === "GET" || req.method === "HEAD";
+  const modules = prefix ? [...STAFF_API_MODULES[prefix], ...(isRead ? STAFF_READ_API_MODULES[prefix] ?? [] : [])] : [];
+  const granted = modules.some((module) => authReq.modulePermissions?.includes(module));
   if (!granted) return res.status(403).json({ error: "Module access denied" });
   next();
 };

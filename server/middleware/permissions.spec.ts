@@ -12,7 +12,8 @@ function run(handler: (req: Request, res: Response, next: () => void) => unknown
   return { next, status: status.mock.calls[0]?.[0] as number | undefined };
 }
 
-const staff = (path: string, modulePermissions: string[]): Partial<AuthRequest> => ({
+const staff = (path: string, modulePermissions: string[], method = "GET"): Partial<AuthRequest> => ({
+  method,
   path,
   user: { userId: "u", username: "s", role: "staff" },
   modulePermissions,
@@ -32,6 +33,41 @@ describe("staffModuleGuard", () => {
 
   it("denies staff on an unmapped /api path", () => {
     expect(run(staffModuleGuard, staff("/something-new", ["order-fulfillment", "dashboard"])).status).toBe(403);
+  });
+
+  describe("read-only lookups for order-fulfillment staff", () => {
+    const orderStaff = ["order-fulfillment"];
+
+    it.each(["/products", "/products/inventory", "/products/p1/stock", "/customers", "/trucks", "/deliveries"])(
+      "lets them GET %s",
+      (path) => {
+        expect(run(staffModuleGuard, staff(path, orderStaff)).next).toHaveBeenCalled();
+      },
+    );
+
+    it.each(["POST", "PATCH", "PUT", "DELETE"])("keeps %s on those prefixes closed to them", (method) => {
+      for (const path of ["/products", "/customers", "/trucks", "/deliveries", "/deliveries/d1/items/i1/confirm"]) {
+        expect(run(staffModuleGuard, staff(path, orderStaff, method)).status, `${method} ${path}`).toBe(403);
+      }
+    });
+
+    it("keeps the same GETs closed to staff with no matching module", () => {
+      for (const path of ["/products/inventory", "/customers", "/trucks", "/deliveries"]) {
+        expect(run(staffModuleGuard, staff(path, [])).status, path).toBe(403);
+        expect(run(staffModuleGuard, staff(path, ["dashboard", "accounting"])).status, path).toBe(403);
+      }
+    });
+
+    it("does not widen anything beyond the lookups", () => {
+      for (const path of ["/drivers", "/agents", "/receipts", "/accounts-receivable", "/payments/unverified", "/expenses"]) {
+        expect(run(staffModuleGuard, staff(path, orderStaff)).status, path).toBe(403);
+      }
+    });
+
+    it("still lets the owning module write", () => {
+      expect(run(staffModuleGuard, staff("/customers", ["product-customer"], "POST")).next).toHaveBeenCalled();
+      expect(run(staffModuleGuard, staff("/deliveries", ["delivery-operations"], "POST")).next).toHaveBeenCalled();
+    });
   });
 
   it("always lets admin through", () => {

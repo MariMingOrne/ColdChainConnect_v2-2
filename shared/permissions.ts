@@ -93,3 +93,16 @@ export const STAFF_API_MODULES: Record<string, ModulePermission[]> = {
   "/audit-logs": ["administration"],
   "/backup": ["administration"],
 };
+
+/**
+ * Extra modules that unlock a prefix for read-only requests (GET/HEAD) on top of STAFF_API_MODULES.
+ * The order and pallet screens look up customers, products, stock, trucks and deliveries; staff with
+ * only order-fulfillment may read those lists but never change them (writes stay on STAFF_API_MODULES
+ * and the admin-only routes behind it).
+ */
+export const STAFF_READ_API_MODULES: Record<string, ModulePermission[]> = {
+  "/customers": ["order-fulfillment"],
+  "/products": ["order-fulfillment"],
+  "/trucks": ["order-fulfillment"],
+  "/deliveries": ["order-fulfillment"],
+};
