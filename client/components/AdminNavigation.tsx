@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { SEEN_KEY_BY_PATH, useUnseenCounts, type SeenKey } from "@/lib/unseen";
 import { NavLink, useLocation } from "react-router-dom";
 import {
+  BadgeCheck,
   Boxes,
   ChartNoAxesCombined,
   ChevronDown,
@@ -12,10 +13,12 @@ import {
   LayoutDashboard,
   PanelLeft,
   Package,
+  Receipt,
   RotateCcw,
   ShieldCheck,
   Truck,
   Users,
+  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "./ui/collapsible";
@@ -63,6 +66,14 @@ const primaryGroups: NavigationGroup[] = [
       { label: "Accounts Receivable", path: "/booking-dispatch/accounts", icon: CreditCard },
       { label: "Delivery History", path: "/booking-dispatch/delivery-history", icon: History },
       { label: "Returns", path: "/booking-dispatch/agent-returns", icon: RotateCcw },
+    ],
+  },
+  {
+    label: "Accounting",
+    icon: Wallet,
+    items: [
+      { label: "Payments to verify", path: "/accounting/payments", icon: BadgeCheck },
+      { label: "Expenses", path: "/accounting/expenses", icon: Receipt },
     ],
   },
 ];
@@ -152,6 +163,7 @@ function NavigationMenu({
     "Product & Customer Management": "product-customer",
     "Order Fulfillment": "order-fulfillment",
     "Delivery & Customer Operations": "delivery-operations",
+    Accounting: "accounting",
     "Manage Accounts": "manage-accounts",
   };
   const canAccess = (permission: ModulePermission) => user?.role !== "staff" || user.module_permissions?.includes(permission);

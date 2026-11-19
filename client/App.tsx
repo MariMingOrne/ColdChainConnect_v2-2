@@ -30,6 +30,7 @@ const InformationManagement = named(() => import("./pages/InformationManagement"
 const ManageAccounts = named(() => import("./pages/ManageAccounts"), "ManageAccounts");
 const BookingDispatch = named(() => import("./pages/BookingDispatch"), "BookingDispatch");
 const AuditLogPage = named(() => import("./pages/AuditLog"), "AuditLogPage");
+const Accounting = named(() => import("./pages/Accounting"), "Accounting");
 const Reports = named(() => import("./pages/Reports"), "Reports");
 const SearchResults = named(() => import("./pages/SearchResults"), "SearchResults");
 const DriverSchedule = named(() => import("./pages/DriverSchedule"), "DriverSchedule");
@@ -115,6 +116,7 @@ const AppContent = () => {
         <Route path="/information-management/*" element={<StaffModule permission="product-customer"><InformationManagement /></StaffModule>} />
         <Route path="/booking-dispatch/*" element={<StaffDispatchModule />} />
         <Route path="/manage-accounts/*" element={<StaffModule permission="manage-accounts"><ManageAccounts /></StaffModule>} />
+        <Route path="/accounting/*" element={<StaffModule permission="accounting"><Accounting /></StaffModule>} />
         <Route path="/audit" element={<StaffModule permission="administration"><AuditLogPage /></StaffModule>} />
         <Route path="/reports" element={<StaffModule permission="reports"><Reports /></StaffModule>} />
         <Route path="/search" element={<StaffModule permission="order-fulfillment"><SearchResults /></StaffModule>} />
@@ -161,6 +163,7 @@ const AppContent = () => {
       <Route path="/information-management/*" element={<InformationManagement />} />
       <Route path="/manage-accounts/*" element={<ManageAccounts />} />
       <Route path="/booking-dispatch/*" element={<BookingDispatch />} />
+      <Route path="/accounting/*" element={<Accounting />} />
       <Route path="/audit" element={<AuditLogPage />} />
       <Route path="/reports" element={<Reports />} />
       <Route path="/search" element={<SearchResults />} />

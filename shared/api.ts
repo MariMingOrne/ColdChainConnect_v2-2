@@ -564,6 +564,23 @@ export interface ExpenseResponse {
   expense: Expense;
 }
 
+/** One row of GET /api/payments/unverified: a delivery receipt whose recorded payment awaits Accounting. */
+export interface UnverifiedPayment {
+  id: string;
+  receipt_number: string;
+  delivery_item_id: string;
+  customer_id: string;
+  invoice_id: string;
+  confirmed_at: string;
+  customer_name: string;
+  invoice_receipt_number: string;
+  payment_method: string | null;
+  /** Decimal string: what was collected so far on the stop. */
+  amount: string;
+  recorded_by: string | null;
+  recorded_by_username: string | null;
+}
+
 // Delivery types
 export interface Delivery {
   id: string;

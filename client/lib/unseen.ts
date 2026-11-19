@@ -7,7 +7,7 @@ import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 
-export type SeenKey = "orders" | "receipts" | "inventory" | "customers" | "dispatch" | "accounts" | "returns";
+export type SeenKey = "orders" | "receipts" | "inventory" | "customers" | "dispatch" | "accounts" | "returns" | "payments" | "expenses";
 
 /** Sidebar route -> the section whose new records it counts. */
 export const SEEN_KEY_BY_PATH: Record<string, SeenKey> = {
@@ -18,6 +18,8 @@ export const SEEN_KEY_BY_PATH: Record<string, SeenKey> = {
   "/booking-dispatch/delivery": "dispatch",
   "/booking-dispatch/accounts": "accounts",
   "/booking-dispatch/agent-returns": "returns",
+  "/accounting/payments": "payments",
+  "/accounting/expenses": "expenses",
 };
 
 const KEYS = Object.values(SEEN_KEY_BY_PATH);
