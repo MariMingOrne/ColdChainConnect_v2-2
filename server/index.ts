@@ -25,6 +25,7 @@ import {
   createProduct,
   updateProduct,
   deleteProduct,
+  listProductCosts,
 } from "./routes/products";
 import {
   listBatches,
@@ -117,7 +118,7 @@ import { getSalesForecast } from "./routes/forecast";
 import { getDashboardSummary } from "./routes/dashboard";
 import { getUnseenCounts } from "./routes/unseen";
 import { postSalesForecastChat } from "./routes/sales-forecast-chat";
-import { getCustomerReport, getSalesReport, getStockReport } from "./routes/reports";
+import { getCustomerReport, getProfitReport, getSalesReport, getStockReport } from "./routes/reports";
 import { authMiddleware, requireRole } from "./middleware/auth";
 import { requireAnyPermission, requirePermission, staffModuleGuard } from "./middleware/permissions";
 import { listUnverifiedPayments, verifyReceiptPayment } from "./routes/payment-verification";
@@ -183,6 +184,7 @@ export function createServer() {
 
   // Products routes
   app.get("/api/products", authMiddleware, listProducts);
+  app.get("/api/product-costs", authMiddleware, requireRole("admin"), listProductCosts);
   app.post("/api/products", authMiddleware, requireRole("admin"), createProduct);
   app.patch("/api/products/:id", authMiddleware, requireRole("admin"), updateProduct);
   app.delete("/api/products/:id", authMiddleware, requireRole("admin"), deleteProduct);
@@ -243,6 +245,7 @@ export function createServer() {
   // Reports routes
   app.get("/api/reports/sales", authMiddleware, requireRole("admin", "staff"), getSalesReport);
   app.get("/api/reports/stock", authMiddleware, requireRole("admin", "staff"), getStockReport);
+  app.get("/api/reports/profit", authMiddleware, requireRole("admin", "staff"), getProfitReport);
   app.get("/api/reports/customers", authMiddleware, requireRole("admin", "staff"), getCustomerReport);
 
   // Deliveries routes

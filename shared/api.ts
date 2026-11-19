@@ -184,10 +184,39 @@ export interface Product {
   batch_tracking_enabled: boolean;
   reorder_point?: number;
   weight?: string | null;
+  /** Unit printed on receipts: PK (per pack) or PC (per piece). */
+  unit?: ProductUnit;
+  /** Suggested retail price: what the customer is expected to sell it for. */
+  srp?: string | null;
   manufacturer?: string;
   is_discontinued?: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export const PRODUCT_UNITS = ["PK", "PC"] as const;
+export type ProductUnit = (typeof PRODUCT_UNITS)[number];
+
+const toAmount = (value: string | number | null | undefined): number | null => {
+  if (value === null || value === undefined || value === "") return null;
+  const amount = typeof value === "number" ? value : parseFloat(value);
+  return Number.isFinite(amount) ? amount : null;
+};
+
+/** Customer's markup over our price, as a percent of our price. Null without an SRP or a positive price. */
+export function markupPercent(price: string | number | null | undefined, srp: string | number | null | undefined): number | null {
+  const sell = toAmount(price);
+  const retail = toAmount(srp);
+  if (sell === null || retail === null || sell <= 0) return null;
+  return Math.round(((retail - sell) / sell) * 1000) / 10;
+}
+
+/** Our profit margin, as a percent of our price. Null without a cost or a positive price. */
+export function marginPercent(price: string | number | null | undefined, cost: string | number | null | undefined): number | null {
+  const sell = toAmount(price);
+  const spent = toAmount(cost);
+  if (sell === null || spent === null || sell <= 0) return null;
+  return Math.round(((sell - spent) / sell) * 1000) / 10;
 }
 
 export const CreateProductSchema = z.object({
@@ -201,6 +230,9 @@ export const CreateProductSchema = z.object({
   batch_tracking_enabled: z.boolean().default(true),
   reorder_point: z.number().int().nonnegative().optional(),
   weight: z.number().nonnegative().optional(),
+  unit: z.enum(PRODUCT_UNITS).optional(),
+  srp: z.number().nonnegative().nullable().optional(),
+  cost_price: z.number().nonnegative().nullable().optional(),
   manufacturer: z.string().optional(),
   is_discontinued: z.boolean().optional(),
 });
@@ -478,6 +510,9 @@ export interface InvoiceItem {
   qty_ordered: number;
   unit_price: string;
   amount: string;
+  /** kg per unit, frozen from the product when the invoice was made. Null on older receipts. */
+  unit_weight_kg?: string | null;
+  unit_label?: string | null;
   created_at: string;
 }
 
@@ -810,6 +845,25 @@ export interface ReportProductPerformance {
 export interface ReportSalesResponse {
   periods: ReportSalesPeriod[];
   products: ReportProductPerformance[];
+}
+
+export interface ReportProfitRow {
+  productId: string;
+  productName: string;
+  unitsSold: number;
+  /** Net of the invoice discount. */
+  revenue: number;
+  /** Null when no cost price is recorded for the product. */
+  cost: number | null;
+  profit: number | null;
+  marginPercent: number | null;
+}
+
+export interface ReportProfitResponse {
+  rows: ReportProfitRow[];
+  /** Totals over the products that have a cost only, so margin is not distorted by missing costs. */
+  totals: { revenue: number; cost: number; profit: number; marginPercent: number | null };
+  productsMissingCost: number;
 }
 
 export interface ReportStockRow {

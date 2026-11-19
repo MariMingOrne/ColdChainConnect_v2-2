@@ -106,10 +106,24 @@ export const products = pgTable("products", {
   manufacturer: text("manufacturer"),
   reorder_point: integer("reorder_point"),
   weight: decimal("weight", { precision: 10, scale: 2 }),
+  unit: varchar("unit", { length: 10 }).default("PK").notNull(),
+  srp: decimal("srp", { precision: 10, scale: 2 }),
   is_discontinued: boolean("is_discontinued").default(false),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });
+
+// What a product costs us. Separate from products on purpose: product rows are embedded in bookings
+// and lists that agents can read, and cost must never travel with them.
+export const product_costs = pgTable("product_costs", {
+  product_id: text("product_id")
+    .primaryKey()
+    .references(() => products.id, { onDelete: "cascade" }),
+  cost_price: decimal("cost_price", { precision: 10, scale: 2 }).notNull(),
+  updated_at: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => [
+  check("product_costs_cost_price_nonnegative", sql`${table.cost_price} >= 0`),
+]);
 
 // Inventory batches table
 export const inventory_batches = pgTable("inventory_batches", {
@@ -342,6 +356,8 @@ export const invoice_items = pgTable("invoice_items", {
   qty_ordered: integer("qty_ordered").notNull(),
   unit_price: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  unit_weight_kg: decimal("unit_weight_kg", { precision: 10, scale: 2 }),
+  unit_label: varchar("unit_label", { length: 10 }),
   created_at: timestamp("created_at").defaultNow().notNull(),
 }, (table) => [
   index("invoice_items_invoice_id_idx").on(table.invoice_id),

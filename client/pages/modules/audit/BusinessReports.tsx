@@ -1,7 +1,7 @@
 import {
   Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
-import type { ReportCustomerRow, ReportSalesResponse, ReportStockRow } from "@shared/api";
+import type { ReportCustomerRow, ReportProfitResponse, ReportSalesResponse, ReportStockRow } from "@shared/api";
 import { Card } from "@/components/ui/card";
 import { DateRangeFilter, useDateRange } from "@/components/DateRangeFilter";
 import { ReportView } from "./ReportView";
@@ -200,11 +200,55 @@ export function PerformanceReport() {
 }
 
 export function ProfitReport() {
+  const { range, setRange, query } = useDateRange();
+  const { data, error } = useReportData<ReportProfitResponse>(`/api/reports/profit${query}`);
+  const title = "Profit Tracking & Margins";
+  const subtitle = "Net revenue, cost and margin per product";
+
+  if (!data) return <ReportStatus title={title} subtitle={subtitle} message={error ?? "Loading report…"} />;
+
+  const percent = (value: number | null) => (value === null ? "—" : `${value}%`);
+  const costed = data.rows.filter((row) => row.profit !== null);
+
   return (
-    <ReportStatus
-      title="Profit Tracking & Margins"
-      subtitle="Profit per product"
-      message="Profit cannot be calculated yet because products do not have recorded cost prices."
+    <ReportView
+      title={title}
+      subtitle={`${subtitle}. Total profit ${peso(data.totals.profit)} at ${percent(data.totals.marginPercent)} margin.`}
+      filters={
+        <div className="space-y-3">
+          <DateRangeFilter range={range} onChange={setRange} />
+          {data.productsMissingCost > 0 && (
+            <p role="status" className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-xs text-warning">
+              {data.productsMissingCost} {data.productsMissingCost === 1 ? "product has" : "products have"} no cost price yet, so
+              {" "}{data.productsMissingCost === 1 ? "it is" : "they are"} left out of the totals. Set cost on the Products screen.
+            </p>
+          )}
+        </div>
+      }
+      rows={data.rows}
+      chart={
+        <ChartFrame>
+          <BarChart data={costed}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <XAxis dataKey="productName" interval={0} tick={{ fontSize: 11 }} />
+            <YAxis yAxisId="money" tickFormatter={(value) => `₱${(value / 1000).toFixed(0)}k`} />
+            <YAxis yAxisId="margin" orientation="right" tickFormatter={(value) => `${value}%`} />
+            <Tooltip />
+            <Legend />
+            <Bar yAxisId="money" dataKey="revenue" name="Revenue" fill={CHART_COLORS.navy} radius={[6, 6, 0, 0]} />
+            <Bar yAxisId="money" dataKey="profit" name="Profit" fill={CHART_COLORS.green} radius={[6, 6, 0, 0]} />
+            <Bar yAxisId="margin" dataKey="marginPercent" name="Margin %" fill={CHART_COLORS.blue} radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ChartFrame>
+      }
+      columns={[
+        { header: "Product", value: (r) => r.productName },
+        { header: "Units Sold", value: (r) => r.unitsSold, align: "right" },
+        { header: "Revenue", value: (r) => r.revenue, cell: (r) => peso(r.revenue), align: "right" },
+        { header: "Cost", value: (r) => r.cost ?? "", cell: (r) => (r.cost === null ? "No cost set" : peso(r.cost)), align: "right" },
+        { header: "Profit", value: (r) => r.profit ?? "", cell: (r) => (r.profit === null ? "—" : peso(r.profit)), align: "right" },
+        { header: "Margin", value: (r) => r.marginPercent ?? "", cell: (r) => percent(r.marginPercent), align: "right" },
+      ]}
     />
   );
 }

@@ -12,7 +12,8 @@ import { SortableHeader, SortState, compareNewestFirst, compareValues } from "@/
 import { Table } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Product } from "@shared/api";
+import { PRODUCT_UNITS, marginPercent, markupPercent, type Product, type ProductUnit } from "@shared/api";
+import { NativeSelect } from "@/components/ui/native-select";
 import { ArrowLeft } from "lucide-react";
 import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
@@ -35,6 +36,10 @@ interface ProductForm {
   is_discontinued: boolean;
   reorder_point?: number;
   weight?: number;
+  unit: ProductUnit;
+  /** null clears the value on save. */
+  srp?: number | null;
+  cost_price?: number | null;
 }
 
 const productExcelColumns: ExcelColumn[] = [
@@ -52,10 +57,12 @@ function ProductPage({
   title,
   formData,
   setFormData,
+  canSeeCost,
   onClose,
   onSave,
 }: {
   title: string;
+  canSeeCost: boolean;
   formData: ProductForm;
   setFormData: (data: ProductForm) => void;
   onClose: () => void;
@@ -190,6 +197,52 @@ function ProductPage({
             />
           </div>
 
+          <div>
+            <label htmlFor="pricing-unit" className="block text-xs font-semibold text-foreground mb-1">Receipt unit</label>
+            <NativeSelect id="pricing-unit" value={formData.unit} onChange={(e) => setFormData({ ...formData, unit: e.target.value as ProductUnit })}>
+              {PRODUCT_UNITS.map((unit) => (
+                <option key={unit} value={unit}>{unit === "PK" ? "PK — per pack" : "PC — per piece"}</option>
+              ))}
+            </NativeSelect>
+            <p className="text-xs text-muted-foreground mt-1">Printed in the UNIT column of the receipt.</p>
+          </div>
+
+          <div>
+            <label htmlFor="pricing-srp" className="block text-xs font-semibold text-foreground mb-1">SRP — suggested retail price (₱)</label>
+            <Input id="pricing-srp"
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.srp ?? ""}
+              onChange={(e) => setFormData({ ...formData, srp: e.target.value === "" ? null : Number(e.target.value) })}
+              placeholder="Leave empty if there is none"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              {markupPercent(formData.price, formData.srp) === null
+                ? "Markup shows once the unit price and SRP are set."
+                : `Customer markup: ${markupPercent(formData.price, formData.srp)}% over your unit price.`}
+            </p>
+          </div>
+
+          {canSeeCost && (
+            <div>
+              <label htmlFor="pricing-cost" className="block text-xs font-semibold text-foreground mb-1">Cost price (₱)</label>
+              <Input id="pricing-cost"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.cost_price ?? ""}
+                onChange={(e) => setFormData({ ...formData, cost_price: e.target.value === "" ? null : Number(e.target.value) })}
+                placeholder="What one unit costs you"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                {marginPercent(formData.price, formData.cost_price) === null
+                  ? "Profit margin shows once the unit price and cost are set. Only admins can see cost."
+                  : `Profit margin: ${marginPercent(formData.price, formData.cost_price)}% of your unit price.`}
+              </p>
+            </div>
+          )}
+
           <div className="flex items-center gap-3">
             <Input
               type="checkbox"
@@ -244,6 +297,19 @@ function ViewProductPage({ product, onClose }: { product: Product; onClose: () =
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1">Unit Price</label>
             <div className="text-sm text-foreground font-semibold">₱{parseFloat(product.price ?? "0").toLocaleString("en-PH", { minimumFractionDigits: 2 })}</div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Receipt unit</label>
+            <div className="text-sm text-foreground">{product.unit === "PC" ? "PC — per piece" : "PK — per pack"}</div>
+          </div>
+          <div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">SRP</label>
+            <div className="text-sm text-foreground">
+              {product.srp == null ? "—" : `₱${parseFloat(product.srp).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`}
+              {markupPercent(product.price, product.srp) !== null && (
+                <span className="ml-2 text-xs text-muted-foreground">({markupPercent(product.price, product.srp)}% markup)</span>
+              )}
+            </div>
           </div>
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1">Batch Tracking</label>
@@ -316,7 +382,11 @@ export function Pricing({ onBack }: PricingProps) {
     is_discontinued: false,
     reorder_point: 0,
     weight: undefined,
+    unit: "PK",
+    srp: null,
+    cost_price: null,
   });
+  const [costs, setCosts] = useState<Record<string, string>>({});
   const { token } = useAuth();
   const canManageProducts = useCan("product:manage");
 
@@ -330,6 +400,10 @@ export function Pricing({ onBack }: PricingProps) {
       if (!response.ok) throw new Error("Failed to fetch products");
       const data = await response.json();
       setProducts(data);
+      if (canManageProducts) {
+        const costResponse = await fetch("/api/product-costs", { headers: { Authorization: `Bearer ${token}` } });
+        if (costResponse.ok) setCosts(await costResponse.json());
+      }
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error loading products");
@@ -411,7 +485,7 @@ export function Pricing({ onBack }: PricingProps) {
 
   const openAddModal = () => {
     setEditingProduct(null);
-    setFormData({ name: "", sku: "", price: "", image_filename: "", manufacturer: "", is_discontinued: false, reorder_point: 0, weight: undefined });
+    setFormData({ name: "", sku: "", price: "", image_filename: "", manufacturer: "", is_discontinued: false, reorder_point: 0, weight: undefined, unit: "PK", srp: null, cost_price: null });
     setIsModalOpen(true);
   };
 
@@ -426,6 +500,9 @@ export function Pricing({ onBack }: PricingProps) {
       is_discontinued: (product as any).is_discontinued ?? false,
       reorder_point: (product as any).reorder_point ?? 0,
       weight: product.weight != null ? Number(product.weight) : undefined,
+      unit: product.unit ?? "PK",
+      srp: product.srp != null ? Number(product.srp) : null,
+      cost_price: costs[product.id] != null ? Number(costs[product.id]) : null,
     });
     setIsModalOpen(true);
   };
@@ -445,6 +522,14 @@ export function Pricing({ onBack }: PricingProps) {
       });
       if (!response.ok) throw new Error("Failed to save product");
       const saved = await response.json();
+      if (canManageProducts) {
+        setCosts((current) => {
+          const next = { ...current };
+          if (formData.cost_price == null) delete next[saved.id];
+          else next[saved.id] = formData.cost_price.toFixed(2);
+          return next;
+        });
+      }
       if (editingProduct) {
         setProducts(products.map((p) => (p.id === saved.id ? saved : p)));
       } else {
@@ -680,6 +765,7 @@ export function Pricing({ onBack }: PricingProps) {
         title={editingProduct ? "Edit Product" : "Add New Product"}
         formData={formData}
         setFormData={setFormData}
+        canSeeCost={canManageProducts}
         onClose={() => setIsModalOpen(false)}
         onSave={handleSave}
       />

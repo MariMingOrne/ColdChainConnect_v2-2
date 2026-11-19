@@ -1,11 +1,13 @@
 import { RequestHandler } from "express";
 import { and, eq, gte, lt, ne } from "drizzle-orm";
 import { db } from "../db";
-import { bookings, customers, inventory_batches, invoice_items, invoices, products } from "../db/schema";
+import { bookings, customers, inventory_batches, invoice_items, invoices, product_costs, products } from "../db/schema";
 import { getAvailableUnitsBySource } from "../services/inventory-reservations";
 import type {
   ReportCustomerRow,
   ReportProductPerformance,
+  ReportProfitResponse,
+  ReportProfitRow,
   ReportSalesPeriod,
   ReportSalesResponse,
   ReportStockRow,
@@ -199,6 +201,88 @@ export const getSalesReport: RequestHandler = async (req, res) => {
   } catch (error) {
     console.error("Error building sales report:", error);
     res.status(500).json({ error: "Failed to build sales report" });
+  }
+};
+
+interface ProfitLine {
+  productId: string;
+  productName: string;
+  qty: number;
+  amount: string | null;
+  invoiceGross: string | null;
+  invoiceTotal: string | null;
+}
+
+/** Pure: lines + cost table in, per-product profit out. Revenue is net of the invoice discount. */
+export function buildProfitReport(lines: ProfitLine[], costs: Map<string, number>): ReportProfitResponse {
+  const byProduct = new Map<string, { name: string; units: number; revenue: number }>();
+  for (const line of lines) {
+    const gross = toNumber(line.invoiceGross);
+    const total = toNumber(line.invoiceTotal);
+    const netRatio = gross > 0 && total > 0 ? total / gross : 1;
+    const entry = byProduct.get(line.productId) ?? { name: line.productName, units: 0, revenue: 0 };
+    entry.units += line.qty;
+    entry.revenue += toNumber(line.amount) * netRatio;
+    byProduct.set(line.productId, entry);
+  }
+
+  const rows: ReportProfitRow[] = [...byProduct.entries()].map(([productId, entry]) => {
+    const unitCost = costs.get(productId);
+    const revenue = roundTo(entry.revenue, 2);
+    const cost = unitCost === undefined ? null : roundTo(unitCost * entry.units, 2);
+    const profit = cost === null ? null : roundTo(revenue - cost, 2);
+    return {
+      productId,
+      productName: entry.name,
+      unitsSold: entry.units,
+      revenue,
+      cost,
+      profit,
+      marginPercent: profit === null || revenue <= 0 ? null : roundTo((profit / revenue) * 100, 1),
+    };
+  }).sort((a, b) => (b.profit ?? -Infinity) - (a.profit ?? -Infinity) || b.revenue - a.revenue);
+
+  const costed = rows.filter((row) => row.cost !== null);
+  const revenue = roundTo(costed.reduce((sum, row) => sum + row.revenue, 0), 2);
+  const cost = roundTo(costed.reduce((sum, row) => sum + (row.cost ?? 0), 0), 2);
+  const profit = roundTo(revenue - cost, 2);
+  return {
+    rows,
+    totals: { revenue, cost, profit, marginPercent: revenue > 0 ? roundTo((profit / revenue) * 100, 1) : null },
+    productsMissingCost: rows.length - costed.length,
+  };
+}
+
+export const getProfitReport: RequestHandler = async (req, res) => {
+  try {
+    const range = parseReportRange(req.query);
+    if (range === "invalid") return res.status(400).json({ error: "from and to must be YYYY-MM-DD dates, with from not after to" });
+
+    const [lines, costRows] = await Promise.all([
+      db
+        .select({
+          productId: invoice_items.product_id,
+          productName: invoice_items.product_name,
+          qty: invoice_items.qty_ordered,
+          amount: invoice_items.amount,
+          invoiceGross: invoices.gross_amount,
+          invoiceTotal: invoices.total_amount,
+        })
+        .from(invoice_items)
+        .innerJoin(invoices, eq(invoice_items.invoice_id, invoices.id))
+        .where(and(
+          ne(invoices.status, "draft"),
+          range?.from ? gte(invoices.created_at, range.from) : undefined,
+          range?.to ? lt(invoices.created_at, range.to) : undefined,
+        )),
+      db.select().from(product_costs),
+    ]);
+
+    const costs = new Map(costRows.map((row) => [row.product_id, toNumber(row.cost_price)]));
+    res.json(buildProfitReport(lines, costs));
+  } catch (error) {
+    console.error("Error building profit report:", error);
+    res.status(500).json({ error: "Failed to build profit report" });
   }
 };
 

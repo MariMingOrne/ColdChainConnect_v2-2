@@ -40,6 +40,8 @@ function ReceiptModal({ invoice, onClose }: ReceiptModalProps) {
         product_sku: bi.product?.sku || null,
         qty_ordered: bi.qty_ordered,
         unit_price: bi.product?.price || "0",
+        unit_weight_kg: bi.product?.weight ?? null,
+        unit_label: bi.product?.unit ?? null,
         amount: String(parseFloat(bi.product?.price || "0") * bi.qty_ordered),
         created_at: invoice.created_at,
       }));
@@ -56,7 +58,13 @@ function ReceiptModal({ invoice, onClose }: ReceiptModalProps) {
   const DISCOUNT = parseFloat(invoice.discount_rate || "0.02");
   const discount = parseFloat(invoice.discount_amount || "0") || gross * DISCOUNT;
   const total    = parseFloat(invoice.total_amount    || "0") || gross - discount;
-  const totalKg  = items.reduce((s, i) => s + i.qty_ordered, 0);
+  // kg comes from each product's weight frozen on the invoice; older receipts have none and show a dash.
+  const lineKg = (item: InvoiceItem): number | null => {
+    const unitKg = item.unit_weight_kg == null ? null : parseFloat(item.unit_weight_kg);
+    return unitKg === null || Number.isNaN(unitKg) ? null : unitKg * item.qty_ordered;
+  };
+  const totalKg  = items.reduce((s, i) => s + (lineKg(i) ?? 0), 0);
+  const kgLabel  = (n: number) => n.toLocaleString("en-PH", { maximumFractionDigits: 2 });
 
   const date = new Date(invoice.created_at).toLocaleDateString("en-US", {
     month: "numeric", day: "numeric", year: "numeric",
@@ -165,8 +173,8 @@ function ReceiptModal({ invoice, onClose }: ReceiptModalProps) {
               {items.map((item, idx) => (
                 <tr key={item.id || idx} className="border-b border-black">
                   <td className="border-r border-black px-2 py-1 text-center">{item.qty_ordered}</td>
-                  <td className="border-r border-black px-2 py-1 text-center">{item.qty_ordered}</td>
-                  <td className="border-r border-black px-2 py-1 text-center">PK</td>
+                  <td className="border-r border-black px-2 py-1 text-center">{lineKg(item) === null ? "—" : kgLabel(lineKg(item)!)}</td>
+                  <td className="border-r border-black px-2 py-1 text-center">{item.unit_label || "PK"}</td>
                   <td className="border-r border-black px-2 py-1">{item.product_name}</td>
                   <td className="border-r border-black px-2 py-1 text-center">{item.product_sku || "—"}</td>
                   <td className="border-r border-black px-2 py-1 text-right">
@@ -210,7 +218,7 @@ function ReceiptModal({ invoice, onClose }: ReceiptModalProps) {
           <div className="border-l border-r border-b border-black flex items-stretch text-sm">
             <div className="border-r border-black px-3 py-2 flex items-center gap-3">
               <span className="text-xs font-bold">TOTAL kg</span>
-              <span className="text-base font-extrabold">{totalKg}</span>
+              <span className="text-base font-extrabold">{kgLabel(totalKg)}</span>
             </div>
             <div className="flex-1 flex items-center justify-center py-2">
               <span className="font-extrabold uppercase tracking-wide">TOTAL AMOUNT DUE</span>

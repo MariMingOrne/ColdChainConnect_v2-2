@@ -12,7 +12,8 @@ const hasDb = Boolean(process.env.DATABASE_URL);
 let server: Server;
 let baseUrl: string;
 
-const getProducts = (token: string) => fetch(`${baseUrl}/api/products`, { headers: { Authorization: `Bearer ${token}` } });
+// Any authenticated read works as the probe; trucks has no columns that need a pending migration.
+const getProbe = (token: string) => fetch(`${baseUrl}/api/trucks`, { headers: { Authorization: `Bearer ${token}` } });
 
 beforeAll(async () => {
   if (!hasDb) return;
@@ -26,21 +27,21 @@ afterAll(() => server?.close());
 describe.skipIf(!hasDb)("authMiddleware account check", () => {
   it("rejects a valid-looking token for an account that does not exist", async () => {
     const token = signToken({ userId: "00000000-0000-0000-0000-000000000000", username: "ghost", role: "admin" });
-    expect((await getProducts(token)).status).toBe(401);
+    expect((await getProbe(token)).status).toBe(401);
   });
 
   it("rejects a token whose role no longer matches the account", async () => {
     const [agent] = await db.select().from(users).where(eq(users.role, "agent")).limit(1);
     if (!agent) return;
     const forged = signToken({ userId: agent.id, username: agent.username, role: "admin" });
-    expect((await getProducts(forged)).status).toBe(401);
+    expect((await getProbe(forged)).status).toBe(401);
   });
 
   it("accepts a token that matches its account", async () => {
     const [admin] = await db.select().from(users).where(eq(users.role, "admin")).limit(1);
     if (!admin) return;
     const token = signToken({ userId: admin.id, username: admin.username, role: "admin" });
-    expect((await getProducts(token)).status).toBe(200);
+    expect((await getProbe(token)).status).toBe(200);
   });
 });
 

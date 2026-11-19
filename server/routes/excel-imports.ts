@@ -56,12 +56,14 @@ export const importProducts: RequestHandler = async (req: AuthRequest, res) => {
     const duplicateIndex = parsedProducts.findIndex((product) => existingNames.has(product.name.trim().toLowerCase()) || (product.sku && existingSkus.has(product.sku.trim().toLowerCase())));
     if (duplicateIndex >= 0) return res.status(409).json({ error: `Row ${duplicateIndex + 2}: a product with this name or SKU already exists.` });
 
-    const created = parsedProducts.map((product) => ({
+    // Cost is not part of the sheet (it lives in product_costs, set from the product form).
+    const created = parsedProducts.map(({ cost_price: _cost, srp, ...product }) => ({
       id: randomUUID(),
       ...product,
       name: product.name!,
       price: String(product.price!),
       weight: product.weight != null ? String(product.weight) : null,
+      srp: srp != null ? String(srp) : null,
       batch_tracking_enabled: product.batch_tracking_enabled ?? true,
     }));
     await db.transaction(async (tx) => {

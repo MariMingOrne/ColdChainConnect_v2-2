@@ -128,6 +128,8 @@ const POLICY: Record<string, Policy> = {
   "GET /api/dashboard/summary": staffOnly("dashboard"),
   "GET /api/sales/forecast": agentAnd("reports"),
   "POST /api/sales/forecast/chat": ADMIN_ONLY,
+  "GET /api/product-costs": ADMIN_ONLY,
+  "GET /api/reports/profit": staffOnly("reports"),
   "GET /api/reports/sales": staffOnly("reports"),
   "GET /api/reports/stock": staffOnly("reports"),
   "GET /api/reports/customers": staffOnly("reports"),
