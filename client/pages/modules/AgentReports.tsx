@@ -10,6 +10,7 @@ import { LogReturnForm } from "./LogReturnForm";
 import { Table } from "@/components/ui/table";
 import { newestFirst } from "@/components/SortableHeader";
 import { TableBulkAction, TableToolbar } from "@/components/TableToolbar";
+import { TablePagination, paginate } from "@/components/TablePagination";
 import { confirmAction } from "@/lib/confirm";
 
 function authHeaders(token: string) {
@@ -111,6 +112,8 @@ export function AgentReports() {
   const [processing, setProcessing] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "accepted" | "rejected">("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [dateFilter, setDateFilter] = useState("");
+  const [page, setPage] = useState(1);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const fetchAll = useCallback(async () => {
@@ -240,20 +243,22 @@ export function AgentReports() {
     const query = searchTerm.trim().toLowerCase();
     const matchesSearch = !query || [ret.id, invoice?.receipt_number, ret.customer_id, customer?.store_name, ret.product_name, ret.reason]
       .some((value) => value?.toLowerCase().includes(query));
-    return matchesSearch && (statusFilter === "all" || ret.status === statusFilter);
+    const matchesDate = !dateFilter || new Date(ret.created_at).toLocaleDateString("en-CA") === dateFilter;
+    return matchesSearch && matchesDate && (statusFilter === "all" || ret.status === statusFilter);
   }));
 
   const pendingCount  = returns.filter((r) => r.status === "pending").length;
   const acceptedCount = returns.filter((r) => r.status === "accepted").length;
   const rejectedCount = returns.filter((r) => r.status === "rejected").length;
 
-  const filteredIds = filtered.map((ret) => ret.id);
-  const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedIds.includes(id));
+  const { currentPage, totalPages, pageItems: paginated } = paginate(filtered, page);
+  const pageIds = paginated.map((ret) => ret.id);
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
   const selectedReturns = returns.filter((ret) => selectedIds.includes(ret.id));
   const toggleReturnSelection = (id: string, checked: boolean) =>
     setSelectedIds((current) => (checked ? [...current, id] : current.filter((selectedId) => selectedId !== id)));
-  const toggleFilteredSelection = (checked: boolean) =>
-    setSelectedIds((current) => (checked ? Array.from(new Set([...current, ...filteredIds])) : current.filter((id) => !filteredIds.includes(id))));
+  const togglePageSelection = (checked: boolean) =>
+    setSelectedIds((current) => (checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id))));
   const bulkActions: TableBulkAction[] = [
     { label: "Accept selected returns", onSelect: () => void processSelected("accept") },
     { label: "Reject selected returns", onSelect: () => void processSelected("reject"), destructive: true },
@@ -297,7 +302,7 @@ export function AgentReports() {
       <div className="flex flex-col gap-3">
         <div className="inline-flex w-fit rounded-full border border-border bg-card p-1">
           {(["all", "pending", "accepted", "rejected"] as const).map((s) => (
-            <button key={s} onClick={() => setStatusFilter(s)}
+            <button key={s} onClick={() => { setStatusFilter(s); setPage(1); }}
               className={`whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-semibold capitalize transition ${
                 statusFilter === s ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
               }`}>
@@ -309,9 +314,11 @@ export function AgentReports() {
           selectedCount={selectedReturns.length}
           bulkActions={bulkActions}
           searchValue={searchTerm}
-          onSearchChange={setSearchTerm}
+          onSearchChange={(value) => { setSearchTerm(value); setPage(1); }}
           searchPlaceholder="Search order, customer, product…"
-        />
+        >
+          <input type="date" aria-label="Logged on date" title="Show returns logged on this date" value={dateFilter} onChange={(event) => { setDateFilter(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
+        </TableToolbar>
       </div>
 
       <div className="data-table-frame overflow-hidden">
@@ -323,7 +330,7 @@ export function AgentReports() {
               <thead>
                 <tr>
                   <th className="w-10 bg-navy-mid px-3 py-3 text-left border-b border-border">
-                    <input aria-label="Select all returns" type="checkbox" checked={allFilteredSelected} onChange={(event) => toggleFilteredSelection(event.target.checked)} />
+                    <input aria-label="Select all returns on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
                   </th>
                   {["Date", "Order", "Customer", "Product", "Qty", "Type", "Reason", "Status", "Actions"].map((h) => (
                     <th key={h} className="bg-navy-mid text-muted-foreground font-barlow-cond text-xs font-bold px-3 py-3 text-left border-b border-border whitespace-nowrap">
@@ -333,14 +340,14 @@ export function AgentReports() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.length === 0 ? (
+                {paginated.length === 0 ? (
                   <tr>
                     <td colSpan={10} className="px-6 py-8 text-center text-muted-foreground">
                       {returns.length === 0 ? "No returns logged yet." : "No records match this filter."}
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((ret) => {
+                  paginated.map((ret) => {
                     const inv = invoices.find((i) => i.id === ret.invoice_id);
                     const cust = customers.find((c) => c.id === ret.customer_id);
                     return (
@@ -410,6 +417,7 @@ export function AgentReports() {
             </Table>
           </div>
         )}
+        <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </div>
 
     </div>

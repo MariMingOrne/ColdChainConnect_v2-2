@@ -13,6 +13,7 @@ import {
 import { ArrowLeft, Plus, Calendar, CheckCircle, XCircle } from "lucide-react";
 import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
 import { newestFirst } from "@/components/SortableHeader";
+import { TablePagination, paginate } from "@/components/TablePagination";
 import { Booking, Truck, Customer, Product } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { useSearchParams } from "react-router-dom";
@@ -39,6 +40,11 @@ export function BookingSummary() {
   const [customDateStart, setCustomDateStart] = useState<string>("");
   const [customDateEnd, setCustomDateEnd] = useState<string>("");
   const [selectedBookingIds, setSelectedBookingIds] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [searchTerm, statusFilter, approvalFilter, dateRangeFilter, customDateStart, customDateEnd]);
 
   // Approve booking modal
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -640,13 +646,14 @@ export function BookingSummary() {
     return true;
   }));
 
-  const filteredIds = filtered.map((booking) => booking.id);
-  const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedBookingIds.includes(id));
+  const { currentPage, totalPages, pageItems: paginated } = paginate(filtered, page);
+  const pageIds = paginated.map((booking) => booking.id);
+  const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedBookingIds.includes(id));
   const selectedBookings = bookings.filter((booking) => selectedBookingIds.includes(booking.id));
   const toggleBookingSelection = (id: string, checked: boolean) =>
     setSelectedBookingIds((current) => (checked ? [...current, id] : current.filter((selectedId) => selectedId !== id)));
-  const toggleFilteredSelection = (checked: boolean) =>
-    setSelectedBookingIds((current) => (checked ? Array.from(new Set([...current, ...filteredIds])) : current.filter((id) => !filteredIds.includes(id))));
+  const togglePageSelection = (checked: boolean) =>
+    setSelectedBookingIds((current) => (checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id))));
   const bulkActions: TableBulkAction[] = [
     { label: "Approve selected orders", onSelect: () => void handleApproveSelected() },
   ];
@@ -740,7 +747,7 @@ export function BookingSummary() {
           <TableHeader>
             <TableRow className="whitespace-nowrap">
               <TableHead className="w-10 px-3">
-                <input aria-label="Select all orders" type="checkbox" checked={allFilteredSelected} onChange={(event) => toggleFilteredSelection(event.target.checked)} />
+                <input aria-label="Select all orders on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
               </TableHead>
               <TableHead>Order ID</TableHead>
               <TableHead>Customer</TableHead>
@@ -752,14 +759,14 @@ export function BookingSummary() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filtered.length === 0 ? (
+            {paginated.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   {bookings.length === 0 ? "No orders found" : "No orders match your search"}
                 </TableCell>
               </TableRow>
             ) : (
-              filtered.map((booking) => {
+              paginated.map((booking) => {
                 const customer = booking.customer;
                 const creator = (booking as any).creator;
                 return (
@@ -843,6 +850,7 @@ export function BookingSummary() {
             )}
           </TableBody>
         </Table>
+        <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </Card>
 
     </div>
