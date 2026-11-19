@@ -3,7 +3,7 @@ import { PageDialog } from "@/components/shared/PageDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { AgentStopRow } from "@/components/AgentStopRow";
-import { CalendarDays, Clock3, History, Search, Truck as TruckIcon, UserRound } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronUp, Clock3, History, Search, Truck as TruckIcon, UserRound } from "lucide-react";
 import type { AgentScheduleDelivery, AgentScheduleResponse, AgentScheduleStop } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -78,6 +78,7 @@ export function AgentDeliverySchedule() {
   const [confirmingStopId, setConfirmingStopId] = useState<string | null>(null);
   const [mapFocus, setMapFocus] = useState<MapFocus | null>(null);
   const [detailTarget, setDetailTarget] = useState<{ delivery: AgentScheduleDelivery; stop: AgentScheduleStop } | null>(null);
+  const [showUnconfirmed, setShowUnconfirmed] = useState(true);
 
   const fetchSchedule = async () => {
     if (!token) return;
@@ -133,12 +134,6 @@ export function AgentDeliverySchedule() {
     (delivery.delivery_items ?? [])
       .filter((stop) => stop.status === "completed" && !stop.is_paid)
       .map((stop) => ({ delivery, stop })),
-  );
-
-  const stopCount = currentDeliveries.reduce((total, delivery) => total + (delivery.delivery_items?.length ?? 0), 0);
-  const completedCount = currentDeliveries.reduce(
-    (total, delivery) => total + (delivery.delivery_items ?? []).filter((stop) => stop.status === "completed").length,
-    0,
   );
 
   const confirmDelivery = async (isPaid: boolean, paymentAmount?: number, paymentMethod?: string, paymentReference?: string, paymentId?: string) => {
@@ -203,28 +198,21 @@ export function AgentDeliverySchedule() {
         </div>
       </div>
 
-      <div className="rounded-lg border border-border bg-card px-4 py-3 shadow-sm">
-        <div className="grid grid-cols-2 gap-x-5 gap-y-1 sm:grid-cols-4">
-          {[
-            ["Stops", stopCount, "text-foreground"],
-            ["Completed", completedCount, "text-green"],
-            ["Remaining", stopCount - completedCount, "text-accent-2"],
-          ].map(([label, count, color]) => (
-            <div key={label} className="flex items-center justify-between gap-2">
-              <span className="text-xs font-medium text-muted-foreground">{label}</span>
-              <span className={`font-rajdhani text-lg font-bold ${color}`}>{count}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
       <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <h2 className="text-sm font-bold text-foreground">Unconfirmed payments</h2>
-          <span className="text-xs text-muted-foreground">{unconfirmedStops.length} stops</span>
-        </div>
-        {unconfirmedStops.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No unconfirmed payments.</p>
+        <button
+          type="button"
+          aria-expanded={showUnconfirmed}
+          onClick={() => setShowUnconfirmed((shown) => !shown)}
+          className="flex w-full items-center justify-between gap-2 text-left"
+        >
+          <span className="text-sm font-bold text-foreground">Unconfirmed payments</span>
+          <span className="flex items-center gap-2 text-xs text-muted-foreground">
+            {unconfirmedStops.length} stops
+            {showUnconfirmed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </span>
+        </button>
+        {showUnconfirmed && (unconfirmedStops.length === 0 ? (
+          <p className="mt-2 text-xs text-muted-foreground">No unconfirmed payments.</p>
         ) : (
           <ul className="divide-y divide-border">
             {unconfirmedStops.map(({ delivery, stop }) => (
@@ -241,7 +229,7 @@ export function AgentDeliverySchedule() {
               </li>
             ))}
           </ul>
-        )}
+        ))}
       </section>
 
       <div className="grid grid-cols-2 gap-3">
