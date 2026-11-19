@@ -200,6 +200,7 @@ export const agents = pgTable("agents", {
   hire_date: text("hire_date"),
   address: text("address"),
   is_active: boolean("is_active").default(true),
+  is_archived: boolean("is_archived").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
@@ -216,6 +217,7 @@ export const drivers = pgTable("drivers", {
   hire_date: text("hire_date"),
   employment_type: text("employment_type"), // "full_time" or "part_time"
   is_active: boolean("is_active").default(true),
+  is_archived: boolean("is_archived").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 }, (table) => [
@@ -353,6 +355,7 @@ export const invoices = pgTable("invoices", {
   gross_amount: decimal("gross_amount", { precision: 12, scale: 2 }).default("0.00"),
   discount_amount: decimal("discount_amount", { precision: 12, scale: 2 }).default("0.00"),
   total_amount: decimal("total_amount", { precision: 12, scale: 2 }).default("0.00"),
+  credit_applied_amount: decimal("credit_applied_amount", { precision: 12, scale: 2 }).default("0.00").notNull(),
   prepared_by: text("prepared_by"),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
@@ -449,6 +452,7 @@ export const receipts = pgTable("receipts", {
   confirmed_by: text("confirmed_by"),
   notes: text("notes"),
   payment_reference: text("payment_reference"),
+  cash_collected_amount: decimal("cash_collected_amount", { precision: 12, scale: 2 }).default("0.00").notNull(),
   payment_verified_by: text("payment_verified_by").references(() => users.id),
   payment_verified_at: timestamp("payment_verified_at"),
   payment_verification_remarks: text("payment_verification_remarks"),
@@ -459,6 +463,26 @@ export const receipts = pgTable("receipts", {
   index("receipts_invoice_id_idx").on(table.invoice_id),
   index("receipts_truck_id_idx").on(table.truck_id),
   index("receipts_confirmed_at_idx").on(table.confirmed_at),
+]);
+
+export const receipt_payment_entries = pgTable("receipt_payment_entries", {
+  id: text("id").primaryKey(),
+  receipt_id: text("receipt_id")
+    .notNull()
+    .references(() => receipts.id, { onDelete: "cascade" }),
+  idempotency_key: text("idempotency_key").notNull().unique(),
+  amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
+  payment_method: varchar("payment_method", { length: 50 }).notNull(),
+  payment_reference: text("payment_reference"),
+  notes: text("notes"),
+  recorded_by: text("recorded_by").references(() => users.id),
+  verified_by: text("verified_by").references(() => users.id),
+  verified_at: timestamp("verified_at"),
+  verification_remarks: text("verification_remarks"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("receipt_payment_entries_receipt_id_idx").on(table.receipt_id),
+  index("receipt_payment_entries_verified_at_idx").on(table.verified_at),
 ]);
 
 // Accounts Receivable table — tracks unpaid delivery amounts
@@ -473,6 +497,7 @@ export const accounts_receivable = pgTable("accounts_receivable", {
     .notNull()
     .references(() => invoices.id),
   amount_due: decimal("amount_due", { precision: 10, scale: 2 }).notNull(),
+  credit_type: varchar("credit_type", { length: 20 }),
   status: varchar("status", { length: 20 }).default("outstanding").notNull(),
   notes: text("notes"),
   created_at: timestamp("created_at").defaultNow().notNull(),
@@ -482,6 +507,21 @@ export const accounts_receivable = pgTable("accounts_receivable", {
   index("accounts_receivable_delivery_item_id_idx").on(table.delivery_item_id),
   index("accounts_receivable_invoice_id_idx").on(table.invoice_id),
   index("accounts_receivable_status_idx").on(table.status),
+]);
+
+export const invoice_credit_applications = pgTable("invoice_credit_applications", {
+  id: text("id").primaryKey(),
+  credit_ar_id: text("credit_ar_id")
+    .notNull()
+    .references(() => accounts_receivable.id),
+  invoice_id: text("invoice_id")
+    .notNull()
+    .references(() => invoices.id),
+  amount_applied: decimal("amount_applied", { precision: 12, scale: 2 }).notNull(),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  index("invoice_credit_applications_credit_ar_id_idx").on(table.credit_ar_id),
+  index("invoice_credit_applications_invoice_id_idx").on(table.invoice_id),
 ]);
 
 // Agent Returns table — tracks returned delivery goods
@@ -679,11 +719,18 @@ export const accountsReceivableRelations = relations(accounts_receivable, ({ one
   delivery_item: one(delivery_items, { fields: [accounts_receivable.delivery_item_id], references: [delivery_items.id] }),
 }));
 
-export const receiptsRelations = relations(receipts, ({ one }) => ({
+export const receiptsRelations = relations(receipts, ({ one, many }) => ({
   delivery_item: one(delivery_items, { fields: [receipts.delivery_item_id], references: [delivery_items.id] }),
   customer: one(customers, { fields: [receipts.customer_id], references: [customers.id] }),
   truck: one(trucks, { fields: [receipts.truck_id], references: [trucks.id] }),
   invoice: one(invoices, { fields: [receipts.invoice_id], references: [invoices.id] }),
+  payment_entries: many(receipt_payment_entries),
+}));
+
+export const receiptPaymentEntriesRelations = relations(receipt_payment_entries, ({ one }) => ({
+  receipt: one(receipts, { fields: [receipt_payment_entries.receipt_id], references: [receipts.id] }),
+  recorder: one(users, { fields: [receipt_payment_entries.recorded_by], references: [users.id] }),
+  verifier: one(users, { fields: [receipt_payment_entries.verified_by], references: [users.id] }),
 }));
 
 export const auditLogsRelations = relations(audit_logs, ({ one }) => ({

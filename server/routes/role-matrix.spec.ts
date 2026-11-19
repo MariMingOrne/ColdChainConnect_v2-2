@@ -97,14 +97,14 @@ const POLICY: Record<string, Policy> = {
   "GET /api/drivers": agentAnd("manage-accounts", "delivery-operations"),
   "POST /api/drivers": ADMIN_ONLY,
   "PATCH /api/drivers/:id": ADMIN_ONLY,
-  "DELETE /api/drivers/:id": ADMIN_ONLY,
+  "PATCH /api/drivers/:id/archive": ADMIN_ONLY,
   "GET /api/driver-schedule": { agent: false, driver: true, staff: "none" },
   // An agent's own schedule and districts: requireRole("agent"), so even admin has no business here.
   "GET /api/agent-schedule": { agent: true, driver: false, staff: "none", admin: false },
   "GET /api/agents": agentAnd("manage-accounts"),
   "POST /api/agents": ADMIN_ONLY,
   "PATCH /api/agents/:id": ADMIN_ONLY,
-  "DELETE /api/agents/:id": ADMIN_ONLY,
+  "PATCH /api/agents/:id/archive": ADMIN_ONLY,
   "GET /api/trucks": agentAnd("delivery-operations", "order-fulfillment"),
   "POST /api/trucks": ADMIN_ONLY,
   "PATCH /api/trucks/:id": ADMIN_ONLY,
@@ -152,9 +152,10 @@ const POLICY: Record<string, Policy> = {
 
   // Accounting
   "GET /api/payments/unverified": staffOnly("accounting"),
+  "GET /api/payments/:id/receipt": staffOnly("accounting"),
   "GET /api/cash-remittances/collections": staffOnly("accounting"),
   "POST /api/cash-remittances": staffOnly("accounting"),
-  "POST /api/receipts/:id/verify": staffOnly("accounting"),
+  "POST /api/payments/:id/verify": staffOnly("accounting"),
   "GET /api/expenses": staffOnly("accounting"),
   "POST /api/expenses": staffOnly("accounting"),
   "POST /api/expenses/:id/approve": ADMIN_ONLY,

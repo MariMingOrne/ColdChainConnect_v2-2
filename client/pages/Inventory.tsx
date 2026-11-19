@@ -20,12 +20,14 @@ import { Input } from "@/components/ui/input";
 import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
 import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
 import { RecordTitleButton } from "@/components/RecordTitleButton";
+import type { ProductUnit } from "@shared/api";
 
 interface InventoryProduct {
   id: string;
   sku: string;
   description: string;
   unitPrice: number;
+  unit: ProductUnit;
   supplierId: string;
   weight: number;
   quantity: number;
@@ -83,7 +85,7 @@ export function Inventory() {
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
 
   const emptyForm = (): InventoryProduct => ({
-    id: "", sku: "", description: "", unitPrice: 0, supplierId: "",
+    id: "", sku: "", description: "", unitPrice: 0, unit: "PK", supplierId: "",
     weight: 0, quantity: 0, expiryDate: "", imageFilename: "",
     reorderPoint: 300, lastUpdated: new Date().toISOString().split("T")[0],
     createdAt: new Date().toISOString(), manufacturer: "", isDiscontinued: false,
@@ -124,6 +126,7 @@ export function Inventory() {
         sku: p.sku || p.name,
         description: p.name,
         unitPrice: parseFloat(p.price) || 0,
+        unit: p.unit ?? "PK",
         supplierId: p.supplier_id || "",
         weight: 0,
         quantity: qtyMap[p.id] ?? 0,
@@ -618,22 +621,19 @@ function ExtraInfoModal({ product, batches, onClose, onSelectPallet }: { product
     });
 
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+    <div className="flex-1 p-6 overflow-y-auto scrollbar-visible space-y-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">{product.description}</h1>
           <p className="page-subtitle">SKU: {product.sku}</p>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
 
         <div className="p-6 space-y-6">
           <div>
             <h3 className="text-xs font-bold text-muted-foreground mb-3">Summary</h3>
+            <p className="mb-3 text-sm text-foreground"><span className="text-muted-foreground">Unit type:</span> {product.unit}</p>
             <div className="grid grid-cols-3 gap-3">
               {[
                 ["Inventory Value", `₱${(product.unitPrice * product.batchQuantity).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`],
@@ -738,17 +738,13 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
   };
 
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+    <div className="flex-1 p-6 overflow-y-auto scrollbar-visible space-y-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">
             {isCreatingBatch ? "Create New Batch" : "Manage Batches"}
           </h1>
         </div>
-        <Button onClick={() => { setIsCreatingBatch(false); setPallets([]); onClose(); }} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <div className="p-6">

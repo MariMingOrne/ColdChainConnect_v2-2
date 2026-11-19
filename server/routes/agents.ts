@@ -153,29 +153,30 @@ export const updateAgent: RequestHandler = async (req: AuthRequest, res) => {
   }
 };
 
-export const deleteAgent: RequestHandler = async (req: AuthRequest, res) => {
+export const setAgentArchived: RequestHandler = async (req: AuthRequest, res) => {
   const { id } = req.params;
+  if (typeof req.body?.is_archived !== "boolean") {
+    return res.status(400).json({ error: "Archive status must be a boolean" });
+  }
 
   try {
-    const existing = await db.query.agents.findFirst({
-      where: eq(agents.id, id),
+    const existing = await db.query.agents.findFirst({ where: eq(agents.id, id) });
+    if (!existing) return res.status(404).json({ error: "Agent not found" });
+
+    const archived = req.body.is_archived;
+    await db.transaction(async (tx) => {
+      await tx.update(agents).set({ is_archived: archived, updated_at: new Date() }).where(eq(agents.id, id));
+      await tx.update(users).set({ is_archived: archived, updated_at: new Date() }).where(eq(users.id, existing.user_id));
     });
 
-    if (!existing) {
-      return res.status(404).json({ error: "Agent not found" });
-    }
-
-    await db.delete(agents).where(eq(agents.id, id));
-    // Also delete the linked user account
-    await db.delete(users).where(eq(users.id, existing.user_id));
-
-    if (req.user) {
-      await logAction(req.user.userId, "delete", "agent", id, existing, undefined);
-    }
-
-    res.json({ message: "Agent deleted successfully" });
+    const updated = await db.query.agents.findFirst({
+      where: eq(agents.id, id),
+      with: { user: { columns: { password_hash: false, mfa_secret: false } } },
+    });
+    if (req.user) await logAction(req.user.userId, archived ? "archive" : "restore", "agent", id, existing, updated);
+    res.json(updated);
   } catch (error) {
-    console.error("Delete agent error:", error);
+    console.error("Archive agent error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };

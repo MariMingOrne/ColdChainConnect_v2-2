@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useCan } from "@/hooks/useCan";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { ArrowLeft, Eye, EyeOff } from "lucide-react";
+import { Archive, ArchiveRestore, Eye, EyeOff } from "lucide-react";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,15 +27,11 @@ interface AgentForm {
 
 function ViewAgentModal({ agent, onClose }: { agent: Agent; onClose: () => void }) {
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 space-y-6 max-w-2xl">
+    <div className="flex-1 p-6 space-y-6 mx-auto w-full max-w-2xl">
       <div className="page-header">
         <div>
           <h1 className="page-title">Agent Details</h1>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
 
       <div className="bg-card rounded-2xl border border-border">
@@ -119,15 +115,11 @@ function AgentModal({
   );
 
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 space-y-6 max-w-2xl">
+    <div className="flex-1 p-6 space-y-6 mx-auto w-full max-w-2xl">
       <div className="page-header">
         <div>
           <h1 className="page-title">{title}</h1>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
 
       <div className="bg-card rounded-2xl border border-border">
@@ -216,19 +208,19 @@ function AgentModal({
 
 function AgentCard({
   agent,
-  showDelete,
+  showArchive,
   onView,
   onEdit,
-  onDelete,
+  onArchive,
   canManageMfa,
   isSavingMfa,
   onMfaRequirementChange,
 }: {
   agent: Agent;
-  showDelete: boolean;
+  showArchive: boolean;
   onView: () => void;
   onEdit?: () => void;
-  onDelete: () => void;
+  onArchive: () => void;
   canManageMfa: boolean;
   isSavingMfa: boolean;
   onMfaRequirementChange: (required: boolean) => void;
@@ -255,6 +247,7 @@ function AgentCard({
         <span className={`shrink-0 inline-block px-2 py-0.5 rounded text-xs font-bold ${agent.is_active ? "badge-green" : "badge-red"}`}>
           {agent.is_active ? "Active" : "Inactive"}
         </span>
+        {agent.is_archived && <span className="rounded bg-muted px-2 py-0.5 text-xs font-bold text-muted-foreground">Archived</span>}
       </div>
 
       <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
@@ -286,8 +279,11 @@ function AgentCard({
       <div className="flex gap-2 pt-1 border-t border-border">
         <Button onClick={onView} variant="outline" size="sm" className="flex-1">View</Button>
         {onEdit && <Button onClick={onEdit} variant="outline" size="sm" className="flex-1">Edit</Button>}
-        {showDelete && (
-          <Button onClick={onDelete} variant="danger" size="sm" className="flex-1">Delete</Button>
+        {showArchive && (
+          <Button onClick={onArchive} variant={agent.is_archived ? "outline" : "danger"} size="sm" className="flex-1">
+            {agent.is_archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
+            {agent.is_archived ? "Restore" : "Archive"}
+          </Button>
         )}
       </div>
     </div>
@@ -302,6 +298,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [showArchived, setShowArchived] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
@@ -352,6 +349,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
       (a.user?.username?.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (a.email?.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (a.contact_info?.toLowerCase().includes(searchQuery.toLowerCase()))) &&
+      (showArchived ? a.is_archived : !a.is_archived) &&
       (statusFilter === "all" || (statusFilter === "active" ? a.is_active : !a.is_active))
   );
 
@@ -504,16 +502,25 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!(await confirmAction("Delete this agent? This will also remove their login account."))) return;
+  const updateArchiveStatus = async (agent: Agent) => {
+    const archived = !agent.is_archived;
+    const name = agent.full_name || agent.user?.username || "this agent";
+    const prompt = archived
+      ? `Archive ${name}? They will not be able to sign in until restored.`
+      : `Restore ${name}? They will be able to sign in again.`;
+    if (!(await confirmAction(prompt))) return;
     try {
-      await fetch(`/api/agents/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+      const response = await fetch(`/api/agents/${agent.id}/archive`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ is_archived: archived }),
       });
-      setAgents(agents.filter((a) => a.id !== id));
-    } catch {
-      toast.error("Failed to delete agent");
+      const body = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(body?.error || "Could not update agent archive status");
+      setAgents((current) => current.map((item) => item.id === agent.id ? body as Agent : item));
+      toast.success(`${name} ${archived ? "archived" : "restored"}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update agent archive status");
     }
   };
 
@@ -543,7 +550,13 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
         </div>
         <div className="flex flex-wrap items-center gap-2">
           {canManageAgents && (
-            <Button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} variant="default">Create Accounts</Button>
+            <>
+              <Button type="button" variant="outline" onClick={() => { setShowArchived((current) => !current); setCurrentPage(1); }}>
+                {showArchived ? <ArchiveRestore size={15} /> : <Archive size={15} />}
+                {showArchived ? "Active Accounts" : `Archived Accounts (${agents.filter((agent) => agent.is_archived).length})`}
+              </Button>
+              {!showArchived && <Button onClick={() => onCreateAccount ? onCreateAccount() : openAddModal()} variant="default">Create Accounts</Button>}
+            </>
           )}
         </div>
       </div>
@@ -566,7 +579,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
       {/* Cards grid */}
       {paginatedAgents.length === 0 ? (
         <div className="text-center text-muted-foreground text-sm py-12">
-          {agents.length === 0 ? "No agents found" : "No results matching your search"}
+          {showArchived ? "No archived agents match your search" : agents.length === 0 ? "No agents found" : "No results matching your search"}
         </div>
       ) : (
         <div className="grid flex-1 content-start grid-cols-1 gap-3 overflow-y-auto sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 stagger-children">
@@ -574,13 +587,13 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
             <AgentCard
               key={agent.id}
               agent={agent}
-              showDelete={canManageAgents}
+              showArchive={canManageAgents}
               canManageMfa={currentUser?.role === "admin"}
               isSavingMfa={mfaSavingAgentId === agent.id}
               onMfaRequirementChange={(required) => void updateAgentMfaRequirement(agent, required)}
               onView={() => setViewingAgent(agent)}
               onEdit={canManageAgents ? () => openEditModal(agent) : undefined}
-              onDelete={() => handleDelete(agent.id)}
+              onArchive={() => void updateArchiveStatus(agent)}
             />
           ))}
         </div>
@@ -589,7 +602,7 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
       {/* Pagination */}
       <div className="mt-auto flex items-center justify-between px-2 py-2">
         <div className="text-xs text-muted-foreground">
-          Page {currentPage} of {Math.max(1, totalPages)} · {filteredAgents.length} agents
+          Page {currentPage} of {Math.max(1, totalPages)} · {filteredAgents.length} {showArchived ? "archived " : ""}agents
         </div>
         <div className="flex gap-2 items-center">
           <Button

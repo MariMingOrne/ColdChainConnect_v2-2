@@ -65,7 +65,7 @@ const AgentLayout = ({ agentMode = false }: { agentMode?: boolean }) => {
   const { logout, user } = useAuth();
   return (
     <div className={agentMode ? "flex h-dvh min-h-0 flex-col overflow-hidden" : "flex flex-col min-h-screen"}>
-      <Topbar userName={user?.username || "User"} onLogout={logout} agentMode />
+      <Topbar userName={user?.username || "User"} onLogout={logout} />
       <div className={`flex-1 flex flex-col bg-background min-w-0 ${agentMode ? "min-h-0" : ""}`}>
         <RouteBoundary><Outlet /></RouteBoundary>
       </div>

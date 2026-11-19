@@ -40,7 +40,7 @@ import {
   listDrivers,
   createDriver,
   updateDriver,
-  deleteDriver,
+  setDriverArchived,
 } from "./routes/drivers";
 import { getDriverSchedule } from "./routes/driver-schedule";
 import { getAgentSchedule } from "./routes/agent-schedule";
@@ -48,7 +48,7 @@ import {
   listAgents,
   createAgent,
   updateAgent,
-  deleteAgent,
+  setAgentArchived,
 } from "./routes/agents";
 import {
   listTrucks,
@@ -121,7 +121,7 @@ import { postSalesForecastChat } from "./routes/sales-forecast-chat";
 import { getCustomerReport, getProfitReport, getSalesReport, getStockReport } from "./routes/reports";
 import { authMiddleware, requireRole } from "./middleware/auth";
 import { requireAnyPermission, requirePermission, staffModuleGuard } from "./middleware/permissions";
-import { listUnverifiedPayments, verifyReceiptPayment } from "./routes/payment-verification";
+import { getPaymentReceipt, listUnverifiedPayments, verifyReceiptPayment } from "./routes/payment-verification";
 import { createCashRemittance, listCashCollections } from "./routes/cash-remittances";
 import { approveExpense, createExpense, listExpenses, payExpense, rejectExpense } from "./routes/expenses";
 
@@ -205,7 +205,7 @@ export function createServer() {
   app.get("/api/drivers", authMiddleware, listDrivers);
   app.post("/api/drivers", authMiddleware, requireRole("admin"), createDriver);
   app.patch("/api/drivers/:id", authMiddleware, requireRole("admin"), updateDriver);
-  app.delete("/api/drivers/:id", authMiddleware, requireRole("admin"), deleteDriver);
+  app.patch("/api/drivers/:id/archive", authMiddleware, requireRole("admin"), setDriverArchived);
   app.get("/api/driver-schedule", authMiddleware, requireRole("admin", "driver"), getDriverSchedule);
   app.get("/api/agent-schedule", authMiddleware, requireRole("agent"), getAgentSchedule);
 
@@ -213,7 +213,7 @@ export function createServer() {
   app.get("/api/agents", authMiddleware, listAgents);
   app.post("/api/agents", authMiddleware, requireRole("admin"), createAgent);
   app.patch("/api/agents/:id", authMiddleware, requireRole("admin"), updateAgent);
-  app.delete("/api/agents/:id", authMiddleware, requireRole("admin"), deleteAgent);
+  app.patch("/api/agents/:id/archive", authMiddleware, requireRole("admin"), setAgentArchived);
 
   // Trucks routes
   app.get("/api/trucks", authMiddleware, listTrucks);
@@ -264,7 +264,8 @@ export function createServer() {
 
   // Payment verification (accounting)
   app.get("/api/payments/unverified", authMiddleware, requirePermission("payment:verify"), listUnverifiedPayments);
-  app.post("/api/receipts/:id/verify", authMiddleware, requirePermission("payment:verify"), verifyReceiptPayment);
+  app.get("/api/payments/:id/receipt", authMiddleware, requirePermission("payment:verify"), getPaymentReceipt);
+  app.post("/api/payments/:id/verify", authMiddleware, requirePermission("payment:verify"), verifyReceiptPayment);
   app.get("/api/cash-remittances/collections", authMiddleware, requirePermission("cash:reconcile"), listCashCollections);
   app.post("/api/cash-remittances", authMiddleware, requirePermission("cash:reconcile"), createCashRemittance);
 

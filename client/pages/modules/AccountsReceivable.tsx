@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CheckCircle, StickyNote } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { dueInfo, isReceivableCollectable } from "@/lib/receivables";
@@ -235,7 +235,10 @@ export function AccountsReceivable() {
   const togglePageSelection = (checked: boolean) =>
     setSelectedIds((current) => (checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id))));
   const bulkActions: TableBulkAction[] | undefined = canUpdateReceivable
-    ? [{ label: "Mark selected as paid", onSelect: () => void handleMarkSelectedPaid() }]
+    ? [
+        { label: "Mark selected as paid", onSelect: () => void handleMarkSelectedPaid() },
+        ...(selectedRecords.length === 1 ? [{ label: "Edit", onSelect: () => openNote(selectedRecords[0]) }] : []),
+      ]
     : undefined;
 
   if (isLoading) return <LoadingSpinner />;
@@ -247,7 +250,7 @@ export function AccountsReceivable() {
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h1 className="page-title">Accounts Receivable</h1>
-          <p className="page-subtitle">Track customer balances and unpaid deliveries</p>
+          <p className="page-subtitle">Track customer balances, unpaid deliveries, and available credits</p>
         </div>
       </div>
 
@@ -338,10 +341,10 @@ export function AccountsReceivable() {
           <TableBody>
             {paginated.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={(canUpdateReceivable ? 9 : 8) + (activeTab !== "paid" ? 1 : 0)} className="text-center py-10 text-muted-foreground text-sm">
+                <TableCell colSpan={(canUpdateReceivable ? 9 : 7) + (activeTab !== "paid" ? 2 : 0)} className="text-center py-10 text-muted-foreground text-sm">
                   {activeTab === "outstanding" && "No outstanding balances — great job! 🎉"}
                   {activeTab === "paid"        && "No paid records yet."}
-                  {activeTab === "credits"     && "No return credits yet."}
+                  {activeTab === "credits"     && "No customer credits yet."}
                   {activeTab === "all"         && (arRecords.length === 0 ? "No AR records yet." : "No records match your search.")}
                 </TableCell>
               </TableRow>
@@ -398,12 +401,6 @@ export function AccountsReceivable() {
                       </TableCell>
                     )}
                     <TableCell className="text-right">
-                      {canUpdateReceivable && (
-                        <Button type="button" variant="outline" size="sm" className="mr-2" onClick={() => openNote(ar)}>
-                          <StickyNote size={13} />
-                          {ar.notes ? "Edit note" : "Add note"}
-                        </Button>
-                      )}
                       {ar.status !== "paid" && !isCredit && canUpdateReceivable ? (
                         <Button
                           onClick={() => handleMarkPaid(ar.id)}

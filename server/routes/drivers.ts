@@ -183,30 +183,29 @@ export const updateDriver: RequestHandler = async (req: AuthRequest, res) => {
   }
 };
 
-export const deleteDriver: RequestHandler = async (req: AuthRequest, res) => {
+export const setDriverArchived: RequestHandler = async (req: AuthRequest, res) => {
   const { id } = req.params;
+  if (typeof req.body?.is_archived !== "boolean") {
+    return res.status(400).json({ error: "Archive status must be a boolean" });
+  }
 
   try {
-    const existing = await db.query.drivers.findFirst({
-      where: eq(drivers.id, id),
+    const existing = await db.query.drivers.findFirst({ where: eq(drivers.id, id) });
+    if (!existing) return res.status(404).json({ error: "Driver not found" });
+
+    const archived = req.body.is_archived;
+    await db.transaction(async (tx) => {
+      await tx.update(drivers).set({ is_archived: archived, updated_at: new Date() }).where(eq(drivers.id, id));
+      if (existing.user_id) {
+        await tx.update(users).set({ is_archived: archived, updated_at: new Date() }).where(eq(users.id, existing.user_id));
+      }
     });
 
-    if (!existing) {
-      return res.status(404).json({ error: "Driver not found" });
-    }
-
-    await db.delete(drivers).where(eq(drivers.id, id));
-    if (existing.user_id) {
-      await db.delete(users).where(eq(users.id, existing.user_id));
-    }
-
-    if (req.user) {
-      await logAction(req.user.userId, "delete", "driver", id, existing, undefined);
-    }
-
-    res.json({ message: "Driver deleted" });
+    const updated = await db.query.drivers.findFirst({ where: eq(drivers.id, id), with: driverWithUser });
+    if (req.user) await logAction(req.user.userId, archived ? "archive" : "restore", "driver", id, existing, updated);
+    res.json(updated);
   } catch (error) {
-    console.error("Error deleting driver:", error);
+    console.error("Archive driver error:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };

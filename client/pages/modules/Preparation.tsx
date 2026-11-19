@@ -41,7 +41,7 @@ export function Preparation() {
   const filters = state?.preparationFilters;
   const [searchTerm, setSearchTerm] = useState<string>(filters?.searchTerm ?? "");
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "approved" | "prep" | "ready">(filters?.statusFilter ?? "approved");
-  const [dateRangeFilter, setDateRangeFilter] = useState<"all" | "today" | "week" | "month" | "custom">(filters?.dateRangeFilter ?? "today");
+  const [dateRangeFilter, setDateRangeFilter] = useState<"all" | "today" | "week" | "month" | "custom">(filters?.dateRangeFilter ?? "all");
   const [customDateStart, setCustomDateStart] = useState<string>(filters?.customDateStart ?? "");
   const [customDateEnd, setCustomDateEnd] = useState<string>(filters?.customDateEnd ?? "");
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);

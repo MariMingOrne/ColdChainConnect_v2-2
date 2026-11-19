@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PRODUCT_UNITS, marginPercent, markupPercent, type Product, type ProductUnit } from "@shared/api";
 import { NativeSelect } from "@/components/ui/native-select";
-import { ArrowLeft } from "lucide-react";
 import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
@@ -95,15 +94,11 @@ function ProductPage({
   };
 
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+    <div className="mx-auto w-full !max-w-xl flex-1 p-6 overflow-y-auto scrollbar-visible space-y-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">{title}</h1>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border max-w-lg w-full">
 
@@ -185,6 +180,16 @@ function ProductPage({
           </div>
 
           <div>
+            <label htmlFor="pricing-unit" className="block text-xs font-semibold text-foreground mb-1">Unit type</label>
+            <NativeSelect id="pricing-unit" value={formData.unit} onChange={(e) => setFormData({ ...formData, unit: e.target.value as ProductUnit })}>
+              {PRODUCT_UNITS.map((unit) => (
+                <option key={unit} value={unit}>{unit}</option>
+              ))}
+            </NativeSelect>
+            <p className="text-xs text-muted-foreground mt-1">Printed in the UNIT column of the receipt.</p>
+          </div>
+
+          <div>
             <label htmlFor="pricing-weight-kg" className="block text-xs font-semibold text-foreground mb-1">Weight (kg)</label>
             <Input id="pricing-weight-kg"
               type="number"
@@ -195,16 +200,6 @@ function ProductPage({
               className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
               placeholder="e.g., 25"
             />
-          </div>
-
-          <div>
-            <label htmlFor="pricing-unit" className="block text-xs font-semibold text-foreground mb-1">Receipt unit</label>
-            <NativeSelect id="pricing-unit" value={formData.unit} onChange={(e) => setFormData({ ...formData, unit: e.target.value as ProductUnit })}>
-              {PRODUCT_UNITS.map((unit) => (
-                <option key={unit} value={unit}>{unit === "PK" ? "PK — per pack" : "PC — per piece"}</option>
-              ))}
-            </NativeSelect>
-            <p className="text-xs text-muted-foreground mt-1">Printed in the UNIT column of the receipt.</p>
           </div>
 
           <div>
@@ -268,15 +263,11 @@ function ProductPage({
 
 function ViewProductPage({ product, onClose }: { product: Product; onClose: () => void }) {
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+    <div className="flex-1 p-6 overflow-y-auto scrollbar-visible space-y-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">Product Details</h1>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border max-w-lg w-full">
 
@@ -299,8 +290,8 @@ function ViewProductPage({ product, onClose }: { product: Product; onClose: () =
             <div className="text-sm text-foreground font-semibold">₱{parseFloat(product.price ?? "0").toLocaleString("en-PH", { minimumFractionDigits: 2 })}</div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">Receipt unit</label>
-            <div className="text-sm text-foreground">{product.unit === "PC" ? "PC — per piece" : "PK — per pack"}</div>
+            <label className="block text-xs font-semibold text-muted-foreground mb-1">Unit type</label>
+            <div className="text-sm text-foreground">{product.unit ?? "PK"}</div>
           </div>
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1">SRP</label>
@@ -339,15 +330,11 @@ function ViewProductPage({ product, onClose }: { product: Product; onClose: () =
 
 function ImagePreviewPage({ filename, onClose }: { filename: string; onClose: () => void }) {
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+    <div className="flex-1 p-6 overflow-y-auto scrollbar-visible space-y-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">Image Preview</h1>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
       <div className="flex items-center justify-center rounded-2xl border border-border bg-card p-6">
         <img src={`/uploads/${filename}`} alt="Preview" className="max-w-full max-h-[60vh] object-contain" />
@@ -658,6 +645,7 @@ export function Pricing({ onBack }: PricingProps) {
                 <SortableHeader label="Product Name" sortKey="name" sort={productSort} onSort={setProductSort} />
                 <SortableHeader label="Unit Price" sortKey="price" sort={productSort} onSort={setProductSort} />
                 <SortableHeader label="Reorder Level" sortKey="reorder" sort={productSort} onSort={setProductSort} />
+                <th className="px-3 py-3 text-left text-xs font-semibold text-muted-foreground">Unit type</th>
                 <SortableHeader label="Weight" sortKey="weight" sort={productSort} onSort={setProductSort} />
                 <SortableHeader label="Status" sortKey="status" sort={productSort} onSort={setProductSort} className="hidden md:table-cell" />
               </tr>
@@ -665,7 +653,7 @@ export function Pricing({ onBack }: PricingProps) {
             <tbody>
               {paginatedProducts.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-3 py-6 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
                     {products.length === 0 ? "No products found" : "No results matching your search"}
                   </td>
                 </tr>
@@ -694,6 +682,7 @@ export function Pricing({ onBack }: PricingProps) {
                               { label: "SKU", value: product.sku || "—" },
                               { label: "Unit Price", value: `₱${parseFloat(product.price ?? "0").toLocaleString("en-PH", { minimumFractionDigits: 2 })}` },
                               { label: "Reorder Level", value: product.reorder_point?.toLocaleString() || "—" },
+                              { label: "Unit type", value: product.unit ?? "PK" },
                               { label: "Weight", value: product.weight != null ? `${Number(product.weight).toLocaleString()} kg` : "—" },
                               { label: "Status", value: product.is_discontinued ? "Discontinued" : "Active" },
                               { label: "Manufacturer", value: product.manufacturer || "—" },
@@ -714,6 +703,9 @@ export function Pricing({ onBack }: PricingProps) {
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap font-semibold text-foreground">
                       {product.reorder_point?.toLocaleString() || "—"}
+                    </td>
+                    <td className="px-3 py-3 whitespace-nowrap text-foreground">
+                      {product.unit ?? "PK"}
                     </td>
                     <td className="px-3 py-3 whitespace-nowrap text-foreground">
                       {product.weight != null ? `${Number(product.weight).toLocaleString()} kg` : "—"}

@@ -4,6 +4,7 @@ import { ChevronRight, MapPin, PackageCheck } from "lucide-react";
 import type { AgentScheduleStop } from "@shared/api";
 import { formatCustomerAddress } from "@shared/api";
 import { palletTotals, statusClasses } from "@/lib/agentSchedule";
+import { formatPeso } from "@/lib/format";
 
 interface AgentStopRowProps {
   index: number;
@@ -38,9 +39,14 @@ export function AgentStopRow({ index, stop, isConfirming, onOpenDetails, onConfi
                 <span className="truncate">{address}</span>
               </p>
             </div>
-            <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold capitalize ${statusClasses(stop.status)}`}>
-              {stop.status.replace("_", " ")}
-            </span>
+            <div className="flex flex-col items-end gap-1">
+              <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold capitalize ${statusClasses(stop.status)}`}>
+                {stop.status.replace("_", " ")}
+              </span>
+              {stop.invoice && (
+                <span className="font-rajdhani text-xl font-bold text-foreground">{formatPeso(stop.invoice.total_amount)}</span>
+              )}
+            </div>
           </div>
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
             <span className="inline-flex items-center gap-1"><PackageCheck size={14} /> Invoice {invoiceLabel}</span>

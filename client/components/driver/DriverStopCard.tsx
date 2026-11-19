@@ -31,7 +31,7 @@ export function DriverStopCard({ stop, index, onChanged }: { stop: DriverSchedul
   };
 
   // Same request bodies as the agent schedule (AgentDeliverySchedule) so the server rules apply unchanged.
-  const submit = async (isPaid: boolean, paymentAmount?: number, paymentMethod?: string, paymentReference?: string) => {
+  const submit = async (isPaid: boolean, paymentAmount?: number, paymentMethod?: string, paymentReference?: string, paymentId?: string, notes?: string) => {
     if (!token || !mode) return;
     setIsSaving(true);
     setError(null);
@@ -40,8 +40,8 @@ export function DriverStopCard({ stop, index, onChanged }: { stop: DriverSchedul
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(mode === "payment"
-          ? { payment_amount: paymentAmount, payment_method: paymentMethod, payment_reference: paymentReference }
-          : { is_paid: isPaid, payment_amount: paymentAmount, payment_method: paymentMethod, payment_reference: paymentReference }),
+          ? { payment_amount: paymentAmount, payment_method: paymentMethod, payment_reference: paymentReference, payment_id: paymentId, notes }
+          : { is_paid: isPaid, payment_amount: paymentAmount, payment_method: paymentMethod, payment_reference: paymentReference, payment_id: paymentId, notes }),
       });
       if (!response.ok) {
         const result = await response.json().catch(() => ({}));
