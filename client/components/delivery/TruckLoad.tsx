@@ -1,11 +1,13 @@
 import { Boxes, ChevronDown, ChevronUp, Package } from "lucide-react";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import type { Pallet } from "@shared/api";
 import { PalletStatusBadge } from "@/components/pallets/PalletTable";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 export interface TruckLoadStop {
   id: string;
+  orderId: string;
   customerName: string;
   receipt?: string | null;
   runLabel: string;
@@ -86,7 +88,12 @@ export function TruckLoad({ stops, productNames }: TruckLoadProps) {
               {stops.filter((stop) => stop.pallets.length > 0).map((stop) => (
                 <div key={stop.id} className="space-y-2">
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                    <p className="text-sm font-semibold text-foreground">{stop.customerName}</p>
+                    <Link
+                      to={`/booking-dispatch/inventory?order=${encodeURIComponent(stop.orderId)}`}
+                      className="text-sm font-semibold text-foreground hover:underline"
+                    >
+                      {stop.customerName}
+                    </Link>
                     <p className="text-xs text-muted-foreground">
                       {stop.receipt ? `${stop.receipt} · ` : ""}{stop.runLabel}
                     </p>

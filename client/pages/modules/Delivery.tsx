@@ -204,7 +204,7 @@ export function DeliveryDispatch() {
     groups.set(date, [...(groups.get(date) ?? []), delivery]);
     return groups;
   }, new Map<string, DeliveryExt[]>()).entries()]
-    .sort(([a], [b]) => a.localeCompare(b))
+    .sort(([a], [b]) => b.localeCompare(a))
     .map(([date, runs]) => [date, [...runs].sort((a, b) => (a.scheduled_time ?? "").localeCompare(b.scheduled_time ?? ""))] as const);
 
   const productNames = new Map(products.map((product) => [product.id, product.name]));
@@ -214,6 +214,7 @@ export function DeliveryDispatch() {
       .filter((item) => item.status !== "completed")
       .map((item) => ({
         id: item.id,
+        orderId: item.invoice?.booking_id ?? "",
         customerName: item.customer?.store_name ?? item.destination_customer_id.slice(0, 8),
         receipt: item.invoice?.receipt_number,
         runLabel: `${formatRunDate(delivery)} · ${formatRunTime(delivery.scheduled_time)}`,
@@ -364,7 +365,7 @@ export function DeliveryDispatch() {
 
 
   // ── Truck detail panel (shared between mobile and desktop) ─────────────────
-  const DetailPanel = () => (
+  const renderDetailPanel = () => (
     <div className="space-y-4">
       {/* Mobile back button */}
       <Button
@@ -762,7 +763,7 @@ export function DeliveryDispatch() {
             )}
           </div>
         ) : (
-          selectedTruck && <DetailPanel />
+          selectedTruck && renderDetailPanel()
         )}
       </div>
 
@@ -811,7 +812,7 @@ export function DeliveryDispatch() {
               Select a truck to view its deliveries
             </div>
           ) : (
-            <DetailPanel />
+            renderDetailPanel()
           )}
         </div>
       </div>
