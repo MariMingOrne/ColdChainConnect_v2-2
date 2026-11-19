@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { BadgeCheck } from "lucide-react";
 import { toast } from "sonner";
-import type { UnverifiedPayment } from "@shared/api";
+import { paymentNeedsClearance, type UnverifiedPayment } from "@shared/api";
 import { PageDialog } from "@/components/shared/PageDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { TablePagination, paginate } from "@/components/TablePagination";
 import { TableToolbar } from "@/components/TableToolbar";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TruncatedText } from "@/components/ui/truncated-text";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
@@ -30,13 +31,17 @@ function VerifyDialog({
   onDone: () => Promise<void> | void;
 }) {
   const [busy, setBusy] = useState(false);
+  const [remarks, setRemarks] = useState("");
+  const needsClearance = paymentNeedsClearance(payment.payment_method);
+  const missingRemarks = needsClearance && !remarks.trim();
 
   const verify = async () => {
     setBusy(true);
     try {
       const res = await fetch(`/api/receipts/${payment.id}/verify`, {
         method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ remarks: remarks.trim() || undefined }),
       });
       if (!res.ok) {
         // 409 means it was already verified (or has no payment): show the server's reason and refresh the table.
@@ -68,7 +73,8 @@ function VerifyDialog({
           ["Customer", payment.customer_name],
           ["Receipt / invoice", `${payment.receipt_number} · ${payment.invoice_receipt_number}`],
           ["Amount", formatPeso(payment.amount)],
-          ["Method", payment.payment_method || "—"],
+          ["Method", payment.payment_method?.replace("_", " ") || "—"],
+          ...(payment.payment_reference ? [["Reference no.", payment.payment_reference]] : []),
           ["Recorded by", payment.recorded_by_username || "—"],
           ["Date", formatDate(payment.confirmed_at)],
         ].map(([label, value]) => (
@@ -78,9 +84,19 @@ function VerifyDialog({
           </div>
         ))}
       </dl>
+      <label className="grid gap-1.5 text-sm font-semibold text-foreground">
+        Clearance remarks{needsClearance ? " (required)" : " (optional)"}
+        <Textarea
+          value={remarks}
+          rows={3}
+          maxLength={500}
+          onChange={(event) => setRemarks(event.target.value)}
+          placeholder={needsClearance ? "e.g. Cleared in the bank account on Nov 20, ref matches" : "Anything Accounting should note"}
+        />
+      </label>
       <div className="flex justify-end gap-2 border-t border-border pt-4">
         <Button type="button" variant="outline" onClick={onClose} disabled={busy}>Cancel</Button>
-        <Button type="button" variant="success" onClick={() => void verify()} disabled={busy}>
+        <Button type="button" variant="success" onClick={() => void verify()} disabled={busy || missingRemarks}>
           <BadgeCheck size={15} /> {busy ? "Verifying…" : "Confirm payment received"}
         </Button>
       </div>

@@ -417,6 +417,7 @@ export const receipts = pgTable("receipts", {
   payment_reference: text("payment_reference"),
   payment_verified_by: text("payment_verified_by").references(() => users.id),
   payment_verified_at: timestamp("payment_verified_at"),
+  payment_verification_remarks: text("payment_verification_remarks"),
   confirmed_at: timestamp("confirmed_at").defaultNow().notNull(),
 }, (table) => [
   index("receipts_customer_id_idx").on(table.customer_id),

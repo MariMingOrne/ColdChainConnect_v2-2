@@ -579,6 +579,15 @@ export interface UnverifiedPayment {
   amount: string;
   recorded_by: string | null;
   recorded_by_username: string | null;
+  /** Bank transfer or check reference typed when the payment was recorded. */
+  payment_reference?: string | null;
+}
+
+/** Payment methods that need a clearance remark before Accounting can verify them. */
+export const PAYMENT_METHODS_NEEDING_CLEARANCE = ["bank_transfer", "check"] as const;
+
+export function paymentNeedsClearance(method: string | null | undefined): boolean {
+  return PAYMENT_METHODS_NEEDING_CLEARANCE.some((value) => value === method);
 }
 
 // Delivery types
