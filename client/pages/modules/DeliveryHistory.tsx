@@ -228,7 +228,9 @@ export function DeliveryHistory() {
   
       {(viewReceipt) && (
         <PageDialog onClose={() => setViewReceipt(null)}>
-<OriginalReceiptModal receipt={viewReceipt} onClose={() => setViewReceipt(null)} />
+<div className="mx-auto w-full !max-w-xl">
+<OriginalReceiptModal receipt={viewReceipt} onClose={() => setViewReceipt(null)} showBack={false} />
+</div>
         </PageDialog>
       )}
     </>
@@ -240,11 +242,11 @@ export function DeliveryHistory() {
 
 // ─── Original Receipt Modal ───────────────────────────────────────────────────
 
-export function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt; onClose: () => void }) {
+export function OriginalReceiptModal({ receipt, onClose, showBack = true }: { receipt: ReceiptExt; onClose: () => void; showBack?: boolean }) {
   const handlePrint = () => window.print();
 
   return (
-    <div className="flex-1 flex flex-col gap-6 p-4 md:p-6">
+    <div className="flex-1 flex flex-col gap-6 p-6">
       <style>{`
         #original-receipt-print-area { background: #fff; color: #111; }
         #original-receipt-print-area .text-muted-foreground { color: #52525b !important; }
@@ -275,10 +277,12 @@ export function OriginalReceiptModal({ receipt, onClose }: { receipt: ReceiptExt
           <Button onClick={handlePrint} variant="outline">
             Print
           </Button>
-          <Button onClick={onClose} variant="outline">
-            <ArrowLeft size={15} />
-            Back
-          </Button>
+          {showBack && (
+            <Button onClick={onClose} variant="outline">
+              <ArrowLeft size={15} />
+              Back
+            </Button>
+          )}
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Save } from "lucide-react";
+import { Save } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useCan } from "@/hooks/useCan";
 import { Booking, Product } from "@shared/api";
@@ -42,10 +42,6 @@ export function BookingDetailPage({ booking, products, getStatusTone, onBack, on
           <h1 className="page-title">Order Details</h1>
           <p className="page-subtitle">Review the details of this order</p>
         </div>
-        <Button onClick={onBack} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
 
       <div className="bg-card rounded-2xl border border-border p-6 space-y-6">

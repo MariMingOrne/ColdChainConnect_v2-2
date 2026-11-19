@@ -14,7 +14,7 @@ import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Plus, Calendar, CheckCircle, XCircle } from "lucide-react";
+import { Plus, Calendar, CheckCircle, XCircle } from "lucide-react";
 import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
 import { newestFirst } from "@/components/SortableHeader";
 import { TablePagination, paginate } from "@/components/TablePagination";
@@ -745,16 +745,12 @@ export function BookingSummary() {
       )}
       {(showApproveModal && selectedBooking) && (
         <PageDialog onClose={closeApproveModal}>
-      <div className="flex-1 flex flex-col p-6 gap-6">
+      <div className="mx-auto w-full !max-w-2xl flex-1 flex flex-col p-6 gap-6">
         <div className="page-header">
           <div>
             <h1 className="page-title">Approve Order</h1>
             <p className="page-subtitle">Confirm approval for this customer order</p>
           </div>
-          <Button onClick={closeApproveModal} variant="outline">
-            <ArrowLeft size={15} />
-            Back
-          </Button>
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-6 space-y-4 max-w-2xl">
@@ -800,16 +796,12 @@ export function BookingSummary() {
       )}
       {(showRejectModal && selectedBooking) && (
         <PageDialog onClose={closeRejectModal}>
-      <div className="flex-1 flex flex-col p-6 gap-6">
+      <div className="mx-auto w-full !max-w-2xl flex-1 flex flex-col p-6 gap-6">
         <div className="page-header">
           <div>
             <h1 className="page-title">Reject Order</h1>
             <p className="page-subtitle">Confirm rejection of this customer order</p>
           </div>
-          <Button onClick={closeRejectModal} variant="outline">
-            <ArrowLeft size={15} />
-            Back
-          </Button>
         </div>
 
         <div className="bg-card rounded-2xl border border-border p-6 space-y-4 max-w-2xl">

@@ -3,7 +3,7 @@ import { PageDialog } from "@/components/shared/PageDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { AgentStopRow } from "@/components/AgentStopRow";
-import { CalendarDays, Clock3, History, Search, Truck as TruckIcon, UserRound } from "lucide-react";
+import { CalendarDays, ChevronDown, ChevronUp, Clock3, History, Search, Truck as TruckIcon, UserRound } from "lucide-react";
 import type { AgentScheduleDelivery, AgentScheduleResponse, AgentScheduleStop } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { localScheduleDate, statusClasses } from "@/lib/agentSchedule";
 import { DeliveryRouteMap, type MapFocus } from "@/components/DeliveryRouteMap";
 import { AgentStopDetailDialog } from "@/components/AgentStopDetailDialog";
 import { DeliveryPaymentPrompt } from "@/components/shared/DeliveryPaymentPrompt";
+import { formatPeso } from "@/lib/format";
 
 function formatScheduleDate(value: string) {
   const [year, month, day] = value.split("-").map(Number);
@@ -77,6 +78,7 @@ export function AgentDeliverySchedule() {
   const [confirmingStopId, setConfirmingStopId] = useState<string | null>(null);
   const [mapFocus, setMapFocus] = useState<MapFocus | null>(null);
   const [detailTarget, setDetailTarget] = useState<{ delivery: AgentScheduleDelivery; stop: AgentScheduleStop } | null>(null);
+  const [showUnconfirmed, setShowUnconfirmed] = useState(true);
 
   const fetchSchedule = async () => {
     if (!token) return;
@@ -128,13 +130,14 @@ export function AgentDeliverySchedule() {
       .map(([date, runs]) => [date, [...runs].sort((a, b) => (a.scheduled_time ?? "99:99").localeCompare(b.scheduled_time ?? "99:99"))] as const);
   }, [view, visibleDeliveries]);
 
-  const stopCount = currentDeliveries.reduce((total, delivery) => total + (delivery.delivery_items?.length ?? 0), 0);
-  const completedCount = currentDeliveries.reduce(
-    (total, delivery) => total + (delivery.delivery_items ?? []).filter((stop) => stop.status === "completed").length,
-    0,
+  const unconfirmedStops = deliveries.flatMap((delivery) =>
+    (delivery.delivery_items ?? [])
+      .filter((stop) => stop.status === "completed" && !stop.is_paid)
+      .map((stop) => ({ delivery, stop })),
   );
+  const unconfirmedTotal = unconfirmedStops.reduce((total, { stop }) => total + Number(stop.invoice?.total_amount ?? 0), 0);
 
-  const confirmDelivery = async (isPaid: boolean, paymentAmount?: number, paymentMethod?: string, paymentReference?: string, paymentId?: string) => {
+  const confirmDelivery = async (isPaid: boolean, paymentAmount?: number, paymentMethod?: string, paymentReference?: string, paymentId?: string, notes?: string) => {
     if (!token || !paymentStop) return;
     const { delivery, stop, mode } = paymentStop;
     setConfirmingStopId(stop.id);
@@ -143,8 +146,8 @@ export function AgentDeliverySchedule() {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify(mode === "payment"
-          ? { payment_amount: paymentAmount, payment_method: paymentMethod, payment_reference: paymentReference, payment_id: paymentId }
-          : { is_paid: isPaid, payment_amount: paymentAmount, payment_method: paymentMethod, payment_reference: paymentReference, payment_id: paymentId }),
+          ? { payment_amount: paymentAmount, payment_method: paymentMethod, payment_reference: paymentReference, payment_id: paymentId, notes }
+          : { is_paid: isPaid, payment_amount: paymentAmount, payment_method: paymentMethod, payment_reference: paymentReference, payment_id: paymentId, notes }),
       });
       if (!response.ok) {
         const result = await response.json().catch(() => ({}));
@@ -196,21 +199,40 @@ export function AgentDeliverySchedule() {
         </div>
       </div>
 
-      <div className="rounded-lg border border-border bg-card px-4 py-3 shadow-sm">
-        <div className="grid grid-cols-2 gap-x-5 gap-y-1 sm:grid-cols-4">
-          {[
-            ["Assigned runs", currentDeliveries.length, "text-foreground"],
-            ["Stops", stopCount, "text-foreground"],
-            ["Completed", completedCount, "text-green"],
-            ["Remaining", stopCount - completedCount, "text-accent-2"],
-          ].map(([label, count, color]) => (
-            <div key={label} className="flex items-center justify-between gap-2">
-              <span className="text-xs font-medium text-muted-foreground">{label}</span>
-              <span className={`font-rajdhani text-lg font-bold ${color}`}>{count}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+      <section className="rounded-xl border border-border bg-card p-4 shadow-sm">
+        <button
+          type="button"
+          aria-expanded={showUnconfirmed}
+          onClick={() => setShowUnconfirmed((shown) => !shown)}
+          className="flex w-full items-center justify-between gap-2 text-left"
+        >
+          <span className="text-sm font-bold text-foreground">Unconfirmed payments</span>
+          <span className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="font-semibold text-foreground">{formatPeso(unconfirmedTotal)}</span>
+            · {unconfirmedStops.length} stops
+            {showUnconfirmed ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </span>
+        </button>
+        {showUnconfirmed && (unconfirmedStops.length === 0 ? (
+          <p className="mt-2 text-xs text-muted-foreground">No unconfirmed payments.</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {unconfirmedStops.map(({ delivery, stop }) => (
+              <li key={stop.id} className="flex items-center justify-between gap-3 py-2">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-foreground">{stop.destination_customer?.store_name ?? "Unknown customer"}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {stop.invoice?.receipt_number ? `Invoice ${stop.invoice.receipt_number}` : "Invoice"} · {formatPeso(stop.invoice?.total_amount)}
+                  </p>
+                </div>
+                <Button type="button" size="sm" variant="outline" onClick={() => setDetailTarget({ delivery, stop })}>
+                  View
+                </Button>
+              </li>
+            ))}
+          </ul>
+        ))}
+      </section>
 
       <div className="grid grid-cols-2 gap-3">
         <button

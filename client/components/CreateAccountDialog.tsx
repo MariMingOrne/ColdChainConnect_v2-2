@@ -2,7 +2,6 @@ import { FormEvent, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ArrowLeft } from "lucide-react";
 import { modulePermissionKeys, type ModulePermission } from "@shared/api";
 import {
   AccountForm,
@@ -102,16 +101,12 @@ export function CreateAccountDialog({ onClose }: CreateAccountDialogProps) {
   };
 
   return (
-    <div className="flex-1 flex flex-col gap-6 p-4 md:p-6">
+    <div className="flex-1 flex flex-col gap-6 p-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">Create Account</h1>
           <p className="page-subtitle">Only admins can create accounts.</p>
         </div>
-        <Button type="button" onClick={handleClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
 
         <Tabs

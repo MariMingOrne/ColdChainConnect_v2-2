@@ -14,7 +14,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { PRODUCT_UNITS, marginPercent, markupPercent, type Product, type ProductUnit } from "@shared/api";
 import { NativeSelect } from "@/components/ui/native-select";
-import { ArrowLeft } from "lucide-react";
 import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
@@ -95,15 +94,11 @@ function ProductPage({
   };
 
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+    <div className="mx-auto w-full !max-w-xl flex-1 p-6 overflow-y-auto scrollbar-visible space-y-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">{title}</h1>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border max-w-lg w-full">
 
@@ -268,15 +263,11 @@ function ProductPage({
 
 function ViewProductPage({ product, onClose }: { product: Product; onClose: () => void }) {
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+    <div className="flex-1 p-6 overflow-y-auto scrollbar-visible space-y-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">Product Details</h1>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border max-w-lg w-full">
 
@@ -339,15 +330,11 @@ function ViewProductPage({ product, onClose }: { product: Product; onClose: () =
 
 function ImagePreviewPage({ filename, onClose }: { filename: string; onClose: () => void }) {
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+    <div className="flex-1 p-6 overflow-y-auto scrollbar-visible space-y-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">Image Preview</h1>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
       <div className="flex items-center justify-center rounded-2xl border border-border bg-card p-6">
         <img src={`/uploads/${filename}`} alt="Preview" className="max-w-full max-h-[60vh] object-contain" />

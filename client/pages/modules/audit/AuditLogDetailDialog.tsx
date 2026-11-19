@@ -1,5 +1,4 @@
 import { Button } from "@/components/ui/button";
-import { ArrowLeft } from "lucide-react";
 import { AuditLog } from "@shared/api";
 import { describeLog, formatFieldValue, getFieldChanges, parseState } from "./auditDescribe";
 
@@ -36,7 +35,7 @@ export function AuditLogDetailDialog({ log, onClose }: AuditLogDetailDialogProps
   const snapshotLabel = log.action === "delete" ? "Deleted record" : "Saved record";
 
   return (
-    <div className="flex-1 flex flex-col gap-6 p-4 md:p-6">
+    <div className="flex-1 flex flex-col gap-6 p-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">{describeLog(log)}</h1>
@@ -44,10 +43,6 @@ export function AuditLogDetailDialog({ log, onClose }: AuditLogDetailDialogProps
             {new Date(log.created_at).toLocaleString()} · {log.action.toUpperCase()} · {log.resource_type.replace(/_/g, " ")}
           </p>
         </div>
-        <Button type="button" onClick={onClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
 
         <div className="grid grid-cols-1 gap-4 rounded-lg border border-border bg-muted p-4 sm:grid-cols-2">

@@ -9,7 +9,6 @@ import { useAuth } from "../../hooks/useAuth";
 import { useCan } from "@/hooks/useCan";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { Customer, Truck, formatCustomerAddress, totalDiscountRate } from "@shared/api";
-import { ArrowLeft } from "lucide-react";
 import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
@@ -92,10 +91,6 @@ function ViewCustomerPage({ customer, onClose }: { customer: Customer; onClose: 
         <div>
           <h1 className="page-title">Customer Details</h1>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
       <div className="w-full max-w-2xl rounded-2xl border border-border bg-card">
         <div className="grid grid-cols-1 gap-x-6 gap-y-5 p-6 sm:grid-cols-2">
@@ -167,17 +162,13 @@ function CustomerModal({
   const updateAddressField = (field: "street_number" | "street_address" | "location" | "state" | "postal_code", value: string) =>
     setFormData({ ...formData, [field]: value, latitude: null, longitude: null });
   return (
-    <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
+    <div className="mx-auto w-full !max-w-xl flex-1 space-y-6 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">{title}</h1>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
-      <div className="flex w-full max-w-xl flex-col rounded-2xl border border-border bg-card">
+      <div className="flex w-full flex-col rounded-2xl border border-border bg-card">
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-6">
           <div>

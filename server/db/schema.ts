@@ -474,6 +474,7 @@ export const receipt_payment_entries = pgTable("receipt_payment_entries", {
   amount: decimal("amount", { precision: 12, scale: 2 }).notNull(),
   payment_method: varchar("payment_method", { length: 50 }).notNull(),
   payment_reference: text("payment_reference"),
+  notes: text("notes"),
   recorded_by: text("recorded_by").references(() => users.id),
   verified_by: text("verified_by").references(() => users.id),
   verified_at: timestamp("verified_at"),

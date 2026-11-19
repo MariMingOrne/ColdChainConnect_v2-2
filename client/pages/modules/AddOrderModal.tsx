@@ -1,5 +1,5 @@
 import { NativeSelect } from "@/components/ui/native-select";
-import { ArrowLeft, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { OrderProductList } from "./OrderProductList";
@@ -57,10 +57,6 @@ export function AddOrderModal({
           <h1 className="page-title">Add New Order</h1>
           <p className="page-subtitle">Select a customer and add products to the order</p>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
 
       <div className="bg-card rounded-2xl border border-border flex-1 flex flex-col overflow-hidden">

@@ -621,16 +621,12 @@ function ExtraInfoModal({ product, batches, onClose, onSelectPallet }: { product
     });
 
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+    <div className="flex-1 p-6 overflow-y-auto scrollbar-visible space-y-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">{product.description}</h1>
           <p className="page-subtitle">SKU: {product.sku}</p>
         </div>
-        <Button onClick={onClose} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
 
@@ -742,17 +738,13 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
   };
 
   return (
-    <div className="flex-1 px-4 md:px-6 lg:px-7 py-4 md:py-6 overflow-y-auto scrollbar-visible space-y-6">
+    <div className="flex-1 p-6 overflow-y-auto scrollbar-visible space-y-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">
             {isCreatingBatch ? "Create New Batch" : "Manage Batches"}
           </h1>
         </div>
-        <Button onClick={() => { setIsCreatingBatch(false); setPallets([]); onClose(); }} variant="outline">
-          <ArrowLeft size={15} />
-          Back
-        </Button>
       </div>
       <div className="bg-card rounded-2xl border border-border overflow-hidden">
         <div className="p-6">

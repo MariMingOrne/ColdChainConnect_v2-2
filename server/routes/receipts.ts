@@ -306,7 +306,7 @@ export const recordDeliveryItemPayment: RequestHandler = async (
   res
 ) => {
   const { id: deliveryId, itemId } = req.params;
-  const { payment_amount, payment_method, payment_reference, payment_id } = req.body ?? {};
+  const { payment_amount, payment_method, payment_reference, payment_id, notes } = req.body ?? {};
 
   if (!process.env.DATABASE_URL) {
     return res.status(503).json({ error: "Database not configured" });
@@ -421,6 +421,7 @@ export const recordDeliveryItemPayment: RequestHandler = async (
           amount: (paymentCents / 100).toFixed(2),
           payment_method,
           payment_reference: payment_reference ?? null,
+          notes: notes ?? null,
           recorded_by: req.user?.userId ?? null,
         });
 

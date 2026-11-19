@@ -17,7 +17,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { CheckCircle, StickyNote } from "lucide-react";
+import { CheckCircle } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { dueInfo, isReceivableCollectable } from "@/lib/receivables";
@@ -235,7 +235,10 @@ export function AccountsReceivable() {
   const togglePageSelection = (checked: boolean) =>
     setSelectedIds((current) => (checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id))));
   const bulkActions: TableBulkAction[] | undefined = canUpdateReceivable
-    ? [{ label: "Mark selected as paid", onSelect: () => void handleMarkSelectedPaid() }]
+    ? [
+        { label: "Mark selected as paid", onSelect: () => void handleMarkSelectedPaid() },
+        ...(selectedRecords.length === 1 ? [{ label: "Edit", onSelect: () => openNote(selectedRecords[0]) }] : []),
+      ]
     : undefined;
 
   if (isLoading) return <LoadingSpinner />;
@@ -332,7 +335,6 @@ export function AccountsReceivable() {
               <TableHead>Created</TableHead>
               {activeTab !== "paid" && <TableHead>Due</TableHead>}
               {activeTab !== "paid" && <TableHead>Age</TableHead>}
-              {canUpdateReceivable && <TableHead>Edit</TableHead>}
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -396,14 +398,6 @@ export function AccountsReceivable() {
                         <span className={`px-2 py-0.5 rounded text-xs font-semibold ${getAgeColor(days)}`}>
                           {days}d
                         </span>
-                      </TableCell>
-                    )}
-                    {canUpdateReceivable && (
-                      <TableCell>
-                        <Button type="button" variant="outline" size="sm" onClick={() => openNote(ar)}>
-                          <StickyNote size={13} />
-                          Edit
-                        </Button>
                       </TableCell>
                     )}
                     <TableCell className="text-right">
