@@ -125,6 +125,24 @@ export const product_costs = pgTable("product_costs", {
   check("product_costs_cost_price_nonnegative", sql`${table.cost_price} >= 0`),
 ]);
 
+// End-of-day cash hand-over: a collector gives the day's cash to the office, which counts it by
+// denomination and confirms. One per collector per day; expected is computed on the server.
+export const cash_remittances = pgTable("cash_remittances", {
+  id: text("id").primaryKey(),
+  remitted_by: text("remitted_by").notNull().references(() => users.id),
+  received_by: text("received_by").notNull().references(() => users.id),
+  business_date: text("business_date").notNull(),
+  expected_amount: decimal("expected_amount", { precision: 12, scale: 2 }).notNull(),
+  counted_amount: decimal("counted_amount", { precision: 12, scale: 2 }).notNull(),
+  denominations: jsonb("denominations").$type<Record<string, number>>().notNull(),
+  notes: text("notes"),
+  created_at: timestamp("created_at").defaultNow().notNull(),
+}, (table) => [
+  uniqueIndex("cash_remittances_remitter_day_idx").on(table.remitted_by, table.business_date),
+  index("cash_remittances_business_date_idx").on(table.business_date),
+  check("cash_remittances_amounts_nonnegative", sql`${table.expected_amount} >= 0 AND ${table.counted_amount} >= 0`),
+]);
+
 // Inventory batches table
 export const inventory_batches = pgTable("inventory_batches", {
   id: text("id").primaryKey(),

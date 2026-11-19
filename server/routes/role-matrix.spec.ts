@@ -152,6 +152,8 @@ const POLICY: Record<string, Policy> = {
 
   // Accounting
   "GET /api/payments/unverified": staffOnly("accounting"),
+  "GET /api/cash-remittances/collections": staffOnly("accounting"),
+  "POST /api/cash-remittances": staffOnly("accounting"),
   "POST /api/receipts/:id/verify": staffOnly("accounting"),
   "GET /api/expenses": staffOnly("accounting"),
   "POST /api/expenses": staffOnly("accounting"),

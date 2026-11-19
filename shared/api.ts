@@ -866,6 +866,60 @@ export interface ReportProfitResponse {
   productsMissingCost: number;
 }
 
+// ─── End-of-day cash reconciliation ───────────────────────────────────────────
+
+/** Philippine peso bills and coins counted at hand-over, largest first. Keys are the face values. */
+export const CASH_DENOMINATIONS = ["1000", "500", "200", "100", "50", "20", "10", "5", "1", "0.25"] as const;
+export type CashDenomination = (typeof CASH_DENOMINATIONS)[number];
+export type DenominationCounts = Partial<Record<CashDenomination, number>>;
+
+/**
+ * Exact total of a denomination count, in centavos. Null when a key is not a known
+ * denomination or a count is not a non-negative whole number.
+ */
+export function denominationTotalCents(counts: unknown): number | null {
+  if (typeof counts !== "object" || counts === null || Array.isArray(counts)) return null;
+  let cents = 0;
+  for (const [key, count] of Object.entries(counts)) {
+    if (!CASH_DENOMINATIONS.some((value) => value === key)) return null;
+    if (typeof count !== "number" || !Number.isInteger(count) || count < 0) return null;
+    cents += Math.round(parseFloat(key) * 100) * count;
+  }
+  return cents;
+}
+
+/** Today's date (YYYY-MM-DD) on the Philippine calendar, whatever timezone the caller is in. */
+export function todayInManila(now: Date = new Date()): string {
+  return new Date(now.getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+export interface CashRemittance {
+  id: string;
+  remitted_by: string;
+  remitted_by_username: string | null;
+  received_by: string;
+  received_by_username: string | null;
+  /** YYYY-MM-DD, Philippine time: the day the cash was collected. */
+  business_date: string;
+  /** Decimal strings. */
+  expected_amount: string;
+  counted_amount: string;
+  denominations: DenominationCounts;
+  notes: string | null;
+  created_at: string;
+}
+
+/** One collector's cash for a day, from GET /api/cash-remittances/collections. */
+export interface CashCollectionRow {
+  user_id: string;
+  username: string;
+  role: string;
+  /** Decimal string: cash recorded on deliveries by this person that day. */
+  expected: string;
+  payment_count: number;
+  remittance: CashRemittance | null;
+}
+
 export interface ReportStockRow {
   sku: string;
   productName: string;
