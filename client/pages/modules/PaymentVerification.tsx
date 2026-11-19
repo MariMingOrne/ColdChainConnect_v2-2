@@ -1,13 +1,16 @@
 import { useCallback, useEffect, useState } from "react";
-import { BadgeCheck } from "lucide-react";
+import { BadgeCheck, Printer } from "lucide-react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
-import { paymentNeedsClearance, type UnverifiedPayment } from "@shared/api";
+import { paymentNeedsClearance, todayInManila, type UnverifiedPayment } from "@shared/api";
 import { PageDialog } from "@/components/shared/PageDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { TablePagination, paginate } from "@/components/TablePagination";
 import { TableToolbar } from "@/components/TableToolbar";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TruncatedText } from "@/components/ui/truncated-text";
@@ -18,6 +21,41 @@ import { formatPeso, responseError } from "@/lib/format";
 import { useNewRows } from "@/lib/unseen";
 
 const formatDate = (value: string) => new Date(value).toLocaleDateString("en-PH");
+const businessDate = (value: string) => new Date(new Date(value).getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+
+function PaymentPrintSheet({ payments, date }: { payments: UnverifiedPayment[]; date: string }) {
+  const total = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+
+  return (
+    <div id="payment-print-area" aria-hidden="true" className="hidden p-6 font-sans text-black print:block">
+      <style>{`
+        @media print {
+          body * { visibility: hidden; }
+          #payment-print-area, #payment-print-area * { visibility: visible; }
+          html, body { height: auto !important; overflow: visible !important; }
+          #payment-print-area { position: absolute; top: 0; left: 0; width: 100%; }
+        }
+      `}</style>
+      <h1 className="text-xl font-black">Payments to verify</h1>
+      <p className="mb-4 text-sm">{date ? new Date(`${date}T00:00:00+08:00`).toLocaleDateString("en-PH", { dateStyle: "long", timeZone: "Asia/Manila" }) : "All dates"}</p>
+      <table className="w-full border-collapse text-xs">
+        <thead><tr className="border-b border-black text-left"><th className="py-1">Customer</th><th className="py-1">Receipt / invoice</th><th className="py-1">Recorded by</th><th className="py-1">Method</th><th className="py-1 text-right">Amount</th></tr></thead>
+        <tbody>
+          {payments.map((payment) => (
+            <tr key={payment.id} className="border-b border-black/20">
+              <td className="py-1">{payment.customer_name}</td>
+              <td className="py-1">{payment.receipt_number} · {payment.invoice_receipt_number}</td>
+              <td className="py-1">{payment.recorded_by_username ?? "—"}</td>
+              <td className="py-1 capitalize">{payment.payment_method?.replace(/_/g, " ") ?? "—"}</td>
+              <td className="py-1 text-right">{formatPeso(payment.amount)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="mt-3 text-right text-sm font-bold">Total pending: {formatPeso(total)}</p>
+    </div>
+  );
+}
 
 function VerifyDialog({
   payment,
@@ -111,7 +149,9 @@ export function PaymentVerification() {
   const [payments, setPayments] = useState<UnverifiedPayment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [date, setDate] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  const [agentFilter, setAgentFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [verifying, setVerifying] = useState<UnverifiedPayment | null>(null);
 
@@ -134,23 +174,44 @@ export function PaymentVerification() {
   }, [fetchData]);
   useAutoRefresh(fetchData, { enabled: Boolean(token) });
 
+  const agentOptions = Array.from(
+    new Map(
+      payments
+        .filter((payment) => payment.recorded_by_role === "agent" && payment.recorded_by)
+        .map((payment) => [payment.recorded_by!, payment.recorded_by_username || payment.recorded_by!]),
+    ),
+  ).sort((a, b) => a[1].localeCompare(b[1]));
   const query = searchTerm.trim().toLowerCase();
-  const filtered = payments.filter(
-    (payment) =>
-      !query ||
-      [payment.customer_name, payment.receipt_number, payment.invoice_receipt_number, payment.recorded_by_username].some((value) =>
-        value?.toLowerCase().includes(query),
-      ),
-  );
+  const filtered = payments.filter((payment) => {
+    if (date && businessDate(payment.confirmed_at) !== date) return false;
+    if (agentFilter !== "all" && payment.recorded_by !== agentFilter) return false;
+    if (!query) return true;
+    return [payment.customer_name, payment.receipt_number, payment.invoice_receipt_number, payment.recorded_by_username, payment.payment_reference, payment.payment_method]
+      .some((value) => value?.toLowerCase().includes(query));
+  });
   const { currentPage, totalPages, pageItems } = paginate(filtered, page);
+  const totalAmount = filtered.reduce((sum, payment) => sum + Number(payment.amount), 0);
+  const cashAmount = filtered.filter((payment) => payment.payment_method === "cash").reduce((sum, payment) => sum + Number(payment.amount), 0);
+  const agentCount = new Set(filtered.filter((payment) => payment.recorded_by_role === "agent").map((payment) => payment.recorded_by)).size;
 
   if (isLoading) return <LoadingSpinner />;
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
-      <div>
-        <h1 className="page-title">Payments to verify</h1>
-        <p className="page-subtitle">Payments drivers and agents recorded on deliveries, waiting for Accounting</p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h1 className="page-title">Payments to verify</h1>
+          <p className="page-subtitle">Payments drivers and agents recorded on deliveries, waiting for Accounting</p>
+        </div>
+        <div className="flex flex-wrap items-end gap-3">
+          <label className="grid gap-1 text-xs font-semibold text-muted-foreground">
+            Date
+            <Input type="date" aria-label="Filter by date" value={date} max={todayInManila()} onChange={(event) => { setDate(event.target.value); setPage(1); }} />
+          </label>
+          <Button type="button" variant="outline" onClick={() => window.print()} disabled={filtered.length === 0}>
+            <Printer size={15} /> Print payments
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -159,11 +220,25 @@ export function PaymentVerification() {
         </Card>
       )}
 
-      <TableToolbar
-        searchValue={searchTerm}
-        onSearchChange={(value) => { setSearchTerm(value); setPage(1); }}
-        searchPlaceholder="Search by customer, receipt or recorder…"
-      />
+      <div className="no-print grid grid-cols-2 gap-4 md:grid-cols-4">
+        <Card className="p-4"><div className="text-2xl font-bold">{formatPeso(totalAmount)}</div><p className="mt-1 text-xs font-semibold text-muted-foreground">Total to verify</p></Card>
+        <Card className="p-4"><div className="text-2xl font-bold">{filtered.length}</div><p className="mt-1 text-xs font-semibold text-muted-foreground">Pending payments</p></Card>
+        <Card className="p-4"><div className="text-2xl font-bold">{formatPeso(cashAmount)}</div><p className="mt-1 text-xs font-semibold text-muted-foreground">Cash payments</p></Card>
+        <Card className="p-4"><div className="text-2xl font-bold">{agentCount}</div><p className="mt-1 text-xs font-semibold text-muted-foreground">Agents</p></Card>
+      </div>
+
+      <div className="no-print">
+        <TableToolbar
+          searchValue={searchTerm}
+          onSearchChange={(value) => { setSearchTerm(value); setPage(1); }}
+          searchPlaceholder="Search by customer, receipt or recorder…"
+        >
+          <NativeSelect aria-label="Filter by agent" value={agentFilter} onChange={(event) => { setAgentFilter(event.target.value); setPage(1); }}>
+            <option value="all">All agents</option>
+            {agentOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+          </NativeSelect>
+        </TableToolbar>
+      </div>
 
       <Card className="overflow-hidden rounded-xl shadow-sm">
         <Table>
@@ -171,6 +246,7 @@ export function PaymentVerification() {
             <TableRow>
               <TableHead>Customer</TableHead>
               <TableHead>Receipt / invoice</TableHead>
+              <TableHead>Method</TableHead>
               <TableHead>Amount</TableHead>
               <TableHead>Recorded by</TableHead>
               <TableHead>Date</TableHead>
@@ -180,8 +256,8 @@ export function PaymentVerification() {
           <TableBody>
             {pageItems.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={canVerify ? 6 : 5} className="py-10 text-center text-sm text-muted-foreground">
-                  {payments.length === 0 ? "No payments are waiting to be verified." : "No payments match your search."}
+                <TableCell colSpan={canVerify ? 7 : 6} className="py-10 text-center text-sm text-muted-foreground">
+                  {payments.length === 0 ? "No payments are waiting to be verified." : "No payments match the selected filters."}
                 </TableCell>
               </TableRow>
             ) : (
@@ -193,6 +269,7 @@ export function PaymentVerification() {
                   <TableCell className="whitespace-nowrap font-mono text-xs text-muted-foreground">
                     {payment.receipt_number} · {payment.invoice_receipt_number}
                   </TableCell>
+                  <TableCell className="text-sm capitalize text-muted-foreground">{payment.payment_method?.replace(/_/g, " ") || "—"}</TableCell>
                   <TableCell className="whitespace-nowrap text-sm font-bold">{formatPeso(payment.amount)}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{payment.recorded_by_username || "—"}</TableCell>
                   <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{formatDate(payment.confirmed_at)}</TableCell>
@@ -210,6 +287,8 @@ export function PaymentVerification() {
         </Table>
         <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </Card>
+
+      {createPortal(<PaymentPrintSheet payments={filtered} date={date} />, document.body)}
 
       {verifying && (
         <PageDialog onClose={() => setVerifying(null)} label="Verify payment">

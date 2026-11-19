@@ -23,6 +23,7 @@ const payment: UnverifiedPayment = {
   amount: "250.00",
   recorded_by: "u-driver",
   recorded_by_username: "dave_driver",
+  recorded_by_role: "driver",
 };
 
 const accounting: AuthUser = { id: "u-acct", username: "bob", role: "staff", module_permissions: ["accounting"] };
@@ -60,7 +61,7 @@ afterEach(() => {
 describe("PaymentVerification", () => {
   it("lists the payments waiting to be verified", async () => {
     renderScreen();
-    const row = (await screen.findByText("Corner Store")).closest("tr") as HTMLElement;
+    const row = await screen.findByRole("row", { name: /Corner Store/ });
     expect(row.textContent).toContain("OR-0001");
     expect(row.textContent).toContain("INV-0001");
     expect(row.textContent).toContain("₱250.00");
@@ -103,7 +104,7 @@ describe("PaymentVerification", () => {
   it("offers no Verify action to a user without payment:verify", async () => {
     useAuth.setState({ user: { id: "u-x", username: "x", role: "staff", module_permissions: ["reports"] } });
     renderScreen();
-    await screen.findByText("Corner Store");
+    await screen.findByRole("row", { name: /Corner Store/ });
     expect(screen.queryByRole("button", { name: /Verify/ })).toBeNull();
   });
 });

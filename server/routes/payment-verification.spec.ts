@@ -149,6 +149,7 @@ describe("GET /api/payments/unverified", () => {
       payment_method: "cash",
       recorded_by: seeded.driver.id,
       recorded_by_username: "test_driver",
+      recorded_by_role: "driver",
     });
     // The collected amount is the invoice total minus what is still outstanding; the later
     // record_payment entry wins over the original confirmation.
@@ -157,6 +158,7 @@ describe("GET /api/payments/unverified", () => {
       amount: "60.00",
       recorded_by: seeded.agent.id,
       recorded_by_username: "test_agent",
+      recorded_by_role: "agent",
     });
   });
 
