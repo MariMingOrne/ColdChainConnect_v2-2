@@ -745,7 +745,7 @@ export function BookingSummary() {
       )}
       {(showApproveModal && selectedBooking) && (
         <PageDialog onClose={closeApproveModal}>
-      <div className="mx-auto w-full max-w-2xl flex-1 flex flex-col p-6 gap-6">
+      <div className="mx-auto w-full !max-w-2xl flex-1 flex flex-col p-6 gap-6">
         <div className="page-header">
           <div>
             <h1 className="page-title">Approve Order</h1>
@@ -796,7 +796,7 @@ export function BookingSummary() {
       )}
       {(showRejectModal && selectedBooking) && (
         <PageDialog onClose={closeRejectModal}>
-      <div className="mx-auto w-full max-w-2xl flex-1 flex flex-col p-6 gap-6">
+      <div className="mx-auto w-full !max-w-2xl flex-1 flex flex-col p-6 gap-6">
         <div className="page-header">
           <div>
             <h1 className="page-title">Reject Order</h1>

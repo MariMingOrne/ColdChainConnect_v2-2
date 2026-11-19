@@ -228,7 +228,7 @@ export function DeliveryHistory() {
   
       {(viewReceipt) && (
         <PageDialog onClose={() => setViewReceipt(null)}>
-<div className="mx-auto w-full max-w-xl">
+<div className="mx-auto w-full !max-w-xl">
 <OriginalReceiptModal receipt={viewReceipt} onClose={() => setViewReceipt(null)} showBack={false} />
 </div>
         </PageDialog>

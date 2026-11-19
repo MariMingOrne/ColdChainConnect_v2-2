@@ -162,7 +162,7 @@ function CustomerModal({
   const updateAddressField = (field: "street_number" | "street_address" | "location" | "state" | "postal_code", value: string) =>
     setFormData({ ...formData, [field]: value, latitude: null, longitude: null });
   return (
-    <div className="mx-auto w-full max-w-xl flex-1 space-y-6 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
+    <div className="mx-auto w-full !max-w-xl flex-1 space-y-6 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">{title}</h1>
