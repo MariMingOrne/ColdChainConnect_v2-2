@@ -396,9 +396,13 @@ export function Agents({ onCreateAccount }: { onCreateAccount?: () => void }) {
             hire_date: formData.hire_date,
             address: formData.address,
             is_active: formData.is_active,
+            username: formData.username || undefined,
           }),
         });
-        if (!agentRes.ok) throw new Error("Failed to update agent");
+        if (!agentRes.ok) {
+          const err = await agentRes.json().catch(() => null);
+          throw new Error(err?.error || "Failed to update agent");
+        }
         const saved = await agentRes.json();
 
         // Update password if provided

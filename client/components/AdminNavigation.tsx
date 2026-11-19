@@ -73,7 +73,7 @@ const accountGroup: NavigationGroup = {
     { label: "Agents", path: "/manage-accounts/agents", icon: Users },
     { label: "Drivers", path: "/manage-accounts/drivers", icon: Truck },
     { label: "Admins", path: "/manage-accounts/admin", icon: ShieldCheck },
-    { label: "Accounting", path: "/manage-accounts/staff", icon: Users },
+    { label: "Staff", path: "/manage-accounts/staff", icon: Users },
   ],
 };
 
