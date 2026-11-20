@@ -29,6 +29,7 @@ import {
 } from "./routes/products";
 import {
   listBatches,
+  listBatchReservations,
   createBatch,
   updateBatch,
   deleteBatch,
@@ -193,6 +194,7 @@ export function createServer() {
 
   // Batches routes
   app.get("/api/batches", authMiddleware, listBatches);
+  app.get("/api/batches/reservations", authMiddleware, requireRole("admin"), listBatchReservations);
   app.post("/api/batches/import", authMiddleware, requireRole("admin"), importInventory);
   app.post("/api/batches", authMiddleware, requireRole("admin"), createBatch);
   app.patch("/api/batches/:id", authMiddleware, requireRole("admin"), updateBatch);

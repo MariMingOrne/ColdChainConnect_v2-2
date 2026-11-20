@@ -20,7 +20,8 @@ import { Input } from "@/components/ui/input";
 import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
 import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
 import { RecordTitleButton } from "@/components/RecordTitleButton";
-import type { ProductUnit } from "@shared/api";
+import type { BatchReservation, ProductUnit } from "@shared/api";
+import { BatchReservationsAccordion } from "@/components/BatchReservationsAccordion";
 
 interface InventoryProduct {
   id: string;
@@ -690,6 +691,16 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
   const [batchQuery, setBatchQuery] = useState("");
   const [createdSince, setCreatedSince] = useState("");
   const [productFilter, setProductFilter] = useState("");
+  const [reservations, setReservations] = useState<Record<string, BatchReservation[]>>({});
+
+  useEffect(() => {
+    if (!canManageBatches) return;
+    const token = localStorage.getItem("auth_token") || "";
+    fetch("/api/batches/reservations", { headers: { Authorization: `Bearer ${token}` } })
+      .then((response) => (response.ok ? response.json() : Promise.reject(new Error("Failed to load batch reservations"))))
+      .then((data: Record<string, BatchReservation[]>) => setReservations(data))
+      .catch((err) => console.error(err));
+  }, [batches, canManageBatches]);
 
   const activeBatches = batches.filter((b) => {
     if (b.isArchived || b.id === "batch-all") return false;
@@ -812,6 +823,7 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                       })
                     )}
                   </div>
+                  <BatchReservationsAccordion batches={batches.filter((b) => !b.isArchived && b.id !== "batch-all")} reservations={reservations} />
                   <div className="flex gap-2 justify-between">
                     <Button onClick={() => setShowArchived(true)} variant="secondary"><Archive size={16} aria-hidden="true" />View Archived ({archivedBatches.length})</Button>
                     {canManageBatches && <Button onClick={() => { setIsCreatingBatch(true); setPallets([]); setNewBatchName(""); }} variant="success"><Plus size={16} aria-hidden="true" />Create New Batch</Button>}

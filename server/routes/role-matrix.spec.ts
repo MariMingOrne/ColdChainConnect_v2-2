@@ -85,6 +85,7 @@ const POLICY: Record<string, Policy> = {
   "PATCH /api/products/:id/archive": ADMIN_ONLY,
   "POST /api/products/import": ADMIN_ONLY,
   "GET /api/batches": agentAnd("product-customer"),
+  "GET /api/batches/reservations": ADMIN_ONLY,
   "POST /api/batches/import": ADMIN_ONLY,
   "POST /api/batches": ADMIN_ONLY,
   "PATCH /api/batches/:id": ADMIN_ONLY,

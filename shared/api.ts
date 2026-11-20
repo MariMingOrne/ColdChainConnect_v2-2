@@ -195,6 +195,15 @@ export interface Product {
   updated_at: string;
 }
 
+export interface BatchReservation {
+  productId: string;
+  productName: string;
+  sku: string | null;
+  orderId: string;
+  customerName: string;
+  qty: number;
+}
+
 export const PRODUCT_UNITS = ["PK", "EA"] as const;
 export type ProductUnit = (typeof PRODUCT_UNITS)[number];
 
