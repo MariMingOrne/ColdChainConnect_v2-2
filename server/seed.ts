@@ -5,6 +5,8 @@ import {
   users,
   customers,
   products,
+  drivers,
+  trucks,
   agents,
 } from "./db/schema";
 import { hashPassword } from "./auth";
@@ -14,7 +16,6 @@ async function seed() {
   console.log("🌱 Starting seed...");
 
   try {
-    // Create admin user
     console.log("📝 Creating admin user...");
     const adminUserId = randomUUID();
     const adminPassword = await hashPassword("admin123");
@@ -26,36 +27,25 @@ async function seed() {
       role: "admin",
     }).onConflictDoNothing();
 
-    // Create agent users (account-linked staff)
-    console.log("📝 Creating agent users...");
-    const agent1UserId = randomUUID();
-    const agent2UserId = randomUUID();
-    const agent3UserId = randomUUID();
+    console.log("📝 Creating agent and driver users...");
+    const agentUserIds = [randomUUID(), randomUUID(), randomUUID()];
+    const driverUserIds = [randomUUID(), randomUUID(), randomUUID()];
 
-    const agentPassword = await hashPassword("agent123");
+    const staffLogins = [
+      ...agentUserIds.map((id, index) => ({ id, username: `agent${index + 1}`, role: "agent" as const })),
+      ...driverUserIds.map((id, index) => ({ id, username: `driver${index + 1}`, role: "driver" as const })),
+    ];
+    await db.insert(users).values(
+      await Promise.all(
+        staffLogins.map(async ({ id, username, role }) => ({
+          id,
+          username,
+          password_hash: await hashPassword(username),
+          role,
+        })),
+      ),
+    ).onConflictDoNothing();
 
-    await db.insert(users).values([
-      {
-        id: agent1UserId,
-        username: "agent1",
-        password_hash: agentPassword,
-        role: "agent",
-      },
-      {
-        id: agent2UserId,
-        username: "agent2",
-        password_hash: agentPassword,
-        role: "agent",
-      },
-      {
-        id: agent3UserId,
-        username: "agent3",
-        password_hash: agentPassword,
-        role: "agent",
-      },
-    ]).onConflictDoNothing();
-
-    // Create products
     console.log("📝 Creating products...");
     const productRows = seedProducts.map((product) => ({
       ...product,
@@ -64,182 +54,219 @@ async function seed() {
     }));
     await db.insert(products).values(productRows).onConflictDoNothing();
 
-    // Create agent profiles
     console.log("📝 Creating agent profiles...");
-    const agentProfile1 = randomUUID();
-    const agentProfile2 = randomUUID();
-    const agentProfile3 = randomUUID();
+    const agentProfileIds = [randomUUID(), randomUUID(), randomUUID()];
 
     await db.insert(agents).values([
       {
-        id: agentProfile1,
-        user_id: agent1UserId,
-        full_name: "Maria Santos",
-        email: "maria.santos@coldchain.com",
-        contact_info: "09171234567",
+        id: agentProfileIds[0],
+        user_id: agentUserIds[0],
+        full_name: "Dane Andrea Bautista",
+        email: "dane.bautista@coldchain.com",
+        contact_info: "09171230101",
         hire_date: "2022-01-15",
-        address: "123 Main St, Makati",
+        address: "Brgy. Poblacion, Arayat, Pampanga",
         is_active: true,
       },
       {
-        id: agentProfile2,
-        user_id: agent2UserId,
-        full_name: "Juan Dela Cruz",
-        email: "juan.delacruz@coldchain.com",
-        contact_info: "09172345678",
+        id: agentProfileIds[1],
+        user_id: agentUserIds[1],
+        full_name: "Meiji Zhao",
+        email: "meiji.zhao@coldchain.com",
+        contact_info: "09171230102",
         hire_date: "2022-03-10",
-        address: "456 BGC Ave, Taguig",
+        address: "Brgy. Poblacion, San Fernando, Pampanga",
         is_active: true,
       },
       {
-        id: agentProfile3,
-        user_id: agent3UserId,
-        full_name: "Ana Reyes",
-        email: "ana.reyes@coldchain.com",
-        contact_info: "09173456789",
+        id: agentProfileIds[2],
+        user_id: agentUserIds[2],
+        full_name: "Ryah Carino",
+        email: "ryah.carino@coldchain.com",
+        contact_info: "09171230103",
         hire_date: "2023-06-01",
-        address: "789 Tagaytay Rd, Cavite",
+        address: "Brgy. Poblacion, Apalit, Pampanga",
         is_active: true,
       },
     ]).onConflictDoNothing();
 
-    // Create customers (linked to agent users)
     console.log("📝 Creating customers...");
-    const customer1 = randomUUID();
-    const customer2 = randomUUID();
-    const customer3 = randomUUID();
-    const customer4 = randomUUID();
-    const customer5 = randomUUID();
-    const customer6 = randomUUID();
-    const customer7 = randomUUID();
-    const customer8 = randomUUID();
-
     await db.insert(customers).values([
       {
-        id: customer1,
-        store_name: "Palengke Fresh Meats - Makati",
-        location: "Makati City",
-        district: "District A",
-        street_number: "123",
-        street_address: "Kalayaan Ave, Poblacion",
-        state: "Metro Manila",
-        postal_code: "1210",
-        contact_person: "Rosa Dimaculangan",
-        contact_info: "09171234501",
-        agent_id: agent1UserId,
+        id: randomUUID(),
+        store_name: "Aling Nena's Sari-Sari Store",
+        location: "Arayat, Pampanga",
+        district: "Northern Pampanga",
+        street_address: "MacArthur Highway, Brgy. Poblacion",
+        state: "Pampanga",
+        postal_code: "2012",
+        contact_person: "Nena Dizon",
+        contact_info: "09171230001",
+        agent_id: agentUserIds[0],
         payment_type: "cash",
-
       },
       {
-        id: customer2,
-        store_name: "Bonifacio Fresh Market - BGC",
-        location: "Taguig City",
-        district: "District A",
-        street_number: "7",
-        street_address: "5th Ave, Bonifacio Global City",
-        state: "Metro Manila",
-        postal_code: "1634",
-        contact_person: "Mark Anthony Cruz",
-        contact_info: "09171234502",
-        agent_id: agent2UserId,
+        id: randomUUID(),
+        store_name: "Mexico Public Market Grocery",
+        location: "Mexico, Pampanga",
+        district: "Northern Pampanga",
+        street_address: "MacArthur Highway, Brgy. Poblacion",
+        state: "Pampanga",
+        postal_code: "2021",
+        contact_person: "Rodel Mendoza",
+        contact_info: "09171230002",
+        agent_id: agentUserIds[0],
         payment_type: "bank_transfer",
-
       },
       {
-        id: customer3,
-        store_name: "Tagaytay Highlands Grocery - Tagaytay",
-        location: "Tagaytay City",
-        district: "District C",
-        street_number: "45",
-        street_address: "Aguinaldo Hwy, Brgy. Sungay",
-        state: "Cavite",
-        postal_code: "4120",
-        contact_person: "Lorna Villanueva",
-        contact_info: "09171234503",
-        agent_id: agent3UserId,
+        id: randomUUID(),
+        store_name: "San Fernando Palengke Meats",
+        location: "San Fernando City, Pampanga",
+        district: "Central Pampanga",
+        street_address: "Jose Abad Santos Ave, Brgy. Poblacion",
+        state: "Pampanga",
+        postal_code: "2000",
+        contact_person: "Liza Tolentino",
+        contact_info: "09171230003",
+        agent_id: agentUserIds[1],
+        payment_type: "cash",
+      },
+      {
+        id: randomUUID(),
+        store_name: "Friendship Highway Mini Mart",
+        location: "Angeles City, Pampanga",
+        district: "Central Pampanga",
+        street_address: "Friendship Highway, Brgy. Pampang",
+        state: "Pampanga",
+        postal_code: "2009",
+        contact_person: "Bong Santiago",
+        contact_info: "09171230004",
+        agent_id: agentUserIds[1],
+        payment_type: "bank_transfer",
+      },
+      {
+        id: randomUUID(),
+        store_name: "Dau Sari-Sari Grocery",
+        location: "Mabalacat, Pampanga",
+        district: "Central Pampanga",
+        street_address: "MacArthur Highway, Brgy. Dau",
+        state: "Pampanga",
+        postal_code: "2010",
+        contact_person: "Marites Pangilinan",
+        contact_info: "09171230005",
+        agent_id: agentUserIds[1],
         payment_type: "cod",
-
       },
       {
-        id: customer4,
-        store_name: "Sta. Cruz Sari-Sari Mart - Quiapo",
-        location: "Manila City",
-        district: "District A",
-        street_number: "210",
-        street_address: "Quezon Blvd, Quiapo",
-        state: "Metro Manila",
-        postal_code: "1001",
-        contact_person: "Ernesto Bautista",
-        contact_info: "09171234504",
-        agent_id: agent1UserId,
+        id: randomUUID(),
+        store_name: "Apalit Fresh Catch",
+        location: "Apalit, Pampanga",
+        district: "Southern Pampanga",
+        street_address: "Brgy. Poblacion",
+        state: "Pampanga",
+        postal_code: "2016",
+        contact_person: "Ramon Cunanan",
+        contact_info: "09171230006",
+        agent_id: agentUserIds[2],
         payment_type: "cash",
-
       },
       {
-        id: customer5,
-        store_name: "Ortigas Center Supermarket - Pasig",
-        location: "Pasig City",
-        district: "District A",
-        street_number: "18",
-        street_address: "ADB Ave, Ortigas Center",
-        state: "Metro Manila",
-        postal_code: "1605",
-        contact_person: "Jasmine Lim",
-        contact_info: "09171234505",
-        agent_id: agent2UserId,
-        payment_type: "bank_transfer",
-
-      },
-      {
-        id: customer6,
-        store_name: "Cebu Lechon House Grocers - Cebu",
-        location: "Cebu City",
-        street_number: "88",
-        street_address: "Osmeña Blvd, Capitol Site",
-        state: "Cebu",
-        postal_code: "6000",
-        contact_person: "Ramon Gonzales",
-        contact_info: "09171234506",
-        agent_id: agent3UserId,
+        id: randomUUID(),
+        store_name: "Macabebe Bagoong Shop",
+        location: "Macabebe, Pampanga",
+        district: "Southern Pampanga",
+        street_address: "Brgy. Poblacion",
+        state: "Pampanga",
+        postal_code: "2014",
+        contact_person: "Corazon Dela Cruz",
+        contact_info: "09171230007",
+        agent_id: agentUserIds[2],
         payment_type: "cod",
-
       },
       {
-        id: customer7,
-        store_name: "Davao Fresh Catch Store - Davao",
-        location: "Davao City",
-        street_number: "32",
-        street_address: "J.P. Laurel Ave, Bajada",
-        state: "Davao del Sur",
-        postal_code: "8000",
-        contact_person: "Cherry Ann Macaraeg",
-        contact_info: "09171234507",
-        agent_id: agent1UserId,
+        id: randomUUID(),
+        store_name: "Masantol Public Market Store",
+        location: "Masantol, Pampanga",
+        district: "Southern Pampanga",
+        street_address: "Brgy. Poblacion",
+        state: "Pampanga",
+        postal_code: "2082",
+        contact_person: "Edgardo Pineda",
+        contact_info: "09171230008",
+        agent_id: agentUserIds[2],
         payment_type: "bank_transfer",
+      },
+    ]).onConflictDoNothing();
 
+    console.log("📝 Creating drivers...");
+    const driverProfileIds = [randomUUID(), randomUUID(), randomUUID()];
+
+    await db.insert(drivers).values([
+      {
+        id: driverProfileIds[0],
+        user_id: driverUserIds[0],
+        full_name: "Miza Bautista",
+        contact_info: "09181230201",
+        license: "N01-23-201201",
+        hire_date: "2021-05-10",
+        employment_type: "full_time",
+        is_active: true,
       },
       {
-        id: customer8,
-        store_name: "Baguio Strawberry Farm Market - Baguio",
-        location: "Baguio City",
-        street_number: "12",
-        street_address: "Session Rd",
-        state: "Benguet",
-        postal_code: "2600",
-        contact_person: "Edgar Dulay",
-        contact_info: "09171234508",
-        agent_id: agent2UserId,
-        payment_type: "cash",
+        id: driverProfileIds[1],
+        user_id: driverUserIds[1],
+        full_name: "Mari Ming Ornette",
+        contact_info: "09181230202",
+        license: "N01-23-202202",
+        hire_date: "2021-08-20",
+        employment_type: "full_time",
+        is_active: true,
+      },
+      {
+        id: driverProfileIds[2],
+        user_id: driverUserIds[2],
+        full_name: "Seighart Mundt",
+        contact_info: "09181230203",
+        license: "N01-23-203203",
+        hire_date: "2022-02-14",
+        employment_type: "part_time",
+        is_active: true,
+      },
+    ]).onConflictDoNothing();
 
+    console.log("📝 Creating trucks...");
+    await db.insert(trucks).values([
+      {
+        id: randomUUID(),
+        license_plate: "PAM 4821",
+        district: "Northern Pampanga",
+        driver_id: driverProfileIds[0],
+        status: "available",
+      },
+      {
+        id: randomUUID(),
+        license_plate: "PAM 7315",
+        district: "Central Pampanga",
+        driver_id: driverProfileIds[1],
+        status: "available",
+      },
+      {
+        id: randomUUID(),
+        license_plate: "PAM 3186",
+        district: "Southern Pampanga",
+        driver_id: driverProfileIds[2],
+        status: "available",
       },
     ]).onConflictDoNothing();
 
     console.log("✅ Seed completed successfully!");
     console.log("\n📋 Created data:");
     console.log("   ✓ Admin user (admin/admin123)");
-    console.log("   ✓ 3 Agent users (agent1-3/agent123) with profiles");
+    console.log("   ✓ 3 Agents (agent1-3, password matches username)");
+    console.log("   ✓ 3 Drivers (driver1-3, password matches username)");
     console.log(`   ✓ ${seedProducts.length} Products (current Frabelle catalog)`);
-    console.log("   ✓ 8 Customers");
+    console.log("   ✓ 8 Pampanga customers");
+    console.log("   ✓ 3 Trucks (Northern, Central, Southern Pampanga)");
 
     process.exit(0);
   } catch (error) {
