@@ -809,21 +809,23 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                       activeBatches.map((batch) => {
                         const totalItems = batch.pallets?.reduce((sum: number, p: any) => sum + (p.items?.length || 0), 0) || 0;
                         return (
-                          <div key={batch.id} className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedBatchId === batch.id ? "border-accent-2 bg-accent-2/10" : "border-border hover:bg-accent"}`} onClick={() => onSelectBatch(batch.id)}>
-                            <div className="flex-1">
-                              <div className="text-sm font-semibold text-foreground">{batch.name}</div>
-                              <div className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
+                          <div key={batch.id} className={`rounded-lg border transition-colors ${selectedBatchId === batch.id ? "border-accent-2 bg-accent-2/10" : "border-border hover:bg-accent"}`}>
+                            <div className="flex items-center justify-between p-3 cursor-pointer" onClick={() => onSelectBatch(batch.id)}>
+                              <div className="flex-1">
+                                <div className="text-sm font-semibold text-foreground">{batch.name}</div>
+                                <div className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
+                              </div>
+                              {canManageBatches && <div className="flex gap-1">
+                                <Button onClick={(e) => { e.stopPropagation(); handleArchiveBatch(batch.id); }} variant="ghost" size="icon" className="h-8 w-8" aria-label={`Archive batch ${batch.name}`} title="Archive batch"><Archive size={15} aria-hidden="true" /></Button>
+                                <Button onClick={(e) => { e.stopPropagation(); onDeleteBatch(batch.id); }} variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label={`Delete batch ${batch.name}`} title="Delete batch"><Trash2 size={15} aria-hidden="true" /></Button>
+                              </div>}
                             </div>
-                            {canManageBatches && <div className="flex gap-1">
-                              <Button onClick={(e) => { e.stopPropagation(); handleArchiveBatch(batch.id); }} variant="ghost" size="icon" className="h-8 w-8" aria-label={`Archive batch ${batch.name}`} title="Archive batch"><Archive size={15} aria-hidden="true" /></Button>
-                              <Button onClick={(e) => { e.stopPropagation(); onDeleteBatch(batch.id); }} variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label={`Delete batch ${batch.name}`} title="Delete batch"><Trash2 size={15} aria-hidden="true" /></Button>
-                            </div>}
+                            <BatchReservationsAccordion reservations={reservations[batch.id] ?? []} />
                           </div>
                         );
                       })
                     )}
                   </div>
-                  <BatchReservationsAccordion batches={batches.filter((b) => !b.isArchived && b.id !== "batch-all")} reservations={reservations} />
                   <div className="flex gap-2 justify-between">
                     <Button onClick={() => setShowArchived(true)} variant="secondary"><Archive size={16} aria-hidden="true" />View Archived ({archivedBatches.length})</Button>
                     {canManageBatches && <Button onClick={() => { setIsCreatingBatch(true); setPallets([]); setNewBatchName(""); }} variant="success"><Plus size={16} aria-hidden="true" />Create New Batch</Button>}
