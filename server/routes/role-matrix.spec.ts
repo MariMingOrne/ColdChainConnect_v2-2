@@ -118,6 +118,7 @@ const POLICY: Record<string, Policy> = {
   "POST /api/bookings": agentAnd("order-fulfillment"),
   "PATCH /api/bookings/:id/status": ADMIN_ONLY,
   "PATCH /api/bookings/:id/items": ADMIN_ONLY,
+  "PATCH /api/bookings/:id/prepared-delivery-date": ADMIN_ONLY,
   "DELETE /api/bookings/:id": agentAnd("order-fulfillment"),
   "GET /api/invoices": agentAnd("order-fulfillment"),
   "GET /api/invoices/:id": agentAnd("order-fulfillment"),
