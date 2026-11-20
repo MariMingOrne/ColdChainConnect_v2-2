@@ -22,6 +22,7 @@ import { formatPeso, responseError } from "@/lib/format";
 import { useNewRows } from "@/lib/unseen";
 import { formatPeriod, parsePeriod, periodBounds } from "@/lib/paymentPeriod";
 import { PaymentPeriodFilter } from "./PaymentPeriodFilter";
+import { BulkVerifyDialog } from "./BulkVerifyDialog";
 
 const formatDate = (value: string) => new Date(value).toLocaleDateString("en-PH");
 const businessDate = (value: string) => new Date(new Date(value).getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
@@ -164,7 +165,8 @@ export function PaymentVerification() {
   const [searchTerm, setSearchTerm] = useState("");
   const [agentFilter, setAgentFilter] = useState("all");
   const [page, setPage] = useState(1);
-  const [verificationQueue, setVerificationQueue] = useState<UnverifiedPayment[]>([]);
+  const [verifying, setVerifying] = useState<UnverifiedPayment | null>(null);
+  const [bulkTarget, setBulkTarget] = useState<UnverifiedPayment[] | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
   const [printTarget, setPrintTarget] = useState<UnverifiedPayment[] | null>(null);
 
@@ -235,11 +237,9 @@ export function PaymentVerification() {
   const agentCount = new Set(filtered.filter((payment) => payment.recorded_by_role === "agent").map((payment) => payment.recorded_by)).size;
   const selectedPayments = filtered.filter((payment) => selectedIds.has(payment.id));
   const bulkActions: TableBulkAction[] = [
-    ...(canVerify ? [{ label: "Verify selected", onSelect: () => setVerificationQueue(selectedPayments) }] : []),
+    ...(canVerify ? [{ label: "Verify selected", onSelect: () => setBulkTarget(selectedPayments) }] : []),
     { label: "Print selected", onSelect: () => setPrintTarget(selectedPayments) },
   ];
-  const verifying = verificationQueue[0] ?? null;
-
   if (isLoading) return <LoadingSpinner />;
 
   return (
@@ -348,7 +348,7 @@ export function PaymentVerification() {
                   <TableCell className="whitespace-nowrap text-xs text-muted-foreground">{formatDate(payment.confirmed_at)}</TableCell>
                   {canVerify && (
                     <TableCell className="text-right">
-                      <Button variant="success" size="sm" onClick={() => setVerificationQueue([payment])}>
+                      <Button variant="success" size="sm" onClick={() => setVerifying(payment)}>
                         <BadgeCheck size={13} /> Verify
                       </Button>
                     </TableCell>
@@ -364,14 +364,29 @@ export function PaymentVerification() {
       {printTarget && createPortal(<PaymentPrintSheet payments={printTarget} periodText={formatPeriod(bounds)} />, document.body)}
 
       {verifying && (
-        <PageDialog onClose={() => setVerificationQueue([])} label="Verify payment">
+        <PageDialog onClose={() => setVerifying(null)} label="Verify payment">
           <VerifyDialog
             key={verifying.id}
             payment={verifying}
             token={token}
-            onClose={() => setVerificationQueue([])}
+            onClose={() => setVerifying(null)}
             onDone={fetchData}
-            onVerified={() => setVerificationQueue((current) => current.slice(1))}
+            onVerified={() => setVerifying(null)}
+          />
+        </PageDialog>
+      )}
+
+      {bulkTarget && (
+        <PageDialog onClose={() => setBulkTarget(null)} label="Verify selected payments">
+          <BulkVerifyDialog
+            payments={bulkTarget}
+            token={token}
+            onClose={() => setBulkTarget(null)}
+            onDone={fetchData}
+            onVerified={() => {
+              setBulkTarget(null);
+              setSelectedIds(new Set());
+            }}
           />
         </PageDialog>
       )}
