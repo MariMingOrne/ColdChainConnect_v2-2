@@ -80,63 +80,64 @@ function DetailField({ label, className, children }: { label: string; className?
   return (
     <div className={className}>
       <div className="mb-1 text-xs font-semibold text-muted-foreground">{label}</div>
-      <div className="text-sm text-foreground">{children}</div>
+      <div className="break-words text-sm text-foreground">{children}</div>
     </div>
   );
 }
 
 function ViewCustomerPage({ customer, canEdit, onClose, onEdit }: { customer: Customer; canEdit: boolean; onClose: () => void; onEdit: () => void }) {
   return (
-    <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
+    <div className="min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-3 md:px-4 md:py-4">
       <div className="page-header">
         <div>
           <h1 className="page-title">Customer Details</h1>
         </div>
       </div>
       <div className="w-full rounded-2xl border border-border bg-card">
-        <div className="grid grid-cols-1 gap-x-6 gap-y-5 p-6 sm:grid-cols-2">
-          <DetailField label="Store Name"><span className="font-semibold">{customer.store_name}</span></DetailField>
-          <DetailField label="Delivery Address">{formatCustomerAddress(customer) || "—"}</DetailField>
-          <DetailField label="Street No.">{customer.street_number || "—"}</DetailField>
-          <DetailField label="Street Address">{customer.street_address || "—"}</DetailField>
-          <DetailField label="City">{customer.location || "—"}</DetailField>
-          <DetailField label="State / Province">{customer.state || "—"}</DetailField>
-          <DetailField label="Postal Code">{customer.postal_code || "—"}</DetailField>
-          <DetailField label="Coordinates">
-            {customer.latitude != null && customer.longitude != null ? `${customer.latitude}, ${customer.longitude}` : "—"}
-          </DetailField>
-          <DetailField label="Truck District">{customer.district || "—"}</DetailField>
-          <DetailField label="Contact Person">{customer.contact_person || "—"}</DetailField>
-          <DetailField label="Contact Info">{customer.contact_info || "—"}</DetailField>
-          <DetailField label="Payment Type">{customer.payment_type ? paymentTypeLabels[customer.payment_type] : "—"}</DetailField>
-          <DetailField label="Credit Limit">{customer.credit_limit ? `₱${Number(customer.credit_limit).toLocaleString()}` : "No limit"}</DetailField>
-          <DetailField label="Credit Terms">{customer.credit_terms_days ? `${customer.credit_terms_days} days` : "—"}</DetailField>
-          <DetailField label="Created">{new Date(customer.created_at).toLocaleDateString()}</DetailField>
-          <DetailField label="Last Updated">{new Date(customer.updated_at).toLocaleDateString()}</DetailField>
-          <DetailField label="Discounts" className="sm:col-span-2">
-            {customer.discounts && customer.discounts.length > 0 ? (
-              <ul className="space-y-1">
-                {customer.discounts.map((discount) => (
-                  <li key={discount.id ?? discount.label}>
-                    {discount.label}: {formatPercent(Number(discount.rate))}%
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(260px,0.7fr)]">
+          <div className="grid grid-cols-1 gap-x-4 gap-y-3 p-4 sm:grid-cols-2 xl:grid-cols-3">
+            <DetailField label="Store Name"><span className="font-semibold">{customer.store_name}</span></DetailField>
+            <DetailField label="Delivery Address">{formatCustomerAddress(customer) || "—"}</DetailField>
+            <DetailField label="Street No.">{customer.street_number || "—"}</DetailField>
+            <DetailField label="Street Address">{customer.street_address || "—"}</DetailField>
+            <DetailField label="City">{customer.location || "—"}</DetailField>
+            <DetailField label="State / Province">{customer.state || "—"}</DetailField>
+            <DetailField label="Postal Code">{customer.postal_code || "—"}</DetailField>
+            <DetailField label="Coordinates">
+              {customer.latitude != null && customer.longitude != null ? `${customer.latitude}, ${customer.longitude}` : "—"}
+            </DetailField>
+            <DetailField label="Truck District">{customer.district || "—"}</DetailField>
+            <DetailField label="Contact Person">{customer.contact_person || "—"}</DetailField>
+            <DetailField label="Contact Info">{customer.contact_info || "—"}</DetailField>
+            <DetailField label="Payment Type">{customer.payment_type ? paymentTypeLabels[customer.payment_type] : "—"}</DetailField>
+            <DetailField label="Credit Limit">{customer.credit_limit ? `₱${Number(customer.credit_limit).toLocaleString()}` : "No limit"}</DetailField>
+            <DetailField label="Credit Terms">{customer.credit_terms_days ? `${customer.credit_terms_days} days` : "—"}</DetailField>
+            <DetailField label="Created">{new Date(customer.created_at).toLocaleDateString()}</DetailField>
+            <DetailField label="Last Updated">{new Date(customer.updated_at).toLocaleDateString()}</DetailField>
+            <DetailField label="Discounts" className="sm:col-span-2 xl:col-span-3">
+              {customer.discounts && customer.discounts.length > 0 ? (
+                <ul className="space-y-1">
+                  {customer.discounts.map((discount) => (
+                    <li key={discount.id ?? discount.label}>
+                      {discount.label}: {formatPercent(Number(discount.rate))}%
+                    </li>
+                  ))}
+                  <li className="font-semibold">
+                    Total: {formatPercent(totalDiscountRate(customer.discounts))}%
                   </li>
-                ))}
-                <li className="font-semibold">
-                  Total: {formatPercent(totalDiscountRate(customer.discounts))}%
-                </li>
-              </ul>
-            ) : (
-              "—"
-            )}
-          </DetailField>
+                </ul>
+              ) : (
+                "—"
+              )}
+            </DetailField>
+          </div>
+          <div className="space-y-2 border-t border-border p-4 lg:border-l lg:border-t-0">
+            <div className="text-xs font-semibold text-muted-foreground">Delivery point</div>
+            <CustomerLocationMap latitude={customer.latitude} longitude={customer.longitude} />
+          </div>
         </div>
 
-        <div className="space-y-2 border-t border-border p-6">
-          <div className="text-xs font-semibold text-muted-foreground">Delivery point</div>
-          <CustomerLocationMap latitude={customer.latitude} longitude={customer.longitude} />
-        </div>
-
-        <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end gap-2 border-t border-border rounded-b-2xl">
+        <div className="sticky bottom-0 bg-muted px-4 py-3 flex justify-end gap-2 border-t border-border rounded-b-2xl">
           {canEdit && <Button onClick={onEdit} variant="secondary">Edit</Button>}
           <Button onClick={onClose} variant="default">
             Close
