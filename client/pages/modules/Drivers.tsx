@@ -275,12 +275,12 @@ function DriverCard({
         </label>
       )}
 
-      <div className="flex gap-2 pt-1 border-t border-border">
-        <Button onClick={onView} variant="outline" size="sm" className="flex-1">View</Button>
-        <Button onClick={onSchedule} variant="outline" size="sm" className="flex-1">Schedule</Button>
-        {onEdit && <Button onClick={onEdit} variant="outline" size="sm" className="flex-1">Edit</Button>}
+      <div className="grid grid-cols-2 gap-2 pt-1 border-t border-border">
+        <Button onClick={onView} variant="outline" size="sm" className="min-w-0">View</Button>
+        <Button onClick={onSchedule} variant="outline" size="sm" className="min-w-0">Schedule</Button>
+        {onEdit && <Button onClick={onEdit} variant="outline" size="sm" className="min-w-0">Edit</Button>}
         {showArchive && (
-          <Button onClick={onArchive} variant={driver.is_archived ? "outline" : "danger"} size="sm" className="flex-1">
+          <Button onClick={onArchive} variant={driver.is_archived ? "outline" : "danger"} size="sm" className="min-w-0">
             {driver.is_archived ? <ArchiveRestore size={14} /> : <Archive size={14} />}
             {driver.is_archived ? "Restore" : "Archive"}
           </Button>

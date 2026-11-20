@@ -327,29 +327,24 @@ export function Inventory() {
     await refreshBatchesFromDB();
   };
 
-  const handleDeleteSelected = async () => {
+  const handleArchiveSelected = async () => {
     if (selectedProducts.length === 0) return;
     const noun = selectedProducts.length === 1 ? "product" : "products";
-    if (!(await confirmAction(`Delete ${selectedProducts.length} selected ${noun}?`))) return;
+    if (!(await confirmAction(`Archive ${selectedProducts.length} selected ${noun}? They will be hidden from the product list until restored.`))) return;
     const selectedIds = selectedProducts.map((product) => product.id);
     try {
       const token = localStorage.getItem("auth_token") || "";
-      await Promise.all(selectedIds.map(async (id) => {
-        const response = await fetch(`/api/products/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-        if (!response.ok) throw new Error("Failed to delete");
-      }));
-      setProducts(products.filter((p) => !selectedIds.includes(p.id)));
-      setBatches(batches.map((b) => ({
-        ...b,
-        pallets: b.pallets.map((p: any) => ({
-          ...p,
-          items: p.items.filter((i: any) => !selectedIds.includes(i.productId)),
-        })),
+      const responses = await Promise.all(selectedIds.map((id) => fetch(`/api/products/${id}/archive`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ is_archived: true }),
       })));
+      const failedCount = responses.filter((response) => !response.ok).length;
       setSelectedProductIds([]);
       await fetchProductsFromApi();
+      if (failedCount > 0) toast.error(`${failedCount} of ${selectedIds.length} ${noun} could not be archived`);
     } catch (err) {
-      toast.error("Failed to delete selected products. Please try again.");
+      toast.error("Failed to archive selected products. Please try again.");
     }
   };
 
@@ -358,7 +353,7 @@ export function Inventory() {
       ? [{ label: "View item", onSelect: () => setExtraInfoProduct(selectedProducts[0]) }]
       : []),
     ...(canManageProducts
-      ? [{ label: `Delete selected ${selectedProducts.length === 1 ? "product" : "products"}`, onSelect: () => void handleDeleteSelected(), destructive: true }]
+      ? [{ label: `Archive selected ${selectedProducts.length === 1 ? "product" : "products"}`, onSelect: () => void handleArchiveSelected() }]
       : []),
   ];
 

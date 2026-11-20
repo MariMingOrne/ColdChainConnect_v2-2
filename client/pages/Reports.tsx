@@ -17,6 +17,7 @@ import {
   TriangleAlert,
   Users,
 } from "lucide-react";
+import { DateRangeFilter, useDateRange } from "@/components/DateRangeFilter";
 import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Table } from "@/components/ui/table";
@@ -36,6 +37,7 @@ type ReportData = {
   sales: ReportSalesResponse;
   stock: ReportStockRow[];
   customers: ReportCustomerRow[];
+  ranged: boolean;
 };
 
 const getValue = (row: ReportRow, key: string) => (row as unknown as Record<string, string | number>)[key];
@@ -133,6 +135,7 @@ export function Reports() {
   const [activeTab, setActiveTab] = useState<ReportTab>("overview");
   const [search, setSearch] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const { range, setRange, query } = useDateRange();
   const [data, setData] = useState<ReportData | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
@@ -140,6 +143,7 @@ export function Reports() {
 
   useEffect(() => {
     const controller = new AbortController();
+    setLoadError(null);
     const token = localStorage.getItem("auth_token") || "";
     const load = async <T,>(path: string): Promise<T> => {
       const response = await fetch(path, { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal });
@@ -148,18 +152,18 @@ export function Reports() {
     };
 
     Promise.all([
-      load<ReportSalesResponse>("/api/reports/sales"),
+      load<ReportSalesResponse>(`/api/reports/sales${query}`),
       load<ReportStockRow[]>("/api/reports/stock"),
-      load<ReportCustomerRow[]>("/api/reports/customers"),
+      load<ReportCustomerRow[]>(`/api/reports/customers${query}`),
     ])
-      .then(([sales, stock, customers]) => setData({ sales, stock, customers }))
+      .then(([sales, stock, customers]) => setData({ sales, stock, customers, ranged: query !== "" }))
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         setLoadError(error instanceof Error ? error.message : "Reports could not be loaded.");
       });
 
     return () => controller.abort();
-  }, []);
+  }, [query]);
 
   if (!data) {
     return (
@@ -178,7 +182,12 @@ export function Reports() {
   const performanceMetrics = data.sales.products;
   const inventoryReports = data.stock;
   const customerReports = data.customers;
-  const monthToDate = salesReports[2];
+  const headlinePeriod = data.ranged ? salesReports[0] : salesReports[2];
+  const dateRangeNote = activeTab === "inventory"
+    ? "Stock levels are a current snapshot, so the date range does not change this tab."
+    : activeTab === "profit"
+      ? "Profit is not calculated yet, so the date range does not change this tab."
+      : null;
   const profitRows: ReportRow[] = [];
 
   const tableRows: Record<ReportTab, ReportRow[]> = {
@@ -249,9 +258,15 @@ export function Reports() {
           </span>
         </header>
 
+        <section aria-label="Report date range" className="flex flex-wrap items-end justify-between gap-3">
+          <DateRangeFilter range={range} onChange={setRange} />
+          {dateRangeNote && <p className="text-xs text-muted-foreground">{dateRangeNote}</p>}
+        </section>
+        {loadError && <p role="alert" className="text-sm text-destructive">{loadError}</p>}
+
         <section aria-label="Key report metrics" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard label="Month-to-date revenue" value={peso(monthToDate.totalRevenue)} detail={`${monthToDate.totalTransactions} transactions`} icon={ChartNoAxesCombined} />
-          <MetricCard label="Average transaction" value={peso(monthToDate.averageTransaction)} detail="Month to date" icon={FileBarChart} />
+          <MetricCard label={data.ranged ? "Revenue in selected range" : "Month-to-date revenue"} value={peso(headlinePeriod.totalRevenue)} detail={`${headlinePeriod.totalTransactions} transactions`} icon={ChartNoAxesCombined} />
+          <MetricCard label="Average transaction" value={peso(headlinePeriod.averageTransaction)} detail={data.ranged ? "Selected range" : "Month to date"} icon={FileBarChart} />
           <MetricCard label="Stock value" value={peso(stockValue)} detail={`${inventoryReports.length} products in stock`} icon={Boxes} />
           <MetricCard label="Needs attention" value={String(attentionCount)} detail="Low-stock or expiry flags" icon={TriangleAlert} />
         </section>

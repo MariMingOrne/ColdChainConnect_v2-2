@@ -1,6 +1,6 @@
 import { PageDialog } from "@/components/shared/PageDialog";
 import { StatCard } from "@/components/shared/StatCard";
-import { Tag, Wallet } from "lucide-react";
+import { Archive, ArchiveRestore, Tag, Wallet } from "lucide-react";
 import { toast } from "sonner";
 import { confirmAction } from "@/lib/confirm";
 import { useState, useEffect } from "react";
@@ -356,6 +356,7 @@ export function Pricing({ onBack }: PricingProps) {
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
   const [productStatusFilter, setProductStatusFilter] = useState("all");
   const [manufacturerFilter, setManufacturerFilter] = useState("all");
+  const [showArchived, setShowArchived] = useState(false);
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null);
   const [productDetails, setProductDetails] = useState<RecordDetails | null>(null);
   const [previewImageFilename, setPreviewImageFilename] = useState<string | null>(null);
@@ -381,7 +382,7 @@ export function Pricing({ onBack }: PricingProps) {
 
   const fetchProducts = async () => {
     try {
-      const response = await fetch("/api/products", {
+      const response = await fetch("/api/products?include_archived=true", {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!response.ok) throw new Error("Failed to fetch products");
@@ -424,7 +425,7 @@ export function Pricing({ onBack }: PricingProps) {
   };
 
   const handleProductExport = async () => {
-    await exportExcelFile("products.xlsx", "Products", productExcelColumns, products.map((product) => ({
+    await exportExcelFile("products.xlsx", "Products", productExcelColumns, activeProducts.map((product) => ({
       name: product.name,
       sku: product.sku ?? "",
       price: Number(product.price),
@@ -443,9 +444,12 @@ export function Pricing({ onBack }: PricingProps) {
   }, [token]);
   useAutoRefresh(fetchProducts, { enabled: Boolean(token) });
 
+  const activeProducts = products.filter((product) => !product.is_archived);
+  const archivedCount = products.length - activeProducts.length;
   const manufacturers = Array.from(new Set(products.map((product) => product.manufacturer).filter((manufacturer): manufacturer is string => Boolean(manufacturer)))).sort();
   const filteredProducts = products.filter((product) =>
     (product.name?.toLowerCase().includes(searchQuery.toLowerCase()) || product.sku?.toLowerCase().includes(searchQuery.toLowerCase())) &&
+    Boolean(product.is_archived) === showArchived &&
     (productStatusFilter === "all" || (productStatusFilter === "active" ? !product.is_discontinued : product.is_discontinued)) &&
     (manufacturerFilter === "all" || product.manufacturer === manufacturerFilter)
   );
@@ -528,25 +532,35 @@ export function Pricing({ onBack }: PricingProps) {
     }
   };
 
-  const handleDeleteSelected = async () => {
+  const setSelectedArchived = async (archived: boolean) => {
     if (selectedProducts.length === 0) return;
     const noun = selectedProducts.length === 1 ? "product" : "products";
-    if (!(await confirmAction(`Delete ${selectedProducts.length} selected ${noun}?`))) return;
+    const prompt = archived
+      ? `Archive ${selectedProducts.length} selected ${noun}? They will be hidden from the product list until restored.`
+      : `Restore ${selectedProducts.length} selected ${noun}?`;
+    if (!(await confirmAction(prompt))) return;
     const selectedIds = selectedProducts.map((product) => product.id);
     try {
-      await Promise.all(selectedIds.map((id) => fetch(`/api/products/${id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+      const responses = await Promise.all(selectedIds.map((id) => fetch(`/api/products/${id}/archive`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ is_archived: archived }),
       })));
-      setProducts((current) => current.filter((product) => !selectedIds.includes(product.id)));
+      const failedCount = responses.filter((response) => !response.ok).length;
+      await fetchProducts();
       setSelectedProductIds([]);
+      if (failedCount > 0) {
+        toast.error(`${failedCount} of ${selectedIds.length} ${noun} could not be ${archived ? "archived" : "restored"}`);
+      } else {
+        toast.success(`${selectedIds.length} ${noun} ${archived ? "archived" : "restored"}`);
+      }
     } catch {
-      toast.error("Failed to delete selected products");
+      toast.error(`Failed to ${archived ? "archive" : "restore"} selected products`);
     }
   };
 
-  const totalValue = products.reduce((sum, p) => sum + parseFloat(p.price ?? "0"), 0);
-  const avgPrice = products.length > 0 ? totalValue / products.length : 0;
+  const totalValue = activeProducts.reduce((sum, p) => sum + parseFloat(p.price ?? "0"), 0);
+  const avgPrice = activeProducts.length > 0 ? totalValue / activeProducts.length : 0;
 
   const productBulkActions: TableBulkAction[] = [
     ...(selectedProducts.length === 1
@@ -556,7 +570,9 @@ export function Pricing({ onBack }: PricingProps) {
         ]
       : []),
     ...(canManageProducts
-      ? [{ label: `Delete selected ${selectedProducts.length === 1 ? "product" : "products"}`, onSelect: () => void handleDeleteSelected(), destructive: true }]
+      ? [showArchived
+          ? { label: `Restore selected ${selectedProducts.length === 1 ? "product" : "products"}`, onSelect: () => void setSelectedArchived(false) }
+          : { label: `Archive selected ${selectedProducts.length === 1 ? "product" : "products"}`, onSelect: () => void setSelectedArchived(true) }]
       : []),
   ];
 
@@ -598,6 +614,14 @@ export function Pricing({ onBack }: PricingProps) {
             onImport={canManageProducts ? () => setShowExcelImport(true) : undefined}
             onExport={handleProductExport}
           />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => { setShowArchived((current) => !current); setSelectedProductIds([]); setCurrentPage(1); }}
+          >
+            {showArchived ? <ArchiveRestore size={15} /> : <Archive size={15} />}
+            {showArchived ? "Active Products" : `Archived Items (${archivedCount})`}
+          </Button>
         </div>
       </div>
 
@@ -609,7 +633,7 @@ export function Pricing({ onBack }: PricingProps) {
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-2 gap-3">
-        <StatCard label="Total Products" value={products.length.toString()} icon={Tag} />
+        <StatCard label="Total Products" value={activeProducts.length.toString()} icon={Tag} />
         <StatCard
           label="Avg Price"
           value={`₱${avgPrice.toLocaleString("en-PH", { maximumFractionDigits: 0 })}`} icon={Wallet}
@@ -654,7 +678,7 @@ export function Pricing({ onBack }: PricingProps) {
               {paginatedProducts.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">
-                    {products.length === 0 ? "No products found" : "No results matching your search"}
+                    {showArchived ? "No archived products found" : activeProducts.length === 0 ? "No products found" : "No results matching your search"}
                   </td>
                 </tr>
               ) : (
@@ -725,7 +749,7 @@ export function Pricing({ onBack }: PricingProps) {
         {/* Pagination - Always Display */}
         <div className="flex items-center justify-between px-6 py-4 border-t border-border bg-muted/50">
           <div className="text-xs text-muted-foreground">
-            Page {currentPage} of {Math.max(1, totalPages)} · {filteredProducts.length} products
+            Page {currentPage} of {Math.max(1, totalPages)} · {filteredProducts.length} {showArchived ? "archived " : ""}products
           </div>
           <div className="flex gap-2 items-center">
             <Button

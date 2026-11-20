@@ -109,6 +109,7 @@ export const products = pgTable("products", {
   unit: varchar("unit", { length: 10 }).default("PK").notNull(),
   srp: decimal("srp", { precision: 10, scale: 2 }),
   is_discontinued: boolean("is_discontinued").default(false),
+  is_archived: boolean("is_archived").default(false).notNull(),
   created_at: timestamp("created_at").defaultNow().notNull(),
   updated_at: timestamp("updated_at").defaultNow().notNull(),
 });

@@ -24,7 +24,7 @@ import {
   listProducts,
   createProduct,
   updateProduct,
-  deleteProduct,
+  setProductArchived,
   listProductCosts,
 } from "./routes/products";
 import {
@@ -188,7 +188,7 @@ export function createServer() {
   app.get("/api/product-costs", authMiddleware, requireRole("admin"), listProductCosts);
   app.post("/api/products", authMiddleware, requireRole("admin"), createProduct);
   app.patch("/api/products/:id", authMiddleware, requireRole("admin"), updateProduct);
-  app.delete("/api/products/:id", authMiddleware, requireRole("admin"), deleteProduct);
+  app.patch("/api/products/:id/archive", authMiddleware, requireRole("admin"), setProductArchived);
   app.post("/api/products/import", authMiddleware, requireRole("admin"), importProducts);
 
   // Batches routes

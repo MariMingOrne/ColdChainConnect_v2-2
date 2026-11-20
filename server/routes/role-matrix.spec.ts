@@ -82,7 +82,7 @@ const POLICY: Record<string, Policy> = {
   "GET /api/products": agentAnd("product-customer", "order-fulfillment"),
   "POST /api/products": ADMIN_ONLY,
   "PATCH /api/products/:id": ADMIN_ONLY,
-  "DELETE /api/products/:id": ADMIN_ONLY,
+  "PATCH /api/products/:id/archive": ADMIN_ONLY,
   "POST /api/products/import": ADMIN_ONLY,
   "GET /api/batches": agentAnd("product-customer"),
   "POST /api/batches/import": ADMIN_ONLY,

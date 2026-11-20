@@ -190,6 +190,7 @@ export interface Product {
   srp?: string | null;
   manufacturer?: string;
   is_discontinued?: boolean;
+  is_archived?: boolean;
   created_at: string;
   updated_at: string;
 }
