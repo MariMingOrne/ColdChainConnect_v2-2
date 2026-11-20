@@ -89,7 +89,7 @@ function MapPinEvents({ onPick }: { onPick: (latitude: number, longitude: number
   return null;
 }
 
-const pinIcon = L.divIcon({
+export const pinIcon = L.divIcon({
   className: "customer-map-pin",
   html: '<span style="display:block;width:20px;height:20px;background:#d9342b;border:3px solid white;border-radius:50% 50% 50% 0;transform:rotate(-45deg);box-shadow:0 1px 5px #0006"></span>',
   iconSize: [20, 20],
