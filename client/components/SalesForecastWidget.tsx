@@ -125,9 +125,9 @@ export function SalesForecastWidget() {
         <Button
           type="button"
           onClick={() => setIsOpen(true)}
-          variant="outline"
+          variant="default"
           aria-label="Open sales forecast"
-          className="shadow-md"
+          className="shadow-lg"
         >
           <TrendingUp className="h-4 w-4" />
           <span>Sales Forecast</span>
