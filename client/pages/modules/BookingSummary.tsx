@@ -710,7 +710,7 @@ export function BookingSummary() {
                       <StatusBadge label={booking.status} tone={getStatusTone(booking.status)} />
                     </TableCell>
                     <TableCell className="text-sm whitespace-nowrap">
-                      {canApprove && (booking.status === "pending" || booking.status === "approved") ? (
+                      {canApprove && booking.status === "pending" ? (
                         <Input
                           type="date"
                           aria-label={`Prepared delivery date for order ${booking.id.slice(0, 8)}`}

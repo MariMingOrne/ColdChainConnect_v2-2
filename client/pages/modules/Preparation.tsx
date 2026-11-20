@@ -437,6 +437,7 @@ export function Preparation() {
                 const approvedPalletCount = orderPallets.filter((p) => p.status === "approved").length;
                 const draftPalletCount = orderPallets.filter((p) => p.status === "draft").length;
                 const isPrepared = isOrderPrepared(order.id);
+                const hasConfirmedOrShippedPallet = orderPallets.some((p) => p.status === "approved" || p.status === "shipped");
 
                 return (
                   <TableRow key={order.id}>
@@ -521,7 +522,7 @@ export function Preparation() {
                             <span className="px-3 py-2 text-xs font-semibold text-green bg-green/10 rounded-lg">
                               ✓ Prepared
                             </span>
-                            {canUpdatePalletStatus && (
+                            {canUpdatePalletStatus && !hasConfirmedOrShippedPallet && (
                               <Button
                                 onClick={() => handleUndoPrepared(order.id)} type="button" variant="warning" size="sm">
                                 Undo

@@ -13,6 +13,7 @@ import {
   agents,
 } from "./db/schema";
 import { hashPassword } from "./auth";
+import { seedProducts } from "./seed-products";
 
 async function seed() {
   console.log("🌱 Starting seed...");
@@ -61,17 +62,13 @@ async function seed() {
 
     // Create products
     console.log("📝 Creating products...");
-    const product1 = randomUUID();
-    const product2 = randomUUID();
-    const product3 = randomUUID();
-    const product4 = randomUUID();
-
-    await db.insert(products).values([
-      { id: product1, name: "Chicken Breast", price: "150.00", batch_tracking_enabled: true },
-      { id: product2, name: "Pork Chops", price: "200.00", batch_tracking_enabled: true },
-      { id: product3, name: "Fish Fillet", price: "180.00", batch_tracking_enabled: true },
-      { id: product4, name: "Beef Steak", price: "250.00", batch_tracking_enabled: true },
-    ]).onConflictDoNothing();
+    const productRows = seedProducts.map((product) => ({
+      ...product,
+      id: randomUUID(),
+      batch_tracking_enabled: true,
+    }));
+    await db.insert(products).values(productRows).onConflictDoNothing();
+    const [product1, product2, product3, product4] = productRows.map((product) => product.id);
 
     // Create agent profiles
     console.log("📝 Creating agent profiles...");
@@ -351,7 +348,7 @@ async function seed() {
     console.log("\n📋 Created data:");
     console.log("   ✓ Admin user (admin/admin123)");
     console.log("   ✓ 3 Agent users (agent1-3/agent123) with profiles");
-    console.log("   ✓ 4 Products (Chicken, Pork, Fish, Beef)");
+    console.log(`   ✓ ${seedProducts.length} Products (current Frabelle catalog)`);
     console.log("   ✓ 3 Customers (Makati, BGC, Tagaytay)");
     console.log("   ✓ 3 Drivers (Pedro, Carlos, Jose — no login)");
     console.log("   ✓ 3 Trucks (District A, B, C)");
