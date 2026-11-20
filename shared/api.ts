@@ -190,8 +190,18 @@ export interface Product {
   srp?: string | null;
   manufacturer?: string;
   is_discontinued?: boolean;
+  is_archived?: boolean;
   created_at: string;
   updated_at: string;
+}
+
+export interface BatchReservation {
+  productId: string;
+  productName: string;
+  sku: string | null;
+  orderId: string;
+  customerName: string;
+  qty: number;
 }
 
 export const PRODUCT_UNITS = ["PK", "EA"] as const;

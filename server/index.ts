@@ -24,11 +24,12 @@ import {
   listProducts,
   createProduct,
   updateProduct,
-  deleteProduct,
+  setProductArchived,
   listProductCosts,
 } from "./routes/products";
 import {
   listBatches,
+  listBatchReservations,
   createBatch,
   updateBatch,
   deleteBatch,
@@ -188,11 +189,12 @@ export function createServer() {
   app.get("/api/product-costs", authMiddleware, requireRole("admin"), listProductCosts);
   app.post("/api/products", authMiddleware, requireRole("admin"), createProduct);
   app.patch("/api/products/:id", authMiddleware, requireRole("admin"), updateProduct);
-  app.delete("/api/products/:id", authMiddleware, requireRole("admin"), deleteProduct);
+  app.patch("/api/products/:id/archive", authMiddleware, requireRole("admin"), setProductArchived);
   app.post("/api/products/import", authMiddleware, requireRole("admin"), importProducts);
 
   // Batches routes
   app.get("/api/batches", authMiddleware, listBatches);
+  app.get("/api/batches/reservations", authMiddleware, requireRole("admin"), listBatchReservations);
   app.post("/api/batches/import", authMiddleware, requireRole("admin"), importInventory);
   app.post("/api/batches", authMiddleware, requireRole("admin"), createBatch);
   app.patch("/api/batches/:id", authMiddleware, requireRole("admin"), updateBatch);

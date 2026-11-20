@@ -26,6 +26,7 @@ import {
   formatPercent,
 } from "@/components/CustomerDiscountEditor";
 import { CustomerLocationPicker } from "@/components/CustomerLocationPicker";
+import { CustomerLocationMap } from "@/components/CustomerLocationMap";
 
 interface CustomersProps {
   onBack?: () => void;
@@ -92,7 +93,7 @@ function ViewCustomerPage({ customer, onClose }: { customer: Customer; onClose: 
           <h1 className="page-title">Customer Details</h1>
         </div>
       </div>
-      <div className="w-full max-w-2xl rounded-2xl border border-border bg-card">
+      <div className="w-full rounded-2xl border border-border bg-card">
         <div className="grid grid-cols-1 gap-x-6 gap-y-5 p-6 sm:grid-cols-2">
           <DetailField label="Store Name"><span className="font-semibold">{customer.store_name}</span></DetailField>
           <DetailField label="Delivery Address">{formatCustomerAddress(customer) || "—"}</DetailField>
@@ -128,6 +129,11 @@ function ViewCustomerPage({ customer, onClose }: { customer: Customer; onClose: 
               "—"
             )}
           </DetailField>
+        </div>
+
+        <div className="space-y-2 border-t border-border p-6">
+          <div className="text-xs font-semibold text-muted-foreground">Delivery point</div>
+          <CustomerLocationMap latitude={customer.latitude} longitude={customer.longitude} />
         </div>
 
         <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">

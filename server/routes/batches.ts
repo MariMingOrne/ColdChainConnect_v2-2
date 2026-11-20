@@ -2,10 +2,10 @@ import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "../db";
-import { inventory_batches, batch_pallets, pallet_items, order_pallet_items, order_pallets, order_item_reservations } from "../db/schema";
+import { inventory_batches, batch_pallets, pallet_items, order_pallet_items, order_pallets, order_item_reservations, bookings, customers, products } from "../db/schema";
 import { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
-import { isValidIsoDate } from "../../shared/api";
+import { BatchReservation, isValidIsoDate } from "../../shared/api";
 
 async function hasActiveReservations(executor: any, sourceItemIds: string[]) {
   if (sourceItemIds.length === 0) return false;
@@ -55,6 +55,91 @@ export const listBatches: RequestHandler = async (_req, res) => {
     res.json(allBatches);
   } catch (error) {
     console.error("Error fetching batches:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const listBatchReservations: RequestHandler = async (_req, res) => {
+  try {
+    const palletReservations = await db
+      .select({
+        batch_id: batch_pallets.batch_id,
+        product_id: pallet_items.product_id,
+        product_name: products.name,
+        sku: products.sku,
+        order_id: bookings.id,
+        customer_name: customers.store_name,
+        qty: order_pallet_items.qty_units,
+      })
+      .from(order_pallet_items)
+      .innerJoin(order_pallets, eq(order_pallet_items.pallet_id, order_pallets.id))
+      .innerJoin(bookings, eq(order_pallets.order_id, bookings.id))
+      .innerJoin(customers, eq(bookings.customer_id, customers.id))
+      .innerJoin(pallet_items, eq(order_pallet_items.batch_item_id, pallet_items.id))
+      .innerJoin(batch_pallets, eq(pallet_items.pallet_id, batch_pallets.id))
+      .innerJoin(products, eq(pallet_items.product_id, products.id))
+      .where(ne(order_pallets.status, "shipped"));
+
+    const productReservations = await db
+      .select({
+        product_id: order_item_reservations.product_id,
+        product_name: products.name,
+        sku: products.sku,
+        order_id: bookings.id,
+        customer_name: customers.store_name,
+        qty: order_item_reservations.qty_reserved,
+      })
+      .from(order_item_reservations)
+      .innerJoin(bookings, eq(order_item_reservations.booking_id, bookings.id))
+      .innerJoin(customers, eq(bookings.customer_id, customers.id))
+      .innerJoin(products, eq(order_item_reservations.product_id, products.id))
+      .where(eq(order_item_reservations.status, "reserved"));
+
+    const batchProducts = await db
+      .select({ batch_id: batch_pallets.batch_id, product_id: pallet_items.product_id })
+      .from(pallet_items)
+      .innerJoin(batch_pallets, eq(pallet_items.pallet_id, batch_pallets.id));
+
+    const productIdsByBatch = new Map<string, Set<string>>();
+    for (const row of batchProducts) {
+      const productIds = productIdsByBatch.get(row.batch_id) ?? new Set<string>();
+      productIds.add(row.product_id);
+      productIdsByBatch.set(row.batch_id, productIds);
+    }
+
+    const reservationsByBatch: Record<string, BatchReservation[]> = {};
+    const addReservation = (batchId: string, reservation: BatchReservation) => {
+      (reservationsByBatch[batchId] ??= []).push(reservation);
+    };
+
+    for (const row of palletReservations) {
+      addReservation(row.batch_id, {
+        productId: row.product_id,
+        productName: row.product_name,
+        sku: row.sku,
+        orderId: row.order_id,
+        customerName: row.customer_name,
+        qty: row.qty,
+      });
+    }
+
+    for (const row of productReservations) {
+      for (const [batchId, productIds] of productIdsByBatch) {
+        if (!productIds.has(row.product_id)) continue;
+        addReservation(batchId, {
+          productId: row.product_id,
+          productName: row.product_name,
+          sku: row.sku,
+          orderId: row.order_id,
+          customerName: row.customer_name,
+          qty: row.qty,
+        });
+      }
+    }
+
+    res.json(reservationsByBatch);
+  } catch (error) {
+    console.error("Error fetching batch reservations:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -255,8 +340,10 @@ export const archiveBatch: RequestHandler = async (req: AuthRequest, res) => {
           .innerJoin(batch_pallets, eq(pallet_items.pallet_id, batch_pallets.id))
           .where(eq(batch_pallets.batch_id, id));
         const sourceIds = sourceItems.map((item) => item.id);
-        await tx.select({ id: pallet_items.id }).from(pallet_items).where(inArray(pallet_items.id, sourceIds)).for("update");
-        if (await hasActiveReservations(tx, sourceIds)) return "reserved";
+        if (sourceIds.length > 0) {
+          await tx.select({ id: pallet_items.id }).from(pallet_items).where(inArray(pallet_items.id, sourceIds)).for("update");
+          if (await hasActiveReservations(tx, sourceIds)) return "reserved";
+        }
       }
 
       await tx.update(inventory_batches).set({

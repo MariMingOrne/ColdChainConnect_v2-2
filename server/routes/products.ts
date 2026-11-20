@@ -8,14 +8,16 @@ import { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
 import { demoProducts } from "../demo-data";
 
-export const listProducts: RequestHandler = async (_req, res) => {
+export const listProducts: RequestHandler = async (req, res) => {
   try {
     // Use demo data if no database
     if (!process.env.DATABASE_URL) {
       return res.json([...demoProducts].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
     }
 
+    const includeArchived = req.query.include_archived === "true";
     const allProducts = await db.query.products.findMany({
+      where: includeArchived ? undefined : eq(products.is_archived, false),
       orderBy: [desc(products.created_at)],
     });
     res.json(allProducts);
@@ -194,37 +196,34 @@ export const updateProduct: RequestHandler = async (
   }
 };
 
-export const deleteProduct: RequestHandler = async (
-  req: AuthRequest,
-  res
-) => {
+export const setProductArchived: RequestHandler = async (req: AuthRequest, res) => {
   const { id } = req.params;
+  if (typeof req.body?.is_archived !== "boolean") {
+    return res.status(400).json({ error: "Archive status must be a boolean" });
+  }
 
   try {
     const existing = await db.query.products.findFirst({
       where: eq(products.id, id),
     });
-
     if (!existing) {
       return res.status(404).json({ error: "Product not found" });
     }
 
-    await db.delete(products).where(eq(products.id, id));
+    const archived = req.body.is_archived;
+    const [updated] = await db
+      .update(products)
+      .set({ is_archived: archived, updated_at: new Date() })
+      .where(eq(products.id, id))
+      .returning();
 
     if (req.user) {
-      await logAction(
-        req.user.userId,
-        "delete",
-        "product",
-        id,
-        existing,
-        undefined
-      );
+      await logAction(req.user.userId, archived ? "archive" : "restore", "product", id, existing, updated);
     }
 
-    res.json({ message: "Product deleted" });
+    res.json(updated);
   } catch (error) {
-    console.error("Error deleting product:", error);
+    console.error("Error archiving product:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };
