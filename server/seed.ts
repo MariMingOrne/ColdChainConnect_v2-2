@@ -95,52 +95,52 @@ async function seed() {
       {
         id: randomUUID(), store_name: "Puregold Bulaon", location: "San Fernando, Pampanga",
         district: "Central Pampanga", street_address: "Bulaon", state: "Pampanga",
-        latitude: 15.08421, longitude: 120.66779, agent_id: agentUserIds[0], payment_type: "cash",
+        latitude: 15.08421, longitude: 120.66779, contact_person: "Ana Reyes", contact_info: "555-0101", agent_id: agentUserIds[0], payment_type: "cash",
       },
       {
         id: randomUUID(), store_name: "Puregold Mexico", location: "Mexico, Pampanga",
         district: "Central Pampanga", state: "Pampanga",
-        latitude: 15.06483, longitude: 120.72146, agent_id: agentUserIds[0], payment_type: "cash",
+        latitude: 15.06483, longitude: 120.72146, contact_person: "Carlo Santos", contact_info: "555-0102", agent_id: agentUserIds[0], payment_type: "cash",
       },
       {
         id: randomUUID(), store_name: "Puregold Porac", location: "Porac, Pampanga",
         district: "Central Pampanga", state: "Pampanga",
-        latitude: 15.07143, longitude: 120.5426, agent_id: agentUserIds[1], payment_type: "cash",
+        latitude: 15.07143, longitude: 120.5426, contact_person: "Liza Mendoza", contact_info: "555-0103", agent_id: agentUserIds[1], payment_type: "cash",
       },
       {
         id: randomUUID(), store_name: "Puregold Extra Floridablanca", location: "Floridablanca, Pampanga",
         district: "Central Pampanga", state: "Pampanga",
-        latitude: 14.9722, longitude: 120.52757, agent_id: agentUserIds[1], payment_type: "cash",
+        latitude: 14.9722, longitude: 120.52757, contact_person: "Marco Dizon", contact_info: "555-0104", agent_id: agentUserIds[1], payment_type: "cash",
       },
       {
         id: randomUUID(), store_name: "SM City Pampanga", location: "San Fernando, Pampanga",
         district: "Central Pampanga", street_address: "Jose Abad Santos Avenue", state: "Pampanga",
-        latitude: 15.0526, longitude: 120.6993, agent_id: agentUserIds[0], payment_type: "bank_transfer",
+        latitude: 15.0526, longitude: 120.6993, contact_person: "Mia Garcia", contact_info: "555-0105", agent_id: agentUserIds[0], payment_type: "bank_transfer",
       },
       {
         id: randomUUID(), store_name: "SM City Clark", location: "Angeles City, Pampanga",
         district: "Central Pampanga", state: "Pampanga",
-        latitude: 15.16727, longitude: 120.58013, agent_id: agentUserIds[1], payment_type: "bank_transfer",
+        latitude: 15.16727, longitude: 120.58013, contact_person: "Paolo Cruz", contact_info: "555-0106", agent_id: agentUserIds[1], payment_type: "bank_transfer",
       },
       {
         id: randomUUID(), store_name: "Jumbo Jenra Supermarket", location: "Angeles City, Pampanga",
         district: "Central Pampanga", street_address: "509 Jesus Street", state: "Pampanga",
-        latitude: 15.14032, longitude: 120.58824, agent_id: agentUserIds[2], payment_type: "cash",
+        latitude: 15.14032, longitude: 120.58824, contact_person: "Janelle Flores", contact_info: "555-0107", agent_id: agentUserIds[2], payment_type: "cash",
       },
       {
         id: randomUUID(), store_name: "Easy Maxx Supermarket", location: "Angeles City, Pampanga",
         district: "Central Pampanga", state: "Pampanga",
-        latitude: 15.14004, longitude: 120.58747, agent_id: agentUserIds[2], payment_type: "cash",
+        latitude: 15.14004, longitude: 120.58747, contact_person: "Joshua Ramos", contact_info: "555-0108", agent_id: agentUserIds[2], payment_type: "cash",
       },
       {
         id: randomUUID(), store_name: "A Line Supermarket", location: "Angeles City, Pampanga",
         district: "Central Pampanga", state: "Pampanga",
-        latitude: 15.1605, longitude: 120.59198, agent_id: agentUserIds[2], payment_type: "cash",
+        latitude: 15.1605, longitude: 120.59198, contact_person: "Sofia Navarro", contact_info: "555-0109", agent_id: agentUserIds[2], payment_type: "cash",
       },
       {
         id: randomUUID(), store_name: "Ves Mart Supermarket", location: "San Fernando, Pampanga",
         district: "Central Pampanga", state: "Pampanga",
-        latitude: 15.07782, longitude: 120.6412, agent_id: agentUserIds[2], payment_type: "cash",
+        latitude: 15.07782, longitude: 120.6412, contact_person: "Gabriel Bautista", contact_info: "555-0110", agent_id: agentUserIds[2], payment_type: "cash",
       },
     ]).onConflictDoNothing();
 
