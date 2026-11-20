@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -22,6 +22,13 @@ import {
 import { DateRangeFilter, useDateRange } from "@/components/DateRangeFilter";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Table } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
@@ -143,7 +150,6 @@ export function Reports() {
   const { range, setRange, query } = useDateRange();
   const [data, setData] = useState<ReportData | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -210,18 +216,6 @@ export function Reports() {
   );
   const attentionCount = inventoryReports.filter((item) => item.status !== "in-stock").length;
   const stockValue = inventoryReports.reduce((total, item) => total + item.value, 0);
-
-  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
-    let nextIndex = index;
-    if (event.key === "ArrowRight") nextIndex = (index + 1) % tabs.length;
-    else if (event.key === "ArrowLeft") nextIndex = (index - 1 + tabs.length) % tabs.length;
-    else if (event.key === "Home") nextIndex = 0;
-    else if (event.key === "End") nextIndex = tabs.length - 1;
-    else return;
-    event.preventDefault();
-    setActiveTab(tabs[nextIndex].id);
-    tabRefs.current[nextIndex]?.focus();
-  };
 
   const hasRange = Boolean(range.from || range.to);
   const activeLabel = tabs.find((tab) => tab.id === activeTab)?.label ?? "Report";
@@ -295,30 +289,27 @@ export function Reports() {
         </section>
 
         <section aria-label="Report sections" className="space-y-4">
-          <div role="tablist" aria-label="Report sections" className="flex gap-2 overflow-x-auto border-b border-border pb-2 scrollbar-visible">
-            {tabs.map((tab, index) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  ref={(element) => { tabRefs.current[index] = element; }}
-                  id={`report-tab-${tab.id}`}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === tab.id}
-                  aria-controls="report-panel"
-                  tabIndex={activeTab === tab.id ? 0 : -1}
-                  onClick={() => setActiveTab(tab.id)}
-                  onKeyDown={(event) => handleTabKeyDown(event, index)}
-                  className={`inline-flex shrink-0 items-center gap-2 rounded-t-lg border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-2 ${activeTab === tab.id ? "border-accent-2 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-                >
-                  <Icon size={16} aria-hidden="true" />{tab.label}
-                </button>
-              );
-            })}
+          <div className="w-full sm:w-80">
+            <Select value={activeTab} onValueChange={(value) => setActiveTab(value as ReportTab)}>
+              <SelectTrigger aria-label="Report section" className="h-11 w-full rounded-xl border-border bg-card px-4 text-sm font-semibold text-foreground">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <SelectItem key={tab.id} value={tab.id}>
+                      <span className="inline-flex items-center gap-2">
+                        <Icon size={16} aria-hidden="true" />{tab.label}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
           </div>
 
-          <div id="report-panel" role="tabpanel" aria-labelledby={`report-tab-${activeTab}`} tabIndex={0} className="space-y-4 outline-none">
+          <div className="space-y-4">
             <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5">
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
