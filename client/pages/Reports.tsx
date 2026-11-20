@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -14,14 +14,25 @@ import {
   Boxes,
   ChartNoAxesCombined,
   FileBarChart,
+  FileSpreadsheet,
+  FileText,
   TriangleAlert,
   Users,
 } from "lucide-react";
-import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
+import { DateRangeFilter, useDateRange } from "@/components/DateRangeFilter";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Table } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
+import { exportPdfFile } from "@/lib/pdf";
 import type {
   ReportCustomerRow,
   ReportProductPerformance,
@@ -36,6 +47,7 @@ type ReportData = {
   sales: ReportSalesResponse;
   stock: ReportStockRow[];
   customers: ReportCustomerRow[];
+  ranged: boolean;
 };
 
 const getValue = (row: ReportRow, key: string) => (row as unknown as Record<string, string | number>)[key];
@@ -71,6 +83,8 @@ const peso = (value: number) => `₱${value.toLocaleString("en-PH", { maximumFra
 const currencyKeys = new Set(["totalRevenue", "averageTransaction", "topProductSales", "value", "totalSpent", "revenue", "unitPrice", "costPrice", "totalProfit"]);
 const percentKeys = new Set(["growth", "profitMargin"]);
 const formatHeader = (key: string) => key.replace(/([A-Z])/g, " $1").replace(/^./, (letter) => letter.toUpperCase());
+// The built-in PDF font has no peso sign, so currency is written as PHP in exported PDFs.
+const toPdfText = (value: string | number) => String(value).replace(/₱/g, "PHP ");
 
 function formatValue(key: string, value: string | number) {
   if (typeof value === "number" && currencyKeys.has(key)) return peso(value);
@@ -133,13 +147,14 @@ export function Reports() {
   const [activeTab, setActiveTab] = useState<ReportTab>("overview");
   const [search, setSearch] = useState("");
   const [isExporting, setIsExporting] = useState(false);
+  const { range, setRange, query } = useDateRange();
   const [data, setData] = useState<ReportData | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
     const controller = new AbortController();
+    setLoadError(null);
     const token = localStorage.getItem("auth_token") || "";
     const load = async <T,>(path: string): Promise<T> => {
       const response = await fetch(path, { headers: { Authorization: `Bearer ${token}` }, signal: controller.signal });
@@ -148,18 +163,18 @@ export function Reports() {
     };
 
     Promise.all([
-      load<ReportSalesResponse>("/api/reports/sales"),
+      load<ReportSalesResponse>(`/api/reports/sales${query}`),
       load<ReportStockRow[]>("/api/reports/stock"),
-      load<ReportCustomerRow[]>("/api/reports/customers"),
+      load<ReportCustomerRow[]>(`/api/reports/customers${query}`),
     ])
-      .then(([sales, stock, customers]) => setData({ sales, stock, customers }))
+      .then(([sales, stock, customers]) => setData({ sales, stock, customers, ranged: query !== "" }))
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         setLoadError(error instanceof Error ? error.message : "Reports could not be loaded.");
       });
 
     return () => controller.abort();
-  }, []);
+  }, [query]);
 
   if (!data) {
     return (
@@ -178,7 +193,12 @@ export function Reports() {
   const performanceMetrics = data.sales.products;
   const inventoryReports = data.stock;
   const customerReports = data.customers;
-  const monthToDate = salesReports[2];
+  const headlinePeriod = data.ranged ? salesReports[0] : salesReports[2];
+  const dateRangeNote = activeTab === "inventory"
+    ? "Stock levels are a current snapshot, so the date range does not change this tab."
+    : activeTab === "profit"
+      ? "Profit is not calculated yet, so the date range does not change this tab."
+      : null;
   const profitRows: ReportRow[] = [];
 
   const tableRows: Record<ReportTab, ReportRow[]> = {
@@ -197,30 +217,36 @@ export function Reports() {
   const attentionCount = inventoryReports.filter((item) => item.status !== "in-stock").length;
   const stockValue = inventoryReports.reduce((total, item) => total + item.value, 0);
 
-  const handleTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
-    let nextIndex = index;
-    if (event.key === "ArrowRight") nextIndex = (index + 1) % tabs.length;
-    else if (event.key === "ArrowLeft") nextIndex = (index - 1 + tabs.length) % tabs.length;
-    else if (event.key === "Home") nextIndex = 0;
-    else if (event.key === "End") nextIndex = tabs.length - 1;
-    else return;
-    event.preventDefault();
-    setActiveTab(tabs[nextIndex].id);
-    tabRefs.current[nextIndex]?.focus();
-  };
+  const hasRange = Boolean(range.from || range.to);
+  const activeLabel = tabs.find((tab) => tab.id === activeTab)?.label ?? "Report";
+  const exportBaseName = `${activeLabel.replace(/ /g, "_")}${hasRange ? `_${range.from || "start"}_to_${range.to || "today"}` : ""}`;
+  const exportDateLines = [
+    hasRange ? `Date range: ${range.from || "earliest"} to ${range.to || "today"}` : "No date range selected",
+    ...(dateRangeNote ? [dateRangeNote] : []),
+  ];
 
-  const handleExport = async () => {
+  const handleExport = async (format: "excel" | "pdf") => {
     if (filteredRows.length === 0) return;
     setIsExporting(true);
     try {
-      const columns: ExcelColumn[] = Object.keys(filteredRows[0]).map((key) => ({ key, header: formatHeader(key), width: 22 }));
-      await exportExcelFile(
-        `${tabs.find((tab) => tab.id === activeTab)?.label.replace(/ /g, "_")}.xlsx`,
-        tabs.find((tab) => tab.id === activeTab)?.label.slice(0, 31) ?? "Report",
-        columns,
-        filteredRows as unknown as Record<string, unknown>[],
-      );
-      toast({ title: "Export complete", description: "The visible report rows were exported to Excel." });
+      const keys = Object.keys(filteredRows[0]);
+      if (format === "excel") {
+        const columns: ExcelColumn[] = keys.map((key) => ({ key, header: formatHeader(key), width: 22 }));
+        await exportExcelFile(
+          `${exportBaseName}.xlsx`,
+          activeLabel.slice(0, 31),
+          columns,
+          filteredRows as unknown as Record<string, unknown>[],
+        );
+      } else {
+        await exportPdfFile(`${exportBaseName}.pdf`, {
+          title: `Reports · ${activeLabel}`,
+          lines: exportDateLines,
+          head: keys.map(formatHeader),
+          body: filteredRows.map((row) => keys.map((key) => toPdfText(formatValue(key, getValue(row, key))))),
+        });
+      }
+      toast({ title: "Export complete", description: `The visible report rows were exported to ${format === "excel" ? "Excel" : "PDF"}.` });
     } catch {
       toast({ title: "Export failed", description: "The report could not be exported.", variant: "destructive" });
     } finally {
@@ -249,48 +275,56 @@ export function Reports() {
           </span>
         </header>
 
+        <section aria-label="Report date range" className="flex flex-wrap items-end justify-between gap-3">
+          <DateRangeFilter range={range} onChange={setRange} />
+          {dateRangeNote && <p className="text-xs text-muted-foreground">{dateRangeNote}</p>}
+        </section>
+        {loadError && <p role="alert" className="text-sm text-destructive">{loadError}</p>}
+
         <section aria-label="Key report metrics" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <MetricCard label="Month-to-date revenue" value={peso(monthToDate.totalRevenue)} detail={`${monthToDate.totalTransactions} transactions`} icon={ChartNoAxesCombined} />
-          <MetricCard label="Average transaction" value={peso(monthToDate.averageTransaction)} detail="Month to date" icon={FileBarChart} />
+          <MetricCard label={data.ranged ? "Revenue in selected range" : "Month-to-date revenue"} value={peso(headlinePeriod.totalRevenue)} detail={`${headlinePeriod.totalTransactions} transactions`} icon={ChartNoAxesCombined} />
+          <MetricCard label="Average transaction" value={peso(headlinePeriod.averageTransaction)} detail={data.ranged ? "Selected range" : "Month to date"} icon={FileBarChart} />
           <MetricCard label="Stock value" value={peso(stockValue)} detail={`${inventoryReports.length} products in stock`} icon={Boxes} />
           <MetricCard label="Needs attention" value={String(attentionCount)} detail="Low-stock or expiry flags" icon={TriangleAlert} />
         </section>
 
         <section aria-label="Report sections" className="space-y-4">
-          <div role="tablist" aria-label="Report sections" className="flex gap-2 overflow-x-auto border-b border-border pb-2 scrollbar-visible">
-            {tabs.map((tab, index) => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  ref={(element) => { tabRefs.current[index] = element; }}
-                  id={`report-tab-${tab.id}`}
-                  type="button"
-                  role="tab"
-                  aria-selected={activeTab === tab.id}
-                  aria-controls="report-panel"
-                  tabIndex={activeTab === tab.id ? 0 : -1}
-                  onClick={() => setActiveTab(tab.id)}
-                  onKeyDown={(event) => handleTabKeyDown(event, index)}
-                  className={`inline-flex shrink-0 items-center gap-2 rounded-t-lg border-b-2 px-3 py-2.5 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-2 ${activeTab === tab.id ? "border-accent-2 text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}`}
-                >
-                  <Icon size={16} aria-hidden="true" />{tab.label}
-                </button>
-              );
-            })}
+          <div className="w-full sm:w-80">
+            <Select value={activeTab} onValueChange={(value) => setActiveTab(value as ReportTab)}>
+              <SelectTrigger aria-label="Report section" className="h-11 w-full rounded-xl border-border bg-card px-4 text-sm font-semibold text-foreground">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <SelectItem key={tab.id} value={tab.id}>
+                      <span className="inline-flex items-center gap-2">
+                        <Icon size={16} aria-hidden="true" />{tab.label}
+                      </span>
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
           </div>
 
-          <div id="report-panel" role="tabpanel" aria-labelledby={`report-tab-${activeTab}`} tabIndex={0} className="space-y-4 outline-none">
+          <div className="space-y-4">
             <section className="rounded-2xl border border-border bg-card p-4 shadow-sm md:p-5">
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div>
                   <h2 className="text-xl font-bold text-foreground">{tabs.find((tab) => tab.id === activeTab)?.label}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">{descriptions[activeTab]}</p>
                 </div>
-                <ExcelActionsDropdown
-                  onExport={handleExport}
-                  exportDisabled={isExporting || filteredRows.length === 0}
-                />
+                <div role="group" aria-label="Export report" className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-semibold text-muted-foreground">Export</span>
+                  <Button type="button" variant="outline" onClick={() => void handleExport("excel")} disabled={isExporting || filteredRows.length === 0}>
+                    <FileSpreadsheet size={16} aria-hidden="true" />Excel
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => void handleExport("pdf")} disabled={isExporting || filteredRows.length === 0}>
+                    <FileText size={16} aria-hidden="true" />PDF
+                  </Button>
+                </div>
               </div>
 
               <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(250px,0.8fr)]">

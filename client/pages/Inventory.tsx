@@ -20,7 +20,8 @@ import { Input } from "@/components/ui/input";
 import { SortableHeader, SortState, compareValues } from "@/components/SortableHeader";
 import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
 import { RecordTitleButton } from "@/components/RecordTitleButton";
-import type { ProductUnit } from "@shared/api";
+import type { BatchReservation, ProductUnit } from "@shared/api";
+import { BatchReservationsAccordion } from "@/components/BatchReservationsAccordion";
 
 interface InventoryProduct {
   id: string;
@@ -327,29 +328,24 @@ export function Inventory() {
     await refreshBatchesFromDB();
   };
 
-  const handleDeleteSelected = async () => {
+  const handleArchiveSelected = async () => {
     if (selectedProducts.length === 0) return;
     const noun = selectedProducts.length === 1 ? "product" : "products";
-    if (!(await confirmAction(`Delete ${selectedProducts.length} selected ${noun}?`))) return;
+    if (!(await confirmAction(`Archive ${selectedProducts.length} selected ${noun}? They will be hidden from the product list until restored.`))) return;
     const selectedIds = selectedProducts.map((product) => product.id);
     try {
       const token = localStorage.getItem("auth_token") || "";
-      await Promise.all(selectedIds.map(async (id) => {
-        const response = await fetch(`/api/products/${id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-        if (!response.ok) throw new Error("Failed to delete");
-      }));
-      setProducts(products.filter((p) => !selectedIds.includes(p.id)));
-      setBatches(batches.map((b) => ({
-        ...b,
-        pallets: b.pallets.map((p: any) => ({
-          ...p,
-          items: p.items.filter((i: any) => !selectedIds.includes(i.productId)),
-        })),
+      const responses = await Promise.all(selectedIds.map((id) => fetch(`/api/products/${id}/archive`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ is_archived: true }),
       })));
+      const failedCount = responses.filter((response) => !response.ok).length;
       setSelectedProductIds([]);
       await fetchProductsFromApi();
+      if (failedCount > 0) toast.error(`${failedCount} of ${selectedIds.length} ${noun} could not be archived`);
     } catch (err) {
-      toast.error("Failed to delete selected products. Please try again.");
+      toast.error("Failed to archive selected products. Please try again.");
     }
   };
 
@@ -358,7 +354,7 @@ export function Inventory() {
       ? [{ label: "View item", onSelect: () => setExtraInfoProduct(selectedProducts[0]) }]
       : []),
     ...(canManageProducts
-      ? [{ label: `Delete selected ${selectedProducts.length === 1 ? "product" : "products"}`, onSelect: () => void handleDeleteSelected(), destructive: true }]
+      ? [{ label: `Archive selected ${selectedProducts.length === 1 ? "product" : "products"}`, onSelect: () => void handleArchiveSelected() }]
       : []),
   ];
 
@@ -695,6 +691,16 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
   const [batchQuery, setBatchQuery] = useState("");
   const [createdSince, setCreatedSince] = useState("");
   const [productFilter, setProductFilter] = useState("");
+  const [reservations, setReservations] = useState<Record<string, BatchReservation[]>>({});
+
+  useEffect(() => {
+    if (!canManageBatches) return;
+    const token = localStorage.getItem("auth_token") || "";
+    fetch("/api/batches/reservations", { headers: { Authorization: `Bearer ${token}` } })
+      .then((response) => (response.ok ? response.json() : Promise.reject(new Error("Failed to load batch reservations"))))
+      .then((data: Record<string, BatchReservation[]>) => setReservations(data))
+      .catch((err) => console.error(err));
+  }, [batches, canManageBatches]);
 
   const activeBatches = batches.filter((b) => {
     if (b.isArchived || b.id === "batch-all") return false;
@@ -713,11 +719,14 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ is_archived: true }),
       });
-      if (!response.ok) throw new Error("Failed to archive batch");
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error || "Failed to archive batch");
+      }
       await onRefresh();
     } catch (err) {
       console.error("Failed to archive batch:", err);
-      toast.error("Failed to archive batch. Please try again.");
+      toast.error(err instanceof Error ? err.message : "Failed to archive batch. Please try again.");
     }
   };
 
@@ -729,11 +738,14 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ is_archived: false }),
       });
-      if (!response.ok) throw new Error("Failed to unarchive batch");
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error || "Failed to unarchive batch");
+      }
       await onRefresh();
     } catch (err) {
       console.error("Failed to unarchive batch:", err);
-      toast.error("Failed to unarchive batch. Please try again.");
+      toast.error(err instanceof Error ? err.message : "Failed to unarchive batch. Please try again.");
     }
   };
 
@@ -797,15 +809,18 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
                       activeBatches.map((batch) => {
                         const totalItems = batch.pallets?.reduce((sum: number, p: any) => sum + (p.items?.length || 0), 0) || 0;
                         return (
-                          <div key={batch.id} className={`flex items-center justify-between p-3 rounded-lg border cursor-pointer transition-colors ${selectedBatchId === batch.id ? "border-accent-2 bg-accent-2/10" : "border-border hover:bg-accent"}`} onClick={() => onSelectBatch(batch.id)}>
-                            <div className="flex-1">
-                              <div className="text-sm font-semibold text-foreground">{batch.name}</div>
-                              <div className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
+                          <div key={batch.id} className={`rounded-lg border transition-colors ${selectedBatchId === batch.id ? "border-accent-2 bg-accent-2/10" : "border-border hover:bg-accent"}`}>
+                            <div className="flex items-center justify-between p-3 cursor-pointer" onClick={() => onSelectBatch(batch.id)}>
+                              <div className="flex-1">
+                                <div className="text-sm font-semibold text-foreground">{batch.name}</div>
+                                <div className="text-xs text-muted-foreground">{totalItems} item{totalItems !== 1 ? "s" : ""}</div>
+                              </div>
+                              {canManageBatches && <div className="flex gap-1">
+                                <Button onClick={(e) => { e.stopPropagation(); handleArchiveBatch(batch.id); }} variant="ghost" size="icon" className="h-8 w-8" aria-label={`Archive batch ${batch.name}`} title="Archive batch"><Archive size={15} aria-hidden="true" /></Button>
+                                <Button onClick={(e) => { e.stopPropagation(); onDeleteBatch(batch.id); }} variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label={`Delete batch ${batch.name}`} title="Delete batch"><Trash2 size={15} aria-hidden="true" /></Button>
+                              </div>}
                             </div>
-                            {canManageBatches && <div className="flex gap-1">
-                              <Button onClick={(e) => { e.stopPropagation(); handleArchiveBatch(batch.id); }} variant="ghost" size="icon" className="h-8 w-8" aria-label={`Archive batch ${batch.name}`} title="Archive batch"><Archive size={15} aria-hidden="true" /></Button>
-                              <Button onClick={(e) => { e.stopPropagation(); onDeleteBatch(batch.id); }} variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label={`Delete batch ${batch.name}`} title="Delete batch"><Trash2 size={15} aria-hidden="true" /></Button>
-                            </div>}
+                            <BatchReservationsAccordion reservations={reservations[batch.id] ?? []} />
                           </div>
                         );
                       })

@@ -9,6 +9,7 @@ import { ArrowLeft, ChevronDown, ChevronUp, Package, Search } from "lucide-react
 import { Booking, InventoryBatch, Pallet, Product } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { batchSummary, groupPalletItemsByProduct } from "@/components/pallets/palletUtils";
 import { PalletBatchBreakdown } from "@/components/pallets/PalletBatchBreakdown";
 
@@ -60,10 +61,12 @@ export function AgentPalletTracking() {
   const [scheduledOrderIds, setScheduledOrderIds] = useState<Set<string>>(() => new Set());
   const [search, setSearch] = useState(searchParams.get("order") ?? "");
   const [filter, setFilter] = useState<PalletFilter>("all");
+  const [customerFilter, setCustomerFilter] = useState<string>("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [expandedProductKeys, setExpandedProductKeys] = useState<Set<string>>(() => new Set());
   const [isLoading, setIsLoading] = useState(true);
   const [updatingPalletId, setUpdatingPalletId] = useState<string | null>(null);
+  const [isAdvancingAll, setIsAdvancingAll] = useState(false);
   const [error, setError] = useState("");
 
   const fetchTracking = async () => {
@@ -132,10 +135,22 @@ export function AgentPalletTracking() {
 
   const scanPallet = pallets.find((pallet) => pallet.id === scanPalletId) ?? null;
 
+  const customerOptions = useMemo(() => {
+    const byId = new Map<string, string>();
+    pallets.forEach((pallet) => {
+      const customerId = pallet.order?.customer_id;
+      if (customerId && !byId.has(customerId)) {
+        byId.set(customerId, pallet.order?.customer?.store_name ?? "Unnamed customer");
+      }
+    });
+    return [...byId.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [pallets]);
+
   const filteredPallets = useMemo(() => {
     const query = search.trim().toLowerCase();
     return pallets.filter((pallet) => {
       if (filter !== "all" && pallet.status !== filter) return false;
+      if (customerFilter !== "all" && pallet.order?.customer_id !== customerFilter) return false;
       if (!query) return true;
       return [
         pallet.id,
@@ -144,7 +159,7 @@ export function AgentPalletTracking() {
         pallet.order?.customer?.location,
       ].some((value) => value?.toLowerCase().includes(query));
     });
-  }, [filter, pallets, search]);
+  }, [customerFilter, filter, pallets, search]);
 
   const productNameFor = (productId: string) =>
     products.find((product) => product.id === productId)?.name ?? productId;
@@ -197,6 +212,31 @@ export function AgentPalletTracking() {
     } finally {
       setUpdatingPalletId(null);
     }
+  };
+
+  const canAdvance = (pallet: TrackingPallet) =>
+    pallet.status !== "shipped" && (pallet.status === "draft" || scheduledOrderIds.has(pallet.order_id));
+
+  const handleAdvanceAll = async () => {
+    const eligible = filteredPallets.filter(canAdvance);
+    const skipped = filteredPallets.filter((pallet) => pallet.status !== "shipped" && !canAdvance(pallet)).length;
+    if (!eligible.length) return;
+
+    const count = `${eligible.length} pallet${eligible.length === 1 ? "" : "s"}`;
+    const shippingNote = eligible.some((pallet) => pallet.status === "approved") ? " In-transit pallets will be marked shipped." : "";
+    if (!(await confirmAction(`Advance ${count} to the next status?${shippingNote}`))) return;
+
+    setIsAdvancingAll(true);
+    let failed = 0;
+    for (const pallet of eligible) {
+      if (!(await handleAdvancePallet(pallet))) failed += 1;
+    }
+    setIsAdvancingAll(false);
+
+    const parts = [];
+    if (skipped) parts.push(`${skipped} skipped until scheduled in Truck Dispatch`);
+    if (failed) parts.push(`${failed} failed`);
+    if (parts.length) setError(`${parts.join(", ")}.`);
   };
 
   const confirmScannedPallet = async () => {
@@ -304,6 +344,18 @@ export function AgentPalletTracking() {
         />
       </label>
 
+      <Select value={customerFilter} onValueChange={setCustomerFilter}>
+        <SelectTrigger aria-label="Filter pallets by customer" className="min-h-12 w-full bg-card">
+          <SelectValue placeholder="All customers" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All customers</SelectItem>
+          {customerOptions.map(([id, name]) => (
+            <SelectItem key={id} value={id}>{name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
       <ToggleGroup
         type="single"
         value={filter}
@@ -326,12 +378,23 @@ export function AgentPalletTracking() {
 
       {error && <p role="alert" className="rounded-xl border border-red/20 bg-red/5 p-3 text-sm text-red">{error}</p>}
 
+      {filteredPallets.some(canAdvance) && (
+        <Button
+          type="button"
+          onClick={() => void handleAdvanceAll()}
+          disabled={isAdvancingAll || updatingPalletId !== null}
+          variant="default" className="min-h-11 w-full"
+        >
+          {isAdvancingAll ? "Advancing…" : `Advance ${filteredPallets.filter(canAdvance).length} to next status`}
+        </Button>
+      )}
+
       {filteredPallets.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border bg-card px-5 py-10 text-center">
           <Package size={30} className="mx-auto mb-3 text-muted-foreground" />
           <p className="font-semibold text-foreground">{pallets.length ? "No matching pallets" : "No pallets yet"}</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            {pallets.length ? "Try another search or status filter." : "Pallets for your orders will appear here."}
+            {pallets.length ? "Try another search, customer, or status filter." : "Pallets for your orders will appear here."}
           </p>
         </div>
       ) : (
