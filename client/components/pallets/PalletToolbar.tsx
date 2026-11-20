@@ -25,6 +25,9 @@ interface PalletToolbarProps {
   onSearchChange: (value: string) => void;
   statusFilter: PalletStatusFilter;
   onStatusChange: (value: PalletStatusFilter) => void;
+  customerOptions: TruckOption[];
+  customerFilter: string;
+  onCustomerChange: (value: string) => void;
   truckOptions: TruckOption[];
   truckFilter: string;
   onTruckChange: (value: string) => void;
@@ -37,6 +40,9 @@ export function PalletToolbar({
   onSearchChange,
   statusFilter,
   onStatusChange,
+  customerOptions,
+  customerFilter,
+  onCustomerChange,
   truckOptions,
   truckFilter,
   onTruckChange,
@@ -70,6 +76,19 @@ export function PalletToolbar({
             </ToggleGroupItem>
           ))}
         </ToggleGroup>
+
+        <NativeSelect
+          aria-label="Customer"
+          value={customerFilter}
+          onChange={(e) => onCustomerChange(e.target.value)}
+          className="font-semibold"
+        >
+          {customerOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </NativeSelect>
 
         <NativeSelect
           aria-label="Truck"

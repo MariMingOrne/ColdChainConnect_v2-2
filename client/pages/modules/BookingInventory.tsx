@@ -18,8 +18,15 @@ import { DeliverySheet } from "@/components/pallets/DeliverySheet";
 import { PalletPrintAllDialog } from "@/components/pallets/PalletPrintAllDialog";
 import { DatePresetFilter, isInDatePreset } from "@/components/pallets/palletUtils";
 import { localScheduleDate } from "@/lib/agentSchedule";
+import { confirmAction } from "@/lib/confirm";
 
 type DeliveryWithItems = Delivery & { delivery_items?: DeliveryItem[] };
+
+const nextPalletStatus: Partial<Record<Pallet["status"], Pallet["status"]>> = {
+  draft: "prepared",
+  prepared: "approved",
+  approved: "shipped",
+};
 
 export function BookingInventory() {
   const [searchParams] = useSearchParams();
@@ -39,6 +46,7 @@ export function BookingInventory() {
   const [selectedPalletId, setSelectedPalletId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<PalletStatusFilter>("all");
   const [truckFilter, setTruckFilter] = useState("all");
+  const [customerFilter, setCustomerFilter] = useState("all");
   const [datePreset, setDatePreset] = useState<DatePresetFilter>("all");
   const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -109,6 +117,42 @@ export function BookingInventory() {
     }
   };
 
+  const handleAdvanceAll = async () => {
+    const eligible = visiblePallets.filter((pallet) => nextPalletStatus[pallet.status]);
+    if (!eligible.length) return;
+
+    const shippingNote = eligible.some((pallet) => pallet.status === "approved") ? " In-transit pallets will be marked shipped." : "";
+    if (!(await confirmAction(`Advance ${eligible.length} pallet${eligible.length === 1 ? "" : "s"} to the next status?${shippingNote}`))) return;
+
+    setIsUpdatingStatus(true);
+    let advanced = 0;
+    const failures = new Set<string>();
+    const pendingReasons = new Set<string>();
+    try {
+      for (const pallet of eligible) {
+        const res = await fetch(`/api/pallets/${pallet.id}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ status: nextPalletStatus[pallet.status] }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          failures.add(data.error || "Failed to update pallet status");
+          continue;
+        }
+        advanced += 1;
+        if (data.invoice_pending_reason) pendingReasons.add(data.invoice_pending_reason);
+        setPallets((prev) => prev.map((p) => (p.id === data.id ? data : p)));
+      }
+    } finally {
+      setIsUpdatingStatus(false);
+    }
+
+    if (advanced) toast.success(`Advanced ${advanced} pallet${advanced === 1 ? "" : "s"}`);
+    pendingReasons.forEach((reason) => toast.warning(reason));
+    failures.forEach((message) => toast.error(message));
+  };
+
   const getProductName = (productId: string) =>
     products.find((p) => p.id === productId)?.name || productId;
 
@@ -122,6 +166,7 @@ export function BookingInventory() {
   const filteredEntries = entries.filter(({ pallet, customer }) => {
     if (statusFilter !== "all" && pallet.status !== statusFilter) return false;
     if (!isInDatePreset(pallet.created_at, datePreset)) return false;
+    if (customerFilter !== "all" && customer?.id !== customerFilter) return false;
 
     const query = searchQuery.trim().toLowerCase();
     if (!query) return true;
@@ -156,6 +201,17 @@ export function BookingInventory() {
     { truck: null, entries: filteredEntries.filter(({ pallet }) => !truckIdFor(pallet)) },
   ].filter((group) => group.entries.length > 0);
 
+  const customerOptions = [
+    { value: "all", label: "All customers" },
+    ...Array.from(
+      new Map(
+        entries.flatMap(({ customer }) => (customer ? [[customer.id, customer.store_name] as const] : [])),
+      ),
+    )
+      .sort((a, b) => a[1].localeCompare(b[1]))
+      .map(([value, label]) => ({ value, label })),
+  ];
+
   const truckOptions = [
     { value: "all", label: "All trucks" },
     ...[...trucks]
@@ -169,6 +225,8 @@ export function BookingInventory() {
   );
 
   const visiblePallets = visiblePalletGroups.flatMap((group) => group.entries.map(({ pallet }) => pallet));
+
+  const advanceableCount = visiblePallets.filter((pallet) => nextPalletStatus[pallet.status]).length;
 
   const selected = entries.find((entry) => entry.pallet.id === selectedPalletId) ?? null;
 
@@ -187,6 +245,11 @@ export function BookingInventory() {
           <p className="page-subtitle">Track the status, contents, and value of every pallet</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {canUpdatePalletStatus && advanceableCount > 0 && (
+            <Button onClick={() => void handleAdvanceAll()} disabled={isUpdatingStatus} variant="default">
+              {isUpdatingStatus ? "Advancing…" : `Advance ${advanceableCount} to next status`}
+            </Button>
+          )}
           {isAdmin && (
             <>
               <label className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
@@ -228,6 +291,9 @@ export function BookingInventory() {
             onSearchChange={setSearchQuery}
             statusFilter={statusFilter}
             onStatusChange={setStatusFilter}
+            customerOptions={customerOptions}
+            customerFilter={customerFilter}
+            onCustomerChange={setCustomerFilter}
             truckOptions={truckOptions}
             truckFilter={truckFilter}
             onTruckChange={setTruckFilter}
