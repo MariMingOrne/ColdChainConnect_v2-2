@@ -61,7 +61,6 @@ export function SalesForecastChart({ data }: SalesForecastChartProps) {
           type="monotone"
           dataKey="actual"
           name="Actual"
-          legendType="circle"
           stroke="hsl(var(--primary))"
           strokeWidth={2}
           dot={false}
@@ -72,7 +71,6 @@ export function SalesForecastChart({ data }: SalesForecastChartProps) {
           type="monotone"
           dataKey="forecast"
           name="Estimate"
-          legendType="diamond"
           stroke="hsl(var(--primary))"
           strokeWidth={2}
           strokeDasharray="6 4"
