@@ -559,6 +559,30 @@ export function Pricing({ onBack }: PricingProps) {
     }
   };
 
+  const setSelectedDiscontinued = async () => {
+    if (selectedProducts.length === 0) return;
+    const noun = selectedProducts.length === 1 ? "product" : "products";
+    if (!(await confirmAction(`Mark ${selectedProducts.length} selected ${noun} as discontinued?`))) return;
+    const selectedIds = selectedProducts.map((product) => product.id);
+    try {
+      const responses = await Promise.all(selectedIds.map((id) => fetch(`/api/products/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ is_discontinued: true }),
+      })));
+      const failedCount = responses.filter((response) => !response.ok).length;
+      await fetchProducts();
+      setSelectedProductIds([]);
+      if (failedCount > 0) {
+        toast.error(`${failedCount} of ${selectedIds.length} ${noun} could not be marked as discontinued`);
+      } else {
+        toast.success(`${selectedIds.length} ${noun} marked as discontinued`);
+      }
+    } catch {
+      toast.error("Failed to mark selected products as discontinued");
+    }
+  };
+
   const totalValue = activeProducts.reduce((sum, p) => sum + parseFloat(p.price ?? "0"), 0);
   const avgPrice = activeProducts.length > 0 ? totalValue / activeProducts.length : 0;
 
@@ -573,6 +597,9 @@ export function Pricing({ onBack }: PricingProps) {
       ? [showArchived
           ? { label: `Restore selected ${selectedProducts.length === 1 ? "product" : "products"}`, onSelect: () => void setSelectedArchived(false) }
           : { label: `Archive selected ${selectedProducts.length === 1 ? "product" : "products"}`, onSelect: () => void setSelectedArchived(true) }]
+      : []),
+    ...(canManageProducts
+      ? [{ label: `Mark selected ${selectedProducts.length === 1 ? "product" : "products"} as discontinued`, onSelect: () => void setSelectedDiscontinued() }]
       : []),
   ];
 
