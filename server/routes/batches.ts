@@ -255,8 +255,10 @@ export const archiveBatch: RequestHandler = async (req: AuthRequest, res) => {
           .innerJoin(batch_pallets, eq(pallet_items.pallet_id, batch_pallets.id))
           .where(eq(batch_pallets.batch_id, id));
         const sourceIds = sourceItems.map((item) => item.id);
-        await tx.select({ id: pallet_items.id }).from(pallet_items).where(inArray(pallet_items.id, sourceIds)).for("update");
-        if (await hasActiveReservations(tx, sourceIds)) return "reserved";
+        if (sourceIds.length > 0) {
+          await tx.select({ id: pallet_items.id }).from(pallet_items).where(inArray(pallet_items.id, sourceIds)).for("update");
+          if (await hasActiveReservations(tx, sourceIds)) return "reserved";
+        }
       }
 
       await tx.update(inventory_batches).set({

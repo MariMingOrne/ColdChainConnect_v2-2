@@ -713,11 +713,14 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ is_archived: true }),
       });
-      if (!response.ok) throw new Error("Failed to archive batch");
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error || "Failed to archive batch");
+      }
       await onRefresh();
     } catch (err) {
       console.error("Failed to archive batch:", err);
-      toast.error("Failed to archive batch. Please try again.");
+      toast.error(err instanceof Error ? err.message : "Failed to archive batch. Please try again.");
     }
   };
 
@@ -729,11 +732,14 @@ function BatchModal({ batches, selectedBatchId, onSelectBatch, onDeleteBatch, on
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
         body: JSON.stringify({ is_archived: false }),
       });
-      if (!response.ok) throw new Error("Failed to unarchive batch");
+      if (!response.ok) {
+        const body = await response.json().catch(() => null);
+        throw new Error(body?.error || "Failed to unarchive batch");
+      }
       await onRefresh();
     } catch (err) {
       console.error("Failed to unarchive batch:", err);
-      toast.error("Failed to unarchive batch. Please try again.");
+      toast.error(err instanceof Error ? err.message : "Failed to unarchive batch. Please try again.");
     }
   };
 
