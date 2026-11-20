@@ -5,11 +5,6 @@ import {
   users,
   customers,
   products,
-  drivers,
-  trucks,
-  inventory_batches,
-  batch_pallets,
-  pallet_items,
   agents,
 } from "./db/schema";
 import { hashPassword } from "./auth";
@@ -68,7 +63,6 @@ async function seed() {
       batch_tracking_enabled: true,
     }));
     await db.insert(products).values(productRows).onConflictDoNothing();
-    const [product1, product2, product3, product4] = productRows.map((product) => product.id);
 
     // Create agent profiles
     console.log("📝 Creating agent profiles...");
@@ -240,119 +234,12 @@ async function seed() {
       },
     ]).onConflictDoNothing();
 
-    // Create drivers (standalone, no login account)
-    console.log("📝 Creating drivers...");
-    const driverProfile1 = randomUUID();
-    const driverProfile2 = randomUUID();
-    const driverProfile3 = randomUUID();
-
-    await db.insert(drivers).values([
-      {
-        id: driverProfile1,
-        full_name: "Pedro Reyes",
-        contact_info: "09181234567",
-        license: "N01-23-111111",
-        hire_date: "2021-05-10",
-        employment_type: "full_time",
-        is_active: true,
-      },
-      {
-        id: driverProfile2,
-        full_name: "Carlos Mendoza",
-        contact_info: "09182345678",
-        license: "N01-23-222222",
-        hire_date: "2021-08-20",
-        employment_type: "full_time",
-        is_active: true,
-      },
-      {
-        id: driverProfile3,
-        full_name: "Jose Villanueva",
-        contact_info: "09183456789",
-        license: "N01-23-333333",
-        hire_date: "2022-02-14",
-        employment_type: "part_time",
-        is_active: true,
-      },
-    ]).onConflictDoNothing();
-
-    // Create trucks
-    console.log("📝 Creating trucks...");
-    const truck1 = randomUUID();
-    const truck2 = randomUUID();
-    const truck3 = randomUUID();
-
-    await db.insert(trucks).values([
-      {
-        id: truck1,
-        license_plate: "MNL 4821",
-        district: "District A",
-        driver_id: driverProfile1,
-        status: "available",
-      },
-      {
-        id: truck2,
-        license_plate: "CAV 7315",
-        district: "District C",
-        driver_id: driverProfile2,
-        status: "available",
-      },
-      {
-        id: truck3,
-        license_plate: "TGY 3186",
-        district: "District B",
-        driver_id: driverProfile3,
-        status: "available",
-      },
-    ]).onConflictDoNothing();
-
-    // Create inventory batches
-    console.log("📝 Creating inventory batches...");
-    const batchId1 = randomUUID();
-    await db.insert(inventory_batches).values({
-      id: batchId1,
-      batch_name: "Morning Delivery",
-    }).onConflictDoNothing();
-
-    const pallet1Id = randomUUID();
-    const pallet2Id = randomUUID();
-    await db.insert(batch_pallets).values([
-      {
-        id: pallet1Id,
-        batch_id: batchId1,
-        pallet_id: "P-2024-001",
-        supplier_name: "Frabelle Food Corp",
-        received_date: "2024-01-15",
-        storage_zone: "Zone A",
-        placement_location: "Freezer A",
-      },
-      {
-        id: pallet2Id,
-        batch_id: batchId1,
-        pallet_id: "P-2024-002",
-        supplier_name: "Polar Foods",
-        received_date: "2024-01-16",
-        storage_zone: "Zone B",
-        placement_location: "Freezer B",
-      },
-    ]).onConflictDoNothing();
-
-    await db.insert(pallet_items).values([
-      { id: randomUUID(), pallet_id: pallet1Id, product_id: product1, qty_units: 100, expiration_date: "2024-02-15" },
-      { id: randomUUID(), pallet_id: pallet1Id, product_id: product2, qty_units: 80, expiration_date: "2024-02-20" },
-      { id: randomUUID(), pallet_id: pallet2Id, product_id: product3, qty_units: 120, expiration_date: "2024-02-10" },
-      { id: randomUUID(), pallet_id: pallet2Id, product_id: product4, qty_units: 60, expiration_date: "2024-02-25" },
-    ]).onConflictDoNothing();
-
     console.log("✅ Seed completed successfully!");
     console.log("\n📋 Created data:");
     console.log("   ✓ Admin user (admin/admin123)");
     console.log("   ✓ 3 Agent users (agent1-3/agent123) with profiles");
     console.log(`   ✓ ${seedProducts.length} Products (current Frabelle catalog)`);
-    console.log("   ✓ 3 Customers (Makati, BGC, Tagaytay)");
-    console.log("   ✓ 3 Drivers (Pedro, Carlos, Jose — no login)");
-    console.log("   ✓ 3 Trucks (District A, B, C)");
-    console.log("   ✓ Inventory Batches/Pallets");
+    console.log("   ✓ 8 Customers");
 
     process.exit(0);
   } catch (error) {
