@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import type { BatchReservation } from "@shared/api";
 
@@ -22,15 +23,20 @@ export function BatchReservationsAccordion({ reservations }: BatchReservationsAc
         <AccordionContent className="pb-3">
           <ul className="space-y-2">
             {reservations.map((row, index) => (
-              <li key={`${row.orderId}-${row.productId}-${index}`} className="flex items-start justify-between gap-3 text-xs">
-                <div className="min-w-0">
-                  <div className="truncate font-semibold text-foreground">
-                    {row.productName}
-                    {row.sku && <span className="font-normal text-muted-foreground"> · {row.sku}</span>}
+              <li key={`${row.orderId}-${row.productId}-${index}`}>
+                <Link
+                  to={`/booking-dispatch/inventory?order=${encodeURIComponent(row.orderId)}`}
+                  className="group flex items-start justify-between gap-3 rounded-md px-2 py-1.5 text-xs transition-colors hover:bg-accent"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate font-semibold text-foreground group-hover:underline">
+                      {row.productName}
+                      {row.sku && <span className="font-normal text-muted-foreground"> · {row.sku}</span>}
+                    </div>
+                    <div className="truncate text-muted-foreground">{row.customerName} · Order {row.orderId}</div>
                   </div>
-                  <div className="truncate text-muted-foreground">{row.customerName} · Order {row.orderId}</div>
-                </div>
-                <span className="shrink-0 font-semibold text-foreground">{row.qty} unit{row.qty !== 1 ? "s" : ""}</span>
+                  <span className="shrink-0 font-semibold text-foreground">{row.qty} unit{row.qty !== 1 ? "s" : ""}</span>
+                </Link>
               </li>
             ))}
           </ul>
