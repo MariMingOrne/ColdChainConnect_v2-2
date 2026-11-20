@@ -73,7 +73,7 @@ describe("DriverStopCard actions", () => {
     expect(url).toBe("/api/deliveries/del-1/items/item-1/confirm");
     expect(init.method).toBe("POST");
     expect(init.headers.Authorization).toBe("Bearer driver-token");
-    expect(JSON.parse(init.body)).toEqual({ is_paid: false, payment_amount: 0 });
+    expect(JSON.parse(init.body)).toMatchObject({ is_paid: false, payment_amount: 0 });
     await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
@@ -87,12 +87,16 @@ describe("DriverStopCard actions", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Confirm delivery" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+    const sent = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(sent).toMatchObject({
       is_paid: true,
       payment_amount: 250,
       payment_method: "cash",
       payment_reference: "",
     });
+    // Every collected payment carries an idempotency key so a retry is not counted twice.
+    expect(typeof sent.payment_id).toBe("string");
+    expect(sent.payment_id).not.toBe("");
   });
 
   it("shows the excess as customer credit and sends the full collected amount", async () => {
@@ -145,7 +149,10 @@ describe("DriverStopCard actions", () => {
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe("/api/deliveries/del-1/items/item-1/payment");
     expect(init.headers.Authorization).toBe("Bearer driver-token");
-    expect(JSON.parse(init.body)).toEqual({ payment_amount: 100, payment_method: "cash", payment_reference: "" });
+    const sent = JSON.parse(init.body);
+    expect(sent).toMatchObject({ payment_amount: 100, payment_method: "cash", payment_reference: "" });
+    expect(typeof sent.payment_id).toBe("string");
+    expect(sent.payment_id).not.toBe("");
     await waitFor(() => expect(onChanged).toHaveBeenCalledTimes(1));
   });
 
@@ -158,7 +165,10 @@ describe("DriverStopCard actions", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Save payment" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ payment_amount: 115, payment_method: "cash", payment_reference: "" });
+    const sent = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(sent).toMatchObject({ payment_amount: 115, payment_method: "cash", payment_reference: "" });
+    expect(typeof sent.payment_id).toBe("string");
+    expect(sent.payment_id).not.toBe("");
   });
 
   it("confirms an order that is fully covered by existing credit without collecting cash", async () => {
@@ -176,7 +186,7 @@ describe("DriverStopCard actions", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Confirm delivery" }));
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
-    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ is_paid: true, payment_amount: 0 });
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toMatchObject({ is_paid: true, payment_amount: 0 });
   });
 
   it("offers no action on a stop that is delivered and paid", () => {

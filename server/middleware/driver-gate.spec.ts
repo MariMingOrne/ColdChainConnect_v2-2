@@ -147,7 +147,7 @@ describe("confirm and payment handlers still check the assigned driver", () => {
       otherDriverUser.id,
       "driver",
       { id: "del-1", itemId: "item-done" },
-      { payment_amount: 1, payment_method: "cash" },
+      { payment_amount: 1, payment_method: "cash", payment_id: "gate-payment-1" },
     );
     expect(status).toBe(403);
     expect(payload).toMatchObject({ error: expect.stringContaining("assigned driver") });
