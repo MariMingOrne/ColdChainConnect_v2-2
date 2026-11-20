@@ -111,12 +111,13 @@ function CreateReturnModal({
 }
 
 // ─── Main Returns Component ───────────────────────────────────────────────────
-function OrderInfo({ invoice, customerName, ret, onClose }: { invoice: Invoice | undefined; customerName: string; ret: AgentReturn; onClose: () => void }) {
+function OrderInfo({ invoiceId, invoice, customerName, returns, onClose }: { invoiceId: string; invoice: Invoice | undefined; customerName: string; returns: AgentReturn[]; onClose: () => void }) {
   const items = invoice?.invoice_items ?? [];
+  const returnedQty = (productId: string) => returns.filter((ret) => ret.product_id === productId).reduce((sum, ret) => sum + ret.qty_returned, 0);
   return (
     <div className="space-y-5 px-4 py-4 md:px-6 md:py-6">
       <div>
-        <h1 className="page-title">Order {invoice?.receipt_number || ret.invoice_id.slice(0, 8).toUpperCase()}</h1>
+        <h1 className="page-title">Order {invoice?.receipt_number || invoiceId.slice(0, 8).toUpperCase()}</h1>
         <p className="page-subtitle">The order this return was logged against</p>
       </div>
       <dl className="grid gap-4 sm:grid-cols-2">
@@ -148,10 +149,10 @@ function OrderInfo({ invoice, customerName, ret, onClose }: { invoice: Invoice |
             {items.length === 0 ? (
               <tr><td colSpan={4} className="px-3 py-6 text-center text-muted-foreground">No line items on this order.</td></tr>
             ) : items.map((item) => (
-              <tr key={item.id} className={`border-b border-border last:border-b-0 ${item.product_id === ret.product_id ? "bg-warning-soft" : ""}`}>
+              <tr key={item.id} className={`border-b border-border last:border-b-0 ${returnedQty(item.product_id) > 0 ? "bg-warning-soft" : ""}`}>
                 <td className="px-3 py-2 text-foreground">
                   {item.product_name}
-                  {item.product_id === ret.product_id && <span className="ml-2 text-xs font-semibold text-warning">returning {ret.qty_returned}</span>}
+                  {returnedQty(item.product_id) > 0 && <span className="ml-2 text-xs font-semibold text-warning">returning {returnedQty(item.product_id)}</span>}
                 </td>
                 <td className="px-3 py-2 text-right">{item.qty_ordered}</td>
                 <td className="px-3 py-2 text-right">{formatPeso(item.unit_price)}</td>
@@ -160,6 +161,37 @@ function OrderInfo({ invoice, customerName, ret, onClose }: { invoice: Invoice |
             ))}
           </tbody>
         </Table>
+      </div>
+      <div className="space-y-3">
+        <h2 className="text-sm font-semibold text-foreground">Returns on this order</h2>
+        <div className="data-table-frame overflow-x-auto">
+          <Table>
+            <thead>
+              <tr className="border-b border-border bg-muted text-left">
+                <th className="px-3 py-2 font-semibold">Product</th>
+                <th className="px-3 py-2 text-right font-semibold">Qty</th>
+                <th className="px-3 py-2 font-semibold">Type</th>
+                <th className="px-3 py-2 font-semibold">Reason</th>
+                <th className="px-3 py-2 font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {returns.map((ret) => (
+                <tr key={ret.id} className="border-b border-border last:border-b-0">
+                  <td className="px-3 py-2 text-foreground">{ret.product_name}</td>
+                  <td className="px-3 py-2 text-right">{ret.qty_returned}</td>
+                  <td className="px-3 py-2">
+                    <span className={`px-2 py-0.5 rounded text-xs font-semibold ${returnTypeBadge(ret.return_type)}`}>
+                      {ret.return_type === "damaged" ? "Damaged" : "Good"}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-muted-foreground">{ret.reason || "—"}</td>
+                  <td className="px-3 py-2"><StatusBadge label={ret.status} tone={returnStatusTone(ret.status)} /></td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        </div>
       </div>
       <div className="flex justify-end border-t border-border pt-4">
         <Button type="button" variant="outline" onClick={onClose}>Close</Button>
@@ -181,7 +213,7 @@ export function AgentReports() {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState<string | null>(null);
   const [showCreate, setShowCreate] = useState(false);
-  const [viewingOrder, setViewingOrder] = useState<AgentReturn | null>(null);
+  const [viewingOrder, setViewingOrder] = useState<string | null>(null);
   const [processing, setProcessing] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<"all" | "pending" | "accepted" | "rejected">("all");
   const [searchTerm, setSearchTerm] = useState("");
@@ -219,56 +251,9 @@ export function AgentReports() {
   useEffect(() => { fetchAll(); }, [fetchAll]);
   useAutoRefresh(fetchAll, { enabled: Boolean(token) });
 
-  const handleAccept = async (id: string) => {
+  const decideReturns = async (targets: AgentReturn[], action: "accept" | "reject", reason: string) => {
     if (!token) return;
-    setProcessing(id);
-    try {
-      const res = await fetch(`/api/agent-returns/${id}/accept`, {
-        method: "POST", headers: authHeaders(token),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      await fetchAll();
-    } catch (err) {
-      toast.error("Failed: " + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      setProcessing(null);
-    }
-  };
-
-  const handleReject = async (id: string) => {
-    const reason = prompt("Reason for rejection (optional):");
-    if (reason === null) return;
-    if (!token) return;
-    setProcessing(id);
-    try {
-      const res = await fetch(`/api/agent-returns/${id}/reject`, {
-        method: "POST", headers: authHeaders(token),
-        body: JSON.stringify({ reason }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      await fetchAll();
-    } catch (err) {
-      toast.error("Failed: " + (err instanceof Error ? err.message : String(err)));
-    } finally {
-      setProcessing(null);
-    }
-  };
-
-  const processSelected = async (action: "accept" | "reject") => {
-    if (!token) return;
-    const pending = returns.filter((ret) => selectedIds.includes(ret.id) && ret.status === "pending");
-    if (pending.length === 0) return void toast.error("Select pending returns to review");
-
-    let reason = "";
-    if (action === "reject") {
-      const input = prompt("Reason for rejection (optional):");
-      if (input === null) return;
-      reason = input;
-    } else if (!(await confirmAction(`Accept ${pending.length} selected ${pending.length === 1 ? "return" : "returns"}?`))) {
-      return;
-    }
-
-    const results = await Promise.all(pending.map(async (ret) => {
+    const results = await Promise.all(targets.map(async (ret) => {
       try {
         const res = await fetch(`/api/agent-returns/${ret.id}/${action}`, {
           method: "POST",
@@ -281,9 +266,41 @@ export function AgentReports() {
       }
     }));
     const failed = results.filter((ok) => !ok).length;
-    setSelectedIds([]);
     await fetchAll();
     if (failed > 0) toast.error(`${failed} return(s) could not be ${action === "accept" ? "accepted" : "rejected"}.`);
+  };
+
+  const decideOrder = async (invoiceId: string, action: "accept" | "reject") => {
+    let reason = "";
+    if (action === "reject") {
+      const input = prompt("Reason for rejection (optional):");
+      if (input === null) return;
+      reason = input;
+    }
+    setProcessing(invoiceId);
+    try {
+      await decideReturns(returns.filter((ret) => ret.invoice_id === invoiceId && ret.status === "pending"), action, reason);
+    } finally {
+      setProcessing(null);
+    }
+  };
+
+  const processSelected = async (action: "accept" | "reject") => {
+    if (!token) return;
+    const pending = returns.filter((ret) => selectedIds.includes(ret.invoice_id) && ret.status === "pending");
+    if (pending.length === 0) return void toast.error("Select pending returns to review");
+
+    let reason = "";
+    if (action === "reject") {
+      const input = prompt("Reason for rejection (optional):");
+      if (input === null) return;
+      reason = input;
+    } else if (!(await confirmAction(`Accept ${pending.length} selected ${pending.length === 1 ? "return" : "returns"}?`))) {
+      return;
+    }
+
+    await decideReturns(pending, action, reason);
+    setSelectedIds([]);
   };
 
   if (isAgent) {
@@ -311,12 +328,21 @@ export function AgentReports() {
   const acceptedCount = returns.filter((r) => r.status === "accepted").length;
   const rejectedCount = returns.filter((r) => r.status === "rejected").length;
 
-  const { currentPage, totalPages, pageItems: paginated } = paginate(filtered, page);
-  const pageIds = paginated.map((ret) => ret.id);
+  const orderGroups = Array.from(
+    filtered.reduce((groups, ret) => groups.set(ret.invoice_id, [...(groups.get(ret.invoice_id) ?? []), ret]), new Map<string, AgentReturn[]>()),
+  ).map(([invoiceId, orderReturns]) => ({
+    invoiceId,
+    receipt: invoices.find((entry) => entry.id === invoiceId)?.receipt_number || invoiceId.slice(0, 8).toUpperCase(),
+    customerId: orderReturns[0].customer_id,
+    returns: orderReturns,
+  }));
+  const viewingReturns = returns.filter((ret) => ret.invoice_id === viewingOrder);
+
+  const { currentPage, totalPages, pageItems: paginated } = paginate(orderGroups, page);
+  const pageIds = paginated.map((group) => group.invoiceId);
   const allPageSelected = pageIds.length > 0 && pageIds.every((id) => selectedIds.includes(id));
-  const selectedReturns = returns.filter((ret) => selectedIds.includes(ret.id));
-  const toggleReturnSelection = (id: string, checked: boolean) =>
-    setSelectedIds((current) => (checked ? [...current, id] : current.filter((selectedId) => selectedId !== id)));
+  const toggleOrderSelection = (invoiceId: string, checked: boolean) =>
+    setSelectedIds((current) => (checked ? [...current, invoiceId] : current.filter((selectedId) => selectedId !== invoiceId)));
   const togglePageSelection = (checked: boolean) =>
     setSelectedIds((current) => (checked ? Array.from(new Set([...current, ...pageIds])) : current.filter((id) => !pageIds.includes(id))));
   const bulkActions: TableBulkAction[] | undefined = canDecideReturns
@@ -377,7 +403,7 @@ export function AgentReports() {
           ))}
         </ToggleGroup>
         <TableToolbar
-          selectedCount={selectedReturns.length}
+          selectedCount={selectedIds.length}
           bulkActions={bulkActions}
           searchValue={searchTerm}
           onSearchChange={(value) => { setSearchTerm(value); setPage(1); }}
@@ -397,10 +423,10 @@ export function AgentReports() {
                 <tr>
                   {canDecideReturns && (
                     <th className="w-10 bg-navy-mid px-3 py-3 text-left border-b border-border">
-                      <input aria-label="Select all returns on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
+                      <input aria-label="Select all orders on this page" type="checkbox" checked={allPageSelected} onChange={(event) => togglePageSelection(event.target.checked)} />
                     </th>
                   )}
-                  {["Date", "Order", "Customer", "Product", "Qty", "Type", "Reason", "Status", "Actions"].map((h) => (
+                  {["Date", "Order", "Customer", "Items", "Status", "Actions"].map((h) => (
                     <th key={h} className="bg-navy-mid text-muted-foreground font-barlow-cond text-xs font-bold px-3 py-3 text-left border-b border-border whitespace-nowrap">
                       {h}
                     </th>
@@ -410,72 +436,81 @@ export function AgentReports() {
               <tbody>
                 {paginated.length === 0 ? (
                   <tr>
-                    <td colSpan={canDecideReturns ? 10 : 9} className="px-6 py-8 text-center text-muted-foreground">
+                    <td colSpan={canDecideReturns ? 7 : 6} className="px-6 py-8 text-center text-muted-foreground">
                       {returns.length === 0 ? "No returns logged yet." : "No records match this filter."}
                     </td>
                   </tr>
                 ) : (
-                  paginated.map((ret) => {
-                    const inv = invoices.find((i) => i.id === ret.invoice_id);
-                    const cust = customers.find((c) => c.id === ret.customer_id);
+                  paginated.map((group) => {
+                    const cust = customers.find((c) => c.id === group.customerId);
+                    const pendingInOrder = group.returns.filter((ret) => ret.status === "pending").length;
+                    const reviewedAt = group.returns.reduce<string | null>((latest, ret) => (ret.reviewed_at && (!latest || ret.reviewed_at > latest) ? ret.reviewed_at : latest), null);
                     return (
-                      <tr key={ret.id} className="border-b border-border hover:bg-accent/40 transition-colors">
+                      <tr key={group.invoiceId} className="border-b border-border hover:bg-accent/40 transition-colors align-top">
                         {canDecideReturns && (
                           <td className="w-10 px-3 py-3">
-                            <input aria-label={`Select return ${ret.id.slice(0, 8)}`} type="checkbox" checked={selectedIds.includes(ret.id)} onChange={(event) => toggleReturnSelection(ret.id, event.target.checked)} />
+                            <input aria-label={`Select order ${group.receipt}`} type="checkbox" checked={selectedIds.includes(group.invoiceId)} onChange={(event) => toggleOrderSelection(group.invoiceId, event.target.checked)} />
                           </td>
                         )}
                         <td className="px-3 py-3 text-muted-foreground whitespace-nowrap">
-                          {new Date(ret.created_at).toLocaleDateString("en-PH")}
+                          {new Date(group.returns[0].created_at).toLocaleDateString("en-PH")}
                         </td>
                         <td className="px-3 py-3 font-mono text-foreground">
-                          <RecordTitleButton onClick={() => setViewingOrder(ret)} className="font-mono">
-                            {inv?.receipt_number || ret.invoice_id.slice(0, 8).toUpperCase()}
+                          <RecordTitleButton onClick={() => setViewingOrder(group.invoiceId)} className="font-mono">
+                            {group.receipt}
                           </RecordTitleButton>
                         </td>
                         <td className="px-3 py-3 text-foreground font-semibold">
-                          {cust?.store_name || ret.customer_id.slice(0, 8)}
+                          {cust?.store_name || group.customerId.slice(0, 8)}
                           {cust?.contact_person && (
                             <p className="text-xs text-muted-foreground font-normal">{cust.contact_person}</p>
                           )}
                         </td>
-                        <td className="px-3 py-3 text-foreground">{ret.product_name}</td>
-                        <td className="px-3 py-3 font-semibold text-foreground">{ret.qty_returned}</td>
-                        <td className="px-3 py-3">
-                          <span className={`px-2 py-0.5 rounded text-xs font-semibold ${returnTypeBadge(ret.return_type)}`}>
-                            {ret.return_type === "damaged" ? "Damaged" : "Good"}
-                          </span>
+                        <td className="px-3 py-3 text-foreground">
+                          <ul className="space-y-1">
+                            {group.returns.map((ret) => (
+                              <li key={ret.id} className="flex flex-wrap items-center gap-2">
+                                <span>{ret.product_name}</span>
+                                <span className="font-semibold">×{ret.qty_returned}</span>
+                                <span className={`px-2 py-0.5 rounded text-xs font-semibold ${returnTypeBadge(ret.return_type)}`}>
+                                  {ret.return_type === "damaged" ? "Damaged" : "Good"}
+                                </span>
+                                {ret.status === "accepted" && ret.return_type === "good" && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {ret.restored_to_pallet_id ? "Restocked ✓" : "Written off"}
+                                  </span>
+                                )}
+                              </li>
+                            ))}
+                          </ul>
                         </td>
-                        <td className="px-3 py-3 text-muted-foreground max-w-[160px] truncate" title={ret.reason ?? ""}>
-                          {ret.reason || "—"}
+                        <td className="px-3 py-3">
+                          <div className="flex flex-wrap gap-1">
+                            {(["pending", "accepted", "rejected"] as const).map((status) => {
+                              const count = group.returns.filter((ret) => ret.status === status).length;
+                              return count > 0 ? <StatusBadge key={status} label={`${count} ${status}`} tone={returnStatusTone(status)} /> : null;
+                            })}
+                          </div>
                         </td>
                         <td className="px-3 py-3">
-                          <StatusBadge label={ret.status} tone={returnStatusTone(ret.status)} />
-                          {ret.status === "accepted" && ret.return_type === "good" && (
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {ret.restored_to_pallet_id ? "Restocked ✓" : "Written off"}
-                            </p>
-                          )}
-                        </td>
-                        <td className="px-3 py-3">
-                          {ret.status === "pending" && canDecideReturns ? (
+                          {pendingInOrder > 0 && canDecideReturns ? (
                             <div className="flex gap-1">
                               <Button
-                                disabled={processing === ret.id}
-                                onClick={() => handleAccept(ret.id)}
+                                disabled={processing === group.invoiceId}
+                                onClick={() => decideOrder(group.invoiceId, "accept")}
                                 variant="success" size="sm"
                               >
                                 <CheckCircle size={12} /> Accept
                               </Button>
                               <Button
-                                disabled={processing === ret.id}
-                                onClick={() => handleReject(ret.id)} variant="danger" size="sm" className="h-8 gap-1 px-2 text-xs">
+                                disabled={processing === group.invoiceId}
+                                onClick={() => decideOrder(group.invoiceId, "reject")} variant="danger" size="sm" className="h-8 gap-1 px-2 text-xs">
                                 <XCircle size={12} /> Reject
                               </Button>
                             </div>
                           ) : (
                             <span className="text-xs text-muted-foreground">
-                              {ret.reviewed_at ? new Date(ret.reviewed_at).toLocaleDateString("en-PH") : "—"}
+                              {reviewedAt ? new Date(reviewedAt).toLocaleDateString("en-PH") : "—"}
                             </span>
                           )}
                         </td>
@@ -494,9 +529,10 @@ export function AgentReports() {
       {viewingOrder && (
         <PageDialog onClose={() => setViewingOrder(null)} label="Order details">
           <OrderInfo
-            invoice={invoices.find((entry) => entry.id === viewingOrder.invoice_id)}
-            customerName={customers.find((entry) => entry.id === viewingOrder.customer_id)?.store_name ?? viewingOrder.customer_id.slice(0, 8)}
-            ret={viewingOrder}
+            invoiceId={viewingOrder}
+            invoice={invoices.find((entry) => entry.id === viewingOrder)}
+            customerName={customers.find((entry) => entry.id === viewingReturns[0]?.customer_id)?.store_name ?? viewingReturns[0]?.customer_id.slice(0, 8) ?? "—"}
+            returns={viewingReturns}
             onClose={() => setViewingOrder(null)}
           />
         </PageDialog>

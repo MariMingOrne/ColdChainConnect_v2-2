@@ -3,7 +3,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { OrderProductList } from "./OrderProductList";
-import { Product, Customer } from "@shared/api";
+import { Product, Customer, Agent } from "@shared/api";
 
 interface OrderItem {
   product_id: string;
@@ -13,6 +13,9 @@ interface OrderItem {
 interface AddOrderModalProps {
   onClose: () => void;
   customers: Customer[];
+  agents: Agent[];
+  selectedAgentId: string;
+  onAgentChange: (agentId: string) => void;
   products: Product[];
   productStock: Record<string, number>;
   orderItems: OrderItem[];
@@ -30,6 +33,9 @@ interface AddOrderModalProps {
 export function AddOrderModal({
   onClose,
   customers,
+  agents,
+  selectedAgentId,
+  onAgentChange,
   products,
   productStock,
   orderItems,
@@ -63,6 +69,19 @@ export function AddOrderModal({
 
         {/* Customer Selection */}
         <div className="bg-muted px-6 py-3 border-b border-border">
+          <label htmlFor="addordermodal-select-agent" className="block text-xs font-semibold text-foreground mb-2">Agent</label>
+          <NativeSelect id="addordermodal-select-agent"
+            value={selectedAgentId}
+            onChange={(e) => onAgentChange(e.target.value)}
+            className="w-full"
+          >
+            <option value="">Admin (no agent)</option>
+            {agents.filter((agent) => !agent.is_archived).map((agent) => (
+              <option key={agent.id} value={agent.id}>
+                {agent.full_name || agent.user?.username || agent.id.slice(0, 8)}
+              </option>
+            ))}
+          </NativeSelect>
           <label htmlFor="addordermodal-select-customer" className="block text-xs font-semibold text-foreground mb-2">Select Customer *</label>
           <NativeSelect id="addordermodal-select-customer"
             value={newCustomerId}

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { Product } from "@shared/api";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { QuantityStepper } from "./QuantityStepper";
@@ -34,13 +35,21 @@ export function OrderProductList({
   onItemChange,
 }: OrderProductListProps) {
   const [search, setSearch] = useState("");
+  const [showOutOfStock, setShowOutOfStock] = useState(false);
   const query = search.toLowerCase();
+  const isSearching = search.trim() !== "";
 
-  const visibleProducts = products.filter(
-    (product) =>
-      product.name.toLowerCase().includes(query) ||
-      (product.sku && product.sku.toLowerCase().includes(query))
-  );
+  const matchesSearch = (product: Product) =>
+    product.name.toLowerCase().includes(query) ||
+    Boolean(product.sku && product.sku.toLowerCase().includes(query));
+  const isInStock = (product: Product) => (productStock[product.id] ?? 0) > 0;
+  const isInOrder = (product: Product) => orderItems.some((item) => item.product_id === product.id);
+  const hiddenOutOfStockCount = products.filter((product) => !isInStock(product) && !isInOrder(product)).length;
+
+  const visibleProducts = products.filter((product) => {
+    if (!matchesSearch(product)) return false;
+    return isSearching || showOutOfStock || isInOrder(product) || isInStock(product);
+  });
 
   return (
     <div className="space-y-4">
@@ -51,6 +60,12 @@ export function OrderProductList({
         onChange={(e) => setSearch(e.target.value)}
         className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:outline-none focus:border-accent-2"
       />
+
+      {!isSearching && hiddenOutOfStockCount > 0 && (
+        <Button type="button" variant="outline" size="sm" onClick={() => setShowOutOfStock((current) => !current)}>
+          {showOutOfStock ? "Hide out-of-stock items" : `Show out-of-stock items (${hiddenOutOfStockCount})`}
+        </Button>
+      )}
 
       <ul className="divide-y divide-border">
         {visibleProducts.map((product) => {
