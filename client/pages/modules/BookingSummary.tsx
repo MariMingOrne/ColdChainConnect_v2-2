@@ -18,7 +18,7 @@ import { Plus, Calendar, CheckCircle, XCircle } from "lucide-react";
 import { TableBulkAction, TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
 import { newestFirst } from "@/components/SortableHeader";
 import { TablePagination, paginate } from "@/components/TablePagination";
-import { Booking, Truck, Customer, Product } from "@shared/api";
+import { Agent, Booking, Delivery, Truck, Customer, Product } from "@shared/api";
 import { useAuth } from "../../hooks/useAuth";
 import { useCan } from "@/hooks/useCan";
 import { useSearchParams } from "react-router-dom";
@@ -33,6 +33,8 @@ export function BookingSummary() {
   const [trucks, setTrucks] = useState<Truck[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [agentDistricts, setAgentDistricts] = useState<string[]>([]);
+  const [agents, setAgents] = useState<Agent[]>([]);
+  const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [productStock, setProductStock] = useState<Record<string, number>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -73,6 +75,8 @@ export function BookingSummary() {
   const [newCustomerId, setNewCustomerId] = useState("");
   const [preparedDeliveryDate, setPreparedDeliveryDate] = useState("");
   const [orderItems, setOrderItems] = useState<{ product_id: string; qty_ordered: number }[]>([]);
+  // null follows the agent on the open Truck Dispatch run; an explicit value is the admin's choice
+  const [newAgentId, setNewAgentId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [rollingBackId, setRollingBackId] = useState<string | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -94,13 +98,15 @@ export function BookingSummary() {
 
   const fetchAll = async () => {
     try {
-      const [bRes, tRes, cRes, pRes, invRes, dRes] = await Promise.all([
+      const [bRes, tRes, cRes, pRes, invRes, dRes, agentsRes, deliveriesRes] = await Promise.all([
         fetch("/api/bookings", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/trucks", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/customers", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/products", { headers: { Authorization: `Bearer ${token}` } }),
         fetch("/api/products/inventory", { headers: { Authorization: `Bearer ${token}` } }),
         isAgent ? fetch("/api/agent-districts", { headers: { Authorization: `Bearer ${token}` } }) : Promise.resolve(null),
+        isAgent ? Promise.resolve(null) : fetch("/api/agents", { headers: { Authorization: `Bearer ${token}` } }),
+        isAgent ? Promise.resolve(null) : fetch("/api/deliveries", { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       if (bRes.ok) setBookings(await bRes.json());
       if (tRes.ok) setTrucks(await tRes.json());
@@ -108,6 +114,8 @@ export function BookingSummary() {
       if (pRes.ok) setProducts(await pRes.json());
       if (invRes.ok) setProductStock(await invRes.json());
       if (dRes?.ok) setAgentDistricts(await dRes.json());
+      if (agentsRes?.ok) setAgents(await agentsRes.json());
+      if (deliveriesRes?.ok) setDeliveries(await deliveriesRes.json());
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error loading data");
@@ -192,6 +200,9 @@ export function BookingSummary() {
     }));
   };
 
+  const currentTruckAgentId = deliveries.find((delivery) => delivery.status !== "completed" && delivery.agent_id)?.agent_id ?? "";
+  const selectedAgentId = newAgentId ?? currentTruckAgentId;
+
   const getMaxQtyForProduct = (productId: string): number => {
     return productStock[productId] || 0;
   };
@@ -219,6 +230,7 @@ export function BookingSummary() {
           customer_id: newCustomerId,
           prepared_delivery_date: preparedDeliveryDate || undefined,
           items: orderItems,
+          agent_id: selectedAgentId || undefined,
           ...(override && { ar_override: true, ar_override_reason: override.reason }),
         }),
       });
@@ -247,6 +259,7 @@ export function BookingSummary() {
       setNewCustomerId("");
       setPreparedDeliveryDate("");
       setOrderItems([]);
+      setNewAgentId(null);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to create order");
     } finally {
@@ -387,9 +400,35 @@ export function BookingSummary() {
     }
   };
 
+  const handlePreparedDeliveryDateChange = async (booking: Booking, date: string) => {
+    if (!date || date === booking.prepared_delivery_date) return;
+    try {
+      const res = await fetch(`/api/bookings/${booking.id}/prepared-delivery-date`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ prepared_delivery_date: date }),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || "Failed to set prepared delivery date");
+      }
+      const { booking: updated } = await res.json();
+      setBookings((prev) => prev.map((b) => b.id === updated.id ? updated : b));
+      void fetchAll();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to set prepared delivery date");
+    }
+  };
+
   const handleApproveSelected = async () => {
-    const pending = bookings.filter((b) => selectedBookingIds.includes(b.id) && b.status === "pending");
-    if (pending.length === 0) return void toast.error("Select pending orders to approve");
+    const selected = bookings.filter((b) => selectedBookingIds.includes(b.id) && b.status === "pending");
+    const pending = selected.filter((b) => b.prepared_delivery_date);
+    const missingDateCount = selected.length - pending.length;
+    if (pending.length === 0) {
+      return void toast.error(missingDateCount > 0
+        ? "Set a prepared delivery date on the selected orders before approving them"
+        : "Select pending orders to approve");
+    }
     if (!(await confirmAction(`Approve ${pending.length} selected ${pending.length === 1 ? "order" : "orders"}?`))) return;
 
     const results = await Promise.all(pending.map(async (booking) => {
@@ -412,6 +451,7 @@ export function BookingSummary() {
     setSelectedBookingIds((current) => current.filter((id) => !approved.some((b) => b.id === id)));
     if (approved.length > 0) toast.success(`${approved.length} order${approved.length === 1 ? "" : "s"} approved.`);
     if (approved.length < pending.length) toast.error(`${pending.length - approved.length} order(s) could not be approved.`);
+    if (missingDateCount > 0) toast.error(`${missingDateCount} order(s) skipped: set a prepared delivery date first.`);
   };
 
   const openRejectModal = (booking: Booking) => {
@@ -483,6 +523,7 @@ export function BookingSummary() {
     setNewCustomerId("");
     setPreparedDeliveryDate("");
     setOrderItems([{ product_id: "", qty_ordered: 1 }]);
+    setNewAgentId(null);
   };
 
   const filtered = newestFirst(bookings.filter((b) => {
@@ -669,9 +710,19 @@ export function BookingSummary() {
                       <StatusBadge label={booking.status} tone={getStatusTone(booking.status)} />
                     </TableCell>
                     <TableCell className="text-sm whitespace-nowrap">
-                      {booking.prepared_delivery_date
-                        ? new Date(`${booking.prepared_delivery_date}T00:00:00`).toLocaleDateString()
-                        : <span className="text-muted-foreground">—</span>}
+                      {canApprove && (booking.status === "pending" || booking.status === "approved") ? (
+                        <Input
+                          type="date"
+                          aria-label={`Prepared delivery date for order ${booking.id.slice(0, 8)}`}
+                          value={booking.prepared_delivery_date ?? ""}
+                          onChange={(event) => void handlePreparedDeliveryDateChange(booking, event.target.value)}
+                          className={`h-8 w-40 text-sm ${booking.prepared_delivery_date ? "" : "border-warning"}`}
+                        />
+                      ) : booking.prepared_delivery_date ? (
+                        new Date(`${booking.prepared_delivery_date}T00:00:00`).toLocaleDateString()
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-sm">
                       {new Date(booking.created_at).toLocaleDateString()}
@@ -682,6 +733,8 @@ export function BookingSummary() {
                           <Button
                             onClick={() => openApproveModal(booking)}
                             variant="default"
+                            disabled={!booking.prepared_delivery_date}
+                            title={booking.prepared_delivery_date ? undefined : "Set a prepared delivery date first"}
                           >
                             <CheckCircle size={14} />
                             Approve
@@ -721,13 +774,11 @@ export function BookingSummary() {
       {(showAddModal) && (
         <PageDialog onClose={closeAddModal}>
       <AddOrderModal
-        onClose={() => {
-          setShowAddModal(false);
-          setNewCustomerId("");
-          setPreparedDeliveryDate("");
-          setOrderItems([{ product_id: "", qty_ordered: 1 }]);
-        }}
+        onClose={closeAddModal}
         customers={customers}
+        agents={agents}
+        selectedAgentId={selectedAgentId}
+        onAgentChange={setNewAgentId}
         products={products}
         productStock={productStock}
         orderItems={orderItems}

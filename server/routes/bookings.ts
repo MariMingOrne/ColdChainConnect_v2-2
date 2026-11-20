@@ -98,7 +98,7 @@ export const listAgentDistricts: RequestHandler = async (req: AuthRequest, res) 
 };
 
 export const createBooking: RequestHandler = async (req: AuthRequest, res) => {
-  const { customer_id, prepared_delivery_date, items, ar_override, ar_override_reason } = req.body;
+  const { customer_id, prepared_delivery_date, items, ar_override, ar_override_reason, agent_id } = req.body;
 
   if (!customer_id || !items || !Array.isArray(items)) {
     return res.status(400).json({ error: "Customer ID and items array are required" });
@@ -127,6 +127,21 @@ export const createBooking: RequestHandler = async (req: AuthRequest, res) => {
     });
     if (!creatorExists) {
       return res.status(401).json({ error: "User account not found. Please log in again." });
+    }
+
+    let orderCreatorId = req.user.userId;
+    if (agent_id) {
+      if (req.user.role !== "admin") {
+        return res.status(403).json({ error: "Only admins can assign an agent to an order" });
+      }
+      const selectedAgent = await db.query.agents.findFirst({
+        where: eq(agents.id, agent_id),
+        columns: { user_id: true, is_archived: true },
+      });
+      if (!selectedAgent || selectedAgent.is_archived) {
+        return res.status(400).json({ error: "Selected agent was not found" });
+      }
+      orderCreatorId = selectedAgent.user_id;
     }
 
     if (req.user.role === "agent") {
@@ -184,7 +199,7 @@ export const createBooking: RequestHandler = async (req: AuthRequest, res) => {
       await tx.insert(bookings).values({
         id: bookingId,
         customer_id,
-        created_by: req.user!.userId,
+        created_by: orderCreatorId,
         status: "pending",
         prepared_delivery_date: prepared_delivery_date || null,
       });
@@ -254,6 +269,10 @@ export const updateBookingStatus: RequestHandler = async (req: AuthRequest, res)
 
     if (!existing) {
       return res.status(404).json({ error: "Booking not found" });
+    }
+
+    if (status === "approved" && existing.status !== "approved" && !existing.prepared_delivery_date) {
+      return res.status(400).json({ error: "Set a prepared delivery date before approving this order." });
     }
 
     // Resolve which truck this booking should go to.
@@ -353,6 +372,38 @@ export const updateBookingStatus: RequestHandler = async (req: AuthRequest, res)
     res.json({ booking: updated, invoice: null });
   } catch (error) {
     console.error("Error updating booking status:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const updatePreparedDeliveryDate: RequestHandler = async (req: AuthRequest, res) => {
+  const { id } = req.params;
+  const { prepared_delivery_date } = req.body ?? {};
+  if (typeof prepared_delivery_date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(prepared_delivery_date) ||
+    Number.isNaN(Date.parse(`${prepared_delivery_date}T00:00:00Z`))) {
+    return res.status(400).json({ error: "Prepared delivery date must be a valid date (YYYY-MM-DD)." });
+  }
+
+  try {
+    const existing = await db.query.bookings.findFirst({ where: eq(bookings.id, id) });
+    if (!existing) return res.status(404).json({ error: "Booking not found" });
+    if (existing.status !== "pending" && existing.status !== "approved") {
+      return res.status(409).json({ error: "The prepared delivery date can only be changed on pending or approved orders." });
+    }
+
+    await db.update(bookings).set({ prepared_delivery_date }).where(eq(bookings.id, id));
+    const updated = await db.query.bookings.findFirst({
+      where: eq(bookings.id, id),
+      with: { booking_items: true, customer: true, creator: true },
+    });
+
+    if (req.user) {
+      await logAction(req.user.userId, "update", "booking", id, existing, updated);
+    }
+
+    res.json({ booking: updated });
+  } catch (error) {
+    console.error("Error updating prepared delivery date:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 };

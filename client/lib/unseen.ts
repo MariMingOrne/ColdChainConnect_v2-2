@@ -7,19 +7,30 @@ import { useEffect, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 
-export type SeenKey = "orders" | "receipts" | "inventory" | "customers" | "dispatch" | "accounts" | "returns" | "payments" | "expenses";
+export type SeenKey = "orders" | "receipts" | "customers" | "dispatch" | "accounts" | "returns" | "payments" | "expenses";
+
+/** Sidebar badge sources: the "new" count of a section, or a current count such as products to reorder. */
+export type BadgeKey = SeenKey | "reorder" | "outstanding" | "pendingOrders" | "unverifiedPayments";
 
 /** Sidebar route -> the section whose new records it counts. */
 export const SEEN_KEY_BY_PATH: Record<string, SeenKey> = {
   "/booking-dispatch/order-summary": "orders",
   "/booking-dispatch/invoicing": "receipts",
-  "/information-management/inventory": "inventory",
   "/information-management/customers": "customers",
   "/booking-dispatch/delivery": "dispatch",
   "/booking-dispatch/accounts": "accounts",
   "/booking-dispatch/agent-returns": "returns",
   "/accounting/payments": "payments",
   "/accounting/expenses": "expenses",
+};
+
+/** Sidebar route -> the count its badge shows. */
+export const BADGE_KEY_BY_PATH: Record<string, BadgeKey> = {
+  ...SEEN_KEY_BY_PATH,
+  "/booking-dispatch/order-summary": "pendingOrders",
+  "/information-management/inventory": "reorder",
+  "/booking-dispatch/accounts": "outstanding",
+  "/accounting/payments": "unverifiedPayments",
 };
 
 const KEYS = Object.values(SEEN_KEY_BY_PATH);
@@ -52,7 +63,7 @@ function lastSeen(userId: string, key: SeenKey): string {
   return seen[key] as string;
 }
 
-/** Unread counts per section, refreshed every minute. */
+/** Sidebar badge counts, refreshed every minute. */
 export function useUnseenCounts() {
   const token = useAuth((state) => state.token);
   const user = useAuth((state) => state.user);
@@ -63,7 +74,7 @@ export function useUnseenCounts() {
     refetchInterval: POLL_MS,
     refetchIntervalInBackground: false, // hidden tabs stop polling, so an idle database can sleep
     staleTime: 30_000,
-    queryFn: async (): Promise<Partial<Record<SeenKey, number>>> => {
+    queryFn: async (): Promise<Partial<Record<BadgeKey, number>>> => {
       const params = new URLSearchParams();
       for (const key of KEYS) params.set(key, lastSeen(user!.id, key));
       const res = await fetch(`/api/unseen?${params}`, { headers: { Authorization: `Bearer ${token}` } });

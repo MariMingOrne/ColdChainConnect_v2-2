@@ -32,6 +32,12 @@ export const listAccountsReceivable: RequestHandler = async (
     const records = await db.query.accounts_receivable.findMany({
       where: whereClause,
       orderBy: [desc(accounts_receivable.created_at)],
+      with: {
+        invoice: {
+          columns: { agent_id: true },
+          with: { agent: { columns: { id: true, username: true } } },
+        },
+      },
     });
 
     res.json(records);

@@ -261,7 +261,7 @@ function ProductPage({
   );
 }
 
-function ViewProductPage({ product, onClose }: { product: Product; onClose: () => void }) {
+function ViewProductPage({ product, cost, canSeeCost, onClose }: { product: Product; cost: string | undefined; canSeeCost: boolean; onClose: () => void }) {
   return (
     <div className="flex-1 p-6 overflow-y-auto scrollbar-visible space-y-6">
       <div className="page-header">
@@ -302,6 +302,17 @@ function ViewProductPage({ product, onClose }: { product: Product; onClose: () =
               )}
             </div>
           </div>
+          {canSeeCost && (
+            <div>
+              <label className="block text-xs font-semibold text-muted-foreground mb-1">Cost price</label>
+              <div className="text-sm text-foreground">
+                {cost == null ? "—" : `₱${parseFloat(cost).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`}
+                {marginPercent(product.price, cost) !== null && (
+                  <span className="ml-2 text-xs text-muted-foreground">({marginPercent(product.price, cost)}% margin)</span>
+                )}
+              </div>
+            </div>
+          )}
           <div>
             <label className="block text-xs font-semibold text-muted-foreground mb-1">Batch Tracking</label>
             <div className="text-sm"><span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${product.batch_tracking_enabled ? "badge-green" : "badge-red"}`}>{product.batch_tracking_enabled ? "Enabled" : "Discontinued"}</span></div>
@@ -816,7 +827,7 @@ export function Pricing({ onBack }: PricingProps) {
       )}
       {(viewingProduct) && (
         <PageDialog onClose={() => setViewingProduct(null)}>
-<ViewProductPage product={viewingProduct} onClose={() => setViewingProduct(null)} />
+<ViewProductPage product={viewingProduct} cost={costs[viewingProduct.id]} canSeeCost={canManageProducts} onClose={() => setViewingProduct(null)} />
         </PageDialog>
       )}
       {(productDetails) && (

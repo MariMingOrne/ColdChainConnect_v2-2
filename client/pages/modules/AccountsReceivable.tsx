@@ -22,6 +22,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Textarea } from "@/components/ui/textarea";
 import { dueInfo, isReceivableCollectable } from "@/lib/receivables";
 import { TableBulkAction, TableToolbar } from "@/components/TableToolbar";
+import { NativeSelect } from "@/components/ui/native-select";
 import { newestFirst } from "@/components/SortableHeader";
 import { TablePagination, paginate } from "@/components/TablePagination";
 import { AccountsReceivable as ARType, Customer } from "@shared/api";
@@ -50,7 +51,7 @@ export function AccountsReceivable() {
   const [markingPaid, setMarkingPaid] = useState<string | null>(null);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  const [agentFilter, setAgentFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [noteTarget, setNoteTarget] = useState<ARType | null>(null);
   const [noteDraft, setNoteDraft] = useState("");
@@ -206,6 +207,10 @@ export function AccountsReceivable() {
     (sum, ar) => sum + parseFloat(ar.amount_due || "0"), 0
   );
 
+  const agentOptions = [...new Map(
+    arRecords.flatMap((ar) => (ar.invoice?.agent ? [[ar.invoice.agent.id, ar.invoice.agent.username] as const] : [])),
+  )].sort(([, a], [, b]) => a.localeCompare(b));
+
   // ── Filter by active tab + search ───────────────────────────────────────────
   const tabFiltered = arRecords.filter((ar) => {
     const amountNum = parseFloat(ar.amount_due);
@@ -219,7 +224,7 @@ export function AccountsReceivable() {
     const q = searchTerm.toLowerCase();
     const createdDate = ar.created_at.slice(0, 10);
     if (fromDate && createdDate < fromDate) return false;
-    if (toDate && createdDate > toDate) return false;
+    if (agentFilter !== "all" && ar.invoice?.agent_id !== agentFilter) return false;
     return (
       ar.id.toLowerCase().includes(q) ||
       getCustomerName(ar.customer_id).toLowerCase().includes(q)
@@ -312,8 +317,11 @@ export function AccountsReceivable() {
           onSearchChange={(value) => { setSearchTerm(value); setPage(1); }}
           searchPlaceholder="Search by customer or AR ID…"
         >
-          <input type="date" aria-label="Created from date" title="Show records created from this date" value={fromDate} max={toDate || undefined} onChange={(event) => { setFromDate(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
-          <input type="date" aria-label="Created to date" title="Show records created through this date" value={toDate} min={fromDate || undefined} onChange={(event) => { setToDate(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
+          <NativeSelect aria-label="Filter by agent" value={agentFilter} onChange={(event) => { setAgentFilter(event.target.value); setPage(1); setSelectedIds([]); }}>
+            <option value="all">All agents</option>
+            {agentOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
+          </NativeSelect>
+          <input type="date" aria-label="Created from date" title="Show records created from this date" value={fromDate} onChange={(event) => { setFromDate(event.target.value); setPage(1); }} className="rounded-full border border-border bg-card px-3 py-2 text-sm text-foreground focus:border-accent-2 focus:outline-none" />
         </TableToolbar>
       </div>
 

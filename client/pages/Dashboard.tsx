@@ -24,6 +24,7 @@ import type { AuditLog, DashboardSummary } from "@shared/api";
 import { useAuth } from "../hooks/useAuth";
 import { describeLog, getActionBadgeClass, getActionLabel } from "./modules/audit/auditDescribe";
 import { SalesForecastWidget } from "@/components/SalesForecastWidget";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn, formatPeso } from "@/lib/utils";
@@ -115,33 +116,44 @@ function attentionItems(data: DashboardSummary): AttentionItem[] {
 function NeedsAttention({ data, loading, failed }: { data?: DashboardSummary; loading: boolean; failed: boolean }) {
   const items = data ? attentionItems(data) : [];
   return (
-    <section aria-labelledby="attention-heading" className="rounded-2xl border border-border bg-card shadow-sm">
-      <h2 id="attention-heading" className="border-b border-border px-5 py-4 text-lg font-bold text-foreground">Needs attention</h2>
-      {loading ? (
-        <div className="space-y-3 p-5">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-12" />)}</div>
-      ) : failed ? (
-        <p role="status" className="px-5 py-8 text-sm text-muted-foreground">These figures could not be loaded. They retry every two minutes.</p>
-      ) : items.length === 0 ? (
-        <div className="flex items-center gap-3 px-5 py-8 text-sm text-muted-foreground">
-          <CircleCheck className="h-5 w-5 text-success" aria-hidden="true" />
-          Nothing needs attention right now.
-        </div>
-      ) : (
-        <ul className="divide-y divide-border">
-          {items.map((item) => (
-            <li key={item.key} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-foreground">{item.title}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">{item.detail}</p>
-              </div>
-              <Button asChild variant="outline" size="sm">
-                <Link to={item.to}>{item.action}</Link>
-              </Button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <Accordion type="single" collapsible defaultValue="attention" className="rounded-2xl border border-border bg-card shadow-sm">
+      <AccordionItem value="attention" className="border-b-0">
+        <AccordionTrigger className="px-5 py-4 text-lg font-bold text-foreground hover:no-underline">
+          <span className="flex items-center gap-2">
+            Needs attention
+            {!loading && items.length > 0 && (
+              <span className="rounded-full bg-warning/15 px-2 py-0.5 text-xs font-semibold text-warning">{items.length}</span>
+            )}
+          </span>
+        </AccordionTrigger>
+        <AccordionContent className="p-0">
+          {loading ? (
+            <div className="space-y-3 p-5">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-12" />)}</div>
+          ) : failed ? (
+            <p role="status" className="px-5 py-8 text-sm text-muted-foreground">These figures could not be loaded. They retry every two minutes.</p>
+          ) : items.length === 0 ? (
+            <div className="flex items-center gap-3 px-5 py-8 text-sm text-muted-foreground">
+              <CircleCheck className="h-5 w-5 text-success" aria-hidden="true" />
+              Nothing needs attention right now.
+            </div>
+          ) : (
+            <ul className="divide-y divide-border">
+              {items.map((item) => (
+                <li key={item.key} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground">{item.title}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">{item.detail}</p>
+                  </div>
+                  <Button asChild variant="outline" size="sm">
+                    <Link to={item.to}>{item.action}</Link>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </AccordionContent>
+      </AccordionItem>
+    </Accordion>
   );
 }
 
@@ -230,7 +242,7 @@ export function Dashboard() {
   });
   const activity = useQuery({
     queryKey: ["audit-logs", "recent"],
-    queryFn: () => getJson<AuditLog[]>("/api/audit-logs?limit=6", token),
+    queryFn: () => getJson<AuditLog[]>("/api/audit-logs?limit=3", token),
     enabled: Boolean(token),
     refetchInterval: REFRESH_MS,
   });

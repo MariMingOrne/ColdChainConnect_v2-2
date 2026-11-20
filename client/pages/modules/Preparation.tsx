@@ -44,12 +44,14 @@ export function Preparation() {
   const [dateRangeFilter, setDateRangeFilter] = useState<"all" | "today" | "week" | "month" | "custom">(filters?.dateRangeFilter ?? "all");
   const [customDateStart, setCustomDateStart] = useState<string>(filters?.customDateStart ?? "");
   const [customDateEnd, setCustomDateEnd] = useState<string>(filters?.customDateEnd ?? "");
+  const [agentFilter, setAgentFilter] = useState<string>(filters?.agentFilter ?? "all");
+  const [districtFilter, setDistrictFilter] = useState<string>(filters?.districtFilter ?? "all");
   const [selectedOrderIds, setSelectedOrderIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
 
   useEffect(() => {
     setPage(1);
-  }, [searchTerm, statusFilter, dateRangeFilter, customDateStart, customDateEnd]);
+  }, [searchTerm, statusFilter, dateRangeFilter, customDateStart, customDateEnd, agentFilter, districtFilter]);
 
   const fetchAll = async () => {
     try {
@@ -129,6 +131,14 @@ export function Preparation() {
 
   if (isLoading) return <LoadingSpinner className="min-h-[60vh] bg-transparent" slow />;
 
+  const districtOf = (order: Booking): string | null =>
+    customers.find((c) => c.id === order.customer_id)?.district ?? null;
+
+  const agentOptions = [...new Map(
+    orders.flatMap((order) => (order.creator ? [[order.created_by, order.creator.agent?.full_name || order.creator.username] as const] : [])),
+  ).entries()].sort(([, a], [, b]) => a.localeCompare(b));
+  const districtOptions = [...new Set(orders.map(districtOf).filter((district): district is string => Boolean(district)))].sort();
+
   const filtered = newestFirst(orders.filter((order) => {
     const matchesSearch =
       order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -136,6 +146,8 @@ export function Preparation() {
 
     if (!matchesSearch) return false;
     if (statusFilter !== "all" && order.status !== statusFilter) return false;
+    if (agentFilter !== "all" && order.created_by !== agentFilter) return false;
+    if (districtFilter !== "all" && districtOf(order) !== districtFilter) return false;
     if (!isDateInRange(order.created_at)) return false;
 
     return true;
@@ -340,6 +352,18 @@ export function Preparation() {
           <option value="prep">Prep</option>
           <option value="ready">Ready</option>
         </TableFilterSelect>
+        <TableFilterSelect label="Agent" value={agentFilter} onChange={setAgentFilter}>
+          <option value="all">All Agents</option>
+          {agentOptions.map(([userId, label]) => (
+            <option key={userId} value={userId}>{label}</option>
+          ))}
+        </TableFilterSelect>
+        <TableFilterSelect label="District" value={districtFilter} onChange={setDistrictFilter}>
+          <option value="all">All Districts</option>
+          {districtOptions.map((district) => (
+            <option key={district} value={district}>{district}</option>
+          ))}
+        </TableFilterSelect>
         <TableFilterSelect label="Date range" value={dateRangeFilter} onChange={(value) => setDateRangeFilter(value as typeof dateRangeFilter)}>
           <option value="all">All Dates</option>
           <option value="today">This Day</option>
@@ -460,7 +484,7 @@ export function Preparation() {
                         {draftPalletCount === 0 && !isPrepared && (
                           <Button
                             onClick={() => {
-                              const preparationFilters = { searchTerm, statusFilter, dateRangeFilter, customDateStart, customDateEnd };
+                              const preparationFilters = { searchTerm, statusFilter, dateRangeFilter, customDateStart, customDateEnd, agentFilter, districtFilter };
                               navigate("/booking-dispatch/preparation", { replace: true, state: { preparationFilters } });
                               navigate(`/booking-dispatch/preparation/${encodeURIComponent(order.id)}`, {
                                 state: { fromPreparation: true },

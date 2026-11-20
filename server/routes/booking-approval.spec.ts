@@ -22,9 +22,10 @@ beforeAll(async () => {
   await db.insert(trucks).values({ id: "truck-1", license_plate: "AAA-111", district: "d" });
   await db.insert(customers).values({ id: "cust-1", store_name: "Store", location: "Somewhere", district: "d" });
   await db.insert(bookings).values([
-    { id: "book-own", customer_id: "cust-1", created_by: seeded.admin.id },
-    { id: "book-agent", customer_id: "cust-1", created_by: seeded.agent.id },
+    { id: "book-own", customer_id: "cust-1", created_by: seeded.admin.id, prepared_delivery_date: "2030-01-01" },
+    { id: "book-agent", customer_id: "cust-1", created_by: seeded.agent.id, prepared_delivery_date: "2030-01-01" },
     { id: "book-reject", customer_id: "cust-1", created_by: seeded.agent.id },
+    { id: "book-undated", customer_id: "cust-1", created_by: seeded.agent.id },
   ]);
 });
 
@@ -65,6 +66,11 @@ describe("booking approval", () => {
     expect(await setStatus("book-agent", "approved")).toBe(200);
     expect((await rowFor("book-agent")).approved_by).toBe(seeded.admin.id);
     expect(await auditFor("book-agent")).toMatchObject({ selfApproved: false });
+  });
+
+  it("refuses approval until the order has a prepared delivery date", async () => {
+    expect(await setStatus("book-undated", "approved")).toBe(400);
+    expect((await rowFor("book-undated")).status).toBe("pending");
   });
 
   it("leaves the approval columns alone for other statuses", async () => {
