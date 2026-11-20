@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 export type SeenKey = "orders" | "receipts" | "customers" | "dispatch" | "accounts" | "returns" | "payments" | "expenses";
 
 /** Sidebar badge sources: the "new" count of a section, or a current count such as products to reorder. */
-export type BadgeKey = SeenKey | "reorder" | "outstanding" | "pendingOrders";
+export type BadgeKey = SeenKey | "reorder" | "outstanding" | "pendingOrders" | "unverifiedPayments";
 
 /** Sidebar route -> the section whose new records it counts. */
 export const SEEN_KEY_BY_PATH: Record<string, SeenKey> = {
@@ -30,6 +30,7 @@ export const BADGE_KEY_BY_PATH: Record<string, BadgeKey> = {
   "/booking-dispatch/order-summary": "pendingOrders",
   "/information-management/inventory": "reorder",
   "/booking-dispatch/accounts": "outstanding",
+  "/accounting/payments": "unverifiedPayments",
 };
 
 const KEYS = Object.values(SEEN_KEY_BY_PATH);

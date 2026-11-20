@@ -100,7 +100,7 @@ function isItemActive(path: string, pathname: string) {
   return pathname === path || pathname.startsWith(`${path}/`);
 }
 
-const BADGE_LABEL: Partial<Record<BadgeKey, string>> = { reorder: "to reorder", outstanding: "outstanding" };
+const BADGE_LABEL: Partial<Record<BadgeKey, string>> = { reorder: "to reorder", outstanding: "outstanding", unverifiedPayments: "to verify" };
 
 function NewBadge({ count, label = "new", collapsed }: { count: number; label?: string; collapsed?: boolean }) {
   if (count <= 0) return null;

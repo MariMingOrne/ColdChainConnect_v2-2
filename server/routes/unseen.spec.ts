@@ -3,7 +3,7 @@
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import type { Request, Response } from "express";
 import { db } from "../db";
-import { bookings, customers, deliveries, delivery_items, expenses, invoices, products, receipts, trucks } from "../db/schema";
+import { bookings, customers, deliveries, delivery_items, expenses, invoices, products, receipt_payment_entries, receipts, trucks } from "../db/schema";
 import type { AuthRequest } from "../middleware/auth";
 import { seedUsers } from "../test/test-db";
 import { getUnseenCounts } from "./unseen";
@@ -54,6 +54,11 @@ beforeAll(async () => {
       payment_verified_at: id === "verified" ? AFTER : null,
     })),
   );
+  await db.insert(receipt_payment_entries).values([
+    { id: "pay-recorded", receipt_id: "rec-recorded", idempotency_key: "k-recorded", amount: "100.00", payment_method: "cash" },
+    { id: "pay-old", receipt_id: "rec-old", idempotency_key: "k-old", amount: "100.00", payment_method: "cash", created_at: BEFORE },
+    { id: "pay-verified", receipt_id: "rec-verified", idempotency_key: "k-verified", amount: "100.00", payment_method: "cash", verified_at: AFTER },
+  ]);
   await db.insert(expenses).values([
     { id: "exp-new", category: "Fuel", description: "d", amount: "10.00", submitted_by: seeded.admin.id, created_at: AFTER },
     { id: "exp-old", category: "Fuel", description: "d", amount: "10.00", submitted_by: seeded.admin.id, created_at: BEFORE },
@@ -70,13 +75,14 @@ async function counts(role: "admin" | "staff", modulePermissions: string[] | und
 }
 
 describe("GET /api/unseen accounting tabs", () => {
-  it("counts only receipts with a recorded, still unverified payment created since last seen", async () => {
-    const result = await counts("admin", undefined, ["payments", "expenses"]);
-    expect(result.payments).toBe(1);
+  it("counts every unverified payment entry, whenever it was recorded", async () => {
+    expect((await counts("admin", undefined, [])).unverifiedPayments).toBe(2);
+    expect((await counts("staff", ["accounting"], [])).unverifiedPayments).toBe(2);
+    expect((await counts("staff", ["order-fulfillment"], [])).unverifiedPayments).toBe(0);
   });
 
   it("counts expenses created since last seen", async () => {
-    const result = await counts("admin", undefined, ["payments", "expenses"]);
+    const result = await counts("admin", undefined, ["expenses"]);
     expect(result.expenses).toBe(1);
   });
 
@@ -86,8 +92,8 @@ describe("GET /api/unseen accounting tabs", () => {
     expect((await counts("staff", ["accounting"], ["expenses"], seeded.staff.id)).expenses).toBe(1);
   });
 
-  it("gives staff with the accounting module the same counts", async () => {
-    expect(await counts("staff", ["accounting"], ["payments", "expenses"])).toMatchObject({ payments: 1, expenses: 1 });
+  it("gives staff with the accounting module the same expense count", async () => {
+    expect(await counts("staff", ["accounting"], ["expenses"])).toMatchObject({ expenses: 1 });
   });
 
   it("counts products at or below their reorder point for viewers with product access", async () => {
@@ -103,6 +109,6 @@ describe("GET /api/unseen accounting tabs", () => {
   });
 
   it("reports zero for staff without the accounting module", async () => {
-    expect(await counts("staff", ["order-fulfillment"], ["payments", "expenses"])).toMatchObject({ payments: 0, expenses: 0 });
+    expect(await counts("staff", ["order-fulfillment"], ["expenses"])).toMatchObject({ expenses: 0 });
   });
 });
