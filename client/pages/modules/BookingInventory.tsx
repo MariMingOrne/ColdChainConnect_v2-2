@@ -117,12 +117,20 @@ export function BookingInventory() {
     }
   };
 
+  const invoicedBookingIds = new Set(invoices.map((invoice) => invoice.booking_id));
+  const canAdvancePallet = (pallet: Pallet) => {
+    const next = nextPalletStatus[pallet.status];
+    return Boolean(next) && (next !== "shipped" || invoicedBookingIds.has(pallet.order_id));
+  };
+
   const handleAdvanceAll = async () => {
-    const eligible = visiblePallets.filter((pallet) => nextPalletStatus[pallet.status]);
+    const eligible = visiblePallets.filter(canAdvancePallet);
     if (!eligible.length) return;
 
+    const skippedCount = visiblePallets.filter((pallet) => nextPalletStatus[pallet.status] && !canAdvancePallet(pallet)).length;
     const shippingNote = eligible.some((pallet) => pallet.status === "approved") ? " In-transit pallets will be marked shipped." : "";
-    if (!(await confirmAction(`Advance ${eligible.length} pallet${eligible.length === 1 ? "" : "s"} to the next status?${shippingNote}`))) return;
+    const skippedNote = skippedCount ? ` ${skippedCount} in-transit pallet${skippedCount === 1 ? " is" : "s are"} skipped until the order has an invoice.` : "";
+    if (!(await confirmAction(`Advance ${eligible.length} pallet${eligible.length === 1 ? "" : "s"} to the next status?${shippingNote}${skippedNote}`))) return;
 
     setIsUpdatingStatus(true);
     let advanced = 0;
@@ -226,7 +234,7 @@ export function BookingInventory() {
 
   const visiblePallets = visiblePalletGroups.flatMap((group) => group.entries.map(({ pallet }) => pallet));
 
-  const advanceableCount = visiblePallets.filter((pallet) => nextPalletStatus[pallet.status]).length;
+  const advanceableCount = visiblePallets.filter(canAdvancePallet).length;
 
   const selected = entries.find((entry) => entry.pallet.id === selectedPalletId) ?? null;
 
