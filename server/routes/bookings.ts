@@ -387,8 +387,8 @@ export const updatePreparedDeliveryDate: RequestHandler = async (req: AuthReques
   try {
     const existing = await db.query.bookings.findFirst({ where: eq(bookings.id, id) });
     if (!existing) return res.status(404).json({ error: "Booking not found" });
-    if (existing.status !== "pending" && existing.status !== "approved") {
-      return res.status(409).json({ error: "The prepared delivery date can only be changed on pending or approved orders." });
+    if (existing.status !== "pending") {
+      return res.status(409).json({ error: "The prepared delivery date can only be changed on pending orders. Unapprove the order to change it." });
     }
 
     await db.update(bookings).set({ prepared_delivery_date }).where(eq(bookings.id, id));

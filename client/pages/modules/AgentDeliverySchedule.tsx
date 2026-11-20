@@ -78,7 +78,7 @@ export function AgentDeliverySchedule() {
   const [confirmingStopId, setConfirmingStopId] = useState<string | null>(null);
   const [mapFocus, setMapFocus] = useState<MapFocus | null>(null);
   const [detailTarget, setDetailTarget] = useState<{ delivery: AgentScheduleDelivery; stop: AgentScheduleStop } | null>(null);
-  const [showUnconfirmed, setShowUnconfirmed] = useState(true);
+  const [showUnconfirmed, setShowUnconfirmed] = useState(false);
 
   const fetchSchedule = async () => {
     if (!token) return;
