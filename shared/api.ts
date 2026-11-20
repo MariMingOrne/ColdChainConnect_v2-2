@@ -749,6 +749,7 @@ export interface AccountsReceivable {
   notes?: string;
   created_at: string;
   updated_at: string;
+  invoice?: { agent_id: string; agent: Pick<User, "id" | "username"> | null } | null;
 }
 
 export interface AgentReturn {

@@ -7,10 +7,23 @@ import type { DashboardSummary } from "@shared/api";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+/** Active products at or below their reorder point, most depleted first. */
+export async function findLowStockProducts(inventory: Record<string, number>) {
+  const productRows = await db
+    .select({ id: products.id, name: products.name, reorderPoint: products.reorder_point })
+    .from(products)
+    .where(and(sql`${products.reorder_point} is not null`, sql`coalesce(${products.is_discontinued}, false) = false`));
+
+  return productRows
+    .map((p) => ({ id: p.id, name: p.name, available: inventory[p.id] ?? 0, reorderPoint: p.reorderPoint as number }))
+    .filter((p) => p.available <= p.reorderPoint)
+    .sort((a, b) => a.available / Math.max(a.reorderPoint, 1) - b.available / Math.max(b.reorderPoint, 1));
+}
+
 /** GET /api/dashboard/summary: counts and totals computed in the database. */
 export const getDashboardSummary: RequestHandler = async (_req, res) => {
   try {
-    const [[pending], [active], [ar], productRows, inventory] = await Promise.all([
+    const [[pending], [active], [ar], inventory] = await Promise.all([
       db.select({ n: count() }).from(bookings).where(eq(bookings.status, "pending")),
       db.select({ n: count() }).from(deliveries).where(ne(deliveries.status, "completed")),
       db
@@ -21,17 +34,10 @@ export const getDashboardSummary: RequestHandler = async (_req, res) => {
         })
         .from(accounts_receivable)
         .where(eq(accounts_receivable.status, "outstanding")),
-      db
-        .select({ id: products.id, name: products.name, reorderPoint: products.reorder_point })
-        .from(products)
-        .where(and(sql`${products.reorder_point} is not null`, sql`coalesce(${products.is_discontinued}, false) = false`)),
       calculateProductInventory(),
     ]);
 
-    const lowStock = productRows
-      .map((p) => ({ id: p.id, name: p.name, available: inventory[p.id] ?? 0, reorderPoint: p.reorderPoint as number }))
-      .filter((p) => p.available <= p.reorderPoint)
-      .sort((a, b) => a.available / Math.max(a.reorderPoint, 1) - b.available / Math.max(b.reorderPoint, 1));
+    const lowStock = await findLowStockProducts(inventory);
 
     const summary: DashboardSummary = {
       pendingOrders: Number(pending?.n ?? 0),
