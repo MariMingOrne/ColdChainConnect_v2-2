@@ -85,7 +85,7 @@ function DetailField({ label, className, children }: { label: string; className?
   );
 }
 
-function ViewCustomerPage({ customer, onClose }: { customer: Customer; onClose: () => void }) {
+function ViewCustomerPage({ customer, canEdit, onClose, onEdit }: { customer: Customer; canEdit: boolean; onClose: () => void; onEdit: () => void }) {
   return (
     <div className="flex-1 space-y-6 overflow-y-auto px-4 py-4 md:px-6 md:py-6">
       <div className="page-header">
@@ -136,7 +136,8 @@ function ViewCustomerPage({ customer, onClose }: { customer: Customer; onClose: 
           <CustomerLocationMap latitude={customer.latitude} longitude={customer.longitude} />
         </div>
 
-        <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
+        <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end gap-2 border-t border-border rounded-b-2xl">
+          {canEdit && <Button onClick={onEdit} variant="secondary">Edit</Button>}
           <Button onClick={onClose} variant="default">
             Close
           </Button>
@@ -795,7 +796,15 @@ export function Customers({ onBack }: CustomersProps) {
       )}
       {(viewingCustomer) && (
         <PageDialog onClose={() => setViewingCustomer(null)}>
-<ViewCustomerPage customer={viewingCustomer} onClose={() => setViewingCustomer(null)} />
+          <ViewCustomerPage
+            customer={viewingCustomer}
+            canEdit={canManageCustomers}
+            onClose={() => setViewingCustomer(null)}
+            onEdit={() => {
+              setViewingCustomer(null);
+              openEditModal(viewingCustomer);
+            }}
+          />
         </PageDialog>
       )}
       {(showExcelImport) && (
