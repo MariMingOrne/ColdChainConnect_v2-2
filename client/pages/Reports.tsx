@@ -14,15 +14,18 @@ import {
   Boxes,
   ChartNoAxesCombined,
   FileBarChart,
+  FileSpreadsheet,
+  FileText,
   TriangleAlert,
   Users,
 } from "lucide-react";
 import { DateRangeFilter, useDateRange } from "@/components/DateRangeFilter";
-import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
 import { SearchFilterBar } from "@/components/SearchFilterBar";
+import { Button } from "@/components/ui/button";
 import { Table } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 import { ExcelColumn, exportExcelFile } from "@/lib/excel";
+import { exportPdfFile } from "@/lib/pdf";
 import type {
   ReportCustomerRow,
   ReportProductPerformance,
@@ -73,6 +76,8 @@ const peso = (value: number) => `₱${value.toLocaleString("en-PH", { maximumFra
 const currencyKeys = new Set(["totalRevenue", "averageTransaction", "topProductSales", "value", "totalSpent", "revenue", "unitPrice", "costPrice", "totalProfit"]);
 const percentKeys = new Set(["growth", "profitMargin"]);
 const formatHeader = (key: string) => key.replace(/([A-Z])/g, " $1").replace(/^./, (letter) => letter.toUpperCase());
+// The built-in PDF font has no peso sign, so currency is written as PHP in exported PDFs.
+const toPdfText = (value: string | number) => String(value).replace(/₱/g, "PHP ");
 
 function formatValue(key: string, value: string | number) {
   if (typeof value === "number" && currencyKeys.has(key)) return peso(value);
@@ -218,18 +223,36 @@ export function Reports() {
     tabRefs.current[nextIndex]?.focus();
   };
 
-  const handleExport = async () => {
+  const hasRange = Boolean(range.from || range.to);
+  const activeLabel = tabs.find((tab) => tab.id === activeTab)?.label ?? "Report";
+  const exportBaseName = `${activeLabel.replace(/ /g, "_")}${hasRange ? `_${range.from || "start"}_to_${range.to || "today"}` : ""}`;
+  const exportDateLines = [
+    hasRange ? `Date range: ${range.from || "earliest"} to ${range.to || "today"}` : "No date range selected",
+    ...(dateRangeNote ? [dateRangeNote] : []),
+  ];
+
+  const handleExport = async (format: "excel" | "pdf") => {
     if (filteredRows.length === 0) return;
     setIsExporting(true);
     try {
-      const columns: ExcelColumn[] = Object.keys(filteredRows[0]).map((key) => ({ key, header: formatHeader(key), width: 22 }));
-      await exportExcelFile(
-        `${tabs.find((tab) => tab.id === activeTab)?.label.replace(/ /g, "_")}.xlsx`,
-        tabs.find((tab) => tab.id === activeTab)?.label.slice(0, 31) ?? "Report",
-        columns,
-        filteredRows as unknown as Record<string, unknown>[],
-      );
-      toast({ title: "Export complete", description: "The visible report rows were exported to Excel." });
+      const keys = Object.keys(filteredRows[0]);
+      if (format === "excel") {
+        const columns: ExcelColumn[] = keys.map((key) => ({ key, header: formatHeader(key), width: 22 }));
+        await exportExcelFile(
+          `${exportBaseName}.xlsx`,
+          activeLabel.slice(0, 31),
+          columns,
+          filteredRows as unknown as Record<string, unknown>[],
+        );
+      } else {
+        await exportPdfFile(`${exportBaseName}.pdf`, {
+          title: `Reports · ${activeLabel}`,
+          lines: exportDateLines,
+          head: keys.map(formatHeader),
+          body: filteredRows.map((row) => keys.map((key) => toPdfText(formatValue(key, getValue(row, key))))),
+        });
+      }
+      toast({ title: "Export complete", description: `The visible report rows were exported to ${format === "excel" ? "Excel" : "PDF"}.` });
     } catch {
       toast({ title: "Export failed", description: "The report could not be exported.", variant: "destructive" });
     } finally {
@@ -302,10 +325,15 @@ export function Reports() {
                   <h2 className="text-xl font-bold text-foreground">{tabs.find((tab) => tab.id === activeTab)?.label}</h2>
                   <p className="mt-1 text-sm text-muted-foreground">{descriptions[activeTab]}</p>
                 </div>
-                <ExcelActionsDropdown
-                  onExport={handleExport}
-                  exportDisabled={isExporting || filteredRows.length === 0}
-                />
+                <div role="group" aria-label="Export report" className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-semibold text-muted-foreground">Export</span>
+                  <Button type="button" variant="outline" onClick={() => void handleExport("excel")} disabled={isExporting || filteredRows.length === 0}>
+                    <FileSpreadsheet size={16} aria-hidden="true" />Excel
+                  </Button>
+                  <Button type="button" variant="outline" onClick={() => void handleExport("pdf")} disabled={isExporting || filteredRows.length === 0}>
+                    <FileText size={16} aria-hidden="true" />PDF
+                  </Button>
+                </div>
               </div>
 
               <div className="mt-5 grid gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(250px,0.8fr)]">
