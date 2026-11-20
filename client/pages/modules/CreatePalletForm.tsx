@@ -34,6 +34,21 @@ export function CreatePalletForm({
     setSuggestedPallets(pallets);
   }, [order, batches]);
 
+  const getPalletWeight = (items: PalletDraft["items"]) => {
+    let total = 0;
+    for (const item of items) {
+      const productWeight = order.booking_items?.find((orderItem) => orderItem.product_id === item.product_id)?.product?.weight;
+      if (productWeight == null || productWeight === "" || !Number.isFinite(Number(productWeight))) return null;
+      total += Number(productWeight) * item.qty_units;
+    }
+    return total;
+  };
+
+  const formatPalletWeight = (items: PalletDraft["items"]) => {
+    const weight = getPalletWeight(items);
+    return weight == null ? "Unavailable — add product weights" : `${weight.toLocaleString("en-PH", { maximumFractionDigits: 2 })} kg`;
+  };
+
   const handleCreatePallet = async () => {
     const palletsToCreate = mode === "automatic" ? suggestedPallets : manualPallets;
     const validPallets = palletsToCreate.filter((p) => p.items.length > 0);
@@ -302,9 +317,10 @@ export function CreatePalletForm({
                         • {item.product_name || item.product_id}: {item.qty_units} units (from {item.batch_name})
                       </p>
                     ))}
-                    <p className="text-xs font-semibold text-link mt-2 pt-2 border-t border-link/30">
-                      Total: {pallet.totalQty}/{PALLET_CAPACITY} items
-                    </p>
+                    <div className="mt-2 border-t border-link/30 pt-2">
+                      <p className="text-xs font-semibold text-link">Total weight: {formatPalletWeight(pallet.items)}</p>
+                      <p className="mt-1 text-2xs text-link/80">Picking limit: {pallet.totalQty}/{PALLET_CAPACITY} units</p>
+                    </div>
                   </div>
                 </div>
               ))
@@ -418,12 +434,11 @@ export function CreatePalletForm({
                   <p className="text-xs text-muted-foreground">No items to select</p>
                 )}
 
-                <div className="mt-2 pt-2 border-t border-border">
-                  <p className="text-xs font-semibold text-foreground">
-                    Total: {pallet.totalQty}/{PALLET_CAPACITY} items
-                    {pallet.totalQty === PALLET_CAPACITY && (
-                      <span className="text-warning ml-1">(at capacity)</span>
-                    )}
+                <div className="mt-2 border-t border-border pt-2">
+                  <p className="text-xs font-semibold text-foreground">Total weight: {formatPalletWeight(pallet.items)}</p>
+                  <p className="mt-1 text-2xs text-muted-foreground">
+                    Picking limit: {pallet.totalQty}/{PALLET_CAPACITY} units
+                    {pallet.totalQty === PALLET_CAPACITY && <span className="ml-1 text-warning">(at capacity)</span>}
                   </p>
                 </div>
               </div>
