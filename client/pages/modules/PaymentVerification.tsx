@@ -3,13 +3,14 @@ import { BadgeCheck, Printer } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { paymentNeedsClearance, type UnverifiedPayment } from "@shared/api";
+import { paymentNeedsClearance, todayInManila, type PaymentAgentOption, type UnverifiedPayment } from "@shared/api";
 import { PageDialog } from "@/components/shared/PageDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { TablePagination, paginate } from "@/components/TablePagination";
 import { TableToolbar, type TableBulkAction } from "@/components/TableToolbar";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -154,7 +155,8 @@ export function PaymentVerification() {
   const [payments, setPayments] = useState<UnverifiedPayment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [allAgents, setAllAgents] = useState<PaymentAgentOption[]>([]);
   const date = searchParams.get("date") ?? "";
   const [searchTerm, setSearchTerm] = useState("");
   const [agentFilter, setAgentFilter] = useState("all");
@@ -166,9 +168,17 @@ export function PaymentVerification() {
   const fetchData = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetch("/api/payments/unverified", { headers: { Authorization: `Bearer ${token}` } });
+      const headers = { Authorization: `Bearer ${token}` };
+      const [res, agentsRes] = await Promise.all([
+        fetch("/api/payments/unverified", { headers }),
+        fetch("/api/payments/agents", { headers }),
+      ]);
       if (!res.ok) throw new Error(await responseError(res, "Failed to load payments"));
       setPayments(await res.json());
+      if (agentsRes.ok) {
+        const agentList = await agentsRes.json();
+        if (Array.isArray(agentList)) setAllAgents(agentList);
+      }
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load payments");
@@ -194,12 +204,19 @@ export function PaymentVerification() {
   }, [date]);
 
   const agentOptions = Array.from(
-    new Map(
-      payments
+    new Map<string, string>([
+      ...payments
         .filter((payment) => payment.recorded_by_role === "agent" && payment.recorded_by)
-        .map((payment) => [payment.recorded_by!, payment.recorded_by_name || payment.recorded_by!]),
-    ),
+        .map((payment): [string, string] => [payment.recorded_by!, payment.recorded_by_name || payment.recorded_by!]),
+      ...allAgents.map((agent): [string, string] => [agent.id, agent.name]),
+    ]),
   ).sort((a, b) => a[1].localeCompare(b[1]));
+  const changeDate = (value: string) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (value) nextParams.set("date", value);
+    else nextParams.delete("date");
+    setSearchParams(nextParams, { replace: true });
+  };
   const query = searchTerm.trim().toLowerCase();
   const filtered = payments.filter((payment) => {
     if (date && businessDate(payment.confirmed_at) !== date) return false;
@@ -228,9 +245,20 @@ export function PaymentVerification() {
           <h1 className="page-title">End-of-Day</h1>
           <p className="page-subtitle">Payments drivers and agents recorded on deliveries, waiting for Accounting</p>
         </div>
-        <Button type="button" variant="outline" onClick={() => setPrintTarget(filtered)} disabled={filtered.length === 0}>
-          <Printer size={15} /> Print payments
-        </Button>
+        <div className="no-print flex flex-wrap items-center gap-2">
+          <Input
+            type="date"
+            aria-label="Filter by date"
+            value={date}
+            max={todayInManila()}
+            onChange={(event) => changeDate(event.target.value)}
+            className="w-auto"
+          />
+          {date && <Button type="button" variant="ghost" onClick={() => changeDate("")}>All dates</Button>}
+          <Button type="button" variant="outline" onClick={() => setPrintTarget(filtered)} disabled={filtered.length === 0}>
+            <Printer size={15} /> Print payments
+          </Button>
+        </div>
       </div>
 
       {error && (

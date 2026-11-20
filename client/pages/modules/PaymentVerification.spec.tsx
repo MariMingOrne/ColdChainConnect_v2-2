@@ -49,13 +49,15 @@ function renderScreen() {
   );
 }
 
+const agentsList = [{ id: "u-alice", name: "Alice Agent" }, { id: "u-bea", name: "Bea Agent" }];
+const listFor = (url: string) => json(url === "/api/payments/agents" ? agentsList : [payment]);
 const verifyCalls = () => fetchMock.mock.calls.filter(([url]) => String(url).endsWith("/verify"));
 
 beforeEach(() => {
   fetchMock.mockReset();
   toast.error.mockReset();
   toast.success.mockReset();
-  fetchMock.mockImplementation(async (_url: string, init?: RequestInit) => (init?.method === "POST" ? json(payment) : json([payment])));
+  fetchMock.mockImplementation(async (_url: string, init?: RequestInit) => (init?.method === "POST" ? json(payment) : listFor(_url)));
   vi.stubGlobal("fetch", fetchMock);
   localStorage.clear();
   useAuth.setState({ user: accounting, token: "tok" });
@@ -83,7 +85,7 @@ describe("PaymentVerification", () => {
   it("opens the matching receipt and returns to payments", async () => {
     fetchMock.mockImplementation(async (url: string) => url === "/api/payments/pay-1/receipt"
       ? json({ id: "rec-1", receipt_number: "OR-0001", customer_id: "cust-1", truck_id: "truck-1", invoice_id: "inv-1", confirmed_at: payment.confirmed_at, customer: { store_name: "Corner Store" }, truck: { license_plate: "AAA-111" }, invoice: { payment_status: "partial" } })
-      : json([payment]));
+      : listFor(url));
     renderScreen();
     fireEvent.click(await screen.findByRole("link", { name: /OR-0001 · INV-0001/ }));
     expect(await screen.findByRole("heading", { name: "Original Receipt" })).toBeTruthy();
@@ -93,7 +95,7 @@ describe("PaymentVerification", () => {
   });
 
   it("shows an error when the receipt is unavailable", async () => {
-    fetchMock.mockImplementation(async (url: string) => url === "/api/payments/pay-1/receipt" ? json({ error: "Receipt not found" }, 404) : json([payment]));
+    fetchMock.mockImplementation(async (url: string) => url === "/api/payments/pay-1/receipt" ? json({ error: "Receipt not found" }, 404) : listFor(url));
     renderScreen();
     fireEvent.click(await screen.findByRole("link", { name: /OR-0001 · INV-0001/ }));
     expect((await screen.findByRole("alert")).textContent).toContain("Receipt not found");
@@ -114,6 +116,19 @@ describe("PaymentVerification", () => {
     expect(screen.getByRole("menuitem", { name: "Print selected" })).toBeTruthy();
     fireEvent.click(verifySelected);
     expect(await screen.findByRole("dialog")).toBeTruthy();
+  });
+
+  it("lists every agent in the filter, even those without payments, and filters by the picked date", async () => {
+    renderScreen();
+    await screen.findByRole("row", { name: /Corner Store/ });
+    const agentFilter = screen.getByLabelText("Filter by agent");
+    expect(within(agentFilter).getByRole("option", { name: "Alice Agent" })).toBeTruthy();
+    expect(within(agentFilter).getByRole("option", { name: "Bea Agent" })).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Filter by date"), { target: { value: "2026-01-03" } });
+    expect(await screen.findByText(/no payments match/i)).toBeTruthy();
+    fireEvent.change(screen.getByLabelText("Filter by date"), { target: { value: "2026-01-02" } });
+    expect(await screen.findByRole("row", { name: /Corner Store/ })).toBeTruthy();
   });
 
   it("shows an empty state", async () => {
@@ -138,8 +153,8 @@ describe("PaymentVerification", () => {
   });
 
   it("shows the server's 409 message as a toast", async () => {
-    fetchMock.mockImplementation(async (_url: string, init?: RequestInit) =>
-      init?.method === "POST" ? json({ error: "This payment is already verified" }, 409) : json([payment]),
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) =>
+      init?.method === "POST" ? json({ error: "This payment is already verified" }, 409) : listFor(url),
     );
     renderScreen();
     fireEvent.click(await screen.findByRole("button", { name: /Verify/ }));

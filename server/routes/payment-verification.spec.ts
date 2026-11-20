@@ -21,7 +21,7 @@ import {
 } from "../db/schema";
 import type { AuthRequest } from "../middleware/auth";
 import { requirePermission, staffModuleGuard } from "../middleware/permissions";
-import { getPaymentReceipt, listUnverifiedPayments, verifyReceiptPayment } from "./payment-verification";
+import { getPaymentReceipt, listPaymentAgents, listUnverifiedPayments, verifyReceiptPayment } from "./payment-verification";
 import { seedUsers } from "../test/test-db";
 
 vi.mock("../db", async () => {
@@ -185,6 +185,21 @@ describe("GET /api/payments/unverified", () => {
     expect((await run(list, reqFor("staff", "plain-staff", {}, []))).status).toBe(403);
     expect((await run(list, reqFor("agent", seeded.agent.id))).status).toBe(403);
     expect((await run(list, reqFor("driver", seeded.driver.id))).status).toBe(403);
+  });
+});
+
+describe("GET /api/payments/agents", () => {
+  const agentList = [requirePermission("payment:verify"), listPaymentAgents];
+
+  it("lists every agent account, including agents with no payment", async () => {
+    const { status, body } = await run(agentList, asAccounting());
+    expect(status).toBe(200);
+    expect(body).toEqual([{ id: seeded.agent.id, name: "Alice Agent" }]);
+  });
+
+  it("denies staff without accounting and agents", async () => {
+    expect((await run(agentList, reqFor("staff", "plain-staff", {}, []))).status).toBe(403);
+    expect((await run(agentList, reqFor("agent", seeded.agent.id))).status).toBe(403);
   });
 });
 
