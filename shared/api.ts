@@ -635,6 +635,12 @@ export interface UnverifiedPayment {
   payment_reference?: string | null;
 }
 
+/** One row of GET /api/payments/agents: an agent account (user id) Accounting can filter payments by. */
+export interface PaymentAgentOption {
+  id: string;
+  name: string;
+}
+
 /** Payment methods that need a clearance remark before Accounting can verify them. */
 export const PAYMENT_METHODS_NEEDING_CLEARANCE = ["bank_transfer", "check"] as const;
 

@@ -31,13 +31,13 @@ async function findAllDeliveries(whereClause: any) {
     return await db.query.deliveries.findMany({
       where: whereClause,
       orderBy: [desc(deliveries.created_at)],
-      with: { delivery_items: true, driver: true, agent: true },
+      with: { delivery_items: true, truck: true, driver: true, agent: true },
     });
   } catch {
     return await db.query.deliveries.findMany({
       where: whereClause,
       orderBy: [desc(deliveries.created_at)],
-      with: { delivery_items: true },
+      with: { delivery_items: true, truck: true },
     });
   }
 }

@@ -78,6 +78,27 @@ export const listUnverifiedPayments: RequestHandler = async (_req: AuthRequest, 
   }
 };
 
+// ─── GET /api/payments/agents ─────────────────────────────────────────────────
+
+// Every agent account, so the End-of-Day agent filter lists agents with no payment on the chosen day.
+export const listPaymentAgents: RequestHandler = async (_req: AuthRequest, res) => {
+  try {
+    if (!process.env.DATABASE_URL) return res.json([]);
+
+    const rows = await db
+      .select({ id: agents.user_id, name: agents.full_name, username: users.username })
+      .from(agents)
+      .innerJoin(users, eq(users.id, agents.user_id))
+      .where(eq(agents.is_archived, false))
+      .orderBy(asc(agents.full_name));
+
+    res.json(rows.map((row) => ({ id: row.id, name: row.name?.trim() || row.username })));
+  } catch (error) {
+    console.error("Error fetching payment agents:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 export const getPaymentReceipt: RequestHandler = async (req: AuthRequest, res) => {
   try {
     if (!process.env.DATABASE_URL) return res.status(503).json({ error: "Database not configured" });

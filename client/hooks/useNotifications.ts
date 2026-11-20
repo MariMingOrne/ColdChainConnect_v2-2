@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { AccountsReceivable, AgentScheduleResponse, Booking, Customer, Delivery, DeliveryItem, DriverSchedule, Product } from "@shared/api";
+import type { AccountsReceivable, AgentScheduleResponse, Booking, Customer, Delivery, DeliveryItem, DriverSchedule, Product, Truck } from "@shared/api";
 import { useAuth } from "./useAuth";
 import { summarizeOverdue } from "@/lib/receivables";
 
@@ -17,7 +17,17 @@ export interface AppNotification {
 }
 
 type NotificationSource = Omit<AppNotification, "read">;
-type AdminDelivery = Delivery & { delivery_items?: DeliveryItem[] };
+type AdminDelivery = Delivery & { delivery_items?: DeliveryItem[]; truck?: Truck | null };
+
+function formatRunSchedule(delivery: Delivery): string {
+  const parts: string[] = [];
+  if (delivery.scheduled_date) {
+    const [year, month, day] = delivery.scheduled_date.split("-").map(Number);
+    parts.push(new Date(year, month - 1, day).toLocaleDateString("en-PH", { month: "short", day: "numeric" }));
+  }
+  if (delivery.scheduled_time) parts.push(delivery.scheduled_time);
+  return parts.join(" ") || "Schedule not set";
+}
 
 function readIds(key: string | null): string[] {
   if (!key) return [];
@@ -139,7 +149,7 @@ export function useNotifications() {
               id: `delivery:${delivery.id}`,
               type: "delivery",
               title: "Delivery run in progress",
-              message: `${remaining} stop${remaining === 1 ? "" : "s"} remain${remaining === 1 ? "s" : ""} on the run.`,
+              message: `${delivery.truck?.license_plate ?? "Truck not assigned"} · ${delivery.truck?.district ?? "District not assigned"} · ${formatRunSchedule(delivery)} · ${remaining} stop${remaining === 1 ? "" : "s"} remain${remaining === 1 ? "s" : ""}`,
               timestamp: delivery.updated_at,
               icon: "🚚",
               href: "/booking-dispatch/delivery",

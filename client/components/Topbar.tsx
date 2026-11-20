@@ -2,7 +2,6 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Bell, LogOut, Monitor, Moon, Search, Settings, Sun, Truck } from "lucide-react";
 import { useTheme } from "next-themes";
-import { todayInManila } from "@shared/api";
 import { useAuth } from "@/hooks/useAuth";
 import { NotificationPanel } from "./NotificationPanel";
 import { useNotifications } from "@/hooks/useNotifications";
@@ -220,22 +219,6 @@ export function Topbar({ userName, onLogout }: TopbarProps) {
               </div>
             )}
           </form>
-        )}
-
-        {role !== "agent" && location.pathname === "/accounting/payments" && (
-          <input
-            type="date"
-            aria-label="Filter by date"
-            value={searchParams.get("date") ?? ""}
-            max={todayInManila()}
-            onChange={(event) => {
-              const nextParams = new URLSearchParams(searchParams);
-              if (event.target.value) nextParams.set("date", event.target.value);
-              else nextParams.delete("date");
-              setSearchParams(nextParams, { replace: true });
-            }}
-            className="order-last w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-primary [color-scheme:dark] sm:order-none sm:w-auto"
-          />
         )}
 
       {/* Right Section */}

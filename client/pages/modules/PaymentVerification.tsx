@@ -3,7 +3,7 @@ import { BadgeCheck, Printer } from "lucide-react";
 import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
-import { paymentNeedsClearance, type UnverifiedPayment } from "@shared/api";
+import { paymentNeedsClearance, todayInManila, type PaymentAgentOption, type UnverifiedPayment } from "@shared/api";
 import { PageDialog } from "@/components/shared/PageDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { TablePagination, paginate } from "@/components/TablePagination";
@@ -20,11 +20,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { useCan } from "@/hooks/useCan";
 import { formatPeso, responseError } from "@/lib/format";
 import { useNewRows } from "@/lib/unseen";
+import { formatPeriod, parsePeriod, periodBounds } from "@/lib/paymentPeriod";
+import { PaymentPeriodFilter } from "./PaymentPeriodFilter";
 
 const formatDate = (value: string) => new Date(value).toLocaleDateString("en-PH");
 const businessDate = (value: string) => new Date(new Date(value).getTime() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
-function PaymentPrintSheet({ payments, date }: { payments: UnverifiedPayment[]; date: string }) {
+function PaymentPrintSheet({ payments, periodText }: { payments: UnverifiedPayment[]; periodText: string }) {
   const total = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
 
   return (
@@ -40,7 +42,7 @@ function PaymentPrintSheet({ payments, date }: { payments: UnverifiedPayment[]; 
         }
       `}</style>
       <h1 className="text-xl font-black">End-of-Day</h1>
-      <p className="mb-4 text-sm">{date ? new Date(`${date}T00:00:00+08:00`).toLocaleDateString("en-PH", { dateStyle: "long", timeZone: "Asia/Manila" }) : "All dates"}</p>
+      <p className="mb-4 text-sm">{periodText}</p>
       <table className="w-full border-collapse text-xs">
         <thead><tr className="border-b border-black text-left"><th className="py-1">Customer</th><th className="py-1">Receipt / invoice</th><th className="py-1">Recorded by</th><th className="py-1">Method</th><th className="py-1 text-right">Amount</th></tr></thead>
         <tbody>
@@ -154,8 +156,11 @@ export function PaymentVerification() {
   const [payments, setPayments] = useState<UnverifiedPayment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchParams] = useSearchParams();
-  const date = searchParams.get("date") ?? "";
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [allAgents, setAllAgents] = useState<PaymentAgentOption[]>([]);
+  const today = todayInManila();
+  const period = parsePeriod(searchParams.get("period"));
+  const bounds = periodBounds(period, today);
   const [searchTerm, setSearchTerm] = useState("");
   const [agentFilter, setAgentFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -166,9 +171,17 @@ export function PaymentVerification() {
   const fetchData = useCallback(async () => {
     if (!token) return;
     try {
-      const res = await fetch("/api/payments/unverified", { headers: { Authorization: `Bearer ${token}` } });
+      const headers = { Authorization: `Bearer ${token}` };
+      const [res, agentsRes] = await Promise.all([
+        fetch("/api/payments/unverified", { headers }),
+        fetch("/api/payments/agents", { headers }),
+      ]);
       if (!res.ok) throw new Error(await responseError(res, "Failed to load payments"));
       setPayments(await res.json());
+      if (agentsRes.ok) {
+        const agentList = await agentsRes.json();
+        if (Array.isArray(agentList)) setAllAgents(agentList);
+      }
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load payments");
@@ -191,18 +204,26 @@ export function PaymentVerification() {
   useEffect(() => {
     setPage(1);
     setSelectedIds(new Set());
-  }, [date]);
+  }, [period]);
 
   const agentOptions = Array.from(
-    new Map(
-      payments
+    new Map<string, string>([
+      ...payments
         .filter((payment) => payment.recorded_by_role === "agent" && payment.recorded_by)
-        .map((payment) => [payment.recorded_by!, payment.recorded_by_name || payment.recorded_by!]),
-    ),
+        .map((payment): [string, string] => [payment.recorded_by!, payment.recorded_by_name || payment.recorded_by!]),
+      ...allAgents.map((agent): [string, string] => [agent.id, agent.name]),
+    ]),
   ).sort((a, b) => a[1].localeCompare(b[1]));
+  const changePeriod = (value: string) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (value === "all") nextParams.delete("period");
+    else nextParams.set("period", value);
+    setSearchParams(nextParams, { replace: true });
+  };
   const query = searchTerm.trim().toLowerCase();
   const filtered = payments.filter((payment) => {
-    if (date && businessDate(payment.confirmed_at) !== date) return false;
+    const day = businessDate(payment.confirmed_at);
+    if (bounds && (day < bounds.from || day > bounds.to)) return false;
     if (agentFilter !== "all" && payment.recorded_by !== agentFilter) return false;
     if (!query) return true;
     return [payment.customer_name, payment.receipt_number, payment.invoice_receipt_number, payment.recorded_by_name, payment.recorded_by_username, payment.payment_reference, payment.payment_method]
@@ -228,9 +249,11 @@ export function PaymentVerification() {
           <h1 className="page-title">End-of-Day</h1>
           <p className="page-subtitle">Payments drivers and agents recorded on deliveries, waiting for Accounting</p>
         </div>
-        <Button type="button" variant="outline" onClick={() => setPrintTarget(filtered)} disabled={filtered.length === 0}>
-          <Printer size={15} /> Print payments
-        </Button>
+        <div className="no-print flex flex-wrap items-center gap-2">
+          <Button type="button" variant="outline" onClick={() => setPrintTarget(filtered)} disabled={filtered.length === 0}>
+            <Printer size={15} /> Print payments
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -258,6 +281,7 @@ export function PaymentVerification() {
             <option value="all">All agents</option>
             {agentOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
           </NativeSelect>
+          <PaymentPeriodFilter period={period} today={today} onChange={changePeriod} />
         </TableToolbar>
       </div>
 
@@ -337,7 +361,7 @@ export function PaymentVerification() {
         <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </Card>
 
-      {printTarget && createPortal(<PaymentPrintSheet payments={printTarget} date={date} />, document.body)}
+      {printTarget && createPortal(<PaymentPrintSheet payments={printTarget} periodText={formatPeriod(bounds)} />, document.body)}
 
       {verifying && (
         <PageDialog onClose={() => setVerificationQueue([])} label="Verify payment">
