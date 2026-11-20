@@ -250,7 +250,6 @@ export function PaymentVerification() {
           <p className="page-subtitle">Payments drivers and agents recorded on deliveries, waiting for Accounting</p>
         </div>
         <div className="no-print flex flex-wrap items-center gap-2">
-          <PaymentPeriodFilter period={period} today={today} onChange={changePeriod} />
           <Button type="button" variant="outline" onClick={() => setPrintTarget(filtered)} disabled={filtered.length === 0}>
             <Printer size={15} /> Print payments
           </Button>
@@ -282,6 +281,7 @@ export function PaymentVerification() {
             <option value="all">All agents</option>
             {agentOptions.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
           </NativeSelect>
+          <PaymentPeriodFilter period={period} today={today} onChange={changePeriod} />
         </TableToolbar>
       </div>
 
