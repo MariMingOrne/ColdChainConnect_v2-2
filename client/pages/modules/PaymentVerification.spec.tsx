@@ -131,6 +131,27 @@ describe("PaymentVerification", () => {
     expect(await screen.findByRole("row", { name: /Corner Store/ })).toBeTruthy();
   });
 
+  it("filters by the Today, Yesterday and Last 7 days presets on the Manila calendar", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-01-03T02:00:00+08:00"));
+    try {
+      renderScreen();
+      await screen.findByRole("row", { name: /Corner Store/ });
+      const range = screen.getByLabelText("Date range");
+
+      fireEvent.change(range, { target: { value: "today" } });
+      expect(await screen.findByText(/no payments match/i)).toBeTruthy();
+
+      fireEvent.change(range, { target: { value: "yesterday" } });
+      expect(await screen.findByRole("row", { name: /Corner Store/ })).toBeTruthy();
+
+      fireEvent.change(range, { target: { value: "last7" } });
+      expect(await screen.findByRole("row", { name: /Corner Store/ })).toBeTruthy();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("shows an empty state", async () => {
     fetchMock.mockImplementation(async () => json([]));
     renderScreen();
