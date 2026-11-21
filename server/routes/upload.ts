@@ -5,12 +5,17 @@ import { randomUUID } from "crypto";
 import { mkdirSync } from "fs";
 import { writeFile } from "fs/promises";
 
-  const filename = `${randomUUID()}${ext}`;
-  ensureUploadDir();            // <-- add this line
-try {
-  await writeFile(path.join(uploadDir, filename), req.file.buffer, { flag: "wx" });
-}
+const uploadDir = process.env.VERCEL
+  ? path.join("/tmp", "uploads") // Vercel's filesystem is read-only except /tmp
+  : path.join(process.cwd(), "public", "uploads");
 
+function ensureUploadDir() {
+  try {
+    mkdirSync(uploadDir, { recursive: true });
+  } catch (error) {
+    console.error("Could not create upload directory:", error);
+  }
+}
 const MAX_BYTES = 5 * 1024 * 1024;
 
 /** Identify an image by its first bytes ("magic number"), not by the name the browser sent. */
