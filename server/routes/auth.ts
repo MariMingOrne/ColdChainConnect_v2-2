@@ -1,5 +1,5 @@
 import { RequestHandler } from "express";
-import { eq } from "drizzle-orm";
+import { DrizzleQueryError, eq } from "drizzle-orm";
 import { db } from "../db";
 import { users } from "../db/schema";
 import { generateSecret, generateURI, verify } from "otplib";
@@ -26,6 +26,19 @@ import { sendTooManyAttempts } from "../utils";
 import { AuthRequest } from "../middleware/auth";
 import { loginIpLimiter, loginLimiter, mfaLimiter } from "../middleware/rate-limit";
 import { logAction } from "../middleware/audit-logger";
+
+function signInDatabaseError(operation: string, action: string, error: unknown) {
+  const cause = error instanceof DrizzleQueryError ? error.cause : error;
+  const message = cause instanceof Error
+    ? cause.message.replace(/postgres(?:ql)?:\/\/[^\s'"]+/gi, "[redacted database URL]")
+    : "No database error details available";
+  const code = cause && typeof cause === "object" && "code" in cause ? cause.code : undefined;
+  console.error(`Sign-in database error (${operation}):`, { message, code });
+  const guidance = code === "28P01"
+    ? "The database rejected its connection credentials. Contact an administrator."
+    : "Please try again later.";
+  return `Sign-in database error while ${action}. ${guidance}`;
+}
 
 export const handleLogin: RequestHandler<{}, LoginResponse | object> = async (
   req,
@@ -66,9 +79,14 @@ export const handleLogin: RequestHandler<{}, LoginResponse | object> = async (
       } as LoginResponse);
     }
 
-    const user = await db.query.users.findFirst({
-      where: eq(users.username, username),
-    });
+    let user: typeof users.$inferSelect | undefined;
+    try {
+      user = await db.query.users.findFirst({
+        where: eq(users.username, username),
+      });
+    } catch (error) {
+      return res.status(503).json({ error: signInDatabaseError("account lookup", "looking up the account", error) });
+    }
 
     if (!user || !(await verifyPassword(password, user.password_hash))) {
       loginLimiter.recordFailure(userKey);
@@ -107,7 +125,12 @@ export const handleMfaSetup: RequestHandler = async (req, res) => {
   }
 
   try {
-    const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    let user: typeof users.$inferSelect | undefined;
+    try {
+      user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    } catch (error) {
+      return res.status(503).json({ error: signInDatabaseError("MFA setup account lookup", "loading MFA setup", error) });
+    }
     if (!user) return res.status(401).json({ error: "Sign-in expired. Please log in again." });
     if (!user.mfa_required) return res.status(403).json({ error: "MFA is not required for this account" });
     if (user.mfa_enabled) {
@@ -122,7 +145,11 @@ export const handleMfaSetup: RequestHandler = async (req, res) => {
     });
     const qr_data_url = await QRCode.toDataURL(otpauth_url);
 
-    await db.update(users).set({ mfa_secret: secret }).where(eq(users.id, userId));
+    try {
+      await db.update(users).set({ mfa_secret: secret }).where(eq(users.id, userId));
+    } catch (error) {
+      return res.status(503).json({ error: signInDatabaseError("MFA setup secret save", "saving MFA setup", error) });
+    }
 
     res.json({ secret, otpauth_url, qr_data_url } as MfaSetupResponse);
   } catch (error) {
@@ -146,7 +173,12 @@ export const handleMfaVerify: RequestHandler = async (req, res) => {
   if (wait > 0) return sendTooManyAttempts(res, wait, "wrong codes");
 
   try {
-    const user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    let user: typeof users.$inferSelect | undefined;
+    try {
+      user = await db.query.users.findFirst({ where: eq(users.id, userId) });
+    } catch (error) {
+      return res.status(503).json({ error: signInDatabaseError("MFA verification account lookup", "loading MFA verification", error) });
+    }
     if (!user) {
       mfaLimiter.recordFailure(mfaKey);
       return res.status(401).json({ error: "Sign-in expired. Please log in again." });
@@ -163,7 +195,11 @@ export const handleMfaVerify: RequestHandler = async (req, res) => {
     mfaLimiter.reset(mfaKey);
 
     if (!user.mfa_enabled) {
-      await db.update(users).set({ mfa_enabled: true }).where(eq(users.id, userId));
+      try {
+        await db.update(users).set({ mfa_enabled: true }).where(eq(users.id, userId));
+      } catch (error) {
+        return res.status(503).json({ error: signInDatabaseError("MFA activation", "activating MFA", error) });
+      }
     }
 
     const token = signToken({
