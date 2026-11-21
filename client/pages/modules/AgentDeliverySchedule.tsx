@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import { PageDialog } from "@/components/shared/PageDialog";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
@@ -65,6 +66,8 @@ function orderRunStops(stops: AgentScheduleStop[]) {
 
 export function AgentDeliverySchedule() {
   const { token } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [deliveries, setDeliveries] = useState<AgentScheduleDelivery[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -103,6 +106,22 @@ export function AgentDeliverySchedule() {
     void fetchSchedule();
   }, [token]);
   useAutoRefresh(fetchSchedule, { enabled: Boolean(token) });
+
+  // Pallet Tracking sends us here after the last pallet ships; open the payment prompt for that order's stop.
+  const confirmOrderId = (location.state as { confirmPaymentOrderId?: string } | null)?.confirmPaymentOrderId;
+  useEffect(() => {
+    if (!confirmOrderId || isLoading) return;
+    for (const delivery of deliveries) {
+      const stop = (delivery.delivery_items ?? []).find((item) =>
+        item.invoice?.booking_id === confirmOrderId && item.status !== "completed");
+      if (!stop) continue;
+      if (stop.pallets.length > 0 && stop.pallets.every((pallet) => pallet.status === "shipped")) {
+        setPaymentStop({ delivery, stop, mode: "confirm" });
+      }
+      break;
+    }
+    navigate(location.pathname, { replace: true, state: null });
+  }, [confirmOrderId, isLoading, deliveries]);
 
   const today = localScheduleDate(new Date());
   const currentDeliveries = deliveries.filter((delivery) => delivery.status !== "completed");
