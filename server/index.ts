@@ -132,7 +132,7 @@ export function createServer() {
 
   // Behind Netlify/AWS Lambda (or any reverse proxy) the client IP is in X-Forwarded-For.
   // Trust exactly one hop there so req.ip is the real client; set TRUST_PROXY to override.
-  const trustProxy = process.env.TRUST_PROXY ?? (process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY ? "1" : "");
+  const trustProxy = process.env.TRUST_PROXY ?? (process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.NETLIFY || process.env.VERCEL ? "1" : "");
   if (trustProxy) app.set("trust proxy", /^[0-9]+$/.test(trustProxy) ? Number(trustProxy) : trustProxy);
 
   // Middleware
