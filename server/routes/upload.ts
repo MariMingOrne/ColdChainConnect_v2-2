@@ -7,8 +7,9 @@ import { writeFile } from "fs/promises";
 
   const filename = `${randomUUID()}${ext}`;
   ensureUploadDir();            // <-- add this line
-  try {
-    await writeFile(path.join(uploadDir, filename), req.file.buffer, { flag: "wx" });
+try {
+  await writeFile(path.join(uploadDir, filename), req.file.buffer, { flag: "wx" });
+}
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
