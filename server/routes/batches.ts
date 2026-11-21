@@ -1,9 +1,9 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { randomUUID } from "crypto";
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "../db";
 import { inventory_batches, batch_pallets, pallet_items, order_pallet_items, order_pallets, order_item_reservations, bookings, customers, products } from "../db/schema";
-import { AuthRequest } from "../middleware/auth";
+import type { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
 import { BatchReservation, isValidIsoDate } from "../../shared/api";
 

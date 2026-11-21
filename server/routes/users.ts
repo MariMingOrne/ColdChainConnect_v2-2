@@ -1,5 +1,5 @@
 import { MIN_PASSWORD_LENGTH } from "../../shared/api";
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { randomUUID } from "crypto";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "../db";

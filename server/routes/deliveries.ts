@@ -1,9 +1,9 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { randomUUID } from "crypto";
 import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { deliveries, delivery_items, accounts_receivable, invoices, agents, customers, trucks } from "../db/schema";
-import { AuthRequest } from "../middleware/auth";
+import type { AuthRequest } from "../middleware/auth";
 import { isIsoDate, todayIsoDate } from "../services/schedule-date";
 import { logAction } from "../middleware/audit-logger";
 

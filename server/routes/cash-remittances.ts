@@ -1,9 +1,9 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { randomUUID } from "crypto";
 import { and, eq, gte, inArray, lt } from "drizzle-orm";
 import { db } from "../db";
 import { audit_logs, cash_remittances, users } from "../db/schema";
-import { AuthRequest } from "../middleware/auth";
+import type { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
 import { denominationTotalCents, todayInManila, type CashCollectionRow, type CashRemittance, type DenominationCounts } from "../../shared/api";
 

@@ -1,4 +1,4 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { DrizzleQueryError, eq } from "drizzle-orm";
 import { db } from "../db";
 import { users } from "../db/schema";
@@ -23,7 +23,7 @@ import type {
 } from "@shared/api";
 import { MIN_PASSWORD_LENGTH } from "../../shared/api";
 import { sendTooManyAttempts } from "../utils";
-import { AuthRequest } from "../middleware/auth";
+import type { AuthRequest } from "../middleware/auth";
 import { loginIpLimiter, loginLimiter, mfaLimiter } from "../middleware/rate-limit";
 import { logAction } from "../middleware/audit-logger";
 

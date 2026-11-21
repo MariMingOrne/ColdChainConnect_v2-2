@@ -1,9 +1,9 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { randomUUID } from "crypto";
 import { desc, eq } from "drizzle-orm";
 import { db } from "../db";
 import { trucks } from "../db/schema";
-import { AuthRequest } from "../middleware/auth";
+import type { AuthRequest } from "../middleware/auth";
 import { CreateTruckSchema, UpdateTruckSchema } from "../../shared/api";
 import { logAction } from "../middleware/audit-logger";
 import { demoTrucks } from "../demo-data";

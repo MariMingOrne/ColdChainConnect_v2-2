@@ -1,8 +1,8 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { desc, eq, inArray } from "drizzle-orm";
 import { db } from "../db";
 import { invoices } from "../db/schema";
-import { AuthRequest } from "../middleware/auth";
+import type { AuthRequest } from "../middleware/auth";
 import { agentInvoiceFilter, agentInvoiceScope } from "../services/agent-bookings";
 import { logAction } from "../middleware/audit-logger";
 import { createInvoiceAfterPicking } from "../services/booking-invoices";

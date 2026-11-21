@@ -1,9 +1,9 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { randomUUID } from "crypto";
 import { and, desc, eq, inArray, ne } from "drizzle-orm";
 import { db } from "../db";
 import { bookings, booking_items, invoices, agents, customers, trucks, users, order_pallets, order_item_reservations } from "../db/schema";
-import { AuthRequest } from "../middleware/auth";
+import type { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
 import { CreditBlockResponse } from "../../shared/api";
 import { evaluateCreditRules } from "../services/credit-rules";

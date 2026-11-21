@@ -4,7 +4,7 @@ import { z } from "zod";
 import { CreateCustomerSchema, CreateProductSchema, isValidIsoDate } from "../../shared/api";
 import { db } from "../db";
 import { batch_pallets, customer_discounts, customers, inventory_batches, pallet_items, products } from "../db/schema";
-import { AuthRequest } from "../middleware/auth";
+import type { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
 
 const MAX_IMPORT_ROWS = 1000;

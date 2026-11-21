@@ -2,7 +2,7 @@ import { eq } from "drizzle-orm";
 import type { RequestHandler } from "express";
 import { db } from "../db";
 import { accounts_receivable, agents, deliveries } from "../db/schema";
-import { AuthRequest } from "../middleware/auth";
+import type { AuthRequest } from "../middleware/auth";
 
 export const getAgentSchedule: RequestHandler = async (req: AuthRequest, res) => {
   if (!process.env.DATABASE_URL) {
