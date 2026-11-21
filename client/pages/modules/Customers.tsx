@@ -8,7 +8,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { useCan } from "@/hooks/useCan";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
-import { Customer, Truck, formatCustomerAddress, isValidPhilippinePhoneNumber, totalDiscountRate } from "@shared/api";
+import { Customer, Truck, formatCustomerAddress, totalDiscountRate } from "@shared/api";
 import { ExcelActionsDropdown } from "@/components/ExcelActionsDropdown";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { ExcelImportDialog } from "@/components/ExcelImportDialog";
@@ -299,13 +299,9 @@ function CustomerModal({
               onChange={(e) =>
                 setFormData({ ...formData, contact_info: e.target.value })
               }
-              aria-invalid={Boolean(formData.contact_info) && !isValidPhilippinePhoneNumber(formData.contact_info)}
               className="w-full rounded-lg border border-border px-3 py-2 text-sm focus:border-accent-2 focus:outline-none"
               placeholder="0917 123 4567 or +63 917 123 4567"
             />
-            {formData.contact_info && !isValidPhilippinePhoneNumber(formData.contact_info) && (
-              <p className="mt-1 text-xs text-destructive">Enter a valid Philippine mobile or landline number.</p>
-            )}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
@@ -344,7 +340,7 @@ function CustomerModal({
 
         <div className="sticky bottom-0 flex justify-end gap-2 rounded-b-2xl border-t border-border bg-muted px-6 py-4">
           <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
-          <Button type="button" variant="accent" onClick={onSave} disabled={Boolean(formData.contact_info) && !isValidPhilippinePhoneNumber(formData.contact_info)}>Save Customer</Button>
+          <Button type="button" variant="accent" onClick={onSave}>Save Customer</Button>
         </div>
       </div>
     </div>
@@ -538,11 +534,6 @@ export function Customers({ onBack }: CustomersProps) {
 
   const handleSave = async () => {
     if (!formData.store_name.trim() || !formData.location.trim()) return;
-    if (formData.contact_info && !isValidPhilippinePhoneNumber(formData.contact_info)) {
-      toast.error("Enter a valid Philippine mobile or landline number.");
-      return;
-    }
-
     try {
       const url = editingCustomer
         ? `/api/customers/${editingCustomer.id}`
