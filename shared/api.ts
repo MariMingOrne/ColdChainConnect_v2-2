@@ -148,6 +148,11 @@ export function formatCustomerAddress(
   return parts.join(", ");
 }
 
+export function isValidPhilippinePhoneNumber(value: string) {
+  const normalized = value.replace(/[\s()-]/g, "");
+  return /^(?:\+63|0)(?:9\d{9}|[2-8]\d{7,9})$/.test(normalized);
+}
+
 export const CreateCustomerSchema = z.object({
   store_name: z.string().min(1, "Store name is required"),
   location: z.string().min(1, "Location is required"),
@@ -159,7 +164,7 @@ export const CreateCustomerSchema = z.object({
   latitude: z.number().finite().nullable().optional(),
   longitude: z.number().finite().nullable().optional(),
   contact_person: z.string().optional(),
-  contact_info: z.string().optional(),
+  contact_info: z.string().optional().refine((value) => !value || isValidPhilippinePhoneNumber(value), "Enter a valid Philippine mobile or landline number."),
   agent_id: z.string().optional(),
   payment_type: z.enum(["cash", "check", "bank_transfer", "cod", "credit"]).optional(),
   credit_limit: z.number().nonnegative().nullable().optional(),

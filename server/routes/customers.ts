@@ -3,7 +3,7 @@ import { randomUUID } from "crypto";
 import { desc, eq } from "drizzle-orm";
 import { db } from "../db";
 import { customers, customer_discounts } from "../db/schema";
-import { CustomerDiscount } from "@shared/api";
+import { CustomerDiscount, isValidPhilippinePhoneNumber } from "@shared/api";
 import { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
 import { demoCustomers } from "../demo-data";
@@ -71,6 +71,9 @@ export const createCustomer: RequestHandler = async (
   if (creditError) {
     return res.status(400).json({ error: creditError });
   }
+  if (contact_info != null && contact_info !== "" && (typeof contact_info !== "string" || !isValidPhilippinePhoneNumber(contact_info))) {
+    return res.status(400).json({ error: "Enter a valid Philippine mobile or landline number." });
+  }
 
   try {
     // Demo mode: can't write to database
@@ -134,6 +137,9 @@ export const updateCustomer: RequestHandler = async (
   const creditError = validateCreditFields(req.body);
   if (creditError) {
     return res.status(400).json({ error: creditError });
+  }
+  if (contact_info != null && contact_info !== "" && (typeof contact_info !== "string" || !isValidPhilippinePhoneNumber(contact_info))) {
+    return res.status(400).json({ error: "Enter a valid Philippine mobile or landline number." });
   }
 
   try {
