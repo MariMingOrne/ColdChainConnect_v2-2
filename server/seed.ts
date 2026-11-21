@@ -104,12 +104,12 @@ async function seed() {
       },
       {
         id: randomUUID(), store_name: "Puregold Porac", location: "Porac, Pampanga",
-        district: "Central Pampanga", state: "Pampanga",
+        district: "Southern Pampanga", state: "Pampanga",
         latitude: 15.07143, longitude: 120.5426, contact_person: "Liza Mendoza", contact_info: "0917 000 0003", agent_id: agentUserIds[1], payment_type: "cash",
       },
       {
         id: randomUUID(), store_name: "Puregold Extra Floridablanca", location: "Floridablanca, Pampanga",
-        district: "Central Pampanga", state: "Pampanga",
+        district: "Southern Pampanga", state: "Pampanga",
         latitude: 14.9722, longitude: 120.52757, contact_person: "Marco Dizon", contact_info: "0917 000 0004", agent_id: agentUserIds[1], payment_type: "cash",
       },
       {
@@ -119,7 +119,7 @@ async function seed() {
       },
       {
         id: randomUUID(), store_name: "SM City Clark", location: "Angeles City, Pampanga",
-        district: "Central Pampanga", state: "Pampanga",
+        district: "Northern Pampanga", state: "Pampanga",
         latitude: 15.16727, longitude: 120.58013, contact_person: "Paolo Cruz", contact_info: "0917 000 0006", agent_id: agentUserIds[1], payment_type: "bank_transfer",
       },
       {
@@ -141,6 +141,76 @@ async function seed() {
         id: randomUUID(), store_name: "Ves Mart Supermarket", location: "San Fernando, Pampanga",
         district: "Central Pampanga", state: "Pampanga",
         latitude: 15.07782, longitude: 120.6412, contact_person: "Gabriel Bautista", contact_info: "0917 000 0010", agent_id: agentUserIds[2], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "San Fernando Community Mart", location: "San Fernando, Pampanga",
+        district: "Central Pampanga", state: "Pampanga",
+        latitude: 15.0301, longitude: 120.6844, contact_person: "Rina Valdez", contact_info: "0917 000 0011", agent_id: agentUserIds[0], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Apalit Family Grocery", location: "Apalit, Pampanga",
+        district: "Northern Pampanga", state: "Pampanga",
+        latitude: 14.9537, longitude: 120.7585, contact_person: "Noel Santiago", contact_info: "0917 000 0012", agent_id: agentUserIds[0], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Mabalacat Town Market Store", location: "Mabalacat City, Pampanga",
+        district: "Northern Pampanga", state: "Pampanga",
+        latitude: 15.2231, longitude: 120.5742, contact_person: "Celia Aquino", contact_info: "0917 000 0013", agent_id: agentUserIds[1], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Magalang Corner Grocery", location: "Magalang, Pampanga",
+        district: "Northern Pampanga", state: "Pampanga",
+        latitude: 15.2155, longitude: 120.6606, contact_person: "Edgar David", contact_info: "0917 000 0014", agent_id: agentUserIds[1], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Candaba Freshmart", location: "Candaba, Pampanga",
+        district: "Northern Pampanga", state: "Pampanga",
+        latitude: 15.0956, longitude: 120.8267, contact_person: "Mylene Torres", contact_info: "0917 000 0015", agent_id: agentUserIds[2], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "San Luis Neighborhood Store", location: "San Luis, Pampanga",
+        district: "Northern Pampanga", state: "Pampanga",
+        latitude: 15.0405, longitude: 120.7895, contact_person: "Rodel Flores", contact_info: "0917 000 0016", agent_id: agentUserIds[2], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Sto. Tomas General Store", location: "Sto. Tomas, Pampanga",
+        district: "Northern Pampanga", state: "Pampanga",
+        latitude: 14.9998, longitude: 120.7118, contact_person: "Lorna Mercado", contact_info: "0917 000 0017", agent_id: agentUserIds[0], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Macabebe Bayan Grocery", location: "Macabebe, Pampanga",
+        district: "Northern Pampanga", state: "Pampanga",
+        latitude: 14.9085, longitude: 120.7152, contact_person: "Jun Reyes", contact_info: "0917 000 0018", agent_id: agentUserIds[1], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Guagua Market Grocery", location: "Guagua, Pampanga",
+        district: "Southern Pampanga", state: "Pampanga",
+        latitude: 14.9656, longitude: 120.6321, contact_person: "Aileen Cruz", contact_info: "0917 000 0019", agent_id: agentUserIds[0], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Lubao Community Store", location: "Lubao, Pampanga",
+        district: "Southern Pampanga", state: "Pampanga",
+        latitude: 14.9261, longitude: 120.6003, contact_person: "Dante Garcia", contact_info: "0917 000 0020", agent_id: agentUserIds[1], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Sasmuan Corner Mart", location: "Sasmuan, Pampanga",
+        district: "Southern Pampanga", state: "Pampanga",
+        latitude: 14.8804, longitude: 120.6252, contact_person: "Nina Ramos", contact_info: "0917 000 0021", agent_id: agentUserIds[2], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Bacolor Town Grocery", location: "Bacolor, Pampanga",
+        district: "Southern Pampanga", state: "Pampanga",
+        latitude: 15.0008, longitude: 120.6528, contact_person: "Oscar Mendoza", contact_info: "0917 000 0022", agent_id: agentUserIds[2], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Masantol Riverside Store", location: "Masantol, Pampanga",
+        district: "Southern Pampanga", state: "Pampanga",
+        latitude: 14.8967, longitude: 120.7107, contact_person: "Grace Bautista", contact_info: "0917 000 0023", agent_id: agentUserIds[0], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Minalin Family Mart", location: "Minalin, Pampanga",
+        district: "Southern Pampanga", state: "Pampanga",
+        latitude: 14.9676, longitude: 120.6828, contact_person: "Victor Navarro", contact_info: "0917 000 0024", agent_id: agentUserIds[1], payment_type: "cash",
       },
     ]).onConflictDoNothing();
 
@@ -211,7 +281,7 @@ async function seed() {
     console.log("   ✓ 3 Agents (agent1-3, password matches username)");
     console.log("   ✓ 3 Drivers (driver1-3, password matches username)");
     console.log(`   ✓ ${seedProducts.length} Products (current Frabelle catalog)`);
-    console.log("   ✓ 24 Pampanga customers (Puregold, SM)");
+    console.log("   ✓ 24 Pampanga customers (8 each in Central, Northern, and Southern Pampanga)");
     console.log("   ✓ 3 Trucks (Northern, Central, Southern Pampanga)");
 
     process.exit(0);
