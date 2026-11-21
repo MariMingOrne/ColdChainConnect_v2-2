@@ -5,8 +5,10 @@ import { randomUUID } from "crypto";
 import { mkdirSync } from "fs";
 import { writeFile } from "fs/promises";
 
-const uploadDir = path.join(process.cwd(), "public", "uploads");
-mkdirSync(uploadDir, { recursive: true });
+  const filename = `${randomUUID()}${ext}`;
+  ensureUploadDir();            // <-- add this line
+  try {
+    await writeFile(path.join(uploadDir, filename), req.file.buffer, { flag: "wx" });
 
 const MAX_BYTES = 5 * 1024 * 1024;
 
