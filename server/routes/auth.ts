@@ -13,7 +13,7 @@ import {
   signMfaChallenge,
   verifyMfaChallenge,
 } from "../auth";
-import {
+import type {
   LoginRequest,
   LoginResponse,
   LogoutResponse,

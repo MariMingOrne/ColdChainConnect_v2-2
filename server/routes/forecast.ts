@@ -2,7 +2,7 @@ import { RequestHandler } from "express";
 import { and, eq, gte, ne } from "drizzle-orm";
 import { db } from "../db";
 import { invoice_items, invoices } from "../db/schema";
-import { SalesForecastPoint, SalesForecastResponse, SalesProductInsight } from "@shared/api";
+import type { SalesForecastPoint, SalesForecastResponse, SalesProductInsight } from "@shared/api";
 import { generateSalesSummary } from "../services/sales-summary";
 
 const HISTORY_DAYS = 30;

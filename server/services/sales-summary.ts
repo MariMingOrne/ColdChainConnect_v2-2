@@ -1,4 +1,4 @@
-import { SalesForecastResponse } from "@shared/api";
+import type { SalesForecastResponse } from "@shared/api";
 
 const GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
 const DEFAULT_MODEL = "openai/gpt-oss-20b";
