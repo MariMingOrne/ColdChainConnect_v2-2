@@ -19,16 +19,18 @@ import { TableFilterSelect, TableToolbar } from "@/components/TableToolbar";
 import { newestFirst } from "@/components/SortableHeader";
 import { TablePagination, paginate } from "@/components/TablePagination";
 import { Invoice, InvoiceItem, BookingItem } from "@shared/api";
+import { localScheduleDate } from "@/lib/agentSchedule";
 import { useAuth } from "../../hooks/useAuth";
 
 // ─── Printable Receipt Modal ───────────────────────────────────────────────
 
 interface ReceiptModalProps {
   invoice: Invoice;
-  onClose: () => void;
+  onClose?: () => void;
+  printOnly?: boolean;
 }
 
-function ReceiptModal({ invoice, onClose }: ReceiptModalProps) {
+function ReceiptModal({ invoice, onClose, printOnly = false }: ReceiptModalProps) {
   // Use snapshotted invoice_items; fall back to booking_items for legacy invoices
   const items: InvoiceItem[] = invoice.invoice_items && invoice.invoice_items.length > 0
     ? invoice.invoice_items
@@ -76,33 +78,41 @@ function ReceiptModal({ invoice, onClose }: ReceiptModalProps) {
     n.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
-    <div className="flex-1 flex flex-col gap-6 p-4 md:p-6">
-      <div className="page-header no-print">
-        <div>
-          <h1 className="page-title">Delivery Receipt</h1>
+    <div className={printOnly ? "receipt-bulk-document" : "flex-1 flex flex-col gap-6 p-4 md:p-6"}>
+      {!printOnly && (
+        <div className="page-header no-print">
+          <div>
+            <h1 className="page-title">Delivery Receipt</h1>
+          </div>
+          <div className="flex gap-2 items-center">
+            <Button onClick={() => window.print()} variant="default">
+              <Printer size={16} /> Print
+            </Button>
+            <Button onClick={() => onClose?.()} variant="outline">
+              <ArrowLeft size={15} />
+              Back
+            </Button>
+          </div>
         </div>
-        <div className="flex gap-2 items-center">
-          <Button
-            onClick={() => window.print()}
-            variant="default"
-          >
-            <Printer size={16} /> Print
-          </Button>
-          <Button onClick={onClose} variant="outline">
-            <ArrowLeft size={15} />
-            Back
-          </Button>
-        </div>
-      </div>
+      )}
 
       <div className="max-w-3xl w-full rounded-2xl border border-border bg-white text-black">
-        {/* Receipt body */}
-        <div id="receipt-print-area" className="p-6 font-sans text-black">
-          <style>{`
+        <div className="receipt-print-area p-6 font-sans text-black">
+          <style>{printOnly ? `
+            @media print {
+              body * { visibility: hidden !important; }
+              .receipt-bulk-print, .receipt-bulk-print * { visibility: visible !important; }
+              .receipt-bulk-print { display: block !important; position: absolute; inset: 0; width: 100%; }
+              .receipt-bulk-print .receipt-bulk-document { display: block !important; }
+              .receipt-bulk-print .receipt-bulk-document:not(:last-child) { break-after: page; page-break-after: always; }
+              .receipt-bulk-print .receipt-print-area { position: static; width: 100%; padding: 24px; }
+              .no-print { display: none !important; }
+            }
+          ` : `
             @media print {
               body * { visibility: hidden; }
-              #receipt-print-area, #receipt-print-area * { visibility: visible; }
-              #receipt-print-area { position: fixed; top: 0; left: 0; width: 100%; padding: 24px; }
+              .receipt-print-area, .receipt-print-area * { visibility: visible; }
+              .receipt-print-area { position: fixed; top: 0; left: 0; width: 100%; padding: 24px; }
               .no-print { display: none !important; }
             }
           `}</style>
@@ -262,10 +272,12 @@ export function Invoicing() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const isAdmin = user?.role === "admin";
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "draft" | "issued" | "paid">("all");
   const [paymentFilter, setPaymentFilter] = useState<"all" | "paid" | "partial" | "unpaid">("all");
+  const [printDate, setPrintDate] = useState(() => localScheduleDate(new Date()));
   const [dateRangeFilter, setDateRangeFilter] = useState<"all" | "today" | "week" | "month" | "custom">("all");
   const [customDateStart, setCustomDateStart] = useState("");
   const [customDateEnd, setCustomDateEnd] = useState("");
@@ -338,14 +350,26 @@ export function Invoicing() {
   }));
 
   const { currentPage, totalPages, pageItems: paginated } = paginate(filtered, page);
+  const printInvoices = invoices.filter((invoice) => localScheduleDate(new Date(invoice.created_at)) === printDate);
 
   return (
     <div className="flex-1 flex flex-col p-6 gap-6">
-      <div className="page-header">
+      <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="page-title">Receipts</h1>
           <p className="page-subtitle">Print and review delivery receipts</p>
         </div>
+        {isAdmin && (
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm text-muted-foreground">
+              <span>Date</span>
+              <Input type="date" value={printDate} onChange={(event) => setPrintDate(event.target.value)} className="h-auto w-auto border-0 bg-transparent p-0 text-foreground focus-visible:ring-0 focus-visible:ring-offset-0" />
+            </label>
+            <Button onClick={() => window.print()} disabled={printInvoices.length === 0} variant="outline" className="flex items-center gap-2">
+              <Printer size={16} /> Print all ({printInvoices.length})
+            </Button>
+          </div>
+        )}
       </div>
 
       {error && (
@@ -512,6 +536,11 @@ export function Invoicing() {
         <TablePagination page={currentPage} totalPages={totalPages} totalItems={filtered.length} onPageChange={setPage} />
       </Card>
 
+      {isAdmin && (
+        <div className="hidden receipt-bulk-print" aria-hidden="true">
+          {printInvoices.map((invoice) => <ReceiptModal key={invoice.id} invoice={invoice} printOnly />)}
+        </div>
+      )}
     </div>
   );
 }

@@ -10,23 +10,8 @@ async function reset() {
     console.log("🗑️  Dropping all tables...");
 
     await db.execute(sql`
-      DROP TABLE IF EXISTS audit_logs CASCADE;
-      DROP TABLE IF EXISTS receipts CASCADE;
-      DROP TABLE IF EXISTS delivery_items CASCADE;
-      DROP TABLE IF EXISTS deliveries CASCADE;
-      DROP TABLE IF EXISTS invoice_status CASCADE;
-      DROP TABLE IF EXISTS invoices CASCADE;
-      DROP TABLE IF EXISTS booking_items CASCADE;
-      DROP TABLE IF EXISTS bookings CASCADE;
-      DROP TABLE IF EXISTS trucks CASCADE;
-      DROP TABLE IF EXISTS drivers CASCADE;
-      DROP TABLE IF EXISTS agents CASCADE;
-      DROP TABLE IF EXISTS pallet_items CASCADE;
-      DROP TABLE IF EXISTS batch_pallets CASCADE;
-      DROP TABLE IF EXISTS inventory_batches CASCADE;
-      DROP TABLE IF EXISTS products CASCADE;
-      DROP TABLE IF EXISTS customers CASCADE;
-      DROP TABLE IF EXISTS users CASCADE;
+      DROP SCHEMA public CASCADE;
+      CREATE SCHEMA public;
     `);
 
     console.log("✅ All tables dropped");

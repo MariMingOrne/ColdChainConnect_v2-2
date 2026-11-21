@@ -263,38 +263,37 @@ function ProductPage({
 
 function ViewProductPage({ product, cost, canSeeCost, onClose }: { product: Product; cost: string | undefined; canSeeCost: boolean; onClose: () => void }) {
   return (
-    <div className="flex-1 p-6 overflow-y-auto scrollbar-visible space-y-6">
+    <div className="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 md:p-6">
       <div className="page-header">
         <div>
           <h1 className="page-title">Product Details</h1>
         </div>
       </div>
-      <div className="bg-card rounded-2xl border border-border max-w-lg w-full">
-
-        <div className="p-6 space-y-4">
+      <div className="w-full max-w-3xl rounded-2xl border border-border bg-card">
+        <div className="grid grid-cols-1 gap-4 p-4 sm:grid-cols-2 md:p-6">
           {product.image_filename && (
-            <div className="w-full bg-muted rounded-lg p-4 text-center">
-              <img src={`/uploads/${product.image_filename}`} alt={product.name} className="max-w-full h-auto mx-auto max-h-64" />
+            <div className="rounded-lg bg-muted p-4 text-center sm:col-span-2">
+              <img src={`/uploads/${product.image_filename}`} alt={product.name} className="mx-auto max-h-64 h-auto max-w-full" />
             </div>
           )}
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">Product Name</label>
-            <div className="text-sm text-foreground font-semibold">{product.name}</div>
+            <label className="mb-1 block text-xs font-semibold text-muted-foreground">Product Name</label>
+            <div className="text-sm font-semibold text-foreground">{product.name}</div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">SKU Code</label>
+            <label className="mb-1 block text-xs font-semibold text-muted-foreground">SKU Code</label>
             <div className="text-sm text-foreground">{product.sku || "—"}</div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">Unit Price</label>
-            <div className="text-sm text-foreground font-semibold">₱{parseFloat(product.price ?? "0").toLocaleString("en-PH", { minimumFractionDigits: 2 })}</div>
+            <label className="mb-1 block text-xs font-semibold text-muted-foreground">Unit Price</label>
+            <div className="text-sm font-semibold text-foreground">₱{parseFloat(product.price ?? "0").toLocaleString("en-PH", { minimumFractionDigits: 2 })}</div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">Unit type</label>
+            <label className="mb-1 block text-xs font-semibold text-muted-foreground">Unit Type</label>
             <div className="text-sm text-foreground">{product.unit ?? "PK"}</div>
           </div>
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">SRP</label>
+            <label className="mb-1 block text-xs font-semibold text-muted-foreground">SRP</label>
             <div className="text-sm text-foreground">
               {product.srp == null ? "—" : `₱${parseFloat(product.srp).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`}
               {markupPercent(product.price, product.srp) !== null && (
@@ -304,7 +303,7 @@ function ViewProductPage({ product, cost, canSeeCost, onClose }: { product: Prod
           </div>
           {canSeeCost && (
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1">Cost price</label>
+              <label className="mb-1 block text-xs font-semibold text-muted-foreground">Cost Price</label>
               <div className="text-sm text-foreground">
                 {cost == null ? "—" : `₱${parseFloat(cost).toLocaleString("en-PH", { minimumFractionDigits: 2 })}`}
                 {marginPercent(product.price, cost) !== null && (
@@ -314,22 +313,40 @@ function ViewProductPage({ product, cost, canSeeCost, onClose }: { product: Prod
             </div>
           )}
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">Batch Tracking</label>
-            <div className="text-sm"><span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${product.batch_tracking_enabled ? "badge-green" : "badge-red"}`}>{product.batch_tracking_enabled ? "Enabled" : "Discontinued"}</span></div>
+            <label className="mb-1 block text-xs font-semibold text-muted-foreground">Weight</label>
+            <div className="text-sm text-foreground">{product.weight == null ? "—" : `${product.weight} kg`}</div>
           </div>
-          {(product as any).manufacturer && (
-            <div>
-              <label className="block text-xs font-semibold text-muted-foreground mb-1">Manufacturer</label>
-              <div className="text-sm text-foreground">{(product as any).manufacturer}</div>
-            </div>
-          )}
           <div>
-            <label className="block text-xs font-semibold text-muted-foreground mb-1">Discontinued</label>
-            <div className="text-sm"><span className={`inline-block px-2 py-0.5 rounded text-xs font-bold ${ (product as any).is_discontinued ? "badge-red" : "badge-green"}`}>{(product as any).is_discontinued ? "Yes" : "No"}</span></div>
+            <label className="mb-1 block text-xs font-semibold text-muted-foreground">Reorder Level</label>
+            <div className="text-sm text-foreground">{product.reorder_point ?? "—"}</div>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-muted-foreground">Manufacturer</label>
+            <div className="text-sm text-foreground">{product.manufacturer || "—"}</div>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-muted-foreground">Batch Tracking</label>
+            <div className="text-sm"><span className={`inline-block rounded px-2 py-0.5 text-xs font-bold ${product.batch_tracking_enabled ? "badge-green" : "badge-red"}`}>{product.batch_tracking_enabled ? "Enabled" : "Disabled"}</span></div>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-muted-foreground">Discontinued</label>
+            <div className="text-sm"><span className={`inline-block rounded px-2 py-0.5 text-xs font-bold ${(product.is_discontinued ?? false) ? "badge-red" : "badge-green"}`}>{product.is_discontinued ? "Yes" : "No"}</span></div>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-muted-foreground">Archived</label>
+            <div className="text-sm"><span className={`inline-block rounded px-2 py-0.5 text-xs font-bold ${product.is_archived ? "badge-red" : "badge-green"}`}>{product.is_archived ? "Yes" : "No"}</span></div>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-muted-foreground">Created</label>
+            <div className="text-sm text-foreground">{new Date(product.created_at).toLocaleDateString()}</div>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-semibold text-muted-foreground">Last Updated</label>
+            <div className="text-sm text-foreground">{new Date(product.updated_at).toLocaleDateString()}</div>
           </div>
         </div>
 
-        <div className="sticky bottom-0 bg-muted px-6 py-4 flex justify-end border-t border-border rounded-b-2xl">
+        <div className="sticky bottom-0 flex justify-end border-t border-border rounded-b-2xl bg-muted px-4 py-3 md:px-6">
           <Button onClick={onClose} variant="default">
             Close
           </Button>

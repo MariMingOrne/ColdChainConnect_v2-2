@@ -7,18 +7,15 @@ import {
   products,
   drivers,
   trucks,
-  inventory_batches,
-  batch_pallets,
-  pallet_items,
   agents,
 } from "./db/schema";
 import { hashPassword } from "./auth";
+import { seedProducts } from "./seed-products";
 
 async function seed() {
   console.log("🌱 Starting seed...");
 
   try {
-    // Create admin user
     console.log("📝 Creating admin user...");
     const adminUserId = randomUUID();
     const adminPassword = await hashPassword("admin123");
@@ -30,332 +27,262 @@ async function seed() {
       role: "admin",
     }).onConflictDoNothing();
 
-    // Create agent users (account-linked staff)
-    console.log("📝 Creating agent users...");
-    const agent1UserId = randomUUID();
-    const agent2UserId = randomUUID();
-    const agent3UserId = randomUUID();
+    console.log("📝 Creating agent and driver users...");
+    const agentUserIds = [randomUUID(), randomUUID(), randomUUID()];
+    const driverUserIds = [randomUUID(), randomUUID(), randomUUID()];
 
-    const agentPassword = await hashPassword("agent123");
+    const staffLogins = [
+      ...agentUserIds.map((id, index) => ({ id, username: `agent${index + 1}`, role: "agent" as const })),
+      ...driverUserIds.map((id, index) => ({ id, username: `driver${index + 1}`, role: "driver" as const })),
+    ];
+    await db.insert(users).values(
+      await Promise.all(
+        staffLogins.map(async ({ id, username, role }) => ({
+          id,
+          username,
+          password_hash: await hashPassword(username),
+          role,
+        })),
+      ),
+    ).onConflictDoNothing();
 
-    await db.insert(users).values([
-      {
-        id: agent1UserId,
-        username: "agent1",
-        password_hash: agentPassword,
-        role: "agent",
-      },
-      {
-        id: agent2UserId,
-        username: "agent2",
-        password_hash: agentPassword,
-        role: "agent",
-      },
-      {
-        id: agent3UserId,
-        username: "agent3",
-        password_hash: agentPassword,
-        role: "agent",
-      },
-    ]).onConflictDoNothing();
-
-    // Create products
     console.log("📝 Creating products...");
-    const product1 = randomUUID();
-    const product2 = randomUUID();
-    const product3 = randomUUID();
-    const product4 = randomUUID();
+    const productRows = seedProducts.map((product) => ({
+      ...product,
+      id: randomUUID(),
+      batch_tracking_enabled: true,
+    }));
+    await db.insert(products).values(productRows).onConflictDoNothing();
 
-    await db.insert(products).values([
-      { id: product1, name: "Chicken Breast", price: "150.00", batch_tracking_enabled: true },
-      { id: product2, name: "Pork Chops", price: "200.00", batch_tracking_enabled: true },
-      { id: product3, name: "Fish Fillet", price: "180.00", batch_tracking_enabled: true },
-      { id: product4, name: "Beef Steak", price: "250.00", batch_tracking_enabled: true },
-    ]).onConflictDoNothing();
-
-    // Create agent profiles
     console.log("📝 Creating agent profiles...");
-    const agentProfile1 = randomUUID();
-    const agentProfile2 = randomUUID();
-    const agentProfile3 = randomUUID();
+    const agentProfileIds = [randomUUID(), randomUUID(), randomUUID()];
 
     await db.insert(agents).values([
       {
-        id: agentProfile1,
-        user_id: agent1UserId,
-        full_name: "Maria Santos",
-        email: "maria.santos@coldchain.com",
-        contact_info: "09171234567",
+        id: agentProfileIds[0],
+        user_id: agentUserIds[0],
+        full_name: "Dane Andrea Bautista",
+        email: "dane.bautista@coldchain.com",
+        contact_info: "09171230101",
         hire_date: "2022-01-15",
-        address: "123 Main St, Makati",
+        address: "Brgy. Poblacion, Arayat, Pampanga",
         is_active: true,
       },
       {
-        id: agentProfile2,
-        user_id: agent2UserId,
-        full_name: "Juan Dela Cruz",
-        email: "juan.delacruz@coldchain.com",
-        contact_info: "09172345678",
+        id: agentProfileIds[1],
+        user_id: agentUserIds[1],
+        full_name: "Meiji Zhao",
+        email: "meiji.zhao@coldchain.com",
+        contact_info: "09171230102",
         hire_date: "2022-03-10",
-        address: "456 BGC Ave, Taguig",
+        address: "Brgy. Poblacion, San Fernando, Pampanga",
         is_active: true,
       },
       {
-        id: agentProfile3,
-        user_id: agent3UserId,
-        full_name: "Ana Reyes",
-        email: "ana.reyes@coldchain.com",
-        contact_info: "09173456789",
+        id: agentProfileIds[2],
+        user_id: agentUserIds[2],
+        full_name: "Ryah Carino",
+        email: "ryah.carino@coldchain.com",
+        contact_info: "09171230103",
         hire_date: "2023-06-01",
-        address: "789 Tagaytay Rd, Cavite",
+        address: "Brgy. Poblacion, Apalit, Pampanga",
         is_active: true,
       },
     ]).onConflictDoNothing();
 
-    // Create customers (linked to agent users)
     console.log("📝 Creating customers...");
-    const customer1 = randomUUID();
-    const customer2 = randomUUID();
-    const customer3 = randomUUID();
-    const customer4 = randomUUID();
-    const customer5 = randomUUID();
-    const customer6 = randomUUID();
-    const customer7 = randomUUID();
-    const customer8 = randomUUID();
-
     await db.insert(customers).values([
       {
-        id: customer1,
-        store_name: "Palengke Fresh Meats - Makati",
-        location: "Makati City",
-        district: "District A",
-        street_number: "123",
-        street_address: "Kalayaan Ave, Poblacion",
-        state: "Metro Manila",
-        postal_code: "1210",
-        contact_person: "Rosa Dimaculangan",
-        contact_info: "09171234501",
-        agent_id: agent1UserId,
-        payment_type: "cash",
-
+        id: randomUUID(), store_name: "Puregold Bulaon", location: "San Fernando, Pampanga",
+        district: "Central Pampanga", street_address: "Bulaon", state: "Pampanga",
+        latitude: 15.08421, longitude: 120.66779, contact_person: "Ana Reyes", contact_info: "0917 000 0001", agent_id: agentUserIds[0], payment_type: "cash",
       },
       {
-        id: customer2,
-        store_name: "Bonifacio Fresh Market - BGC",
-        location: "Taguig City",
-        district: "District A",
-        street_number: "7",
-        street_address: "5th Ave, Bonifacio Global City",
-        state: "Metro Manila",
-        postal_code: "1634",
-        contact_person: "Mark Anthony Cruz",
-        contact_info: "09171234502",
-        agent_id: agent2UserId,
-        payment_type: "bank_transfer",
-
+        id: randomUUID(), store_name: "Puregold Mexico", location: "Mexico, Pampanga",
+        district: "Central Pampanga", state: "Pampanga",
+        latitude: 15.06483, longitude: 120.72146, contact_person: "Carlo Santos", contact_info: "0917 000 0002", agent_id: agentUserIds[0], payment_type: "cash",
       },
       {
-        id: customer3,
-        store_name: "Tagaytay Highlands Grocery - Tagaytay",
-        location: "Tagaytay City",
-        district: "District C",
-        street_number: "45",
-        street_address: "Aguinaldo Hwy, Brgy. Sungay",
-        state: "Cavite",
-        postal_code: "4120",
-        contact_person: "Lorna Villanueva",
-        contact_info: "09171234503",
-        agent_id: agent3UserId,
-        payment_type: "cod",
-
+        id: randomUUID(), store_name: "Puregold Porac", location: "Porac, Pampanga",
+        district: "Southern Pampanga", state: "Pampanga",
+        latitude: 15.07143, longitude: 120.5426, contact_person: "Liza Mendoza", contact_info: "0917 000 0003", agent_id: agentUserIds[1], payment_type: "cash",
       },
       {
-        id: customer4,
-        store_name: "Sta. Cruz Sari-Sari Mart - Quiapo",
-        location: "Manila City",
-        district: "District A",
-        street_number: "210",
-        street_address: "Quezon Blvd, Quiapo",
-        state: "Metro Manila",
-        postal_code: "1001",
-        contact_person: "Ernesto Bautista",
-        contact_info: "09171234504",
-        agent_id: agent1UserId,
-        payment_type: "cash",
-
+        id: randomUUID(), store_name: "Puregold Extra Floridablanca", location: "Floridablanca, Pampanga",
+        district: "Southern Pampanga", state: "Pampanga",
+        latitude: 14.9722, longitude: 120.52757, contact_person: "Marco Dizon", contact_info: "0917 000 0004", agent_id: agentUserIds[1], payment_type: "cash",
       },
       {
-        id: customer5,
-        store_name: "Ortigas Center Supermarket - Pasig",
-        location: "Pasig City",
-        district: "District A",
-        street_number: "18",
-        street_address: "ADB Ave, Ortigas Center",
-        state: "Metro Manila",
-        postal_code: "1605",
-        contact_person: "Jasmine Lim",
-        contact_info: "09171234505",
-        agent_id: agent2UserId,
-        payment_type: "bank_transfer",
-
+        id: randomUUID(), store_name: "SM City Pampanga", location: "San Fernando, Pampanga",
+        district: "Central Pampanga", street_address: "Jose Abad Santos Avenue", state: "Pampanga",
+        latitude: 15.0526, longitude: 120.6993, contact_person: "Mia Garcia", contact_info: "0917 000 0005", agent_id: agentUserIds[0], payment_type: "bank_transfer",
       },
       {
-        id: customer6,
-        store_name: "Cebu Lechon House Grocers - Cebu",
-        location: "Cebu City",
-        street_number: "88",
-        street_address: "Osmeña Blvd, Capitol Site",
-        state: "Cebu",
-        postal_code: "6000",
-        contact_person: "Ramon Gonzales",
-        contact_info: "09171234506",
-        agent_id: agent3UserId,
-        payment_type: "cod",
-
+        id: randomUUID(), store_name: "SM City Clark", location: "Angeles City, Pampanga",
+        district: "Northern Pampanga", state: "Pampanga",
+        latitude: 15.16727, longitude: 120.58013, contact_person: "Paolo Cruz", contact_info: "0917 000 0006", agent_id: agentUserIds[1], payment_type: "bank_transfer",
       },
       {
-        id: customer7,
-        store_name: "Davao Fresh Catch Store - Davao",
-        location: "Davao City",
-        street_number: "32",
-        street_address: "J.P. Laurel Ave, Bajada",
-        state: "Davao del Sur",
-        postal_code: "8000",
-        contact_person: "Cherry Ann Macaraeg",
-        contact_info: "09171234507",
-        agent_id: agent1UserId,
-        payment_type: "bank_transfer",
-
+        id: randomUUID(), store_name: "Jumbo Jenra Supermarket", location: "Angeles City, Pampanga",
+        district: "Central Pampanga", street_address: "509 Jesus Street", state: "Pampanga",
+        latitude: 15.14032, longitude: 120.58824, contact_person: "Janelle Flores", contact_info: "0917 000 0007", agent_id: agentUserIds[2], payment_type: "cash",
       },
       {
-        id: customer8,
-        store_name: "Baguio Strawberry Farm Market - Baguio",
-        location: "Baguio City",
-        street_number: "12",
-        street_address: "Session Rd",
-        state: "Benguet",
-        postal_code: "2600",
-        contact_person: "Edgar Dulay",
-        contact_info: "09171234508",
-        agent_id: agent2UserId,
-        payment_type: "cash",
-
+        id: randomUUID(), store_name: "Easy Maxx Supermarket", location: "Angeles City, Pampanga",
+        district: "Central Pampanga", state: "Pampanga",
+        latitude: 15.14004, longitude: 120.58747, contact_person: "Joshua Ramos", contact_info: "0917 000 0008", agent_id: agentUserIds[2], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "A Line Supermarket", location: "Angeles City, Pampanga",
+        district: "Central Pampanga", state: "Pampanga",
+        latitude: 15.1605, longitude: 120.59198, contact_person: "Sofia Navarro", contact_info: "0917 000 0009", agent_id: agentUserIds[2], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Ves Mart Supermarket", location: "San Fernando, Pampanga",
+        district: "Central Pampanga", state: "Pampanga",
+        latitude: 15.07782, longitude: 120.6412, contact_person: "Gabriel Bautista", contact_info: "0917 000 0010", agent_id: agentUserIds[2], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "San Fernando Community Mart", location: "San Fernando, Pampanga",
+        district: "Central Pampanga", state: "Pampanga",
+        latitude: 15.0301, longitude: 120.6844, contact_person: "Rina Valdez", contact_info: "0917 000 0011", agent_id: agentUserIds[0], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Apalit Family Grocery", location: "Apalit, Pampanga",
+        district: "Northern Pampanga", state: "Pampanga",
+        latitude: 14.9537, longitude: 120.7585, contact_person: "Noel Santiago", contact_info: "0917 000 0012", agent_id: agentUserIds[0], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Mabalacat Town Market Store", location: "Mabalacat City, Pampanga",
+        district: "Northern Pampanga", state: "Pampanga",
+        latitude: 15.2231, longitude: 120.5742, contact_person: "Celia Aquino", contact_info: "0917 000 0013", agent_id: agentUserIds[1], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Magalang Corner Grocery", location: "Magalang, Pampanga",
+        district: "Northern Pampanga", state: "Pampanga",
+        latitude: 15.2155, longitude: 120.6606, contact_person: "Edgar David", contact_info: "0917 000 0014", agent_id: agentUserIds[1], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Candaba Freshmart", location: "Candaba, Pampanga",
+        district: "Northern Pampanga", state: "Pampanga",
+        latitude: 15.0956, longitude: 120.8267, contact_person: "Mylene Torres", contact_info: "0917 000 0015", agent_id: agentUserIds[2], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "San Luis Neighborhood Store", location: "San Luis, Pampanga",
+        district: "Northern Pampanga", state: "Pampanga",
+        latitude: 15.0405, longitude: 120.7895, contact_person: "Rodel Flores", contact_info: "0917 000 0016", agent_id: agentUserIds[2], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Sto. Tomas General Store", location: "Sto. Tomas, Pampanga",
+        district: "Northern Pampanga", state: "Pampanga",
+        latitude: 14.9998, longitude: 120.7118, contact_person: "Lorna Mercado", contact_info: "0917 000 0017", agent_id: agentUserIds[0], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Macabebe Bayan Grocery", location: "Macabebe, Pampanga",
+        district: "Northern Pampanga", state: "Pampanga",
+        latitude: 14.9085, longitude: 120.7152, contact_person: "Jun Reyes", contact_info: "0917 000 0018", agent_id: agentUserIds[1], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Guagua Market Grocery", location: "Guagua, Pampanga",
+        district: "Southern Pampanga", state: "Pampanga",
+        latitude: 14.9656, longitude: 120.6321, contact_person: "Aileen Cruz", contact_info: "0917 000 0019", agent_id: agentUserIds[0], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Lubao Community Store", location: "Lubao, Pampanga",
+        district: "Southern Pampanga", state: "Pampanga",
+        latitude: 14.9261, longitude: 120.6003, contact_person: "Dante Garcia", contact_info: "0917 000 0020", agent_id: agentUserIds[1], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Sasmuan Corner Mart", location: "Sasmuan, Pampanga",
+        district: "Southern Pampanga", state: "Pampanga",
+        latitude: 14.8804, longitude: 120.6252, contact_person: "Nina Ramos", contact_info: "0917 000 0021", agent_id: agentUserIds[2], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Bacolor Town Grocery", location: "Bacolor, Pampanga",
+        district: "Southern Pampanga", state: "Pampanga",
+        latitude: 15.0008, longitude: 120.6528, contact_person: "Oscar Mendoza", contact_info: "0917 000 0022", agent_id: agentUserIds[2], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Masantol Riverside Store", location: "Masantol, Pampanga",
+        district: "Southern Pampanga", state: "Pampanga",
+        latitude: 14.8967, longitude: 120.7107, contact_person: "Grace Bautista", contact_info: "0917 000 0023", agent_id: agentUserIds[0], payment_type: "cash",
+      },
+      {
+        id: randomUUID(), store_name: "Minalin Family Mart", location: "Minalin, Pampanga",
+        district: "Southern Pampanga", state: "Pampanga",
+        latitude: 14.9676, longitude: 120.6828, contact_person: "Victor Navarro", contact_info: "0917 000 0024", agent_id: agentUserIds[1], payment_type: "cash",
       },
     ]).onConflictDoNothing();
 
-    // Create drivers (standalone, no login account)
     console.log("📝 Creating drivers...");
-    const driverProfile1 = randomUUID();
-    const driverProfile2 = randomUUID();
-    const driverProfile3 = randomUUID();
+    const driverProfileIds = [randomUUID(), randomUUID(), randomUUID()];
 
     await db.insert(drivers).values([
       {
-        id: driverProfile1,
-        full_name: "Pedro Reyes",
-        contact_info: "09181234567",
-        license: "N01-23-111111",
+        id: driverProfileIds[0],
+        user_id: driverUserIds[0],
+        full_name: "Miza Bautista",
+        contact_info: "09181230201",
+        license: "N01-23-201201",
         hire_date: "2021-05-10",
         employment_type: "full_time",
         is_active: true,
       },
       {
-        id: driverProfile2,
-        full_name: "Carlos Mendoza",
-        contact_info: "09182345678",
-        license: "N01-23-222222",
+        id: driverProfileIds[1],
+        user_id: driverUserIds[1],
+        full_name: "Mari Ming Ornette",
+        contact_info: "09181230202",
+        license: "N01-23-202202",
         hire_date: "2021-08-20",
         employment_type: "full_time",
         is_active: true,
       },
       {
-        id: driverProfile3,
-        full_name: "Jose Villanueva",
-        contact_info: "09183456789",
-        license: "N01-23-333333",
+        id: driverProfileIds[2],
+        user_id: driverUserIds[2],
+        full_name: "Seighart Mundt",
+        contact_info: "09181230203",
+        license: "N01-23-203203",
         hire_date: "2022-02-14",
         employment_type: "part_time",
         is_active: true,
       },
     ]).onConflictDoNothing();
 
-    // Create trucks
     console.log("📝 Creating trucks...");
-    const truck1 = randomUUID();
-    const truck2 = randomUUID();
-    const truck3 = randomUUID();
-
     await db.insert(trucks).values([
       {
-        id: truck1,
-        license_plate: "MNL 4821",
-        district: "District A",
-        driver_id: driverProfile1,
+        id: randomUUID(),
+        license_plate: "PAM 4821",
+        district: "Northern Pampanga",
+        driver_id: driverProfileIds[0],
         status: "available",
       },
       {
-        id: truck2,
-        license_plate: "CAV 7315",
-        district: "District C",
-        driver_id: driverProfile2,
+        id: randomUUID(),
+        license_plate: "PAM 7315",
+        district: "Central Pampanga",
+        driver_id: driverProfileIds[1],
         status: "available",
       },
       {
-        id: truck3,
-        license_plate: "TGY 3186",
-        district: "District B",
-        driver_id: driverProfile3,
+        id: randomUUID(),
+        license_plate: "PAM 3186",
+        district: "Southern Pampanga",
+        driver_id: driverProfileIds[2],
         status: "available",
       },
-    ]).onConflictDoNothing();
-
-    // Create inventory batches
-    console.log("📝 Creating inventory batches...");
-    const batchId1 = randomUUID();
-    await db.insert(inventory_batches).values({
-      id: batchId1,
-      batch_name: "Morning Delivery",
-    }).onConflictDoNothing();
-
-    const pallet1Id = randomUUID();
-    const pallet2Id = randomUUID();
-    await db.insert(batch_pallets).values([
-      {
-        id: pallet1Id,
-        batch_id: batchId1,
-        pallet_id: "P-2024-001",
-        supplier_name: "Frabelle Food Corp",
-        received_date: "2024-01-15",
-        storage_zone: "Zone A",
-        placement_location: "Freezer A",
-      },
-      {
-        id: pallet2Id,
-        batch_id: batchId1,
-        pallet_id: "P-2024-002",
-        supplier_name: "Polar Foods",
-        received_date: "2024-01-16",
-        storage_zone: "Zone B",
-        placement_location: "Freezer B",
-      },
-    ]).onConflictDoNothing();
-
-    await db.insert(pallet_items).values([
-      { id: randomUUID(), pallet_id: pallet1Id, product_id: product1, qty_units: 100, expiration_date: "2024-02-15" },
-      { id: randomUUID(), pallet_id: pallet1Id, product_id: product2, qty_units: 80, expiration_date: "2024-02-20" },
-      { id: randomUUID(), pallet_id: pallet2Id, product_id: product3, qty_units: 120, expiration_date: "2024-02-10" },
-      { id: randomUUID(), pallet_id: pallet2Id, product_id: product4, qty_units: 60, expiration_date: "2024-02-25" },
     ]).onConflictDoNothing();
 
     console.log("✅ Seed completed successfully!");
     console.log("\n📋 Created data:");
     console.log("   ✓ Admin user (admin/admin123)");
-    console.log("   ✓ 3 Agent users (agent1-3/agent123) with profiles");
-    console.log("   ✓ 4 Products (Chicken, Pork, Fish, Beef)");
-    console.log("   ✓ 3 Customers (Makati, BGC, Tagaytay)");
-    console.log("   ✓ 3 Drivers (Pedro, Carlos, Jose — no login)");
-    console.log("   ✓ 3 Trucks (District A, B, C)");
-    console.log("   ✓ Inventory Batches/Pallets");
+    console.log("   ✓ 3 Agents (agent1-3, password matches username)");
+    console.log("   ✓ 3 Drivers (driver1-3, password matches username)");
+    console.log(`   ✓ ${seedProducts.length} Products (current Frabelle catalog)`);
+    console.log("   ✓ 24 Pampanga customers (8 each in Central, Northern, and Southern Pampanga)");
+    console.log("   ✓ 3 Trucks (Northern, Central, Southern Pampanga)");
 
     process.exit(0);
   } catch (error) {

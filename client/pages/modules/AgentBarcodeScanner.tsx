@@ -60,11 +60,30 @@ export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScanner
     setScanError("");
     setIsDecodingImage(true);
     const imageUrl = URL.createObjectURL(file);
+    const reader = new BrowserMultiFormatReader();
     try {
-      const result = await new BrowserMultiFormatReader().decodeFromImageUrl(imageUrl);
-      onDetected(result.getText());
+      let code: string;
+      try {
+        code = (await reader.decodeFromImageUrl(imageUrl)).getText();
+      } catch {
+        const bitmap = await createImageBitmap(file);
+        try {
+          const scale = Math.min(3, 4096 / Math.max(bitmap.width, bitmap.height));
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(bitmap.width * scale);
+          canvas.height = Math.round(bitmap.height * scale);
+          const context = canvas.getContext("2d");
+          if (!context) throw new Error("Could not process selected image.");
+          context.imageSmoothingEnabled = false;
+          context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+          code = reader.decodeFromCanvas(canvas).getText();
+        } finally {
+          bitmap.close();
+        }
+      }
+      onDetected(code);
     } catch {
-      setScanError("No barcode found in that image. Try another image or enter the code manually.");
+      setScanError("Could not read a barcode in that image. Try a clearer or closer image, or enter the code manually.");
     } finally {
       URL.revokeObjectURL(imageUrl);
       setIsDecodingImage(false);
