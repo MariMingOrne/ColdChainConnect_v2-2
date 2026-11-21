@@ -1,11 +1,11 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { randomUUID } from "crypto";
 import { and, desc, eq, ne } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { CreateExpenseSchema } from "../../shared/api";
 import { db } from "../db";
 import { expenses, users } from "../db/schema";
-import { AuthRequest } from "../middleware/auth";
+import type { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
 
 // Expense workflow: accounting (or admin) submits, a different admin approves or rejects, and an

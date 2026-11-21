@@ -1,4 +1,4 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { and, desc, eq, gte, inArray, lte } from "drizzle-orm";
 import { db } from "../db";
 import { agents, audit_logs, users } from "../db/schema";

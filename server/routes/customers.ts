@@ -1,10 +1,10 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { randomUUID } from "crypto";
 import { desc, eq } from "drizzle-orm";
 import { db } from "../db";
 import { customers, customer_discounts } from "../db/schema";
 import type { CustomerDiscount } from "@shared/api";
-import { AuthRequest } from "../middleware/auth";
+import type { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
 import { demoCustomers } from "../demo-data";
 

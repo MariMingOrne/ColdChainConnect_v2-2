@@ -1,5 +1,5 @@
 import { sendRouteError } from "../utils";
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { and, desc, eq, inArray, isNotNull, ne, sql } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import { Pallet, PalletItem, CreatePalletSchema, UpdatePalletStatusSchema } from "../../shared/api";
@@ -12,7 +12,7 @@ import {
   lockStockForProducts,
   reserveBookingItemsTx,
 } from "../services/inventory-reservations";
-import { AuthRequest } from "../middleware/auth";
+import type { AuthRequest } from "../middleware/auth";
 import { getAgentOrderIds } from "../services/agent-bookings";
 import { createInvoiceAfterPicking } from "../services/booking-invoices";
 import { logAction } from "../middleware/audit-logger";

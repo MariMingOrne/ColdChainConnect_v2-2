@@ -1,8 +1,8 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { accounts_receivable, deliveries, drivers } from "../db/schema";
-import { AuthRequest } from "../middleware/auth";
+import type { AuthRequest } from "../middleware/auth";
 import { isIsoDate, todayIsoDate } from "../services/schedule-date";
 
 export const getDriverSchedule: RequestHandler = async (req: AuthRequest, res) => {

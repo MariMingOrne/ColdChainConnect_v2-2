@@ -1,8 +1,8 @@
-import { Response } from "express";
+import type { Response } from "express";
 import { randomUUID } from "crypto";
 import { db } from "../db";
 import { audit_logs } from "../db/schema";
-import { AuthRequest } from "./auth";
+import type { AuthRequest } from "./auth";
 
 export async function logAction(
   userId: string,

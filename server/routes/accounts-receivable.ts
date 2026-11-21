@@ -1,4 +1,4 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { and, desc, eq } from "drizzle-orm";
 import { agentInvoiceFilter } from "../services/agent-bookings";
 import { db } from "../db";
@@ -8,7 +8,7 @@ import {
   invoices,
   delivery_items,
 } from "../db/schema";
-import { AuthRequest } from "../middleware/auth";
+import type { AuthRequest } from "../middleware/auth";
 
 export const listAccountsReceivable: RequestHandler = async (
   req: AuthRequest,

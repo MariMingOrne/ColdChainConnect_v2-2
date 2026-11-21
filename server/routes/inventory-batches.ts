@@ -1,11 +1,11 @@
 import { sendRouteError } from "../utils";
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { desc, eq } from "drizzle-orm";
 import { InventoryBatch, InventoryBatchItem, CreateInventoryBatchSchema, UpdateInventoryBatchSchema } from "../../shared/api";
 import { db } from "../db";
 import { inventory_batches, batch_pallets, pallet_items } from "../db/schema";
 import { getAvailableUnitsBySource } from "../services/inventory-reservations";
-import { AuthRequest } from "../middleware/auth";
+import type { AuthRequest } from "../middleware/auth";
 import { getAgentOrderIds } from "../services/agent-bookings";
 
 const inventoryBatches: InventoryBatch[] = [

@@ -1,4 +1,4 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { randomUUID } from "crypto";
 import { and, eq, desc, ne, sql } from "drizzle-orm";
 import { agentInvoiceFilter } from "../services/agent-bookings";
@@ -11,7 +11,7 @@ import {
   batch_pallets,
   accounts_receivable,
 } from "../db/schema";
-import { AuthRequest } from "../middleware/auth";
+import type { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
 
 // ─── GET /api/agent-returns ───────────────────────────────────────────────────

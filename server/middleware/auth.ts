@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from "express";
-import { verifyToken, TokenPayload } from "../auth";
+import type { Request, Response, NextFunction } from "express";
+import { verifyToken, type TokenPayload } from "../auth";
 import { db } from "../db";
 import { users } from "../db/schema";
 import { eq } from "drizzle-orm";

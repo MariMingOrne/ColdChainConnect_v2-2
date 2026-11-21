@@ -1,5 +1,6 @@
 // Read-only: a token must stop working when its account is gone or its role changed.
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, expectTypeOf, it } from "vitest";
+import type { NextFunction, Request, RequestHandler, Response } from "express";
 import type { Server } from "http";
 import type { AddressInfo } from "net";
 import { eq } from "drizzle-orm";
@@ -7,6 +8,23 @@ import { createServer } from "../index";
 import { signToken } from "../auth";
 import { db } from "../db";
 import { users } from "../db/schema";
+import type { AuthRequest } from "./auth";
+
+it("preserves Express request, response, and middleware types", () => {
+  expectTypeOf<AuthRequest>().toExtend<Request>();
+  expectTypeOf<AuthRequest>().toHaveProperty("body");
+  expectTypeOf<AuthRequest>().toHaveProperty("params");
+  expectTypeOf<AuthRequest>().toHaveProperty("query");
+  expectTypeOf<AuthRequest>().toHaveProperty("headers");
+  expectTypeOf<AuthRequest>().toHaveProperty("method");
+  expectTypeOf<AuthRequest>().toHaveProperty("path");
+  expectTypeOf<AuthRequest>().toHaveProperty("baseUrl");
+  expectTypeOf<Response>().toHaveProperty("status").toBeFunction();
+  expectTypeOf<Response>().toHaveProperty("json").toBeFunction();
+  expectTypeOf<Response>().toHaveProperty("setHeader").toBeFunction();
+  expectTypeOf<NextFunction>().toBeFunction();
+  expectTypeOf<RequestHandler>().toBeFunction();
+});
 
 const hasDb = Boolean(process.env.DATABASE_URL);
 let server: Server;

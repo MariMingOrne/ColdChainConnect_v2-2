@@ -1,4 +1,4 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import multer from "multer";
 import path from "path";
 import { randomUUID } from "crypto";

@@ -1,8 +1,8 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "../db";
 import { agents, customers, drivers, invoices, receipt_payment_entries, receipts, trucks, users } from "../db/schema";
-import { AuthRequest } from "../middleware/auth";
+import type { AuthRequest } from "../middleware/auth";
 import { logAction } from "../middleware/audit-logger";
 import { paymentNeedsClearance } from "../../shared/api";
 

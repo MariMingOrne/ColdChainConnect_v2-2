@@ -1,4 +1,4 @@
-import { RequestHandler } from "express";
+import type { RequestHandler } from "express";
 import { and, count, eq, min, ne, sql, sum } from "drizzle-orm";
 import { db } from "../db";
 import { accounts_receivable, bookings, deliveries, products } from "../db/schema";
