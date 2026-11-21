@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 import { BrowserMultiFormatReader } from "@zxing/browser";
 import { Folder, SwitchCamera, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -46,9 +52,13 @@ function cameraStartMessage(error: unknown): string {
   if (name === "NotAllowedError" || name === "SecurityError") {
     return "Camera permission was denied. Allow camera access in your browser settings and try again.";
   }
-  if (name === "NotFoundError" || name === "OverconstrainedError") return "No usable camera was found on this device.";
-  if (name === "NotReadableError") return "The camera is in use by another app. Close it and try again.";
-  return error instanceof Error ? error.message : "Camera could not be started.";
+  if (name === "NotFoundError" || name === "OverconstrainedError")
+    return "No usable camera was found on this device.";
+  if (name === "NotReadableError")
+    return "The camera is in use by another app. Close it and try again.";
+  return error instanceof Error
+    ? error.message
+    : "Camera could not be started.";
 }
 
 function drawScaled(bitmap: ImageBitmap, longestSide: number) {
@@ -100,13 +110,18 @@ async function decodeImageFile(file: File): Promise<string> {
   }
 }
 
-export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScannerProps) {
+export function AgentBarcodeScanner({
+  onClose,
+  onDetected,
+}: AgentBarcodeScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const onDetectedRef = useRef(onDetected);
   const [manualCode, setManualCode] = useState("");
   const [scanError, setScanError] = useState("");
   const [isDecodingImage, setIsDecodingImage] = useState(false);
-  const [facingMode, setFacingMode] = useState<"environment" | "user">("environment");
+  const [facingMode, setFacingMode] = useState<"environment" | "user">(
+    "environment",
+  );
 
   // Keep the latest callback without restarting the camera when the parent re-renders.
   useEffect(() => {
@@ -128,24 +143,31 @@ export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScanner
     let active = true;
     let stopScanner: (() => void) | undefined;
 
-    reader.decodeFromConstraints(
-      {
-        video: { facingMode: { ideal: facingMode }, width: { ideal: 1920 }, height: { ideal: 1080 } },
-        audio: false,
-      },
-      video,
-      (result, _error, controls) => {
-        if (!active || !result) return;
-        active = false;
-        controls.stop();
-        onDetectedRef.current(result.getText().trim());
-      },
-    ).then((controls) => {
-      stopScanner = controls.stop;
-      if (!active) controls.stop();
-    }).catch((error: unknown) => {
-      if (active) setScanError(cameraStartMessage(error));
-    });
+    reader
+      .decodeFromConstraints(
+        {
+          video: {
+            facingMode: { ideal: facingMode },
+            width: { ideal: 1920 },
+            height: { ideal: 1080 },
+          },
+          audio: false,
+        },
+        video,
+        (result, _error, controls) => {
+          if (!active || !result) return;
+          active = false;
+          controls.stop();
+          onDetectedRef.current(result.getText().trim());
+        },
+      )
+      .then((controls) => {
+        stopScanner = controls.stop;
+        if (!active) controls.stop();
+      })
+      .catch((error: unknown) => {
+        if (active) setScanError(cameraStartMessage(error));
+      });
 
     return () => {
       active = false;
@@ -169,7 +191,9 @@ export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScanner
       const code = (await decodeImageFile(file)).trim();
       onDetectedRef.current(code);
     } catch {
-      setScanError("Could not read a barcode in that image. Use a sharp, well-lit photo with the whole code in frame, or enter the code manually.");
+      setScanError(
+        "Could not read a barcode in that image. Use a sharp, well-lit photo with the whole code in frame, or enter the code manually.",
+      );
     } finally {
       setIsDecodingImage(false);
     }
@@ -190,26 +214,58 @@ export function AgentBarcodeScanner({ onClose, onDetected }: AgentBarcodeScanner
             type="button"
             onClick={() => {
               setScanError("");
-              setFacingMode((current) => current === "environment" ? "user" : "environment");
+              setFacingMode((current) =>
+                current === "environment" ? "user" : "environment",
+              );
             }}
             disabled={isDecodingImage}
-            aria-label={`Switch to ${facingMode === "environment" ? "front" : "rear"} camera`} variant="ghost" className="gap-2 bg-white/10 text-white hover:bg-white/20 hover:text-white">
+            aria-label={`Switch to ${facingMode === "environment" ? "front" : "rear"} camera`}
+            variant="ghost"
+            className="gap-2 bg-white/10 text-white hover:bg-white/20 hover:text-white"
+          >
             <SwitchCamera size={18} />
             {facingMode === "environment" ? "Rear" : "Front"}
           </Button>
-          <Button type="button" onClick={onClose} aria-label="Close scanner" variant="ghost" size="icon" className="text-white hover:bg-white/10 hover:text-white"><X size={24} aria-hidden="true" /></Button>
+          <Button
+            type="button"
+            onClick={onClose}
+            aria-label="Close scanner"
+            variant="ghost"
+            size="icon"
+            className="text-white hover:bg-white/10 hover:text-white"
+          >
+            <X size={24} aria-hidden="true" />
+          </Button>
         </div>
       </header>
       <div className="flex flex-1 flex-col items-center justify-center gap-5 overflow-y-auto px-6 py-4">
         <div className="relative w-full max-w-md overflow-hidden rounded-xl border-2 border-accent-2 bg-black">
-          <video ref={videoRef} autoPlay muted playsInline className="aspect-[4/3] w-full object-cover" />
+          <video
+            ref={videoRef}
+            autoPlay
+            muted
+            playsInline
+            className="aspect-[4/3] w-full object-cover"
+          />
           <div className="pointer-events-none absolute inset-[15%] rounded-xl border-2 border-white/90 shadow-[0_0_0_999px_hsl(var(--foreground)/0.25)]" />
         </div>
         <p className="max-w-md text-center text-sm text-white/80">
-          {isDecodingImage ? "Scanning selected image…" : `Point the ${facingMode === "environment" ? "rear" : "front"} camera at a pallet or order code.`}
+          {isDecodingImage
+            ? "Scanning selected image…"
+            : `Point the ${facingMode === "environment" ? "rear" : "front"} camera at a pallet or order code.`}
         </p>
-        {scanError && <p role="alert" className="max-w-md text-center text-sm text-destructive">{scanError}</p>}
-        <form onSubmit={submitManualCode} className="flex w-full max-w-md items-center gap-2">
+        {scanError && (
+          <p
+            role="alert"
+            className="max-w-md text-center text-sm text-destructive"
+          >
+            {scanError}
+          </p>
+        )}
+        <form
+          onSubmit={submitManualCode}
+          className="flex w-full max-w-md items-center gap-2"
+        >
           <Input
             value={manualCode}
             onChange={(event) => setManualCode(event.target.value)}
