@@ -1,8 +1,9 @@
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Button } from "@/components/ui/button";
 import { confirmAction } from "@/lib/confirm";
+import { palletCode } from "@/lib/palletCode";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useLocation, useSearchParams } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { LoadingSpinner } from "@/components/LoadingSpinner";
 import { useAutoRefresh } from "@/hooks/useAutoRefresh";
 import { ArrowLeft, ChevronDown, ChevronUp, Package, Search } from "lucide-react";
@@ -41,6 +42,13 @@ const nextActionLabels: Record<Pallet["status"], string | null> = {
   shipped: null,
 };
 
+const nextStatus: Record<Pallet["status"], Pallet["status"] | null> = {
+  draft: "prepared",
+  prepared: "approved",
+  approved: "shipped",
+  shipped: null,
+};
+
 function statusClasses(status: Pallet["status"]) {
   if (status === "shipped") return "bg-green/10 text-green";
   if (status === "approved") return "bg-info-soft text-accent-2";
@@ -52,6 +60,7 @@ export function AgentPalletTracking() {
   const { token } = useAuth();
   const [searchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const scanCode = searchParams.get("order")?.trim() ?? "";
   const handledScanKeyRef = useRef<string | null>(null);
   const [scanPalletId, setScanPalletId] = useState<string | null>(null);
@@ -68,6 +77,10 @@ export function AgentPalletTracking() {
   const [updatingPalletId, setUpdatingPalletId] = useState<string | null>(null);
   const [isAdvancingAll, setIsAdvancingAll] = useState(false);
   const [error, setError] = useState("");
+
+  // Once a pallet ships, jump to the Delivery Schedule tab, which opens the payment prompt for that order's stop.
+  const openDeliveryPayment = (orderId: string) =>
+    navigate("/booking-dispatch/inventory", { state: { confirmPaymentOrderId: orderId } });
 
   const fetchTracking = async () => {
     if (!token) return;
@@ -186,7 +199,7 @@ export function AgentPalletTracking() {
     setError("");
     try {
       const isApproval = pallet.status === "prepared";
-      const nextStatus = pallet.status === "draft" ? "prepared" : "shipped";
+      const nextStatusValue = pallet.status === "draft" ? "prepared" : "shipped";
       const response = await fetch(
         isApproval ? `/api/pallets/${pallet.id}/approve` : `/api/pallets/${pallet.id}/status`,
         {
@@ -195,7 +208,7 @@ export function AgentPalletTracking() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
           },
-          ...(!isApproval && { body: JSON.stringify({ status: nextStatus }) }),
+          ...(!isApproval && { body: JSON.stringify({ status: nextStatusValue }) }),
         },
       );
       const data = await response.json();
@@ -241,17 +254,24 @@ export function AgentPalletTracking() {
 
   const confirmScannedPallet = async () => {
     if (!scanPallet) return;
-    if (await handleAdvancePallet(scanPallet)) setScanPalletId(null);
+    const shipping = scanPallet.status === "approved";
+    const orderId = scanPallet.order_id;
+    if (await handleAdvancePallet(scanPallet)) {
+      setScanPalletId(null);
+      if (shipping) openDeliveryPayment(orderId);
+    }
   };
 
   const handleListAdvance = async (pallet: TrackingPallet) => {
-    if (pallet.status === "approved" && !(await confirmAction("Mark this pallet as shipped?"))) return;
-    void handleAdvancePallet(pallet);
+    const shipping = pallet.status === "approved";
+    if (shipping && !(await confirmAction("Mark this pallet as shipped?"))) return;
+    if ((await handleAdvancePallet(pallet)) && shipping) openDeliveryPayment(pallet.order_id);
   };
 
   if (isLoading) return <LoadingSpinner className="min-h-[60vh] bg-transparent" slow />;
 
   if (scanPallet) {
+    const upcomingStatus = nextStatus[scanPallet.status];
     return (
       <div className="mx-auto flex min-h-full w-full max-w-3xl flex-col gap-4 px-0 pb-24 pt-5 sm:px-4">
         <header className="flex items-start justify-between gap-3 px-4 sm:px-0">
@@ -274,11 +294,18 @@ export function AgentPalletTracking() {
         </header>
 
         <div className="mx-4 rounded-2xl border border-border bg-card p-5 shadow-sm sm:mx-0">
-          <div className="flex items-center justify-between rounded-xl bg-muted p-3 text-sm">
-            <span className="text-muted-foreground">Current status</span>
-            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClasses(scanPallet.status)}`}>
-              {statusLabels[scanPallet.status]}
-            </span>
+          <div className="rounded-xl bg-muted p-3 text-sm">
+            <p className="font-semibold text-foreground">
+              {upcomingStatus
+                ? `Move ${palletCode(scanPallet.id)} from ${statusLabels[scanPallet.status]} → ${statusLabels[upcomingStatus]}?`
+                : `${palletCode(scanPallet.id)} has already been shipped.`}
+            </p>
+            <div className="mt-2 flex items-center justify-between">
+              <span className="text-muted-foreground">Current status</span>
+              <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClasses(scanPallet.status)}`}>
+                {statusLabels[scanPallet.status]}
+              </span>
+            </div>
           </div>
 
           {error && <p role="alert" className="mt-3 rounded-xl border border-red/20 bg-red/5 p-3 text-sm text-red">{error}</p>}
@@ -486,7 +513,7 @@ export function AgentPalletTracking() {
                     )}
                     <Button
                       type="button"
-                      onClick={() => handleListAdvance(pallet)}
+                      onClick={() => void handleListAdvance(pallet)}
                       disabled={updatingPalletId !== null || ((pallet.status === "prepared" || pallet.status === "approved") && !scheduledOrderIds.has(pallet.order_id))}
                       variant="default" className="min-h-11 w-full"
                     >
