@@ -13,7 +13,7 @@ import {
   signMfaChallenge,
   verifyMfaChallenge,
 } from "../auth";
-import {
+import type {
   LoginRequest,
   LoginResponse,
   LogoutResponse,
@@ -21,7 +21,6 @@ import {
   MfaSetupResponse,
   MfaVerifyRequest,
 } from "@shared/api";
-// Runtime value: relative path because vite.config bundles the server before the @shared alias exists.
 import { MIN_PASSWORD_LENGTH } from "../../shared/api";
 import { sendTooManyAttempts } from "../utils";
 import { AuthRequest } from "../middleware/auth";

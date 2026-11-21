@@ -1,4 +1,4 @@
-import { CreditViolation } from "@shared/api";
+import type { CreditViolation } from "@shared/api";
 
 export interface CustomerCreditState {
   termsDays: number;
