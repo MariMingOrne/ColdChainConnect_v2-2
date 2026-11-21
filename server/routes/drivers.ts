@@ -1,4 +1,3 @@
-// Runtime value: relative path because vite.config bundles the server before the @shared alias exists.
 import { MIN_PASSWORD_LENGTH } from "../../shared/api";
 import { RequestHandler } from "express";
 import { randomUUID } from "crypto";

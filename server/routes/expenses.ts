@@ -2,7 +2,6 @@ import { RequestHandler } from "express";
 import { randomUUID } from "crypto";
 import { and, desc, eq, ne } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-// Runtime value: relative path because vite.config bundles the server before the @shared alias exists.
 import { CreateExpenseSchema } from "../../shared/api";
 import { db } from "../db";
 import { expenses, users } from "../db/schema";
