@@ -57,6 +57,7 @@ export const handleUpload: RequestHandler = async (req, res) => {
 
   // Server-chosen name: the client's filename never touches the filesystem.
   const filename = `${randomUUID()}${ext}`;
+  ensureUploadDir();
   try {
     await writeFile(path.join(uploadDir, filename), req.file.buffer, { flag: "wx" });
     res.json({ filename });
